@@ -3,7 +3,7 @@ import { YEAR, OUTCOME_LABELS, KM } from '../physics';
 import { openInSimulator } from '../app/store';
 import { logTicks, niceTicks } from '../ui/charts/ticks';
 import { Segmented, Select, Slider, Toggle } from '../ui/controls';
-import { downloadCanvas, downloadText } from '../ui/download';
+import { FILE_EXPORT, downloadCanvas, downloadText } from '../ui/download';
 import { duration, fmt } from '../ui/format';
 import { prepareCanvas, useElementSize, useThemeColors, type ThemeColors } from '../ui/hooks';
 import { Icon } from '../ui/Icon';
@@ -588,18 +588,20 @@ export function StabilityMap({ preset, compact = false }: Props) {
                 : ''}
           </span>
           <button type="button" class="btn small" onClick={exportCsv} disabled={progress.running}>
-            <Icon name="download" /> CSV
+            <Icon name="download" /> {FILE_EXPORT ? 'CSV' : 'CSV kopieren'}
           </button>
-          <button
-            type="button"
-            class="btn small"
-            onClick={() =>
-              canvasRef.current &&
-              downloadCanvas(canvasRef.current, `stabilitaetskarte-${presetId}.png`)
-            }
-          >
-            <Icon name="camera" /> Bild
-          </button>
+          {FILE_EXPORT && (
+            <button
+              type="button"
+              class="btn small"
+              onClick={() =>
+                canvasRef.current &&
+                downloadCanvas(canvasRef.current, `stabilitaetskarte-${presetId}.png`)
+              }
+            >
+              <Icon name="camera" /> Bild
+            </button>
+          )}
         </div>
       </div>
       {progress.running && (

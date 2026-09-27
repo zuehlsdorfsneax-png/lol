@@ -20,7 +20,7 @@ import { PageHead, StatusChip } from '../ui/content';
 import { Segmented, Select, Slider, Toggle } from '../ui/controls';
 import { distance, duration, fmt, km, percent, pow10, sci, sig, speed } from '../ui/format';
 import { Icon } from '../ui/Icon';
-import { downloadText, downloadCanvas } from '../ui/download';
+import { FILE_EXPORT, downloadCanvas, downloadText } from '../ui/download';
 import { CheckList } from '../ui/CheckList';
 
 type ChartId = 'distance' | 'eccentricity' | 'hill' | 'energy';
@@ -394,12 +394,14 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
               <div class="btn-row">
                 <button type="button" class="btn small" onClick={exportCsv}>
                   <Icon name="download" />
-                  CSV
+                  {FILE_EXPORT ? 'CSV' : 'CSV kopieren'}
                 </button>
-                <button type="button" class="btn small" onClick={exportPng}>
-                  <Icon name="camera" />
-                  Bild
-                </button>
+                {FILE_EXPORT && (
+                  <button type="button" class="btn small" onClick={exportPng}>
+                    <Icon name="camera" />
+                    Bild
+                  </button>
+                )}
               </div>
             </div>
             {sim && <SeriesChart sim={sim} chart={chart} version={version} />}

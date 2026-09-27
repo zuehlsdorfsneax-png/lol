@@ -19,14 +19,15 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-| Befehl              | Zweck                                                       |
-| ------------------- | ----------------------------------------------------------- |
-| `npm run dev`       | Entwicklungsserver                                          |
-| `npm run build`     | Typprüfung + Produktions-Build nach `dist/`                 |
-| `npm run preview`   | Build lokal ausliefern                                      |
-| `npm test`          | Automatische Tests (Physik, Simulation, Missionen, Engine)  |
-| `npm run calibrate` | Stabilitätsgrenzen per Simulation bestimmen (für Kapitel 6) |
-| `npm run check`     | Typen, Lint, Formatierung und Tests (wie in der CI)         |
+| Befehl                   | Zweck                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `npm run dev`            | Entwicklungsserver                                                                               |
+| `npm run build`          | Typprüfung + Produktions-Build nach `dist/`                                                      |
+| `npm run preview`        | Build lokal ausliefern                                                                           |
+| `npm test`               | Automatische Tests (Physik, Simulation, Missionen, Engine)                                       |
+| `npm run calibrate`      | Stabilitätsgrenzen per Simulation bestimmen (für Kapitel 6)                                      |
+| `npm run build:artifact` | Variante mit eingebetteten Schriften für eingebettete Seiten; CSV-Export über die Zwischenablage |
+| `npm run check`          | Typen, Lint, Formatierung und Tests (wie in der CI)                                              |
 
 ## Was die App enthält
 
