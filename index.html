@@ -4,19 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b1026" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="Sternensammler – ein kleines Browserspiel" />
+    <meta name="description" content="Orbitlabor – interaktive Drei-Körper-Simulation zur Bahnstabilität von Erde, Mond und Sonne" />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <title>Sternensammler</title>
+    <title>Orbitlabor</title>
   </head>
   <body>
-    <main id="app">
-      <canvas id="game" aria-label="Spielfläche"></canvas>
-      <noscript>Dieses Spiel benötigt JavaScript.</noscript>
-    </main>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="app"></div>
+    <noscript>Das Orbitlabor benötigt JavaScript.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
