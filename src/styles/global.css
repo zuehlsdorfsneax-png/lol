@@ -2560,3 +2560,11 @@ details.section .section-body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.rocket-stage.is-map .rocket-canvas canvas {
+  cursor: grab;
+}
+
+.rocket-stage.is-map .rocket-canvas canvas:active {
+  cursor: grabbing;
+}

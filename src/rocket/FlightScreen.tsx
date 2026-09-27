@@ -112,7 +112,13 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
   const audio = useRef<RocketAudio>(new RocketAudio());
   /** Zoomfaktor des Spielers; der Grundmaßstab folgt automatisch der Flughöhe. */
   const zoom = useRef(1);
-  const mapCam = useRef<{ scale: number; focus: MapFocus }>({ scale: 0, focus: 'earth' });
+  const mapCam = useRef<{ scale: number; focus: MapFocus; panX: number; panY: number }>({
+    scale: 0,
+    focus: 'earth',
+    panX: 0,
+    panY: 0,
+  });
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pred = useRef<Prediction | null>(null);
   const mapOpen = useRef(map);
   mapOpen.current = map;
@@ -135,7 +141,12 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
     if (open) {
       const fl = flight.current;
       const focus: MapFocus = fl.refBody() === MOON ? 'moon' : 'earth';
-      mapCam.current = { focus, scale: fitMapScale(fl, size.width, size.height, focus) };
+      mapCam.current = {
+        focus,
+        scale: fitMapScale(fl, size.width, size.height, focus),
+        panX: 0,
+        panY: 0,
+      };
     }
     setMap(open);
   };
@@ -146,9 +157,14 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
     setTick((t) => t + 1);
   };
 
-  const zoomBy = (factor: number): void => {
+  const zoomBy = (factor: number, ax = 0, ay = 0): void => {
     if (mapOpen.current) {
-      mapCam.current.scale = Math.min(0.05, Math.max(2e-7, mapCam.current.scale * factor));
+      // Der Punkt unter (ax, ay) – Abstand zur Bildmitte in Pixeln – bleibt stehen.
+      const cam = mapCam.current;
+      const next = Math.min(0.05, Math.max(2e-7, cam.scale * factor));
+      cam.panX += ax / cam.scale - ax / next;
+      cam.panY -= ay / cam.scale - ay / next;
+      cam.scale = next;
     } else {
       zoom.current = Math.min(10_000, Math.max(0.001, zoom.current * factor));
     }
@@ -211,12 +227,70 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
+    const rel = (e: { clientX: number; clientY: number }): [number, number] => {
+      const r = c.getBoundingClientRect();
+      return [e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2];
+    };
     const wheel = (e: WheelEvent): void => {
       e.preventDefault();
-      zoomBy(Math.exp(-e.deltaY * 0.0015));
+      const [ax, ay] = rel(e);
+      zoomBy(Math.exp(-e.deltaY * 0.0015), ax, ay);
+    };
+    // Ziehen verschiebt die Karte, zwei Finger zoomen (Karte und Flugansicht).
+    const down = (e: PointerEvent): void => {
+      c.setPointerCapture(e.pointerId);
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    };
+    const move = (e: PointerEvent): void => {
+      const ps = pointers.current;
+      const old = ps.get(e.pointerId);
+      if (!old) return;
+      if (ps.size === 1 && mapOpen.current) {
+        const cam = mapCam.current;
+        cam.panX -= (e.clientX - old.x) / cam.scale;
+        cam.panY += (e.clientY - old.y) / cam.scale;
+      } else if (ps.size === 2) {
+        const other = [...ps.entries()].find(([id]) => id !== e.pointerId)![1];
+        const before = Math.hypot(old.x - other.x, old.y - other.y);
+        const after = Math.hypot(e.clientX - other.x, e.clientY - other.y);
+        if (before > 10) {
+          const [ax, ay] = rel({
+            clientX: (e.clientX + other.x) / 2,
+            clientY: (e.clientY + other.y) / 2,
+          });
+          zoomBy(after / before, ax, ay);
+        }
+      }
+      ps.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    };
+    const up = (e: PointerEvent): void => {
+      pointers.current.delete(e.pointerId);
+    };
+    const dbl = (): void => {
+      if (!mapOpen.current) return;
+      const fl = flight.current;
+      const cam = mapCam.current;
+      mapCam.current = {
+        ...cam,
+        panX: 0,
+        panY: 0,
+        scale: fitMapScale(fl, c.clientWidth, c.clientHeight, cam.focus),
+      };
     };
     c.addEventListener('wheel', wheel, { passive: false });
-    return () => c.removeEventListener('wheel', wheel);
+    c.addEventListener('pointerdown', down);
+    c.addEventListener('pointermove', move);
+    c.addEventListener('pointerup', up);
+    c.addEventListener('pointercancel', up);
+    c.addEventListener('dblclick', dbl);
+    return () => {
+      c.removeEventListener('wheel', wheel);
+      c.removeEventListener('pointerdown', down);
+      c.removeEventListener('pointermove', move);
+      c.removeEventListener('pointerup', up);
+      c.removeEventListener('pointercancel', up);
+      c.removeEventListener('dblclick', dbl);
+    };
   }, []);
 
   useEffect(() => () => audio.current.close(), []);
@@ -302,7 +376,15 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
             drawMap(
               ctx,
               fl,
-              mapView(fl, W, H, mapCam.current.scale, mapCam.current.focus),
+              mapView(
+                fl,
+                W,
+                H,
+                mapCam.current.scale,
+                mapCam.current.focus,
+                mapCam.current.panX,
+                mapCam.current.panY,
+              ),
               pred.current,
             );
           } else {
@@ -478,6 +560,8 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
                   class={mapCam.current.focus === foc ? 'on' : ''}
                   onClick={() => {
                     mapCam.current = {
+                      panX: 0,
+                      panY: 0,
                       focus: foc,
                       scale:
                         foc === 'rocket'

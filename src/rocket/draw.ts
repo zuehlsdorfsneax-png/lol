@@ -676,12 +676,23 @@ export function mapView(
   height: number,
   scale: number,
   focus: MapFocus,
+  panX = 0,
+  panY = 0,
 ): View {
   let cx = 0;
   let cy = 0;
   if (focus === 'moon') [cx, cy] = moonPosition(f.t);
   if (focus === 'rocket') [cx, cy] = [f.x, f.y];
-  return { width, height, scale, cx, cy, up: Math.PI / 2, ox: width / 2, oy: height / 2 };
+  return {
+    width,
+    height,
+    scale,
+    cx: cx + panX,
+    cy: cy + panY,
+    up: Math.PI / 2,
+    ox: width / 2,
+    oy: height / 2,
+  };
 }
 
 /** Passender Maßstab, damit die Bahn ins Bild passt. */
@@ -791,6 +802,27 @@ export function drawMap(
     ctx.beginPath();
     smoothPath(ctx, xs, ys, 0, pred.n - 1);
     ctx.stroke();
+    // Richtungspfeile entlang der Bahn (etwa alle 140 Pixel)
+    ctx.fillStyle = '#5eead4';
+    let run = 0;
+    for (let i = 1; i < pred.n; i++) {
+      const dx = xs[i]! - xs[i - 1]!;
+      const dy = ys[i]! - ys[i - 1]!;
+      run += Math.hypot(dx, dy);
+      if (run < 140) continue;
+      run = 0;
+      const a = Math.atan2(dy, dx);
+      ctx.save();
+      ctx.translate(xs[i]!, ys[i]!);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(-4, -5);
+      ctx.lineTo(-4, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
     const mark = (i: number, text: string, color: string): void => {
       if (i < 0) return;
       ctx.fillStyle = color;
@@ -885,12 +917,21 @@ export function drawMap(
   ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(16, H - 18);
-  ctx.lineTo(16 + px, H - 18);
-  ctx.moveTo(16, H - 22);
-  ctx.lineTo(16, H - 14);
-  ctx.moveTo(16 + px, H - 22);
-  ctx.lineTo(16 + px, H - 14);
+  // Über den Steuerknöpfen, unter der Anzeige links.
+  const by = Math.min(H - 160, 290);
+  ctx.moveTo(16, by);
+  ctx.lineTo(16 + px, by);
+  ctx.moveTo(16, by - 4);
+  ctx.lineTo(16, by + 4);
+  ctx.moveTo(16 + px, by - 4);
+  ctx.lineTo(16 + px, by + 4);
   ctx.stroke();
-  label(ctx, km(nice), 16, H - 32, 'rgba(255,255,255,0.8)');
+  label(ctx, km(nice), 16, by - 14, 'rgba(255,255,255,0.8)');
+  label(
+    ctx,
+    'Ziehen: verschieben · Mausrad: zoomen · Doppelklick: zurück',
+    16,
+    by + 18,
+    'rgba(255,255,255,0.45)',
+  );
 }
