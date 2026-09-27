@@ -1,0 +1,13 @@
+{
+  "name": "Sternensammler",
+  "short_name": "Sterne",
+  "description": "Ein kleines Browserspiel",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#05070f",
+  "theme_color": "#0b1026",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
