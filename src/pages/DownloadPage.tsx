@@ -32,7 +32,7 @@ export function DownloadPage() {
             Windows 10 und 11 (64 Bit) · etwa 8 MB · Fortschritt und Raketen werden gespeichert
           </p>
         </div>
-        <a class="btn primary download-btn" href={EXE_URL} rel="noopener">
+        <a class="btn primary download-btn" href={EXE_URL} target="_blank" rel="noopener">
           <Icon name="download" /> Herunterladen
         </a>
         <a class="small" href={RELEASES_URL} target="_blank" rel="noopener">
