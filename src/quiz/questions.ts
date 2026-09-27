@@ -204,4 +204,43 @@ export const QUESTIONS: readonly Question[] = [
     explanation:
       'Der Hill-Radius wäre nur 580 000 km; der Mond stünde bei 0,66 r_H – jenseits der Grenze von 0,48 r_H.',
   },
+  {
+    chapter: 8,
+    text: 'Warum bauen Raketen mehrere Stufen?',
+    options: [
+      'Damit sie schöner aussehen',
+      'Leere Tanks werden abgeworfen, die nächste Stufe beschleunigt weniger Masse – das Massenverhältnis m_voll/m_leer steigt',
+      'Weil ein einzelnes Triebwerk nicht zünden kann',
+      'Weil die Schwerkraft mit der Höhe zunimmt',
+    ],
+    answer: 1,
+    explanation:
+      'Nach der Raketengleichung Δv = I_sp·g₀·ln(m_voll/m_leer) wächst Δv nur logarithmisch mit dem Massenverhältnis. Stufen verbessern dieses Verhältnis für jeden Abschnitt.',
+  },
+  {
+    chapter: 5,
+    text: 'Im Raketenspiel ändert sich die vorhergesagte Bahn, sobald sie in einen bestimmten Bereich um den Mond kommt. Welcher ist das?',
+    options: [
+      'Die Roche-Grenze',
+      'Die Hill-Sphäre des Mondes',
+      'Die Atmosphäre',
+      'Der Lagrange-Punkt L4',
+    ],
+    answer: 1,
+    explanation:
+      'Innerhalb der Hill-Sphäre zieht der Mond stärker an der Rakete als die Gezeitenwirkung der Erde – dieselbe Größe, die in Kapitel 5 die Stabilität unseres Mondes erklärt.',
+  },
+  {
+    chapter: 2,
+    text: 'Warum fällt eine Rakete in der Umlaufbahn nicht auf die Erde?',
+    options: [
+      'Im Weltraum gibt es keine Schwerkraft',
+      'Sie fällt ständig, ist aber so schnell zur Seite unterwegs, dass die Erde unter ihr wegkrümmt',
+      'Die Triebwerke laufen die ganze Zeit',
+      'Der Mond hält sie fest',
+    ],
+    answer: 1,
+    explanation:
+      'Eine Umlaufbahn ist ein endloser Fall. Die Schwerkraft liefert genau die Zentripetalkraft – wie beim Mond selbst.',
+  },
 ];

@@ -46,8 +46,8 @@ export function QuizPage() {
   return (
     <div class="stack" style={{ gap: '20px', maxWidth: '760px' }}>
       <PageHead eyebrow="Spielen" title="Quiz">
-        {QUESTIONS.length} Fragen quer durch alle sechs Kapitel. Nach jeder Antwort gibt es die
-        Erklärung.
+        {QUESTIONS.length} Fragen quer durch alle neun Kapitel und die Spiele. Nach jeder Antwort
+        gibt es die Erklärung.
       </PageHead>
       {done ? (
         <section class="panel panel-pad">

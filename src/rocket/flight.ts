@@ -21,7 +21,18 @@ export const WARPS = [1, 2, 4, 10, 50, 100, 500, 1000, 5000, 10_000, 50_000] as 
 const WARP_LIMITED = 4;
 
 export type GoalId =
-  'lift' | 'km10' | 'space' | 'orbit' | 'soi' | 'moonorbit' | 'moonland' | 'return';
+  | 'lift'
+  | 'km10'
+  | 'space'
+  | 'orbit'
+  | 'soi'
+  | 'moonorbit'
+  | 'moonland'
+  | 'return'
+  | 'high'
+  | 'flyby'
+  | 'soft'
+  | 'escape';
 
 export const GOALS: readonly { id: GoalId; title: string; text: string }[] = [
   { id: 'lift', title: 'Abheben', text: 'Die Rakete verlässt die Startrampe.' },
@@ -40,6 +51,22 @@ export const GOALS: readonly { id: GoalId; title: string; text: string }[] = [
   { id: 'moonorbit', title: 'Mondumlaufbahn', text: 'Vom Mond eingefangen.' },
   { id: 'moonland', title: 'Mondlandung', text: 'Sanft auf dem Mond aufgesetzt.' },
   { id: 'return', title: 'Heimkehr', text: 'Vom Mond zurück und sicher auf der Erde gelandet.' },
+  {
+    id: 'high',
+    title: 'Hohe Bahn',
+    text: 'Eine geschlossene Erdbahn, deren höchster Punkt über 1.000 km liegt.',
+  },
+  {
+    id: 'flyby',
+    title: 'Mondvorbeiflug',
+    text: 'Durch die Hill-Sphäre des Mondes und wieder hinaus – der Mond lenkt die Bahn um wie ein Katapult.',
+  },
+  { id: 'soft', title: 'Butterweich', text: 'Eine Landung mit weniger als 2 m/s.' },
+  {
+    id: 'escape',
+    title: 'Flucht aus dem System',
+    text: 'Weit jenseits der Mondbahn und nicht mehr an die Erde gebunden – genau das, was einem Mond bei zu viel Tempo passiert (Problemfrage).',
+  },
 ];
 
 export type FlightStatus = 'landed' | 'flying' | 'crashed';
@@ -488,6 +515,7 @@ export class Flight {
       this.angle = up;
       this.angVel = 0;
       this.warpIndex = 0;
+      if (speed < 2) this.goal('soft');
       if (body === MOON) {
         this.goal('moonland');
       } else if (this.goals.has('moonland')) {
@@ -539,6 +567,9 @@ export class Flight {
     } else {
       const o = this.orbit(EARTH);
       if (o.bound && o.periapsis > EARTH.atmosphere) this.goal('orbit');
+      if (o.bound && o.apoapsis > 1_000_000 && o.periapsis > EARTH.atmosphere) this.goal('high');
+      if (this.goals.has('soi') && !this.goals.has('moonland')) this.goal('flyby');
+      if (!o.bound && Math.hypot(this.x, this.y) > 2 * MOON_DISTANCE) this.goal('escape');
     }
   }
 

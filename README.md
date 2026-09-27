@@ -45,7 +45,7 @@ npm run dev          # http://localhost:5173
 | **Raketenwerft**       | Rakete aus Kapsel, Tanks, Triebwerken und Stufen bauen (Raketengleichung), starten, Umlaufbahn, Mondlandung und Heimkehr; Bahnvorhersage als Drei-Körper-Rechnung, Hill-Sphäre des Mondes, Hilfe-Pilot                   |
 | **Lunas Sternenreise** | Schleuder-Spiel für Jüngere: sechs Level, echte Schwerkraft, Sterne einsammeln                                                                                                                                           |
 | **Missionen**          | 9 Aufträge mit Sternen, u. a. Echtzeit-Steuerung am instabilen Punkt L1 und eine Trojaner-Mission                                                                                                                        |
-| **Quiz**               | 18 Fragen mit Erklärungen                                                                                                                                                                                                |
+| **Quiz**               | 21 Fragen mit Erklärungen                                                                                                                                                                                                |
 | **Methodik**           | Modellannahmen, Integratorvergleich, Validierung gegen Messwerte, Vorschlag für den Aufbau der Arbeit                                                                                                                    |
 | **Quellen & Formeln**  | Formelsammlung und Literatur                                                                                                                                                                                             |
 

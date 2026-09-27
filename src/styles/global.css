@@ -2583,3 +2583,27 @@ details.section .section-body {
   color: var(--ink);
   width: 160px;
 }
+
+.glossary {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.glossary-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.glossary dt {
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+
+.glossary dd {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  line-height: 1.5;
+}

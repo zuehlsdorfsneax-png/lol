@@ -184,4 +184,28 @@ describe('Flug', () => {
     expect(f.mass).toBeLessThan(mass / 2);
     expect(f.debris).toHaveLength(1);
   });
+
+  it('Flucht aus dem Erde-Mond-System wird erkannt', () => {
+    const f = new Flight(['kapsel', 'tank-s', 'falke']);
+    f.status = 'flying';
+    f.landedOn = null;
+    f.x = -3 * MOON_DISTANCE;
+    f.y = 0;
+    f.vx = -3000;
+    f.vy = 0;
+    fly(f, 1);
+    expect(f.goals.has('escape')).toBe(true);
+  });
+
+  it('eine sanfte Landung zählt als butterweich', () => {
+    const f = new Flight(['kapsel', 'tank-s', 'falke']);
+    f.status = 'flying';
+    f.landedOn = null;
+    f.y = EARTH.radius + 0.05;
+    f.vy = -0.5;
+    f.throttle = 0;
+    fly(f, 2);
+    expect(f.status).toBe('landed');
+    expect(f.goals.has('soft')).toBe(true);
+  });
 });

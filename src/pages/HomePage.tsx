@@ -246,7 +246,7 @@ export function HomePage() {
           </a>
           <a class="tool-card" href="#quiz">
             <h3>Quiz</h3>
-            <p class="small muted">18 Fragen zu allen Kapiteln mit Erklärungen.</p>
+            <p class="small muted">21 Fragen zu allen Kapiteln mit Erklärungen.</p>
           </a>
           <a class="tool-card" href="#methodik">
             <h3>Methodik & Validierung</h3>
