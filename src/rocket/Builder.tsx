@@ -3,7 +3,8 @@ import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { Icon } from '../ui/Icon';
-import { drawPart, drawRocket } from './draw';
+import { PAINTS, drawPart, drawRocket, setPaint } from './draw';
+import { GOALS, RANKS, goalPoints, rankFor } from './flight';
 import {
   MAX_PARTS,
   PARTS,
@@ -160,13 +161,20 @@ function Preview({
 
 export function Builder({
   design,
+  goals,
+  paint,
+  onPaint,
   onChange,
   onLaunch,
 }: {
   design: Design;
+  goals: readonly string[];
+  paint: string;
+  onPaint: (id: string) => void;
   onChange: (d: Design) => void;
   onLaunch: () => void;
 }) {
+  setPaint(paint);
   const [selected, setSelected] = useState(-1);
   const [hangar, setHangar] = useState<Record<string, string[]>>(
     () => progressStore.load().rocketHangar ?? {},
@@ -450,6 +458,88 @@ export function Builder({
           </details>
         </section>
       </div>
+      <MissionControl goals={goals} paint={paint} onPaint={onPaint} />
     </div>
+  );
+}
+
+/** Rang, Punkte, alle Ziele und die freigeschalteten Lackierungen. */
+function MissionControl({
+  goals,
+  paint,
+  onPaint,
+}: {
+  goals: readonly string[];
+  paint: string;
+  onPaint: (id: string) => void;
+}) {
+  const points = goalPoints(goals);
+  const rank = rankFor(points);
+  const prev = RANKS[rank.index]!.points;
+  const progress = rank.next === null ? 1 : (points - prev) / (rank.next - prev);
+  const groups = ['Erde', 'Station', 'Mond', 'Planeten', 'Können'] as const;
+  return (
+    <section class="mission-control" aria-labelledby="missionskontrolle">
+      <div class="mc-head">
+        <div>
+          <h3 id="missionskontrolle">Missionskontrolle</h3>
+          <p class="small muted">
+            Jedes erreichte Ziel bringt Punkte. Mit Punkten steigst du im Rang auf – bis zur{' '}
+            {RANKS[RANKS.length - 1]!.title} – und schaltest neue Lackierungen frei.
+          </p>
+        </div>
+        <div class="mc-rank">
+          <strong>{rank.title}</strong>
+          <span>
+            {points} Punkte
+            {rank.next !== null ? ` · nächster Rang ab ${rank.next}` : ' · höchster Rang!'}
+          </span>
+          <div class="dv-bar" aria-hidden="true">
+            <div class="dv-fill" style={{ width: `${Math.min(100, progress * 100)}%` }} />
+          </div>
+        </div>
+      </div>
+      <div class="mc-goals">
+        {groups.map((g) => (
+          <div key={g} class="mc-group">
+            <h4>{g}</h4>
+            <ul>
+              {GOALS.filter((q) => q.group === g).map((q) => (
+                <li key={q.id} class={goals.includes(q.id) ? 'done' : ''} title={q.text}>
+                  <span aria-hidden="true">{goals.includes(q.id) ? '★' : '☆'}</span> {q.title}
+                  <span class="pts">{q.points}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div class="mc-paints" role="radiogroup" aria-label="Lackierung">
+        <span class="small muted">Lackierung:</span>
+        {PAINTS.map((p) => {
+          const locked = points < p.points;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              role="radio"
+              aria-checked={paint === p.id}
+              class={`paint ${paint === p.id ? 'on' : ''}`}
+              disabled={locked}
+              title={locked ? `Ab ${p.points} Punkten` : p.name}
+              onClick={() => onPaint(p.id)}
+            >
+              <span
+                class="swatch"
+                style={{
+                  background: `linear-gradient(90deg, ${p.metal[0]}, ${p.metal[1]} 45%, ${p.stripe} 46%, ${p.stripe} 60%, ${p.band} 61%)`,
+                }}
+              />
+              {locked ? `🔒 ${p.name} · ${p.points}` : p.name}
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }

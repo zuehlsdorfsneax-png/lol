@@ -15,30 +15,41 @@ export function RocketGame() {
   const [design, setDesign] = useState<Design>(loadDesign);
   const [flying, setFlying] = useState(false);
   const [goals, setGoals] = useState<string[]>(() => progressStore.load().rocketGoals);
+  const [paint, setPaintId] = useState<string>(() => progressStore.load().rocketPaint);
 
   const change = (d: Design): void => {
     setDesign(d);
     progressStore.update((p) => ({ ...p, rocketDesign: d }));
   };
 
+  const choosePaint = (id: string): void => {
+    setPaintId(id);
+    progressStore.update((p) => ({ ...p, rocketPaint: id }));
+  };
+
   const reachGoal = (id: GoalId): void => {
-    if (goals.includes(id)) return;
-    const next = [...goals, id];
-    setGoals(next);
-    progressStore.update((p) => ({
-      ...p,
-      rocketGoals: Array.from(new Set([...p.rocketGoals, id])),
-    }));
+    setGoals((old) => (old.includes(id) ? old : [...old, id]));
+    progressStore.update((p) =>
+      p.rocketGoals.includes(id) ? p : { ...p, rocketGoals: [...p.rocketGoals, id] },
+    );
   };
 
   return flying ? (
     <FlightScreen
       design={design}
+      paint={paint}
       knownGoals={goals}
       onGoal={reachGoal}
       onExit={() => setFlying(false)}
     />
   ) : (
-    <Builder design={design} onChange={change} onLaunch={() => setFlying(true)} />
+    <Builder
+      design={design}
+      goals={goals}
+      paint={paint}
+      onPaint={choosePaint}
+      onChange={change}
+      onLaunch={() => setFlying(true)}
+    />
   );
 }

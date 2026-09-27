@@ -13,6 +13,8 @@ export interface Progress {
   rocketGoals: string[];
   /** Eigene, benannte Raketen im Hangar. */
   rocketHangar: Record<string, string[]>;
+  /** Gewählte Lackierung der Raketen. */
+  rocketPaint: string;
 }
 
 export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
@@ -23,6 +25,7 @@ export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
   rocketDesign: null,
   rocketGoals: [],
   rocketHangar: {},
+  rocketPaint: 'klassisch',
 });
 
 export function recordStars(id: string, stars: number, best: string): Progress {

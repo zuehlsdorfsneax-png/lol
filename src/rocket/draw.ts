@@ -2,19 +2,92 @@ import { smoothPath } from '../sim/view';
 import { part, segments, type PartDef } from './parts';
 import type { Flight, Prediction } from './flight';
 import {
+  BODIES,
   EARTH,
+  JUPITER,
+  MARS,
   MOON,
-  MOON_DISTANCE,
-  MOON_HILL,
-  airDensity,
-  moonAngle,
-  moonPosition,
+  PHOBOS,
+  STATION,
+  SUN,
+  VENUS,
+  bodyState,
+  orbitAngle,
+  stationState,
   type Body,
 } from './world';
 
 // ------------------------------------------------------------------ Bauteile
 
-const METAL = ['#c9d1dc', '#ffffff', '#aeb7c4'];
+export interface Paint {
+  id: string;
+  name: string;
+  /** Punkte, ab denen die Lackierung freigeschaltet ist. */
+  points: number;
+  metal: [string, string, string];
+  stripe: string;
+  band: string;
+}
+
+export const PAINTS: readonly Paint[] = [
+  {
+    id: 'klassisch',
+    name: 'Klassisch',
+    points: 0,
+    metal: ['#c9d1dc', '#ffffff', '#aeb7c4'],
+    stripe: '#e0503a',
+    band: '#2f5fbf',
+  },
+  {
+    id: 'nacht',
+    name: 'Nachtflug',
+    points: 50,
+    metal: ['#1f2a44', '#3b4d78', '#18203a'],
+    stripe: '#38bdf8',
+    band: '#a78bfa',
+  },
+  {
+    id: 'feuer',
+    name: 'Feuervogel',
+    points: 120,
+    metal: ['#d9480f', '#ff8a3d', '#b83a0a'],
+    stripe: '#ffd43b',
+    band: '#1b1b1b',
+  },
+  {
+    id: 'arktis',
+    name: 'Arktis',
+    points: 250,
+    metal: ['#d7f0f7', '#ffffff', '#b5dbe8'],
+    stripe: '#0ea5a5',
+    band: '#155e75',
+  },
+  {
+    id: 'gold',
+    name: 'Goldrakete',
+    points: 450,
+    metal: ['#b8860b', '#ffe08a', '#8a6508'],
+    stripe: '#2b2b2b',
+    band: '#7c2d12',
+  },
+  {
+    id: 'galaxie',
+    name: 'Galaxie',
+    points: 700,
+    metal: ['#312e81', '#7c3aed', '#1e1b4b'],
+    stripe: '#f472b6',
+    band: '#22d3ee',
+  },
+];
+
+let paint: Paint = PAINTS[0]!;
+let METAL: string[] = paint.metal;
+
+/** Lackierung für alle folgenden Zeichnungen wählen. */
+export function setPaint(id: string): void {
+  paint = PAINTS.find((p) => p.id === id) ?? PAINTS[0]!;
+  METAL = paint.metal;
+}
 
 function hGrad(ctx: CanvasRenderingContext2D, w: number, stops: string[]): CanvasGradient {
   const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
@@ -39,11 +112,11 @@ export function drawPart(
       ctx.fillStyle = hGrad(ctx, w, METAL);
       ctx.fillRect(-w / 2, y0, w, h);
       ctx.strokeRect(-w / 2, y0, w, h);
-      ctx.fillStyle = '#e0503a';
+      ctx.fillStyle = paint.stripe;
       ctx.fillRect(-w / 2, y0 + h - 0.28, w, 0.28);
       ctx.fillRect(-w / 2, y0, w, 0.28);
       if (h > 4) {
-        ctx.fillStyle = '#2f5fbf';
+        ctx.fillStyle = paint.band;
         ctx.fillRect(-w / 2, y0 + h * 0.5 - 0.35, w, 0.7);
       }
       // Glanzlinie
@@ -62,7 +135,7 @@ export function drawPart(
       ctx.fillStyle = hGrad(ctx, w, METAL);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = '#e0503a';
+      ctx.fillStyle = paint.stripe;
       ctx.fillRect(-w / 2, y0, w, 0.2);
       ctx.beginPath();
       ctx.arc(0, y0 + h * 0.45, w * 0.13, 0, Math.PI * 2);
@@ -134,7 +207,7 @@ export function drawPart(
         ctx.translate(cx, 0);
         ctx.fillRect(-bw / 2, foot + 0.6, bw, top - foot - 0.6);
         ctx.strokeRect(-bw / 2, foot + 0.6, bw, top - foot - 0.6);
-        ctx.fillStyle = '#e0503a';
+        ctx.fillStyle = paint.stripe;
         ctx.fillRect(-bw / 2, top - 0.9, bw, 0.25);
         ctx.beginPath();
         ctx.moveTo(-bw / 2, top);
@@ -565,45 +638,230 @@ function drawLaunchPad(ctx: CanvasRenderingContext2D, v: View): void {
   ctx.restore();
 }
 
-function drawMoon(ctx: CanvasRenderingContext2D, v: View, t: number): void {
-  const [mx, my] = moonPosition(t);
-  const R = MOON.radius;
-  ctx.beginPath();
-  if (!sectorPath(ctx, v, mx, my, R, 0, 2 * Math.PI)) return;
-  ctx.fillStyle = '#a3a8b0';
-  ctx.fill();
-  ctx.save();
-  ctx.clip();
-  const rot = moonAngle(t);
+/** Mondkrater (auch für Phobos): Winkel (Grad, mitrotierend), Abstand, Radius (Anteile). */
+function drawCraters(
+  ctx: CanvasRenderingContext2D,
+  v: View,
+  b: Body,
+  bx: number,
+  by: number,
+  rot: number,
+  color: string,
+): void {
+  const R = b.radius;
   const reach = Math.hypot(v.width, v.height) / v.scale;
   for (const [ang, dist, rad] of CRATERS) {
     const a = rot + (ang * Math.PI) / 180;
-    const cx = mx + dist * R * Math.cos(a);
-    const cy = my + dist * R * Math.sin(a);
+    const cx = bx + dist * R * Math.cos(a);
+    const cy = by + dist * R * Math.sin(a);
     const cr = rad * R;
     if (Math.hypot(cx - v.cx, cy - v.cy) - cr > reach) continue;
-    if (cr * v.scale > 2e6) continue;
+    if (cr * v.scale > 2e6 || cr * v.scale < 0.6) continue;
     const [sx, sy] = toScreen(v, cx, cy);
     ctx.beginPath();
     ctx.arc(sx, sy, cr * v.scale, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(80,86,96,0.35)';
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(sx, sy, cr * v.scale * 0.82, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(60,64,72,0.25)';
+    ctx.arc(sx, sy, cr * v.scale * 0.8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
     ctx.fill();
+  }
+}
+
+/** Farben der Körper: Grundfarbe, Details, Leuchten der Atmosphäre. */
+const LOOK: Record<string, { base: string; detail: string; glow: string | null }> = {
+  sun: { base: '#ffcf4d', detail: '#ffe9a3', glow: 'rgba(255,190,60,' },
+  venus: { base: '#e6c27a', detail: '#f4dcaa', glow: 'rgba(255,210,140,' },
+  moon: { base: '#a3a8b0', detail: 'rgba(80,86,96,0.35)', glow: null },
+  mars: { base: '#c1502a', detail: '#8f3317', glow: 'rgba(255,150,110,' },
+  phobos: { base: '#8a7b6c', detail: 'rgba(60,50,40,0.4)', glow: null },
+  jupiter: { base: '#d8b48a', detail: '#b0764a', glow: 'rgba(240,200,150,' },
+};
+
+/** Zeichnet einen Himmelskörper (außer der Erde, die ihre eigene Funktion hat). */
+function drawBody(ctx: CanvasRenderingContext2D, v: View, b: Body, t: number, minPx = 0): void {
+  if (b === EARTH) {
+    drawEarth(ctx, v);
+    return;
+  }
+  const look = LOOK[b.id]!;
+  const [bx, by] = bodyState(b, t);
+  const [sx, sy] = toScreen(v, bx, by);
+  const rpx = b.radius * v.scale;
+  // Leuchten (Sonne) bzw. Atmosphäre aus der Ferne
+  if (look.glow && rpx < 20_000) {
+    const outer =
+      b === SUN ? Math.max(rpx * 2.4, 26) : rpx + Math.max(3, b.atmosphere * 1.5 * v.scale);
+    if (sx > -outer && sx < v.width + outer && sy > -outer && sy < v.height + outer) {
+      const g = ctx.createRadialGradient(sx, sy, Math.max(rpx * 0.9, 0.5), sx, sy, outer);
+      g.addColorStop(0, `${look.glow}${b === SUN ? 0.9 : 0.45})`);
+      g.addColorStop(1, `${look.glow}0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sx, sy, outer, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  if (rpx < minPx) {
+    ctx.fillStyle = look.base;
+    ctx.beginPath();
+    ctx.arc(sx, sy, minPx, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  ctx.beginPath();
+  if (!sectorPath(ctx, v, bx, by, b.radius, 0, 2 * Math.PI)) return;
+  ctx.fillStyle = look.base;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  const rot = orbitAngle(b, t);
+  if (b === MOON || b === PHOBOS) drawCraters(ctx, v, b, bx, by, rot, look.detail);
+  if (rpx < 20_000 && rpx > 3) {
+    if (b === MARS) {
+      ctx.fillStyle = look.detail;
+      for (const [ang, dist, rad, seed] of CONTINENTS.slice(0, 4)) {
+        const a = (ang * Math.PI) / 180 - (v.up - Math.PI / 2);
+        blob(
+          ctx,
+          sx + dist * rpx * Math.cos(a),
+          sy - dist * rpx * Math.sin(a),
+          rad * rpx * 0.7,
+          seed,
+        );
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy - rpx * 0.93, rpx * 0.35, rpx * 0.12, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx, sy + rpx * 0.95, rpx * 0.25, rpx * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (b === JUPITER || b === VENUS) {
+      const bands = b === JUPITER ? 9 : 5;
+      for (let i = 0; i < bands; i++) {
+        ctx.fillStyle = i % 2 ? look.detail : look.base;
+        ctx.globalAlpha = b === JUPITER ? 0.8 : 0.35;
+        const y0 = sy - rpx + (2 * rpx * i) / bands;
+        ctx.fillRect(sx - rpx, y0 + Math.sin(i * 1.7) * rpx * 0.03, 2 * rpx, (2 * rpx) / bands);
+      }
+      ctx.globalAlpha = 1;
+      if (b === JUPITER) {
+        ctx.fillStyle = '#c0563a';
+        ctx.beginPath();
+        ctx.ellipse(sx + rpx * 0.35, sy + rpx * 0.3, rpx * 0.16, rpx * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (b === SUN) {
+      const g = ctx.createRadialGradient(sx - rpx * 0.2, sy - rpx * 0.2, 0, sx, sy, rpx);
+      g.addColorStop(0, '#fff7d6');
+      g.addColorStop(1, '#ffb52e');
+      ctx.fillStyle = g;
+      ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
+    }
+    if (b !== SUN) {
+      // Schattenseite (von der Sonne abgewandt)
+      const [sunX, sunY] = bodyState(SUN, t);
+      const [px, py] = toScreen(v, sunX, sunY);
+      const dx = sx - px;
+      const dy = sy - py;
+      const d = Math.hypot(dx, dy) || 1;
+      const g = ctx.createLinearGradient(
+        sx - (dx / d) * rpx,
+        sy - (dy / d) * rpx,
+        sx + (dx / d) * rpx,
+        sy + (dy / d) * rpx,
+      );
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(0.55, 'rgba(0,0,0,0.05)');
+      g.addColorStop(1, 'rgba(2,4,12,0.55)');
+      ctx.fillStyle = g;
+      ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
+    }
   }
   ctx.restore();
 }
 
+// ------------------------------------------------------------------ Raumstation
+
+function drawStation(ctx: CanvasRenderingContext2D, v: View, t: number, minPx: number): void {
+  const [x, y, vx, vy] = stationState(t);
+  const [sx, sy] = toScreen(v, x, y);
+  const margin = 60 * Math.max(v.scale, 1);
+  if (sx < -margin || sx > v.width + margin || sy < -margin || sy > v.height + margin) return;
+  const axis = Math.atan2(vy, vx);
+  const size = 40 * v.scale;
+  if (size < minPx) {
+    // Nur ein Symbol, wenn die Station winzig wäre.
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.fillStyle = '#e5e7eb';
+    ctx.fillRect(-5, -1.5, 10, 3);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(-2, -7, 4, 14);
+    ctx.restore();
+    return;
+  }
+  ctx.save();
+  local(ctx, v, x, y, axis);
+  ctx.lineWidth = 0.15;
+  ctx.strokeStyle = 'rgba(20,26,40,0.6)';
+  // Gitterträger mit Solarflügeln
+  ctx.fillStyle = '#9aa3b2';
+  ctx.fillRect(-22, -1, 44, 2);
+  for (const sgn of [-1, 1]) {
+    for (const off of [8, 15]) {
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillRect(sgn * off - 2.5, -9, 5, 7.5);
+      ctx.fillRect(sgn * off - 2.5, 1.5, 5, 7.5);
+      ctx.strokeStyle = 'rgba(147,197,253,0.6)';
+      for (let k = 1; k < 5; k++) {
+        ctx.beginPath();
+        ctx.moveTo(sgn * off - 2.5, -9 + k * 1.5);
+        ctx.lineTo(sgn * off + 2.5, -9 + k * 1.5);
+        ctx.moveTo(sgn * off - 2.5, 1.5 + k * 1.5);
+        ctx.lineTo(sgn * off + 2.5, 1.5 + k * 1.5);
+        ctx.stroke();
+      }
+    }
+  }
+  // Module entlang der Flugrichtung
+  const modules: [number, number, number][] = [
+    [-14, -6, 3.2],
+    [-6, 4, 4],
+    [4, 13, 3.4],
+  ];
+  for (const [a, b2, w] of modules) {
+    ctx.fillStyle = hGrad(ctx, w, METAL_STATION);
+    ctx.fillRect(-w / 2, a, w, b2 - a);
+    ctx.strokeRect(-w / 2, a, w, b2 - a);
+  }
+  // Andockstutzen vorn
+  ctx.fillStyle = '#f2c230';
+  ctx.fillRect(-1.2, 13, 2.4, STATION.port - 13);
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(-1.4, STATION.port - 0.4, 2.8, 0.6);
+  ctx.restore();
+}
+
+const METAL_STATION = ['#c9d1dc', '#f5f7fa', '#9aa3b2'];
+
 // ------------------------------------------------------------------ Flugansicht
 
+/** Himmelsfarben je Atmosphäre: oben, unten. */
+const SKY: Record<string, [string, string]> = {
+  earth: ['#3d7fd6', '#a6d2ff'],
+  mars: ['#b98a64', '#e8c29a'],
+  venus: ['#b8792b', '#f0b35a'],
+  jupiter: ['#8a6a4a', '#d8b48a'],
+};
+
 export function flightView(f: Flight, width: number, height: number, scale: number): View {
-  const ref = f.refBody();
-  const c = ref === MOON ? f.moon() : { x: 0, y: 0 };
+  const near = f.nearest();
+  const up0 = near.altitude < near.body.radius * 3 ? near.body : f.refBody();
+  const c = f.state(up0);
   const up = Math.atan2(f.y - c.y, f.x - c.x);
-  // Kamera auf die Raketenmitte.
-  const h = f.segs.reduce((s, seg) => s + seg.parts.reduce((a, id) => a + part(id).height, 0), 0);
+  const h = f.length;
   return {
     width,
     height,
@@ -618,19 +876,27 @@ export function flightView(f: Flight, width: number, height: number, scale: numb
 
 export function drawFlight(ctx: CanvasRenderingContext2D, f: Flight, v: View, time: number): void {
   const { width: W, height: H } = v;
-  const hE = f.altitudeEarth;
-  const nearEarth = f.refBody() === EARTH;
-  const k = nearEarth ? Math.min(1, Math.max(0, hE / 45_000)) : 1;
+  const air = f.air();
+  const colors = SKY[air.body.id];
+  const inAir = colors && air.altitude < air.body.atmosphere * 1.1;
+  const k = inAir ? Math.min(1, Math.max(0, air.altitude / (air.body.atmosphere * 1.1))) : 1;
+  const top = colors ?? ['#03050c', '#03050c'];
   const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, mix('#3d7fd6', '#03050c', Math.pow(k, 0.5)));
-  sky.addColorStop(1, mix('#a6d2ff', '#060a16', Math.pow(k, 0.7)));
+  sky.addColorStop(0, mix(top[0], '#03050c', Math.pow(k, 0.5)));
+  sky.addColorStop(1, mix(top[1], '#060a16', Math.pow(k, 0.7)));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
-  drawStars(ctx, v, nearEarth ? Math.min(1, Math.max(0, (hE - 12_000) / 25_000)) : 1, -v.up);
+  drawStars(ctx, v, inAir ? Math.min(1, Math.max(0, (k - 0.3) / 0.6)) : 1, -v.up);
 
-  drawEarth(ctx, v);
+  // Ferne Körper zuerst, nahe zuletzt.
+  const dist = (b: Body): number => {
+    const [bx, by] = bodyState(b, f.t);
+    return Math.hypot(bx - f.x, by - f.y);
+  };
+  const order = [...BODIES].sort((a, b) => dist(b) - dist(a));
+  for (const b of order) drawBody(ctx, v, b, f.t, b === SUN ? 3 : 1.2);
   drawLaunchPad(ctx, v);
-  drawMoon(ctx, v, f.t);
+  drawStation(ctx, v, f.t, 6);
 
   // Trümmer
   for (const d of f.debris) {
@@ -663,21 +929,47 @@ export function drawFlight(ctx: CanvasRenderingContext2D, f: Flight, v: View, ti
 
   if (f.status !== 'crashed') {
     const parts = f.segs.flatMap((s) => s.parts);
-    const heightM = parts.reduce((s, id) => s + part(id).height, 0);
+    const heightM = f.length;
     const minPx = 34;
     const scale = Math.max(v.scale, minPx / heightM);
     ctx.save();
     local(ctx, v, f.x, f.y, f.angle, scale);
     drawRocket(ctx, parts, {
       throttle: f.thrusting ? f.throttle : 0,
-      air: airDensity(hE),
+      air: air.rho,
       chuteOpen: f.chute === 'open' ? f.chuteOpen : 0,
       time,
     });
+    if (f.rcs && (f.translate.x || f.translate.y) && f.status === 'flying')
+      drawRcsPuffs(ctx, f, heightM, time);
     ctx.restore();
     drawHeating(ctx, f, v, heightM * scale, time);
     drawVelocityMarkers(ctx, f, v, heightM * scale);
+    drawTargetMarker(ctx, f, v, heightM * scale);
   }
+}
+
+/** Kleine Gaswolken der Lagekontrolldüsen. */
+function drawRcsPuffs(ctx: CanvasRenderingContext2D, f: Flight, h: number, time: number): void {
+  ctx.fillStyle = 'rgba(235,240,255,0.8)';
+  const flick = 0.6 + 0.4 * Math.abs(Math.sin(time * 40));
+  const y = h * 0.8;
+  const puff = (x: number, yy: number, dx: number, dy: number): void => {
+    ctx.beginPath();
+    ctx.ellipse(
+      x + dx * 0.9,
+      yy + dy * 0.9,
+      0.5 + Math.abs(dx) * 0.6 * flick,
+      0.5 + Math.abs(dy) * 0.6 * flick,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  };
+  // Die Düsen blasen entgegen der gewünschten Bewegung.
+  if (f.translate.x) puff(-Math.sign(f.translate.x) * 1.4, y, -Math.sign(f.translate.x), 0);
+  if (f.translate.y) puff(0, f.translate.y > 0 ? -0.3 : h + 0.3, 0, -Math.sign(f.translate.y));
 }
 
 /**
@@ -691,18 +983,21 @@ function drawHeating(
   rocketPx: number,
   time: number,
 ): void {
-  const rho = airDensity(f.altitudeEarth);
-  const speed = Math.hypot(f.vx, f.vy);
+  const air = f.air();
+  const rho = air.rho;
+  const bv = f.state(air.body);
+  const rvx = f.vx - bv.vx;
+  const rvy = f.vy - bv.vy;
+  const speed = Math.hypot(rvx, rvy);
   if (rho <= 0 || speed < 280 || f.status !== 'flying') return;
   const [rx, ry] = toScreen(v, f.x, f.y);
-  const [ax, ay] = toScreen(v, f.x + f.vx, f.y + f.vy);
+  const [ax, ay] = toScreen(v, f.x + rvx, f.y + rvy);
   const len = Math.hypot(ax - rx, ay - ry) || 1;
   const ux = (ax - rx) / len;
   const uy = (ay - ry) / len;
   const [cx, cy] = toScreen(v, v.cx, v.cy);
   const r = Math.max(18, rocketPx * 0.45);
   ctx.save();
-  // Dampfkegel um Mach 1 (≈ 340 m/s)
   const mach = Math.max(0, 1 - Math.abs(speed - 345) / 70) * Math.min(1, rho / 0.2);
   if (mach > 0.02) {
     ctx.globalAlpha = 0.5 * mach;
@@ -729,18 +1024,31 @@ function drawHeating(
   ctx.restore();
 }
 
-/** Kleine Marker für Flugrichtung (grün) und Gegenrichtung (orange) um die Rakete. */
+/** Richtungsmarker (grün = Flugrichtung, orange = Gegenrichtung) relativ zum Bezug. */
 function drawVelocityMarkers(
   ctx: CanvasRenderingContext2D,
   f: Flight,
   v: View,
   rocketPx: number,
 ): void {
-  const rel = f.relative();
-  const speed = Math.hypot(rel.vx, rel.vy);
-  if (speed < 2 || f.status !== 'flying') return;
+  if (f.status !== 'flying') return;
+  // In Zielnähe zählt die Geschwindigkeit relativ zur Station (wie beim echten Andocken).
+  let rvx: number;
+  let rvy: number;
+  const ti = f.targetInfo();
+  if (f.target === 'station' && ti && ti.distance < 20_000) {
+    const [, , svx, svy] = stationState(f.t);
+    rvx = f.vx - svx;
+    rvy = f.vy - svy;
+  } else {
+    const rel = f.relative();
+    rvx = rel.vx;
+    rvy = rel.vy;
+  }
+  const speed = Math.hypot(rvx, rvy);
+  if (speed < 0.2) return;
   const [rx, ry] = toScreen(v, f.x, f.y);
-  const [ax, ay] = toScreen(v, f.x + rel.vx, f.y + rel.vy);
+  const [ax, ay] = toScreen(v, f.x + rvx / speed, f.y + rvy / speed);
   const len = Math.hypot(ax - rx, ay - ry) || 1;
   const ux = (ax - rx) / len;
   const uy = (ay - ry) / len;
@@ -767,9 +1075,48 @@ function drawVelocityMarkers(
   ctx.stroke();
 }
 
+/** Violette Raute zeigt die Richtung zum Ziel. */
+function drawTargetMarker(
+  ctx: CanvasRenderingContext2D,
+  f: Flight,
+  v: View,
+  rocketPx: number,
+): void {
+  if (!f.target || f.status !== 'flying') return;
+  let tx: number;
+  let ty: number;
+  if (f.target === 'station') [tx, ty] = stationState(f.t);
+  else
+    [tx, ty] = bodyState(
+      BODIES.find((b) => b.id === f.target)!,
+      f.t,
+    );
+  const [cx, cy] = toScreen(v, v.cx, v.cy);
+  const [gx, gy] = toScreen(v, tx, ty);
+  const d = Math.hypot(gx - cx, gy - cy);
+  if (d < 1) return;
+  const dist = Math.max(80, rocketPx / 2 + 56);
+  if (d < dist) return;
+  const px = cx + ((gx - cx) / d) * dist;
+  const py = cy + ((gy - cy) / d) * dist;
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(Math.PI / 4);
+  ctx.strokeStyle = '#c084fc';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-6, -6, 12, 12);
+  ctx.restore();
+}
+
 // ------------------------------------------------------------------ Karte
 
-export type MapFocus = 'earth' | 'moon' | 'rocket';
+export type MapFocus = 'rocket' | 'ref' | 'sun' | 'venus' | 'earth' | 'moon' | 'mars' | 'jupiter';
+
+export function mapCenter(f: Flight, focus: MapFocus): [number, number] {
+  if (focus === 'rocket') return [f.x, f.y];
+  const b = focus === 'ref' ? f.refBody() : BODIES.find((q) => q.id === focus)!;
+  return bodyState(b, f.t).slice(0, 2) as [number, number];
+}
 
 export function mapView(
   f: Flight,
@@ -780,10 +1127,7 @@ export function mapView(
   panX = 0,
   panY = 0,
 ): View {
-  let cx = 0;
-  let cy = 0;
-  if (focus === 'moon') [cx, cy] = moonPosition(f.t);
-  if (focus === 'rocket') [cx, cy] = [f.x, f.y];
+  const [cx, cy] = mapCenter(f, focus);
   return {
     width,
     height,
@@ -796,15 +1140,22 @@ export function mapView(
   };
 }
 
-/** Passender Maßstab, damit die Bahn ins Bild passt. */
+/** Passender Maßstab, damit die Bahn bzw. der gewählte Körper ins Bild passt. */
 export function fitMapScale(f: Flight, width: number, height: number, focus: MapFocus): number {
-  const o = f.orbit();
-  const body = o.body;
-  let r = Math.max(o.r, body.radius * 1.4);
-  if (o.bound && Number.isFinite(o.apoapsis)) r = Math.max(r, o.apoapsis + body.radius);
-  if (focus === 'earth' && !o.bound) r = Math.max(r, MOON_DISTANCE * 1.1);
-  if (focus === 'moon') r = Math.max(o.body === MOON ? r : 0, MOON_HILL * 1.1);
-  return (0.42 * Math.min(width, height)) / Math.min(r, MOON_DISTANCE * 1.3);
+  const half = 0.42 * Math.min(width, height);
+  const ref = f.refBody();
+  const b = focus === 'ref' || focus === 'rocket' ? ref : BODIES.find((q) => q.id === focus)!;
+  let r: number;
+  if (b === ref) {
+    const o = f.orbit(ref);
+    r = Math.max(o.r, ref.radius * 1.4);
+    if (o.bound && Number.isFinite(o.apoapsis)) r = Math.max(r, o.apoapsis + ref.radius);
+    if (!o.bound) r = Math.max(r * 2, Math.min(ref.hill, r * 20));
+    if (ref === SUN) r = Math.max(o.r * 1.3, MARS.distance * 1.1);
+  } else if (b === SUN) r = MARS.distance * 1.15;
+  else r = Math.min(b.hill, b.radius * 60) * 1.2;
+  if (focus === 'earth' && ref === EARTH && f.goals.size > 3) r = Math.max(r, MOON.distance * 1.1);
+  return half / Math.max(r, 1);
 }
 
 function label(
@@ -828,9 +1179,21 @@ function label(
   ctx.fillText(text, x, y);
 }
 
-function km(m: number): string {
+export function km(m: number): string {
   if (!Number.isFinite(m)) return '∞';
+  if (Math.abs(m) >= 1e9)
+    return `${(m / 1e9).toLocaleString('de-DE', { maximumFractionDigits: 2 })} Mio. km`;
   return `${Math.round(m / 1000).toLocaleString('de-DE')} km`;
+}
+
+function circle(ctx: CanvasRenderingContext2D, v: View, x: number, y: number, r: number): void {
+  const [sx, sy] = toScreen(v, x, y);
+  const rp = r * v.scale;
+  if (rp < 2 || rp > 2e5) return;
+  if (sx + rp < 0 || sx - rp > v.width || sy + rp < 0 || sy - rp > v.height) return;
+  ctx.beginPath();
+  ctx.arc(sx, sy, rp, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 export function drawMap(
@@ -843,140 +1206,74 @@ export function drawMap(
   ctx.fillStyle = '#04060d';
   ctx.fillRect(0, 0, W, H);
   drawStars(ctx, v, 0.6, 0);
+  const t = f.t;
 
-  // Mondbahn
-  const [ex, ey] = toScreen(v, 0, 0);
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+  // Bahnen der Körper um ihren Mutterkörper
   ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(ex, ey, MOON_DISTANCE * v.scale, 0, Math.PI * 2);
-  ctx.stroke();
+  for (const b of BODIES) {
+    if (!b.parent) continue;
+    const [px, py] = bodyState(
+      BODIES.find((q) => q.id === b.parent)!,
+      t,
+    );
+    ctx.strokeStyle = b.parent === 'sun' ? 'rgba(255,220,150,0.16)' : 'rgba(255,255,255,0.14)';
+    circle(ctx, v, px, py, b.distance);
+  }
+  // Bahn der Station
+  ctx.strokeStyle = f.target === 'station' ? 'rgba(192,132,252,0.55)' : 'rgba(192,132,252,0.22)';
+  circle(ctx, v, 0, 0, STATION.radius);
 
-  drawEarth(ctx, v);
-  if (EARTH.radius * v.scale < 3) {
-    ctx.fillStyle = '#4b8fe8';
-    ctx.beginPath();
-    ctx.arc(ex, ey, 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  drawMoon(ctx, v, f.t);
-  const [mx, my] = moonPosition(f.t);
-  const [msx, msy] = toScreen(v, mx, my);
-  if (MOON.radius * v.scale < 2.5) {
-    ctx.fillStyle = '#c3c7cf';
-    ctx.beginPath();
-    ctx.arc(msx, msy, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // Hill-Sphäre des Mondes
-  const hill = MOON_HILL * v.scale;
-  if (hill > 6 && hill < 40_000) {
-    ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = 'rgba(167,139,250,0.7)';
-    ctx.beginPath();
-    ctx.arc(msx, msy, hill, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    if (hill > 40)
-      label(ctx, 'Hill-Sphäre des Mondes', msx + hill * 0.72, msy - hill * 0.72, '#c4b5fd');
-  }
-  label(ctx, 'Erde', ex + Math.max(6, EARTH.radius * v.scale) + 4, ey, '#9cc3ff');
-  label(ctx, 'Mond', msx + Math.max(4, MOON.radius * v.scale) + 4, msy, '#d6d9df');
-
-  // Vorhersage
-  if (pred && pred.n > 1) {
-    const xs = new Float64Array(pred.n);
-    const ys = new Float64Array(pred.n);
-    for (let i = 0; i < pred.n; i++) {
-      let x = pred.xs[i]!;
-      let y = pred.ys[i]!;
-      if (pred.ref === 'moon') {
-        const [px, py] = moonPosition(pred.ts[i]!);
-        x += mx - px;
-        y += my - py;
-      }
-      [xs[i], ys[i]] = toScreen(v, x, y);
-    }
-    ctx.strokeStyle = '#5eead4';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    smoothPath(ctx, xs, ys, 0, pred.n - 1);
-    ctx.stroke();
-    // Richtungspfeile entlang der Bahn (etwa alle 140 Pixel)
-    ctx.fillStyle = '#5eead4';
-    let run = 0;
-    for (let i = 1; i < pred.n; i++) {
-      const dx = xs[i]! - xs[i - 1]!;
-      const dy = ys[i]! - ys[i - 1]!;
-      run += Math.hypot(dx, dy);
-      if (run < 140) continue;
-      run = 0;
-      const a = Math.atan2(dy, dx);
-      ctx.save();
-      ctx.translate(xs[i]!, ys[i]!);
-      ctx.rotate(a);
-      ctx.beginPath();
-      ctx.moveTo(6, 0);
-      ctx.lineTo(-4, -5);
-      ctx.lineTo(-4, 5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-    const mark = (i: number, text: string, color: string): void => {
-      if (i < 0) return;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(xs[i]!, ys[i]!, 4.5, 0, Math.PI * 2);
-      ctx.fill();
-      label(ctx, text, xs[i]! + 8, ys[i]! - 8, color);
-    };
-    const refBody: Body = pred.ref === 'moon' ? MOON : EARTH;
-    const alt = (i: number): number => {
-      let cx = 0;
-      let cy = 0;
-      if (pred.ref === 'moon') [cx, cy] = moonPosition(pred.ts[i]!);
-      return Math.hypot(pred.xs[i]! - cx, pred.ys[i]! - cy) - refBody.radius;
-    };
-    if (pred.high >= 0) mark(pred.high, `Ap ${km(alt(pred.high))}`, '#fcd34d');
-    if (pred.low >= 0) mark(pred.low, `Pe ${km(alt(pred.low))}`, '#fcd34d');
-    if (pred.impact) {
-      const i = pred.n - 1;
-      ctx.strokeStyle = '#f87171';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(xs[i]! - 6, ys[i]! - 6);
-      ctx.lineTo(xs[i]! + 6, ys[i]! + 6);
-      ctx.moveTo(xs[i]! + 6, ys[i]! - 6);
-      ctx.lineTo(xs[i]! - 6, ys[i]! + 6);
-      ctx.stroke();
+  // Hill-Sphären als gestrichelte Kreise
+  ctx.setLineDash([5, 5]);
+  for (const b of BODIES) {
+    if (b === SUN || b === PHOBOS) continue;
+    const [bx, by] = bodyState(b, t);
+    const hill = b.hill * v.scale;
+    if (hill < 8 || hill > 40_000) continue;
+    ctx.strokeStyle = 'rgba(167,139,250,0.55)';
+    circle(ctx, v, bx, by, b.hill);
+    const [sx, sy] = toScreen(v, bx, by);
+    if (hill > 50)
       label(
         ctx,
-        pred.impact === MOON ? 'Einschlag Mond' : 'Aufschlag Erde',
-        xs[i]! + 10,
-        ys[i]! + 10,
-        '#fca5a5',
+        `Hill-Sphäre ${b.id === 'moon' ? 'des Mondes' : b.id === 'earth' ? 'der Erde' : `von ${b.name}`}`,
+        sx + hill * 0.72,
+        sy - hill * 0.72,
+        '#c4b5fd',
       );
-    }
-    if (pred.encounter) {
-      const [gx, gy] = moonPosition(pred.encounter.t);
-      const [sx, sy] = toScreen(v, gx, gy);
-      ctx.setLineDash([3, 4]);
-      ctx.strokeStyle = 'rgba(214,217,223,0.8)';
+  }
+  ctx.setLineDash([]);
+
+  for (const b of BODIES) {
+    drawBody(ctx, v, b, t, b === SUN ? 5 : 2.5);
+    if (b === EARTH && EARTH.radius * v.scale < 2.5) {
+      const [ex, ey] = toScreen(v, 0, 0);
+      ctx.fillStyle = '#4b8fe8';
       ctx.beginPath();
-      ctx.arc(sx, sy, Math.max(5, MOON.radius * v.scale), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      label(
-        ctx,
-        `Mond bei Ankunft · ${km(pred.encounter.distance - MOON.radius)} über dem Boden`,
-        sx + 10,
-        sy + 16,
-        '#e5e7eb',
-      );
+      ctx.arc(ex, ey, 2.5, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
+  // Namen der Körper (Monde nur, wenn sie sich vom Planeten abheben)
+  for (const b of BODIES) {
+    const [bx, by] = bodyState(b, t);
+    if (b.parent && b.parent !== 'sun') {
+      const sep = b.distance * v.scale;
+      if (sep < 18) continue;
+    }
+    const [sx, sy] = toScreen(v, bx, by);
+    if (sx < -40 || sx > W + 40 || sy < -20 || sy > H + 20) continue;
+    label(
+      ctx,
+      b.name,
+      sx + Math.max(5, b.radius * v.scale) + 4,
+      sy,
+      b === EARTH ? '#9cc3ff' : '#d6d9df',
+    );
+  }
+  drawStation(ctx, v, t, 9);
+
+  if (pred && pred.n > 1) drawPrediction(ctx, f, v, pred);
 
   for (const d of f.debris) {
     const [sx, sy] = toScreen(v, d.x, d.y);
@@ -987,10 +1284,9 @@ export function drawMap(
   // Rakete als Pfeil
   if (f.status !== 'crashed') {
     const [sx, sy] = toScreen(v, f.x, f.y);
-    const a = -f.angle;
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.rotate(a);
+    ctx.rotate(-f.angle);
     ctx.beginPath();
     ctx.moveTo(11, 0);
     ctx.lineTo(-7, -6.5);
@@ -1005,7 +1301,7 @@ export function drawMap(
     ctx.restore();
   }
 
-  // Maßstab
+  // Maßstab über den Steuerknöpfen, unter der Anzeige links.
   const target = W * 0.22;
   const meters = target / v.scale;
   const pow = Math.pow(10, Math.floor(Math.log10(meters)));
@@ -1018,8 +1314,7 @@ export function drawMap(
   ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  // Über den Steuerknöpfen, unter der Anzeige links.
-  const by = Math.min(H - 160, 290);
+  const by = H - 104;
   ctx.moveTo(16, by);
   ctx.lineTo(16 + px, by);
   ctx.moveTo(16, by - 4);
@@ -1035,4 +1330,122 @@ export function drawMap(
     by + 18,
     'rgba(255,255,255,0.45)',
   );
+}
+
+/**
+ * Vorhergesagte Bahn relativ zum Bezugskörper; innerhalb der Hill-Sphäre eines anderen Körpers
+ * relativ zu diesem (an der Stelle, an der er bei der Ankunft steht) – wie in Raumfahrtspielen.
+ */
+function drawPrediction(ctx: CanvasRenderingContext2D, f: Flight, v: View, pred: Prediction): void {
+  const t = f.t;
+  const [rx0, ry0] = bodyState(pred.ref, t);
+  const enc = pred.encounter;
+  const encPos = enc ? bodyState(enc.body, enc.t) : null;
+  const xs = new Float64Array(pred.n);
+  const ys = new Float64Array(pred.n);
+  for (let i = 0; i < pred.n; i++) {
+    let x = pred.xs[i]!;
+    let y = pred.ys[i]!;
+    if (enc && encPos && i >= enc.enter && i <= enc.exit) {
+      const [bx, by] = bodyState(enc.body, pred.ts[i]!);
+      x += encPos[0] - bx;
+      y += encPos[1] - by;
+    } else {
+      const [bx, by] = bodyState(pred.ref, pred.ts[i]!);
+      x += rx0 - bx;
+      y += ry0 - by;
+    }
+    [xs[i], ys[i]] = toScreen(v, x, y);
+  }
+  const segment = (a: number, b: number, color: string): void => {
+    if (b <= a) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    smoothPath(ctx, xs, ys, a, b, pred.n);
+    ctx.stroke();
+    // Richtungspfeile etwa alle 140 Pixel
+    ctx.fillStyle = color;
+    let run = 0;
+    for (let i = a + 1; i <= b; i++) {
+      const dx = xs[i]! - xs[i - 1]!;
+      const dy = ys[i]! - ys[i - 1]!;
+      run += Math.hypot(dx, dy);
+      if (run < 140) continue;
+      run = 0;
+      ctx.save();
+      ctx.translate(xs[i]!, ys[i]!);
+      ctx.rotate(Math.atan2(dy, dx));
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(-4, -5);
+      ctx.lineTo(-4, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  };
+  if (enc) {
+    segment(0, enc.enter, '#5eead4');
+    segment(enc.enter, enc.exit, '#fb923c');
+    segment(enc.exit, pred.n - 1, 'rgba(94,234,212,0.45)');
+  } else segment(0, pred.n - 1, '#5eead4');
+
+  const mark = (i: number, text: string, color: string): void => {
+    if (i < 0) return;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(xs[i]!, ys[i]!, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    label(ctx, text, xs[i]! + 8, ys[i]! - 8, color);
+  };
+  const alt = (i: number): number => {
+    const [cx, cy] = bodyState(pred.ref, pred.ts[i]!);
+    return Math.hypot(pred.xs[i]! - cx, pred.ys[i]! - cy) - pred.ref.radius;
+  };
+  if (pred.high >= 0) mark(pred.high, `Ap ${km(alt(pred.high))}`, '#fcd34d');
+  if (pred.low >= 0) mark(pred.low, `Pe ${km(alt(pred.low))}`, '#fcd34d');
+  if (pred.impact) {
+    const i = pred.n - 1;
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(xs[i]! - 6, ys[i]! - 6);
+    ctx.lineTo(xs[i]! + 6, ys[i]! + 6);
+    ctx.moveTo(xs[i]! + 6, ys[i]! - 6);
+    ctx.lineTo(xs[i]! - 6, ys[i]! + 6);
+    ctx.stroke();
+    label(ctx, `Aufschlag: ${pred.impact.name}`, xs[i]! + 10, ys[i]! + 10, '#fca5a5');
+  }
+  if (enc && encPos) {
+    const [sx, sy] = toScreen(v, encPos[0], encPos[1]);
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = 'rgba(251,146,60,0.85)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, Math.max(5, enc.body.radius * v.scale), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    label(
+      ctx,
+      `${enc.body.name} bei Ankunft · ${km(enc.distance - enc.body.radius)} über dem Boden`,
+      sx + 10,
+      sy + 16,
+      '#fed7aa',
+    );
+  }
+  if (pred.closest && f.target === 'station') {
+    const i = pred.closest.index;
+    const [gx, gy] = stationState(pred.closest.t);
+    const [sx, sy] = toScreen(v, gx, gy);
+    ctx.strokeStyle = '#c084fc';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xs[i]!, ys[i]!);
+    ctx.lineTo(sx, sy);
+    ctx.stroke();
+    label(ctx, `Nächste Annäherung ${km(pred.closest.distance)}`, sx + 10, sy - 12, '#e9d5ff');
+  }
 }
