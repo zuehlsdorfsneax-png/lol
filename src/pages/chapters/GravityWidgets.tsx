@@ -17,155 +17,10 @@ import {
   SUN,
 } from '../../physics';
 import { CanvasBox } from '../../ui/CanvasBox';
-import { Callout, Equation, Figure, SectionTitle, Tex } from '../../ui/content';
 import { Segmented, Slider } from '../../ui/controls';
 import { fmt, sci, sig } from '../../ui/format';
 
-export function Chapter2() {
-  return (
-    <>
-      <div class="prose">
-        <SectionTitle n="2.1">Kepler: drei Gesetze aus Beobachtungen</SectionTitle>
-        <p>
-          Johannes Kepler fand 1609 und 1619 aus den Mars-Beobachtungen Tycho Brahes drei Regeln –
-          ohne zu wissen, warum sie gelten:
-        </p>
-        <ol>
-          <li>Planeten bewegen sich auf Ellipsen, in deren einem Brennpunkt die Sonne steht.</li>
-          <li>Der Fahrstrahl Sonne–Planet überstreicht in gleichen Zeiten gleiche Flächen.</li>
-          <li>
-            Die Quadrate der Umlaufzeiten verhalten sich wie die Kuben der großen Halbachsen:{' '}
-            <Tex>{String.raw`T^2/a^3 = \text{konst.}`}</Tex>
-          </li>
-        </ol>
-      </div>
-
-      <Figure
-        n="2.1"
-        caption="Kepler-Labor: Die Bahn ist in zwölf Abschnitte gleicher Dauer geteilt. Alle Sektoren haben dieselbe Fläche (2. Gesetz) – in Sonnennähe ist der Planet deshalb schneller."
-      >
-        <KeplerLab />
-      </Figure>
-
-      <div class="prose">
-        <SectionTitle n="2.2">Newton: vom 3. Keplerschen Gesetz zum 1/r²-Gesetz</SectionTitle>
-        <p>
-          Isaac Newton zeigte 1687 in den <em>Principia</em>, dass alle drei Regeln aus einem
-          einzigen Kraftgesetz folgen. Die Herleitung gelingt am einfachsten für eine Kreisbahn mit
-          Radius <Tex>r</Tex> und Umlaufzeit <Tex>T</Tex>. Ein Körper auf der Kreisbahn braucht die
-          Zentripetalbeschleunigung
-        </p>
-        <Equation
-          tex={String.raw`a_z = \frac{v^2}{r} = \frac{(2\pi r/T)^2}{r} = \frac{4\pi^2 r}{T^2}.`}
-          n="2.1"
-        />
-        <p>
-          Setzt man das dritte Keplersche Gesetz <Tex>{String.raw`T^2 = C\,r^3`}</Tex> ein, bleibt
-        </p>
-        <Equation
-          tex={String.raw`a_z = \frac{4\pi^2 r}{C\,r^3} = \frac{4\pi^2}{C}\cdot\frac{1}{r^2}.`}
-          n="2.2"
-        />
-        <p>
-          Die Beschleunigung nimmt also mit dem <strong>Quadrat des Abstands</strong> ab. Weil nach
-          dem dritten Newtonschen Axiom (actio = reactio) die Kraft zwischen zwei Körpern für beide
-          gleich groß ist, muss sie zu beiden Massen proportional sein. Zusammen ergibt das das
-          Gravitationsgesetz
-        </p>
-        <Equation
-          tex={String.raw`\vec F_{12} = -\,G\,\frac{m_1 m_2}{r^2}\,\hat r_{12},\qquad G = 6{,}674\cdot10^{-11}\,\tfrac{\text{m}^3}{\text{kg}\,\text{s}^2}.`}
-          n="2.3"
-        />
-        <p>
-          Den Wert von <Tex>G</Tex> maß Henry Cavendish 1798 mit einer Torsionswaage im Labor. Erst
-          damit wurde es möglich, aus Umlaufbahnen Massen in Kilogramm zu berechnen – zum Beispiel
-          die der Erde oder des Jupiters (Tabelle in Abb. 2.1).
-        </p>
-
-        <SectionTitle n="2.3">Die Mondrechnung: der Apfel und der Mond</SectionTitle>
-        <p>
-          Newtons entscheidender Test: Wenn dieselbe Kraft den Apfel fallen lässt und den Mond auf
-          seiner Bahn hält, muss die Beschleunigung des Mondes um den Faktor{' '}
-          <Tex>{String.raw`(r_\text{Mond}/R_\oplus)^2 \approx 60^2 = 3600`}</Tex> kleiner sein als
-          die Fallbeschleunigung <Tex>g</Tex> an der Erdoberfläche. Die Bahnbeschleunigung des
-          Mondes lässt sich mit (2.1) aus Abstand und Umlaufzeit berechnen:
-        </p>
-      </div>
-
-      <Figure
-        n="2.2"
-        caption="Newtons Mondrechnung. Nur mit dem Exponenten n = 2 stimmt die aus g vorhergesagte Beschleunigung mit der gemessenen Bahnbeschleunigung überein."
-      >
-        <MoonTest />
-      </Figure>
-
-      <div class="prose">
-        <SectionTitle n="2.4">Was die Simulation daraus macht</SectionTitle>
-        <p>
-          Mit dem zweiten Newtonschen Axiom <Tex>{String.raw`\vec F = m\vec a`}</Tex> folgt für
-          jeden Körper <Tex>i</Tex> eines Systems aus <Tex>N</Tex> Körpern die Bewegungsgleichung
-        </p>
-        <Equation
-          tex={String.raw`\ddot{\vec r}_i = \sum_{j\neq i} G\,m_j\,\frac{\vec r_j-\vec r_i}{\lvert\vec r_j-\vec r_i\rvert^3}.`}
-          n="2.4"
-        />
-        <p>
-          Für zwei Körper lässt sich diese Gleichung exakt lösen – das Ergebnis sind Keplers
-          Ellipsen. Für drei Körper gibt es keine allgemeine Lösungsformel (Poincaré, 1890). Genau
-          deshalb löst der Simulator Gleichung (2.4) numerisch: Er rechnet die Bewegung in vielen
-          kleinen Zeitschritten aus (Details unter <a href="#methodik">Methodik</a>).
-        </p>
-
-        <SectionTitle n="2.5">Energie und Fluchtgeschwindigkeit</SectionTitle>
-        <p>
-          Aus dem Gravitationsgesetz folgt die potentielle Energie{' '}
-          <Tex>{String.raw`E_\text{pot} = -G\,Mm/r`}</Tex>. Die Gesamtenergie pro Masse entscheidet
-          über die Bahnform:
-        </p>
-        <Equation
-          tex={String.raw`\varepsilon = \frac{v^2}{2} - \frac{GM}{r}\;\begin{cases}<0 & \text{gebunden (Ellipse)}\\=0 & \text{Parabel}\\>0 & \text{ungebunden (Hyperbel)}\end{cases}`}
-          n="2.5"
-        />
-        <p>
-          Daraus ergeben sich die Kreisbahngeschwindigkeit{' '}
-          <Tex>{String.raw`v_K = \sqrt{GM/r}`}</Tex> und die Fluchtgeschwindigkeit{' '}
-          <Tex>{String.raw`v_F = \sqrt{2GM/r} = \sqrt2\,v_K`}</Tex>. Für den Mond im Abstand 384 400
-          km sind das 1,02 km/s und 1,45 km/s. Die allgemeine Beziehung zwischen Geschwindigkeit,
-          Abstand und Bahngröße ist die <strong>Vis-viva-Gleichung</strong>{' '}
-          <Tex>{String.raw`v^2 = GM\left(\tfrac2r - \tfrac1a\right)`}</Tex>. In Kapitel 6 zeigt
-          sich, dass ein Mond im Drei-Körper-System schon deutlich unterhalb von <Tex>v_F</Tex>{' '}
-          verloren gehen kann.
-        </p>
-
-        <SectionTitle n="2.6">Warum gerade 1/r²?</SectionTitle>
-        <p>
-          Man kann fragen, ob Bahnen auch mit einem anderen Kraftgesetz stabil wären. Der Satz von
-          Bertrand (1873) gibt eine überraschende Antwort: Nur für{' '}
-          <Tex>{String.raw`F\propto 1/r^2`}</Tex> und für die Federkraft{' '}
-          <Tex>{String.raw`F\propto r`}</Tex> schließen sich <em>alle</em>
-          gebundenen Bahnen. Für <Tex>{String.raw`F\propto 1/r^n`}</Tex> mit <Tex>{'n \\ge 3'}</Tex>{' '}
-          gibt es überhaupt keine stabilen Bahnen – jede kleine Störung führt zum Absturz oder zur
-          Flucht. Das Experiment in Abb. 2.3 zeigt beides.
-        </p>
-      </div>
-
-      <Figure
-        n="2.3"
-        caption="Bahnen im Kraftfeld F ∝ 1/rⁿ bei gleichem Start. Für n = 2 entsteht eine geschlossene Ellipse, für andere n eine Rosette. Ab n = 3 stürzt der Körper ins Zentrum oder entkommt."
-      >
-        <ForceLawLab />
-      </Figure>
-
-      <Callout kind="merke">
-        Das 1/r²-Gesetz ist kein Zufall: Es folgt aus dem dritten Keplerschen Gesetz, besteht
-        Newtons Mondtest und ist das einzige Potenzgesetz mit geschlossenen, stabilen Bahnen. Für
-        drei Körper muss man es numerisch lösen – das ist die Grundlage des Simulators.
-      </Callout>
-    </>
-  );
-}
-
-function MoonTest() {
+export function MoonTest() {
   const [n, setN] = useState(2);
   const r = MOON.semiMajorAxis;
   const T = MOON.siderealPeriod;
@@ -237,7 +92,7 @@ function MoonTest() {
   );
 }
 
-function KeplerLab() {
+export function KeplerLab() {
   const [e, setE] = useState(0.5);
   const sectors = 12;
   const draw = (
@@ -406,7 +261,7 @@ function KeplerLab() {
   );
 }
 
-function ForceLawLab() {
+export function ForceLawLab() {
   const [n, setN] = useState(2);
   const [f, setF] = useState(0.85);
   const orbit = useMemo(() => simulateForceLaw(n, f, 80), [n, f]);

@@ -6,16 +6,19 @@ export interface ChapterMeta {
 }
 
 export const CHAPTERS: readonly ChapterMeta[] = [
-  { n: 1, title: 'Hohlmond-Theorie', question: 'Ist der Mond innen hohl?' },
-  { n: 2, title: 'Gravitationsgesetze', question: 'Woher kommt das 1/r²-Gesetz?' },
-  { n: 3, title: 'Störung durch die Sonne', question: 'Was macht die Sonne mit der Mondbahn?' },
-  { n: 4, title: 'Lagrange-Punkte', question: 'Wo heben sich alle Kräfte auf?' },
-  { n: 5, title: 'Warum stabil?', question: 'Warum bleibt der Mond seit Milliarden Jahren?' },
+  { n: 1, title: 'Einleitung', question: 'Was bedeutet Bahnstabilität?' },
   {
-    n: 6,
-    title: 'Wann instabil?',
-    question: 'Was müsste passieren, damit er abstürzt oder flieht?',
+    n: 2,
+    title: 'Physikalische Grundlagen',
+    question: 'Newton, Zweikörperproblem und Baryzentrum',
   },
+  { n: 3, title: 'Einfluss der Sonne', question: 'Wie stört die Sonne das Erde-Mond-System?' },
+  { n: 4, title: 'Lagrange-Punkte', question: 'Wo heben sich die Kräfte auf?' },
+  { n: 5, title: 'Die Hill-Sphäre der Erde', question: 'Wie weit reicht die Macht der Erde?' },
+  { n: 6, title: 'Gezeitenreibung', question: 'Warum entfernt sich der Mond?' },
+  { n: 7, title: 'Widerlegung der Hohle-Mond-Theorie', question: 'Ist der Mond innen hohl?' },
+  { n: 8, title: 'Eigenanteil: Simulation', question: 'Was zeigt unsere Drei-Körper-Simulation?' },
+  { n: 9, title: 'Fazit', question: 'Die Antwort auf die Problemfrage' },
 ];
 
 export const PROBLEM_QUESTION =

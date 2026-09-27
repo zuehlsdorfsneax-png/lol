@@ -43,7 +43,7 @@ export function Chapter5() {
   return (
     <>
       <div class="prose">
-        <SectionTitle n="5.1">Ein hierarchisches System</SectionTitle>
+        <SectionTitle n="5.1">Definition und physikalische Bedeutung</SectionTitle>
         <p>
           Die Sonne ist rund 390-mal weiter von der Erde entfernt als der Mond. Solche
           <strong> hierarchischen</strong> Drei-Körper-Systeme – ein enges Paar, weit entfernt ein
@@ -53,7 +53,7 @@ export function Chapter5() {
           reicht.
         </p>
 
-        <SectionTitle n="5.2">Grund 1: Der Mond liegt tief in der Hill-Sphäre</SectionTitle>
+        <SectionTitle n="5.2">Herleitung des Hill-Radius</SectionTitle>
         <p>
           Wie weit reicht die „Herrschaft“ der Erde? Im mitrotierenden System wirken auf einen
           Körper auf der Linie Sonne–Erde im Abstand <Tex>r</Tex> von der Erde die Gezeitenkraft der
@@ -80,7 +80,9 @@ export function Chapter5() {
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="5.3">Grund 2: Das Jacobi-Kriterium – ein Beweis</SectionTitle>
+        <SectionTitle n="5.3">
+          Die Hill-Sphäre als Stabilitätsgrenze: das Jacobi-Kriterium
+        </SectionTitle>
         <p>
           Die Jacobi-Konstante aus Kapitel 4 liefert einen echten mathematischen Beweis. Betrachtet
           man Sonne und Erde als Hauptkörper auf einer Kreisbahn und den Mond als leichten dritten
@@ -106,7 +108,7 @@ export function Chapter5() {
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="5.4">Grund 3: Die Stabilitätsgrenze liegt viel weiter außen</SectionTitle>
+        <SectionTitle n="5.4">Bedingungen für das Verlassen des Erde-Mond-Systems</SectionTitle>
         <p>
           Das Jacobi-Kriterium ist <em>hinreichend</em>, aber nicht <em>notwendig</em>: Auch Monde
           mit <Tex>{String.raw`C < C(L_1)`}</Tex> können stabil sein, wenn sie das offene Tor

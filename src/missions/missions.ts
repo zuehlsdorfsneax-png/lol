@@ -114,7 +114,7 @@ export const MISSIONS: readonly Mission[] = [
     kind: 'sim',
     id: 'absturz',
     title: 'Mondabsturz',
-    chapter: 6,
+    chapter: 8,
     difficulty: 2,
     briefing:
       'Wie viel Geschwindigkeit müsste der Mond verlieren, damit er auf die Erde stürzt? Finde die größte Startgeschwindigkeit, bei der er innerhalb von zwei Jahren noch einschlägt.',
@@ -141,7 +141,7 @@ export const MISSIONS: readonly Mission[] = [
     kind: 'sim',
     id: 'flucht',
     title: 'Ausbruch',
-    chapter: 6,
+    chapter: 8,
     difficulty: 2,
     briefing:
       'Ohne Sonne bräuchte der Mond die 1,414-fache Kreisbahngeschwindigkeit, um der Erde zu entkommen. Mit Sonne geht es billiger. Wie wenig reicht?',
@@ -222,7 +222,7 @@ export const MISSIONS: readonly Mission[] = [
     kind: 'sim',
     id: 'naeher',
     title: 'Näher an die Sonne',
-    chapter: 6,
+    chapter: 8,
     difficulty: 3,
     briefing:
       'Stell dir vor, die Erde wäre auf einer Kreisbahn näher an der Sonne entstanden. Wie nah darf sie der Sonne kommen, ohne ihren Mond (384 400 km) zu verlieren?',
@@ -249,7 +249,7 @@ export const MISSIONS: readonly Mission[] = [
     kind: 'sim',
     id: 'schwere-sonne',
     title: 'Schwergewicht',
-    chapter: 6,
+    chapter: 8,
     difficulty: 3,
     briefing:
       'Was wäre, wenn die Sonne schwerer wäre? Erhöhe ihre Masse, so weit es geht – der Mond muss trotzdem 30 Jahre bleiben.',

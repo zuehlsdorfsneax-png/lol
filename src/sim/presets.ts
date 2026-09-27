@@ -56,7 +56,7 @@ export const PRESETS: readonly Preset[] = [
       'Der Mond hat nur 15 % der Kreisbahngeschwindigkeit. Seine Bahn wird eine schmale Ellipse, deren erdnächster Punkt unter der Erdoberfläche liegt.',
     params: { ...BASE, moonSpeed: 0.15 },
     view: { frame: 'earth', radius: 5e8, speedIndex: 0 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'roche',
@@ -65,7 +65,7 @@ export const PRESETS: readonly Preset[] = [
       'Mit 27 % der Kreisbahngeschwindigkeit verfehlt der Mond die Erde, taucht aber tief unter die Roche-Grenze – Gezeitenkräfte würden ihn zerreißen.',
     params: { ...BASE, moonSpeed: 0.27 },
     view: { frame: 'earth', radius: 5e8, speedIndex: 0 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'flucht',
@@ -74,7 +74,7 @@ export const PRESETS: readonly Preset[] = [
       'Mit 130 % der Kreisbahngeschwindigkeit reicht der Mond fast bis an die Hill-Grenze. Dort übernimmt die Sonne – obwohl er langsamer ist als die Fluchtgeschwindigkeit (141 %).',
     params: { ...BASE, moonSpeed: 1.3 },
     view: { frame: 'rotating', radius: 3.5e9, speedIndex: 1 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'grenze',
@@ -92,7 +92,7 @@ export const PRESETS: readonly Preset[] = [
       'Kreisbahn bei 0,55 Hill-Radien. Nach wenigen Umläufen schlüpft der Mond durch das "Tor" bei L1 oder L2 und umkreist danach die Sonne.',
     params: { ...BASE, moonDistance: 0.55 * RH },
     view: { frame: 'rotating', radius: 3e9, speedIndex: 3 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'retrograd',
@@ -110,7 +110,7 @@ export const PRESETS: readonly Preset[] = [
       'Bei 0,39 AE schrumpft der Hill-Radius auf 580 000 km. Der Mond steht jetzt bei 0,66 r_H – weit jenseits der Grenze.',
     params: { ...BASE, earthOrbit: 0.387, earthEccentricity: 0 },
     view: { frame: 'rotating', radius: 1.6e9, speedIndex: 2 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'schwere-sonne',
@@ -119,7 +119,7 @@ export const PRESETS: readonly Preset[] = [
       'Der Hill-Radius wächst mit ∛(m/M): Bei 8-facher Sonnenmasse halbiert er sich. Der Mond wird herausgerissen.',
     params: { ...BASE, sunMass: 8 },
     view: { frame: 'rotating', radius: 1.6e9, speedIndex: 2 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'exzentrisch',
@@ -128,7 +128,7 @@ export const PRESETS: readonly Preset[] = [
       'Exzentrizität 0,6: Im Perihel (0,4 AE) ist der Hill-Radius nur noch 40 % so groß. Der Mond überlebt, bis die Erde der Sonne zu nahe kommt.',
     params: { ...BASE, earthEccentricity: 0.6 },
     view: { frame: 'rotating', radius: 2e9, speedIndex: 2 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'teilchen',
@@ -161,7 +161,7 @@ export const PRESETS: readonly Preset[] = [
       'Ein Planet mit Jupitermasse rast mit 20 km/s in 500 000 km Abstand an der Erde vorbei. Seine Gezeitenkraft reißt den Mond aus der Bahn.',
     params: { ...BASE, intruder: { mass: 317.8, distance: 500_000, speed: 20, leadDays: 20 } },
     view: { frame: 'earth', radius: 3e9, speedIndex: 0 },
-    chapter: 6,
+    chapter: 8,
   },
   {
     id: 'doppelplanet',

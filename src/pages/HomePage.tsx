@@ -20,8 +20,8 @@ export function HomePage() {
     }),
   );
   const onFrame = (dt: number): void => {
-    // Ein Monat pro Sekunde; die Teilchenwolke zeigt, wo die Sonne Umlaufbahnen zerstört.
-    sim.current?.advance(30 * 86_400 * dt, 3000);
+    // Ein Tag pro Sekunde; die Teilchenwolke zeigt, wo die Sonne Umlaufbahnen zerstört.
+    sim.current?.advance(86_400 * dt, 3000);
     if (sim.current?.pending) sim.current.acknowledge();
   };
   const progress = useMemo(() => progressStore.load(), []);
@@ -55,8 +55,9 @@ export function HomePage() {
             ariaLabel="Erde und Mond im mitrotierenden System mit einer Wolke aus Testteilchen"
           />
           <p class="small muted">
-            Live-Simulation: 160 Testteilchen um die Erde. Die Sonne (links, außerhalb des Bildes)
-            entreißt alle jenseits von etwa 0,48 Hill-Radien – der Mond kreist weit innerhalb.
+            Live-Simulation (1 Tag pro Sekunde): 160 Testteilchen um die Erde. Die Sonne (links,
+            außerhalb des Bildes) entreißt alle jenseits von etwa 0,48 Hill-Radien – der Mond kreist
+            weit innerhalb.
           </p>
         </div>
       </section>
@@ -73,7 +74,7 @@ export function HomePage() {
               kreist (rückläufig 0,92). Unser Mond liegt bei 0,26 – das Jacobi-Kriterium beweist,
               dass er die Erdumgebung nie verlassen kann.
             </p>
-            <a href="#kapitel-5">Kapitel 5 · Warum stabil?</a>
+            <a href="#kapitel-5">Kapitel 5 · Hill-Sphäre</a>
           </div>
           <div class="answer-card">
             <span class="chip fail">
@@ -83,7 +84,7 @@ export function HomePage() {
               Erst wenn er über <strong>70 % seiner Geschwindigkeit</strong> verlöre, käme er der
               Erde näher als die Roche-Grenze und würde zerrissen; bei 80 % schlüge er ein.
             </p>
-            <a href="#kapitel-6">Kapitel 6 · Wann instabil?</a>
+            <a href="#kapitel-8">Kapitel 8 · Stabilitätsfälle</a>
           </div>
           <div class="answer-card">
             <span class="chip warn">
@@ -134,6 +135,13 @@ export function HomePage() {
             <h3>Lagrange-Labor</h3>
             <p class="small muted">
               Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
+            </p>
+          </a>
+          <a class="tool-card" href="#spiel">
+            <h3>Lunas Sternenreise</h3>
+            <p class="small muted">
+              Das Spiel für Jüngere: Schleudere den kleinen Mond Luna in eine Umlaufbahn und sammle
+              Sterne. Sechs Level mit echter Schwerkraft.
             </p>
           </a>
           <a class="tool-card" href="#missionen">

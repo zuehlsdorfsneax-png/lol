@@ -25,7 +25,7 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
 | Wie stört die Sonne das Zwei-Körper-System?        | Kapitel 3: Gezeitenfeld, Präzessionsmessung, Voreinstellungen              |
 | Lagrange-Punkte (beweisen)                         | Kapitel 4 + Lagrange-Labor: Beweis, Eigenwerte, Nullgeschwindigkeitskurven |
 | Wieso ist das Drei-Körper-System stabil?           | Kapitel 5: Hill-Sphäre, Jacobi-Beweis, Stabilitätsgrenze                   |
-| Was braucht es, damit es instabil wird?            | Kapitel 6 + Stabilitätskarte: Grenzwerte aus Theorie und Simulation        |
+| Was braucht es, damit es instabil wird?            | Kapitel 8 + Stabilitätskarte: Grenzwerte aus Theorie und Simulation        |
 | Eigenanteil: Simulation mit anpassbaren Parametern | Simulator, Stabilitätskarte, Methodik & Validierung                        |
 
 ## 3. Module

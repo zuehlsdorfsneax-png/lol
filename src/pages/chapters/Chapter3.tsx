@@ -26,7 +26,7 @@ export function Chapter3() {
   return (
     <>
       <div class="prose">
-        <SectionTitle n="3.1">Ein überraschender Vergleich</SectionTitle>
+        <SectionTitle n="3.1">Die Sonne als Störkörper</SectionTitle>
         <p>Vergleicht man die Kräfte, mit denen Sonne und Erde am Mond ziehen, ergibt sich</p>
         <Equation
           tex={String.raw`\frac{F_\odot}{F_\oplus} = \frac{M_\odot}{M_\oplus}\cdot\left(\frac{r_{\oplus\text{Mond}}}{r_{\odot\text{Mond}}}\right)^2 \approx 333\,000\cdot\left(\frac{384\,400\ \text{km}}{149{,}6\ \text{Mio. km}}\right)^2 \approx ${fmt(pull, 1)}.`}
@@ -67,7 +67,7 @@ export function Chapter3() {
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="3.2">Was die Störung bewirkt</SectionTitle>
+        <SectionTitle n="3.2">Veränderung der Mondbahn durch gravitative Störungen</SectionTitle>
         <p>
           Die Gezeitenwirkung der Sonne verändert die Mondbahn periodisch und langfristig. Die
           wichtigsten Effekte kannte man zum Teil schon in der Antike:
@@ -126,13 +126,19 @@ export function Chapter3() {
           selbst bei kleinen Störungen tückisch.
         </p>
 
-        <SectionTitle n="3.3">Messung im Simulator</SectionTitle>
+        <SectionTitle n="3.3">Langfristige Auswirkungen auf die Stabilität</SectionTitle>
         <p>
           Eine numerische Simulation braucht keine Störungsreihen: Sie enthält alle Effekte
           automatisch. Abb. 3.2 vergleicht zwei Rechnungen über 20 Jahre – einmal mit, einmal ohne
           Sonne. Ohne Sonne bleibt die Ellipse ortsfest und ihre Exzentrizität konstant. Mit Sonne
           schwankt die Exzentrizität im Rhythmus der Evektion, und die Richtung des Perigäums dreht
           sich gleichmäßig weiter.
+        </p>
+        <p>
+          Diese Störungen sind periodisch: Sie verformen die Bahn, verändern aber ihre mittlere
+          Größe nicht dauerhaft – die Simulation zeigt über Jahrhunderte keinen Drift. Langfristig
+          wirksam ist vor allem die Gezeitenreibung: Messungen zeigen eine langsame Zunahme des
+          Erde-Mond-Abstands um etwa 3,8 cm pro Jahr (Kapitel 6).
         </p>
       </div>
 

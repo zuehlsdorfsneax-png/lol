@@ -11,3 +11,4 @@ export * from './orbit';
 export * from './scenario';
 export * from './stability';
 export * from './assessment';
+export * from './tides';

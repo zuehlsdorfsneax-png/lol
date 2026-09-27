@@ -1,0 +1,22 @@
+name: Windows-EXE
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run exe
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Orbitlabor-Windows
+          path: release/*.exe
+          if-no-files-found: error

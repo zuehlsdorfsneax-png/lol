@@ -25,9 +25,11 @@ npm run dev          # http://localhost:5173
 | `npm run build`          | Typprüfung + Produktions-Build nach `dist/`                                                      |
 | `npm run preview`        | Build lokal ausliefern                                                                           |
 | `npm test`               | Automatische Tests (Physik, Simulation, Missionen, Engine)                                       |
-| `npm run calibrate`      | Stabilitätsgrenzen per Simulation bestimmen (für Kapitel 6)                                      |
+| `npm run calibrate`      | Stabilitätsgrenzen per Simulation bestimmen (für Kapitel 8)                                      |
 | `npm run build:artifact` | Variante mit eingebetteten Schriften für eingebettete Seiten; CSV-Export über die Zwischenablage |
 | `npm run check`          | Typen, Lint, Formatierung und Tests (wie in der CI)                                              |
+| `npm run desktop`        | App als Desktop-Fenster (Electron) starten                                                       |
+| `npm run exe`            | Windows-EXE (portable, ohne Installation) nach `release/` bauen                                  |
 
 ## Was die App enthält
 
@@ -100,3 +102,9 @@ docs/           Konzept
 `npm run build` erzeugt eine statische Seite in `dist/`, die auf jedem Webhoster läuft
 (GitHub Pages, Netlify …). Schriften werden mitgeliefert, es werden keine externen Dienste
 geladen.
+
+## Windows-EXE
+
+`npm run exe` erzeugt `release/Orbitlabor-<version>-portable.exe`. Die GitHub-Action _Windows-EXE_ baut die Datei bei jedem Push und stellt sie als Artefakt „Orbitlabor-Windows“ bereit. Die EXE ist nicht signiert; Windows SmartScreen fragt deshalb beim ersten Start nach („Weitere Informationen → Trotzdem ausführen“).
+
+Neu für Jüngere: **Lunas Sternenreise** (`#spiel`), ein Schleuder-Spiel mit sechs Leveln zu Umlaufbahnen.

@@ -1,24 +1,32 @@
 import { CHAPTERS } from '../app/content';
 import { PageHead } from '../ui/content';
-import { Chapter1 } from './chapters/Chapter1';
-import { Chapter2 } from './chapters/Chapter2';
+import { Basics } from './chapters/Basics';
 import { Chapter3 } from './chapters/Chapter3';
 import { Chapter4 } from './chapters/Chapter4';
 import { Chapter5 } from './chapters/Chapter5';
-import { Chapter6 } from './chapters/Chapter6';
+import { Conclusion } from './chapters/Conclusion';
+import { Hollow } from './chapters/Hollow';
+import { Intro } from './chapters/Intro';
+import { OwnWork } from './chapters/OwnWork';
+import { Tides } from './chapters/Tides';
 
 const LEADS: Record<number, string> = {
-  1: 'Ist der Mond innen hohl – vielleicht sogar ein Raumschiff? Die These klingt abenteuerlich, lässt sich aber physikalisch sauber prüfen. Dabei lernen wir, welche Messgrößen etwas über das Innere eines Himmelskörpers verraten.',
-  2: 'Von Keplers Beobachtungsregeln zu Newtons Gravitationsgesetz: Woher das 1/r²-Gesetz kommt, wie Newton es am Mond überprüft hat und warum gerade dieses Gesetz stabile Bahnen erlaubt.',
+  1: 'Worum es geht: Was Bahnstabilität bedeutet, wie die Problemfrage lautet und welchen Weg die Arbeit nimmt.',
+  2: 'Newtons Axiome und das Gravitationsgesetz, das Zweikörperproblem, die Bedeutung des Erde-Mond-Sonne-Systems und das Baryzentrum.',
   3: 'Die Sonne zieht den Mond mehr als doppelt so stark an wie die Erde. Warum reißt sie ihn trotzdem nicht fort – und was bewirkt sie stattdessen?',
   4: 'Fünf Punkte, an denen sich Gravitation und Fliehkraft genau aufheben. Wir berechnen sie, beweisen ihre Lage und untersuchen, welche davon stabil sind.',
-  5: 'Seit über vier Milliarden Jahren umkreist der Mond die Erde. Drei Kriterien erklären, warum die Sonne ihn nicht entreißen kann – eines davon ist sogar ein mathematischer Beweis.',
-  6: 'Was müsste sich ändern, damit der Mond abstürzt oder verloren geht? Wir bestimmen die Grenzen systematisch – mit Rechnung und mit Tausenden von Simulationen.',
+  5: 'Die Hill-Sphäre ist die wichtigste Grenze dafür, ob der Mond an die Erde gebunden bleibt.',
+  6: 'Die Gezeiten bremsen die Erde und schieben den Mond nach außen. Wohin führt das?',
+  7: 'Ist der Mond hohl oder gar eine Attrappe? Wir prüfen die These mit Physik und mit unserem eigenen Programm.',
+  8: 'Unsere digitale Drei-Körper-Simulation: Aufbau, Formeln, untersuchte Fälle und Auswertung.',
+  9: 'Die Antwort auf die Problemfrage, die wichtigsten Erkenntnisse, Grenzen und Ausblick.',
 };
 
 export function ChapterPage({ n }: { n: number }) {
   const meta = CHAPTERS.find((c) => c.n === n) ?? CHAPTERS[0]!;
-  const Body = [Chapter1, Chapter2, Chapter3, Chapter4, Chapter5, Chapter6][meta.n - 1]!;
+  const Body = [Intro, Basics, Chapter3, Chapter4, Chapter5, Tides, Hollow, OwnWork, Conclusion][
+    meta.n - 1
+  ]!;
   const prev = CHAPTERS.find((c) => c.n === meta.n - 1);
   const next = CHAPTERS.find((c) => c.n === meta.n + 1);
   return (

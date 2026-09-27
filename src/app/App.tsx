@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ChapterPage } from '../pages/ChapterPage';
 import { HomePage } from '../pages/HomePage';
+import { KidsPage } from '../pages/KidsPage';
 import { LagrangePage } from '../pages/LagrangePage';
 import { MethodsPage } from '../pages/MethodsPage';
 import { MissionPage } from '../pages/MissionPage';
@@ -62,6 +63,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Spielen',
     items: [
+      { to: 'spiel', label: 'Lunas Sternenreise', active: (r) => r.page === 'spiel' },
       {
         to: 'missionen',
         label: 'Missionen',
@@ -95,6 +97,8 @@ function Page({ route }: { route: Route }) {
       return <MissionPage id={route.param ?? ''} />;
     case 'quiz':
       return <QuizPage />;
+    case 'spiel':
+      return <KidsPage />;
     case 'methodik':
       return <MethodsPage />;
     case 'quellen':

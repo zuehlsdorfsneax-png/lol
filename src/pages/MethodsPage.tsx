@@ -169,7 +169,7 @@ export function MethodsPage() {
             Validierung (A.3): Tabelle A.2 zeigt, dass die Simulation reale Effekte reproduziert.
           </li>
           <li>
-            Ergebnisse: Stabilitätskarten und Grenzwerte (Kapitel 6), jeweils mit Simulationsdauer.
+            Ergebnisse: Stabilitätskarten und Grenzwerte (Kapitel 8), jeweils mit Simulationsdauer.
           </li>
           <li>
             Diskussion: Vergleich mit Theorie (Hill, Jacobi, Domingos et al.) und Grenzen (A.4).
@@ -177,7 +177,7 @@ export function MethodsPage() {
         </ol>
         <p style={{ marginTop: '8px' }}>
           Alle Diagramme lassen sich als Bild und als CSV-Datei exportieren. Die Grenzwerte in
-          Kapitel 6 reproduziert das Skript <code>npm run calibrate</code>.
+          Kapitel 8 reproduziert das Skript <code>npm run calibrate</code>.
         </p>
       </Callout>
     </article>
@@ -230,7 +230,7 @@ function IntegratorComparison() {
   );
 }
 
-function ValidationTable() {
+export function ValidationTable() {
   const [data, setData] = useState<{
     rows: ValidationRow[];
     energyError: number;

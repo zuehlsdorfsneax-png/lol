@@ -9,7 +9,7 @@ export interface Question {
 
 export const QUESTIONS: readonly Question[] = [
   {
-    chapter: 1,
+    chapter: 7,
     text: 'Warum lässt sich aus der Mondbahn allein nicht entscheiden, ob der Mond hohl ist?',
     options: [
       'Weil die Bahn zu ungenau vermessen ist',
@@ -22,7 +22,7 @@ export const QUESTIONS: readonly Question[] = [
       'Nach Newtons Schalentheorem wirkt eine kugelsymmetrische Masse außen wie ein Punkt – voll oder hohl macht für die Bahn keinen Unterschied.',
   },
   {
-    chapter: 1,
+    chapter: 7,
     text: 'Das gemessene Trägheitsmoment des Mondes ist k = 0,393. Was folgt daraus?',
     options: [
       'Der Mond ist hohl, denn k > 0',
@@ -34,7 +34,7 @@ export const QUESTIONS: readonly Question[] = [
     explanation: 'Jede Hohlkugel hat k > 0,4. Werte unter 0,4 bedeuten einen dichteren Kern.',
   },
   {
-    chapter: 1,
+    chapter: 7,
     text: 'Welche Dichte bräuchte eine 50 km dicke Mondschale ungefähr?',
     options: ['3,3 g/cm³', '8 g/cm³', '22 g/cm³', '39 g/cm³'],
     answer: 3,
@@ -176,7 +176,7 @@ export const QUESTIONS: readonly Question[] = [
       'Retrograde Monde sind fast doppelt so weit hinaus stabil – die Coriolis-Kraft zeigt bei ihnen zum Planeten.',
   },
   {
-    chapter: 6,
+    chapter: 8,
     text: 'Wie viel seiner Geschwindigkeit müsste der Mond verlieren, um auf die Erde zu stürzen?',
     options: ['etwa 5 %', 'etwa 30 %', 'etwa 50 %', 'etwa 80 %'],
     answer: 3,
@@ -184,7 +184,7 @@ export const QUESTIONS: readonly Question[] = [
       'Erst unterhalb von 0,203 · v_Kreis liegt der erdnächste Punkt unter der Erdoberfläche; zerrissen würde er schon unter 0,30 · v_Kreis.',
   },
   {
-    chapter: 6,
+    chapter: 8,
     text: 'Ab welcher Startgeschwindigkeit entkommt der Mond im System mit Sonne?',
     options: ['1,00 · v_Kreis', 'etwa 1,19 · v_Kreis', 'genau 1,414 · v_Kreis', 'etwa 2 · v_Kreis'],
     answer: 1,
@@ -192,7 +192,7 @@ export const QUESTIONS: readonly Question[] = [
       'Schon ab etwa 1,19 · v_Kreis reicht die Bahn über die Stabilitätsgrenze hinaus – die Sonne hilft beim Entkommen.',
   },
   {
-    chapter: 6,
+    chapter: 8,
     text: 'Was würde mit unserem Mond passieren, wenn die Erde auf der Merkurbahn (0,39 AE) kreiste?',
     options: [
       'Nichts, er bliebe stabil',

@@ -14,7 +14,7 @@ export function Chapter4() {
   return (
     <>
       <div class="prose">
-        <SectionTitle n="4.1">Das mitrotierende Bezugssystem</SectionTitle>
+        <SectionTitle n="4.1">Definition der Lagrange-Punkte</SectionTitle>
         <p>
           Wir betrachten das <strong>eingeschränkte Drei-Körper-Problem</strong>: Zwei Hauptkörper
           (Massen <Tex>{'m_1 > m_2'}</Tex>) umkreisen einander auf Kreisbahnen, ein dritter Körper
@@ -35,7 +35,7 @@ export function Chapter4() {
           Geschwindigkeit ab und spielt für die Stabilität eine überraschende Rolle.
         </p>
 
-        <SectionTitle n="4.2">Gleichgewichtspunkte</SectionTitle>
+        <SectionTitle n="4.2">Die Punkte L1 bis L5</SectionTitle>
         <p>
           Ein Körper, der im rotierenden System ruht (
           <Tex>{String.raw`\dot x=\dot y=\ddot x=\ddot y=0`}</Tex>), bleibt nach (4.1) genau dann in
@@ -71,7 +71,7 @@ export function Chapter4() {
       </Callout>
 
       <div class="prose">
-        <SectionTitle n="4.3">L1, L2 und L3 auf der Verbindungslinie</SectionTitle>
+        <SectionTitle n="4.2.1">L1, L2 und L3 auf der Verbindungslinie</SectionTitle>
         <p>
           Auf der x-Achse ist <Tex>{String.raw`\partial\Omega/\partial y = 0`}</Tex> automatisch
           erfüllt. Die Bedingung <Tex>{String.raw`\partial\Omega/\partial x = 0`}</Tex> führt auf
@@ -85,7 +85,7 @@ export function Chapter4() {
           {km(hillApproximation(muSE) * AU)}).
         </p>
 
-        <SectionTitle n="4.4">Welche Punkte sind stabil?</SectionTitle>
+        <SectionTitle n="4.3">Stabile und instabile Gleichgewichtspunkte</SectionTitle>
         <p>
           Für kleine Abweichungen <Tex>{'(\\xi, \\eta)'}</Tex> vom Gleichgewicht linearisiert man
           (4.1) mit den zweiten Ableitungen{' '}
@@ -126,7 +126,7 @@ export function Chapter4() {
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="4.5">Jacobi-Konstante und verbotene Zonen</SectionTitle>
+        <SectionTitle n="4.4">Bedeutung für die Bahnstabilität: Jacobi-Konstante</SectionTitle>
         <p>
           Multipliziert man (4.1) mit der Geschwindigkeit und integriert, erhält man eine
           Erhaltungsgröße:
@@ -141,7 +141,7 @@ export function Chapter4() {
           erreichen. Die Grenzen heißen <strong>Nullgeschwindigkeitskurven</strong>. Für großes{' '}
           <Tex>C</Tex> sind die erlaubten Gebiete um die beiden Körper getrennt. Sinkt <Tex>C</Tex>{' '}
           unter <Tex>{'C(L_1)'}</Tex>, öffnet sich zwischen ihnen ein Tor bei L1, unter{' '}
-          <Tex>{'C(L_2)'}</Tex> eines nach außen. Genau diese Tore entscheiden in Kapitel 5 und 6,
+          <Tex>{'C(L_2)'}</Tex> eines nach außen. Genau diese Tore entscheiden in Kapitel 5 und 8,
           ob ein Mond seinem Planeten entkommen kann.
         </p>
       </div>
@@ -154,7 +154,7 @@ export function Chapter4() {
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="4.6">Lagrange-Punkte in der Praxis</SectionTitle>
+        <SectionTitle n="4.5">Lagrange-Punkte in der Praxis</SectionTitle>
         <ul>
           <li>
             <strong>Sonne–Erde L1</strong> (1,5 Mio. km sonnenwärts): Sonnenobservatorium SOHO, seit

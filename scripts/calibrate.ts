@@ -4,7 +4,7 @@
  *
  * Für jeden Parameter wird ein Bereich fein abgetastet; ausgegeben wird der erste Wert, ab dem
  * der Mond innerhalb der Simulationsdauer abstürzt bzw. entkommt. Die Ergebnisse stehen in
- * Kapitel 6 und in den Missionen.
+ * Kapitel 8 und in den Missionen.
  */
 import {
   KM,
