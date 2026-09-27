@@ -253,7 +253,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                   <span>{stats.elements ? sig(stats.elements.e, 3) : '–'}</span>
                 </div>
                 <div class="hud-row">
-                  <span>d / r_H</span>
+                  <span>
+                    d / r<sub>H</sub>
+                  </span>
                   <span>
                     {Number.isFinite(stats.hillFraction) ? sig(stats.hillFraction, 3) : '–'}
                   </span>
@@ -355,7 +357,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                   </dd>
                   <dt>Umlaufzeit (oskulierend)</dt>
                   <dd>{stats.elements?.bound ? duration(stats.elements.period) : '–'}</dd>
-                  <dt>Hill-Radius r_H</dt>
+                  <dt>
+                    Hill-Radius r<sub>H</sub>
+                  </dt>
                   <dd>{distance(stats.hillRadius)}</dd>
                   <dt>Min. / max. Abstand bisher</dt>
                   <dd>
@@ -873,14 +877,16 @@ function SeriesChart({
     return (
       <LineChart
         title="Abstand in Hill-Radien"
-        series={[{ id: 'h', label: 'd / r_H', x, y: s.data.hillFraction, length: n }]}
+        series={[
+          { id: 'h', label: 'Abstand in Hill-Radien', x, y: s.data.hillFraction, length: n },
+        ]}
         xLabel={xLabel}
-        yLabel="d / r_H"
+        yLabel="Abstand in Hill-Radien"
         xFormat={xFormat}
         yFormat={(v) => sig(v, 2)}
         yMin={0}
         refLines={[
-          { y: crit, label: `Stabilitätsgrenze ${sig(crit, 2)} r_H` },
+          { y: crit, label: `Stabilitätsgrenze ${sig(crit, 2)} Hill-Radien` },
           { y: 1, label: 'Hill-Radius' },
         ]}
         version={version}

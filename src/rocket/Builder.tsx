@@ -23,8 +23,10 @@ import {
 const MILESTONES = [
   { dv: 2500, label: 'Weltraum' },
   { dv: 3900, label: 'Umlaufbahn' },
+  { dv: 4400, label: 'Raumstation' },
   { dv: 5700, label: 'Mondlandung' },
-  { dv: 6900, label: 'Hin & zurück' },
+  { dv: 6900, label: 'Mond hin & zurück' },
+  { dv: 7800, label: 'Marslandung' },
 ];
 
 const fmt = (x: number, d = 0): string =>
@@ -166,6 +168,8 @@ export function Builder({
   onPaint,
   onChange,
   onLaunch,
+  sandbox,
+  onSandbox,
 }: {
   design: Design;
   goals: readonly string[];
@@ -173,6 +177,8 @@ export function Builder({
   onPaint: (id: string) => void;
   onChange: (d: Design) => void;
   onLaunch: () => void;
+  sandbox: boolean;
+  onSandbox: (on: boolean) => void;
 }) {
   setPaint(paint);
   const [selected, setSelected] = useState(-1);
@@ -221,7 +227,7 @@ export function Builder({
     return () => window.removeEventListener('keydown', key);
   });
 
-  const maxBar = 8000;
+  const maxBar = 9000;
   return (
     <div class="build">
       <div class="build-templates">
@@ -432,6 +438,17 @@ export function Builder({
               ))}
             </ul>
           )}
+          <label class="sandbox-toggle">
+            <input
+              type="checkbox"
+              checked={sandbox}
+              onChange={(e) => onSandbox((e.target as HTMLInputElement).checked)}
+            />
+            <span>
+              <strong>Sandkasten:</strong> unendlich Treibstoff zum Ausprobieren – dafür gibt es
+              keine Punkte.
+            </span>
+          </label>
           <button
             type="button"
             class="btn primary launch-btn"

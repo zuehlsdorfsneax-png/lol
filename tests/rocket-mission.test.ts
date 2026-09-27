@@ -144,6 +144,7 @@ describe('Raketenwerft – vollständige Mondmission', () => {
       60 * 3000,
     );
     expect(f.crashReason).toBe('');
+    expect(f.maxHeat).toBeLessThan(0.8);
     expect(f.status).toBe('landed');
     expect(f.landedOn).toBe(EARTH);
     expect(f.goals.has('return')).toBe(true);

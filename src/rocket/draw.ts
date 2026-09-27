@@ -1314,7 +1314,8 @@ export function drawMap(
   ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  const by = H - 104;
+  const narrow = W < 640;
+  const by = narrow ? H - 190 : H - 104;
   ctx.moveTo(16, by);
   ctx.lineTo(16 + px, by);
   ctx.moveTo(16, by - 4);
@@ -1323,13 +1324,14 @@ export function drawMap(
   ctx.lineTo(16 + px, by + 4);
   ctx.stroke();
   label(ctx, km(nice), 16, by - 14, 'rgba(255,255,255,0.8)');
-  label(
-    ctx,
-    'Ziehen: verschieben · Mausrad: zoomen · Doppelklick: zurück',
-    16,
-    by + 18,
-    'rgba(255,255,255,0.45)',
-  );
+  if (!narrow)
+    label(
+      ctx,
+      'Ziehen: verschieben · Mausrad: zoomen · Doppelklick: zurück',
+      16,
+      by + 18,
+      'rgba(255,255,255,0.45)',
+    );
 }
 
 /**
@@ -1404,8 +1406,12 @@ function drawPrediction(ctx: CanvasRenderingContext2D, f: Flight, v: View, pred:
     const [cx, cy] = bodyState(pred.ref, pred.ts[i]!);
     return Math.hypot(pred.xs[i]! - cx, pred.ys[i]! - cy) - pred.ref.radius;
   };
-  if (pred.high >= 0) mark(pred.high, `Ap ${km(alt(pred.high))}`, '#fcd34d');
-  if (pred.low >= 0) mark(pred.low, `Pe ${km(alt(pred.low))}`, '#fcd34d');
+  // Ap/Pe nur beschriften, wenn sie sich auf dem Bildschirm vom Körper abheben.
+  const [rsx, rsy] = toScreen(v, rx0, ry0);
+  const apart = (i: number): boolean =>
+    Math.hypot(xs[i]! - rsx, ys[i]! - rsy) > pred.ref.radius * v.scale + 14;
+  if (pred.high >= 0 && apart(pred.high)) mark(pred.high, `Ap ${km(alt(pred.high))}`, '#fcd34d');
+  if (pred.low >= 0 && apart(pred.low)) mark(pred.low, `Pe ${km(alt(pred.low))}`, '#fcd34d');
   if (pred.impact) {
     const i = pred.n - 1;
     ctx.strokeStyle = '#f87171';

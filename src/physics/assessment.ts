@@ -89,7 +89,7 @@ export function assessStability(params: ScenarioParams): Assessment {
       id: 'hill',
       title: 'Innerhalb der Stabilitätsgrenze',
       status: a > crit ? 'fail' : a > 0.85 * crit ? 'warn' : 'ok',
-      detail: `Halbachse ${Number.isFinite(a) ? (a / info.hillRadius).toFixed(2) : '∞'} r_H – Grenze ${(crit / info.hillRadius).toFixed(2)} r_H (${retrograde ? 'retrograd' : 'prograd'}, Domingos et al. 2006).`,
+      detail: `Halbachse ${Number.isFinite(a) ? (a / info.hillRadius).toFixed(2) : '∞'} Hill-Radien – Grenze ${(crit / info.hillRadius).toFixed(2)} Hill-Radien (${retrograde ? 'retrograd' : 'prograd'}, Domingos et al. 2006).`,
     });
     const sun = bodies[indices.sun]!;
     const j = jacobiCheck(

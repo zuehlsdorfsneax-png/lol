@@ -36,7 +36,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
   moonDistanceRH: {
     key: 'moonDistanceRH',
     label: 'Mondabstand (Hill-Radien)',
-    short: 'd / r_H',
+    short: 'd in Hill-Radien',
     min: 0.05,
     max: 1,
     log: false,
@@ -200,7 +200,7 @@ export const MAP_PRESETS: readonly MapPreset[] = [
     id: 'sonne',
     title: 'Erdabstand × Sonnenmasse',
     description:
-      'Der reale Mond (384 400 km) bei anderem Abstand zur Sonne und anderer Sonnenmasse. Die Grenze folgt der Theorie r_H ∝ a · M^(−1/3).',
+      'Der reale Mond (384 400 km) bei anderem Abstand zur Sonne und anderer Sonnenmasse. Die Grenze folgt der Theorie: Hill-Radius ∝ a · M^(−1/3).',
     config: {
       x: 'earthOrbit',
       y: 'sunMass',
@@ -282,7 +282,7 @@ export function theoryOverlays(cfg: MapConfig): Overlay[] {
     });
     const crit = criticalMoonDistance(cfg.retrograde, cfg.base.earthEccentricity, 0);
     out.push({
-      label: `Domingos et al.: ${de(crit, 2)} r_H`,
+      label: `Domingos et al.: ${de(crit, 2)} Hill-Radien`,
       points: [
         [crit, cfg.yMin],
         [crit, cfg.yMax],
@@ -295,7 +295,7 @@ export function theoryOverlays(cfg: MapConfig): Overlay[] {
     const m = EARTH.mass + MOON.mass;
     const crit = criticalMoonDistance(false, cfg.base.earthEccentricity, 0);
     out.push({
-      label: `Mond bei ${de(crit, 2)} r_H`,
+      label: `Mond bei ${de(crit, 2)} Hill-Radien`,
       points: range(cfg.xMin, cfg.xMax).map((a) => {
         const aM = a * 1.495978707e11;
         const M = m / (3 * (d / (crit * aM)) ** 3);

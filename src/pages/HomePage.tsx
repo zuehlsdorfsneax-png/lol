@@ -9,7 +9,7 @@ import { TEMPLATES } from '../rocket/parts';
 import { Simulation } from '../sim/Simulation';
 import { SpaceCanvas } from '../sim/SpaceCanvas';
 import { DEFAULT_VIEW } from '../sim/view';
-import { LinkButton } from '../ui/content';
+import { LinkButton } from '../ui/LinkButton';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { Icon } from '../ui/Icon';
 
@@ -21,6 +21,7 @@ function RocketArt() {
     const c = canvas.current;
     const { width: W, height: H } = size;
     if (!c || W === 0) return;
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     let id = 0;
     const draw = (now: number): void => {
       const ctx = prepareCanvas(c, W, H);
@@ -46,7 +47,7 @@ function RocketArt() {
       ctx.fill();
       ctx.save();
       ctx.translate(W * 0.52, H * 0.78);
-      ctx.rotate(0.5 + 0.03 * Math.sin(now / 900));
+      ctx.rotate(0.5 + (calm ? 0 : 0.03 * Math.sin(now / 900)));
       const scale = (H * 0.62) / 36;
       ctx.scale(scale, -scale);
       drawRocket(ctx, TEMPLATES[2]!.parts, {
@@ -169,11 +170,11 @@ export function HomePage() {
           <div class="eyebrow" style={{ color: '#e2a846' }}>
             Neu · Spiel
           </div>
-          <h2>Raketenwerft: Bau dir deinen Weg zum Mond</h2>
+          <h2>Raketenwerft: Bau dir deinen Weg durchs Sonnensystem</h2>
           <p>
-            Rakete aus Tanks, Triebwerken und Stufen zusammenbauen, starten, in die Umlaufbahn
-            fliegen und auf dem Mond landen – mit echter Schwerkraft von Erde und Mond. Für alle ab
-            etwa zehn Jahren, mit Hilfe-Pilot für den Anfang.
+            Rakete aus Tanks, Triebwerken, Boostern und Stufen bauen, an der Raumstation andocken,
+            auf dem Mond landen und zum Mars fliegen – mit echter Schwerkraft von Sonne, Planeten
+            und Monden. 22 Ziele, Ränge und Lackierungen; mit Hilfe-Pilot für den Anfang.
           </p>
           <span class="btn primary" style={{ justifySelf: 'start' }}>
             Jetzt spielen <Icon name="arrow" />
@@ -223,8 +224,8 @@ export function HomePage() {
           <a class="tool-card" href="#rakete">
             <h3>Raketenwerft</h3>
             <p class="small muted">
-              Rakete bauen, starten und auf dem Mond landen – Schwerkraft, Treibstoff und
-              Luftwiderstand werden echt berechnet.
+              Rakete bauen, andocken, auf Mond und Mars landen – im verkleinerten Sonnensystem mit
+              echter Schwerkraft, Luftwiderstand und Hitze.
             </p>
           </a>
           <a class="tool-card" href="#spiel">

@@ -101,6 +101,25 @@ describe('Raumstation', () => {
     expect(f.status).toBe('flying');
   });
 
+  it('dockt auch ohne gewähltes Ziel an, wenn man langsam heranfährt', () => {
+    const f = new Flight(template('faehre'));
+    f.segs.pop();
+    f.status = 'flying';
+    f.landedOn = null;
+    const [px, py] = stationPort(f.t);
+    const [sx, sy, vx, vy] = stationState(f.t);
+    const d = Math.hypot(px - sx, py - sy);
+    const ux = (px - sx) / d;
+    const uy = (py - sy) / d;
+    f.angle = Math.atan2(-uy, -ux);
+    f.x = px + ux * (8 + f.length);
+    f.y = py + uy * (8 + f.length);
+    f.vx = vx;
+    f.vy = vy;
+    f.update(1 / 60);
+    expect(f.status).toBe('docked');
+  });
+
   it('zu schnell angeflogen: kein Andocken', () => {
     const f = new Flight(template('faehre'));
     f.segs.pop();

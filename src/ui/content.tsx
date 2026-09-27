@@ -109,19 +109,4 @@ export function StatusChip({ status, children }: { status: Status; children: Com
   );
 }
 
-export function LinkButton({
-  to,
-  children,
-  primary = false,
-}: {
-  to: string;
-  children: ComponentChildren;
-  primary?: boolean;
-}) {
-  return (
-    <a class={`btn ${primary ? 'primary' : ''}`} href={`#${to}`}>
-      {children}
-      <Icon name="arrow" />
-    </a>
-  );
-}
+export { LinkButton } from './LinkButton';

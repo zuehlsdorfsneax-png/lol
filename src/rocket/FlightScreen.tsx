@@ -65,7 +65,7 @@ function clock(t: number): string {
   const sec = s % 60;
   const two = (n: number): string => String(n).padStart(2, '0');
   return d > 0
-    ? `${d} T ${two(h)}:${two(m)}:${two(sec)}`
+    ? `${d} ${d === 1 ? 'Tag' : 'Tage'} ${two(h)}:${two(m)}:${two(sec)}`
     : h > 0
       ? `${h}:${two(m)}:${two(sec)}`
       : `${two(m)}:${two(sec)}`;
@@ -170,7 +170,9 @@ function tipFor(f: Flight, pilot: boolean): string {
     return 'Du kreist jetzt um die Sonne! Karte (M): Zeitraffer hoch, bis die Bahn den Zielplaneten erreicht. Kleine Korrekturen in oder gegen die Flugrichtung verschieben die Ankunft.';
   if (ref === JUPITER)
     return 'Jupiter hat keine feste Oberfläche – nur vorbeifliegen! Sein Schwung schleudert die Rakete weiter.';
-  if (ref === MARS || ref === PHOBOS || ref === VENUS) {
+  if (ref === PHOBOS)
+    return 'Phobos hat fast keine Schwerkraft: mit ganz wenig Schub (unter 5 %) langsam aufsetzen. Zu viel Gas – und du fliegst davon.';
+  if (ref === MARS || ref === VENUS) {
     if (!o.bound)
       return `Angekommen bei ${ref.name}! Am tiefsten Punkt (Pe) gegen die Flugrichtung bremsen, bis die Bahn geschlossen ist.`;
     return ref === VENUS
@@ -222,14 +224,21 @@ function loadSnapshot(): FlightSnapshot | null {
 interface Props {
   design: Design;
   paint: string;
+  sandbox: boolean;
   knownGoals: readonly string[];
   onGoal: (id: GoalId) => void;
   onExit: () => void;
 }
 
-export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Props) {
+function makeFlight(design: Design, sandbox: boolean): Flight {
+  const f = new Flight(design);
+  f.sandbox = sandbox;
+  return f;
+}
+
+export function FlightScreen({ design, paint, sandbox, knownGoals, onGoal, onExit }: Props) {
   const [run, setRun] = useState(0);
-  const flight = useRef<Flight>(new Flight(design));
+  const flight = useRef<Flight>(makeFlight(design, sandbox));
   const [, setTick] = useState(0);
   const [map, setMap] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -259,6 +268,9 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
   mapOpen.current = map;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const helpRef = useRef(help);
+  helpRef.current = help;
+  const [menu, setMenu] = useState(false);
   const goalCallback = useRef(onGoal);
   goalCallback.current = onGoal;
   setPaint(paint);
@@ -271,7 +283,7 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
     setToasts((t) => [...t, { id: -Math.random(), kind, text }].slice(-3));
 
   const restart = (next?: Flight): void => {
-    flight.current = next ?? new Flight(design);
+    flight.current = next ?? makeFlight(design, sandbox);
     pilot.current = null;
     pred.current = null;
     setToasts([]);
@@ -297,7 +309,9 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
       toast('Noch kein Spielstand gespeichert.', 'warn');
       return;
     }
-    restart(Flight.restore(snap));
+    const restored = Flight.restore(snap);
+    restored.sandbox = sandbox;
+    restart(restored);
     toast('Spielstand geladen.');
   };
 
@@ -391,8 +405,10 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
       else if (k === '+') zoomBy(1.4);
       else if (k === '-') zoomBy(1 / 1.4);
       else if (k === 't') togglePilot();
-      else if (k === 'escape') setPaused((p) => !p);
-      else if (k === 'h' || k === '?') setHelp((h) => !h);
+      else if (k === 'escape') {
+        if (helpRef.current) setHelp(false);
+        else setPaused((p) => !p);
+      } else if (k === 'h' || k === '?') setHelp((h) => !h);
       else if (k === 'f5') quicksave();
       else if (k === 'f9') quickload();
     };
@@ -484,7 +500,8 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
 
   // Beim Start das Spielfeld ganz ins Bild holen.
   useEffect(() => {
-    box.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    box.current?.scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
   }, []);
 
   // Spielschleife
@@ -707,7 +724,10 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
     f.status !== 'docked';
 
   return (
-    <div class={`rocket-stage ${map ? 'is-map' : ''}`} ref={box}>
+    <div
+      class={`rocket-stage ${map ? 'is-map' : ''} ${toasts.length ? 'has-toast' : ''}`}
+      ref={box}
+    >
       <div class="rocket-canvas" ref={stage}>
         <canvas
           ref={canvas}
@@ -774,11 +794,11 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
             <dt>Relativ</dt>
             <dd>{fmt(ti.speed, ti.speed < 10 ? 1 : 0)} m/s</dd>
             <dt>{ti.closing > 0 ? 'Entfernt sich' : 'Kommt näher'}</dt>
-            <dd>{fmt(Math.abs(ti.closing), 1)} m/s</dd>
+            <dd>{fmt(Math.abs(ti.closing), Math.abs(ti.closing) < 10 ? 1 : 0)} m/s</dd>
           </dl>
         )}
         <div class="hud-title rank">
-          {rank.title} · {points} Punkte
+          {sandbox ? 'Sandkasten · keine Punkte' : `${rank.title} · ${points} Punkte`}
         </div>
         <ul class="goal-list">
           {open.map((g) => (
@@ -792,11 +812,11 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
 
       <div class="hud-bar">
         <div class="hud-group">
-          <button type="button" class="hud-btn" onClick={onExit}>
-            ← Werft
+          <button type="button" class="hud-btn" onClick={onExit} aria-label="Zurück zur Werft">
+            ← <span class="btn-label">Werft</span>
           </button>
-          <button type="button" class="hud-btn" onClick={() => restart()}>
-            <Icon name="reset" /> Neustart
+          <button type="button" class="hud-btn" onClick={() => restart()} aria-label="Neustart">
+            <Icon name="reset" /> <span class="btn-label">Neustart</span>
           </button>
         </div>
         <div class="hud-group hud-center">
@@ -844,7 +864,7 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
               ))}
             </select>
           )}
-          <div class="warp" role="group" aria-label="Zoom">
+          <div class="warp zoom-group" role="group" aria-label="Zoom">
             <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Verkleinern">
               −
             </button>
@@ -853,7 +873,16 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
             </button>
           </div>
         </div>
-        <div class="hud-group">
+        <button
+          type="button"
+          class={`hud-btn menu-toggle ${menu ? 'on' : ''}`}
+          aria-expanded={menu}
+          aria-label="Weitere Knöpfe"
+          onClick={() => setMenu(!menu)}
+        >
+          ⋯
+        </button>
+        <div class={`hud-group hud-extra ${menu ? 'open' : ''}`}>
           <button
             type="button"
             class="hud-btn"
@@ -901,7 +930,8 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
       <div class="toasts" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} class={`rocket-toast ${t.kind}`}>
-            {t.text}
+            {t.title && <strong>{t.title}</strong>}
+            <span>{t.text}</span>
           </div>
         ))}
       </div>
@@ -1010,6 +1040,20 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
                 />
               </div>
             </div>
+            {f.heat > 0.05 && (
+              <div
+                class="gauge heat"
+                title="Hitze beim Wiedereintritt – bei 100 % verglüht die Rakete"
+              >
+                <span>Hitze</span>
+                <div class="bar">
+                  <div
+                    class={`fill ${f.heat > 0.6 ? 'low' : ''}`}
+                    style={{ width: `${Math.min(1, f.heat) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
             <div class="small">
               Δv übrig <strong>{fmt(f.deltaV())} m/s</strong>
             </div>
@@ -1087,7 +1131,9 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
                 [', und .', 'Zeitraffer'],
                 ['T', 'Hilfe-Pilot bis in die Umlaufbahn'],
                 ['F5 / F9', 'Spielstand speichern / laden'],
-                ['Esc', 'Pause'],
+                ['Esc', 'Pause (schließt auch diese Hilfe)'],
+                ['H oder ?', 'Diese Hilfe'],
+                ['Maus / Finger', 'Karte ziehen, Mausrad oder zwei Finger zoomen'],
               ].map(([k, v]) => (
                 <tr key={k}>
                   <td>
@@ -1106,7 +1152,13 @@ export function FlightScreen({ design, paint, knownGoals, onGoal, onExit }: Prop
 
       {f.status === 'crashed' && (
         <div class="rocket-overlay" role="dialog" aria-label="Absturz">
-          <h3>Bumm! Die Rakete ist zerschellt.</h3>
+          <h3>
+            {f.crashReason.includes('verglüht')
+              ? 'Verglüht!'
+              : f.crashReason.includes('Gashülle')
+                ? 'Verschluckt!'
+                : 'Bumm! Die Rakete ist zerschellt.'}
+          </h3>
           <p>{f.crashReason}</p>
           <div class="btn-row">
             <button type="button" class="btn primary" onClick={() => restart()}>

@@ -16,6 +16,7 @@ export function RocketGame() {
   const [flying, setFlying] = useState(false);
   const [goals, setGoals] = useState<string[]>(() => progressStore.load().rocketGoals);
   const [paint, setPaintId] = useState<string>(() => progressStore.load().rocketPaint);
+  const [sandbox, setSandbox] = useState(false);
 
   const change = (d: Design): void => {
     setDesign(d);
@@ -28,6 +29,7 @@ export function RocketGame() {
   };
 
   const reachGoal = (id: GoalId): void => {
+    if (sandbox) return;
     setGoals((old) => (old.includes(id) ? old : [...old, id]));
     progressStore.update((p) =>
       p.rocketGoals.includes(id) ? p : { ...p, rocketGoals: [...p.rocketGoals, id] },
@@ -38,6 +40,7 @@ export function RocketGame() {
     <FlightScreen
       design={design}
       paint={paint}
+      sandbox={sandbox}
       knownGoals={goals}
       onGoal={reachGoal}
       onExit={() => setFlying(false)}
@@ -50,6 +53,8 @@ export function RocketGame() {
       onPaint={choosePaint}
       onChange={change}
       onLaunch={() => setFlying(true)}
+      sandbox={sandbox}
+      onSandbox={setSandbox}
     />
   );
 }

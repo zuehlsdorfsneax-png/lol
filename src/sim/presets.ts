@@ -80,7 +80,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'grenze',
     title: 'Am Rand der Stabilität',
     description:
-      'Kreisbahn bei 0,45 Hill-Radien – knapp innerhalb der Stabilitätsgrenze (≈ 0,49 r_H). Die Sonne verformt die Bahn stark, aber der Mond bleibt.',
+      'Kreisbahn bei 0,45 Hill-Radien – knapp innerhalb der Stabilitätsgrenze (≈ 0,49 Hill-Radien). Die Sonne verformt die Bahn stark, aber der Mond bleibt.',
     params: { ...BASE, moonDistance: 0.45 * RH },
     view: { frame: 'rotating', radius: 2.2e9, speedIndex: 3 },
     chapter: 5,
@@ -96,7 +96,7 @@ export const PRESETS: readonly Preset[] = [
   },
   {
     id: 'retrograd',
-    title: 'Retrograder Mond bei 0,7 r_H',
+    title: 'Retrograder Mond bei 0,7 Hill-Radien',
     description:
       'Ein rückwärts kreisender Mond ist auch bei 0,7 Hill-Radien noch stabil – ein prograder würde dort sofort entkommen. Vergleiche mit "Jenseits der Grenze".',
     params: { ...BASE, moonDistance: 0.7 * RH, moonRetrograde: true },
@@ -107,7 +107,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'merkurbahn',
     title: 'Erde auf der Merkurbahn',
     description:
-      'Bei 0,39 AE schrumpft der Hill-Radius auf 580 000 km. Der Mond steht jetzt bei 0,66 r_H – weit jenseits der Grenze.',
+      'Bei 0,39 AE schrumpft der Hill-Radius auf 580 000 km. Der Mond steht jetzt bei 0,66 Hill-Radien – weit jenseits der Grenze.',
     params: { ...BASE, earthOrbit: 0.387, earthEccentricity: 0 },
     view: { frame: 'rotating', radius: 1.6e9, speedIndex: 2 },
     chapter: 8,

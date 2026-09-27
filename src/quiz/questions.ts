@@ -147,7 +147,8 @@ export const QUESTIONS: readonly Question[] = [
     text: 'Wie groß ist der Hill-Radius der Erde ungefähr?',
     options: ['38 000 km', '384 000 km', '1,5 Mio. km', '150 Mio. km'],
     answer: 2,
-    explanation: 'r_H = a·∛(m/3M) ≈ 1,5 Mio. km – der Mond kreist bei etwa einem Viertel davon.',
+    explanation:
+      'Hill-Radius = a·∛(m/3M) ≈ 1,5 Mio. km – der Mond kreist bei etwa einem Viertel davon.',
   },
   {
     chapter: 5,
@@ -167,8 +168,8 @@ export const QUESTIONS: readonly Question[] = [
     text: 'Bis zu welchem Abstand sind Monde laut Simulation stabil?',
     options: [
       'Prograd und retrograd bis zum Hill-Radius',
-      'Prograd bis ≈ 0,48 r_H, retrograd bis ≈ 0,92 r_H',
-      'Prograd bis ≈ 0,92 r_H, retrograd bis ≈ 0,48 r_H',
+      'Prograd bis ≈ 0,48 Hill-Radien, retrograd bis ≈ 0,92',
+      'Prograd bis ≈ 0,92 Hill-Radien, retrograd bis ≈ 0,48',
       'Nur bis zur Roche-Grenze',
     ],
     answer: 1,
@@ -202,7 +203,7 @@ export const QUESTIONS: readonly Question[] = [
     ],
     answer: 2,
     explanation:
-      'Der Hill-Radius wäre nur 580 000 km; der Mond stünde bei 0,66 r_H – jenseits der Grenze von 0,48 r_H.',
+      'Der Hill-Radius wäre nur 580 000 km; der Mond stünde bei 0,66 Hill-Radien – jenseits der Grenze von 0,48.',
   },
   {
     chapter: 8,

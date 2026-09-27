@@ -68,14 +68,16 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
   Treibstoffbudget
 - „Trojaner“: Asteroid bei L4 platzieren, 50 Jupiterumläufe überstehen
 - Quiz mit 18 Fragen; Fortschritt wird im Browser gespeichert
-- **Raketenwerft** (angelehnt an Raumfahrt-Bauspiele): Rakete aus Kapsel, Fallschirm, Tanks,
-  Triebwerken, Stufentrennern und Landebeinen bauen; die Werft zeigt Δv je Stufe nach der
-  Raketengleichung und das Schub-Gewichts-Verhältnis. Im Flug rechnet das Spiel Erde und Mond
-  (verkleinerte Welt, echte Oberflächenschwerkraft und echtes Massenverhältnis) mit Runge-Kutta 4,
-  dazu Schub, Treibstoff, Luftwiderstand und Fallschirm. Die Karte zeigt die Bahnvorhersage als
-  Drei-Körper-Rechnung, Ap/Pe, die Hill-Sphäre des Mondes und den Mond bei Ankunft. Ziele von
-  „Abheben“ bis „Heimkehr vom Mond“, Hilfe-Pilot bis zur Umlaufbahn, Zeitraffer, Tastatur und
-  Touch. Ein automatischer Test fliegt die komplette Mondmission mit der Vorlage „Luna 1“.
+- **Raketenwerft** (angelehnt an Spaceflight Simulator): Rakete aus Kapsel, Fallschirm, Tanks,
+  Triebwerken, Stufentrennern, Seitenboostern und Landebeinen bauen; die Werft zeigt Δv je Stufe
+  nach der Raketengleichung und das Schub-Gewichts-Verhältnis. Geflogen wird in einem
+  gleichmäßig verkleinerten Sonnensystem (1 : 10,6) mit Sonne, Venus, Erde, Mond, Mars, Phobos
+  und Jupiter – echte Oberflächenschwerkraft und Massenverhältnisse, Runge-Kutta 4 in der
+  Schwerkraft aller Körper, Luftwiderstand, Hitze beim Wiedereintritt, Fallschirm. Dazu die
+  Raumstation Kepler mit Andocken, RCS-Düsen und Tanken, Startfenster (Hohmann) für Mond und
+  Planeten, eine verschiebbare Karte mit Mehrkörper-Bahnvorhersage und Begegnungen, 22 Ziele
+  mit Punkten, Rängen und Lackierungen, Spielstände, Pause, Sandkasten und Hilfe-Pilot.
+  Automatische Tests fliegen eine komplette Mond- und eine komplette Marsmission.
 - **Lunas Sternenreise** für Jüngere: Schleuder-Spiel mit sechs Leveln
 
 ## 4. Didaktisches Prinzip

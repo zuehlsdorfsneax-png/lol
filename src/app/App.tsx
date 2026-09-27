@@ -1,18 +1,6 @@
-import { useEffect, useState } from 'preact/hooks';
-import { ChapterPage } from '../pages/ChapterPage';
+import type { ComponentType } from 'preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { HomePage } from '../pages/HomePage';
-import { DownloadPage } from '../pages/DownloadPage';
-import { GlossaryPage } from '../pages/GlossaryPage';
-import { KidsPage } from '../pages/KidsPage';
-import { LagrangePage } from '../pages/LagrangePage';
-import { MethodsPage } from '../pages/MethodsPage';
-import { MissionPage } from '../pages/MissionPage';
-import { MissionsPage } from '../pages/MissionsPage';
-import { QuizPage } from '../pages/QuizPage';
-import { RocketPage } from '../pages/RocketPage';
-import { SimulatorPage } from '../pages/SimulatorPage';
-import { SourcesPage } from '../pages/SourcesPage';
-import { StabilityMapPage } from '../pages/StabilityMapPage';
 import { Icon } from '../ui/Icon';
 import { CHAPTERS } from './content';
 import { useRoute, type Route } from './router';
@@ -87,46 +75,125 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
   },
 ];
 
+/**
+ * Seiten werden erst geladen, wenn man sie öffnet – so startet die App schneller.
+ * Die Startseite ist direkt enthalten.
+ */
+type Loader = () => Promise<ComponentType<{ route: Route }>>;
+
+const PAGES: Partial<Record<Route['page'], Loader>> = {
+  simulator: () =>
+    import('../pages/SimulatorPage').then((m) => ({ route }: { route: Route }) => (
+      <m.SimulatorPage preset={route.param} />
+    )),
+  karte: () =>
+    import('../pages/StabilityMapPage').then((m) => ({ route }: { route: Route }) => (
+      <m.StabilityMapPage preset={route.param} />
+    )),
+  lagrange: () =>
+    import('../pages/LagrangePage').then((m) => ({ route }: { route: Route }) => (
+      <m.LagrangePage preset={route.param} />
+    )),
+  kapitel: () =>
+    import('../pages/ChapterPage').then((m) => ({ route }: { route: Route }) => (
+      <m.ChapterPage n={Number(route.param)} />
+    )),
+  missionen: () => import('../pages/MissionsPage').then((m) => () => <m.MissionsPage />),
+  mission: () =>
+    import('../pages/MissionPage').then((m) => ({ route }: { route: Route }) => (
+      <m.MissionPage id={route.param ?? ''} />
+    )),
+  quiz: () => import('../pages/QuizPage').then((m) => () => <m.QuizPage />),
+  spiel: () => import('../pages/KidsPage').then((m) => () => <m.KidsPage />),
+  rakete: () => import('../pages/RocketPage').then((m) => () => <m.RocketPage />),
+  download: () => import('../pages/DownloadPage').then((m) => () => <m.DownloadPage />),
+  begriffe: () => import('../pages/GlossaryPage').then((m) => () => <m.GlossaryPage />),
+  methodik: () => import('../pages/MethodsPage').then((m) => () => <m.MethodsPage />),
+  quellen: () => import('../pages/SourcesPage').then((m) => () => <m.SourcesPage />),
+};
+
+const loaded = new Map<Route['page'], ComponentType<{ route: Route }>>();
+
 function Page({ route }: { route: Route }) {
-  switch (route.page) {
-    case 'simulator':
-      return <SimulatorPage preset={route.param} />;
-    case 'karte':
-      return <StabilityMapPage preset={route.param} />;
-    case 'lagrange':
-      return <LagrangePage preset={route.param} />;
-    case 'kapitel':
-      return <ChapterPage n={Number(route.param)} />;
-    case 'missionen':
-      return <MissionsPage />;
-    case 'mission':
-      return <MissionPage id={route.param ?? ''} />;
-    case 'quiz':
-      return <QuizPage />;
-    case 'spiel':
-      return <KidsPage />;
-    case 'rakete':
-      return <RocketPage />;
-    case 'download':
-      return <DownloadPage />;
-    case 'begriffe':
-      return <GlossaryPage />;
-    case 'methodik':
-      return <MethodsPage />;
-    case 'quellen':
-      return <SourcesPage />;
-    default:
-      return <HomePage />;
+  const load = PAGES[route.page];
+  const [, setVersion] = useState(0);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!load || loaded.has(route.page)) return;
+    let alive = true;
+    setFailed(false);
+    load()
+      .then((c) => {
+        loaded.set(route.page, c);
+        if (alive) setVersion((v) => v + 1);
+      })
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [route.page]);
+  if (!load) return <HomePage />;
+  const C = loaded.get(route.page);
+  if (C) return <C route={route} />;
+  return (
+    <div class="page-loading" role="status">
+      {failed ? (
+        <>
+          Die Seite konnte nicht geladen werden.{' '}
+          <button type="button" class="btn small" onClick={() => location.reload()}>
+            Neu laden
+          </button>
+        </>
+      ) : (
+        'Lädt …'
+      )}
+    </div>
+  );
+}
+
+const PAGE_TITLES: Record<Route['page'], string> = {
+  start: 'Bahnstabilität im Drei-Körper-System',
+  simulator: 'Simulator',
+  karte: 'Stabilitätskarte',
+  lagrange: 'Lagrange-Labor',
+  kapitel: 'Kapitel',
+  missionen: 'Missionen',
+  mission: 'Mission',
+  quiz: 'Quiz',
+  spiel: 'Lunas Sternenreise',
+  rakete: 'Raketenwerft',
+  download: 'Download für Windows',
+  begriffe: 'Begriffe A–Z',
+  methodik: 'Methodik & Validierung',
+  quellen: 'Quellen & Formeln',
+};
+
+function titleFor(route: Route): string {
+  if (route.page === 'kapitel') {
+    const c = CHAPTERS.find((x) => String(x.n) === route.param);
+    if (c) return `Kapitel ${c.n}: ${c.title}`;
   }
+  return PAGE_TITLES[route.page];
 }
 
 export function App() {
   const route = useRoute();
   const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(false), [route]);
+  const main = useRef<HTMLElement>(null);
+  const first = useRef(true);
+  useEffect(() => {
+    setOpen(false);
+    document.title = `${titleFor(route)} · Orbitlabor`;
+    // Nach einem Seitenwechsel landet der Fokus am Seitenanfang (wichtig für Screenreader).
+    if (!first.current) main.current?.focus({ preventScroll: true });
+    first.current = false;
+  }, [route]);
 
   return (
     <div class="app">
+      <button type="button" class="skip-link" onClick={() => main.current?.focus()}>
+        Zum Inhalt springen
+      </button>
       <div class="topbar">
         <button
           type="button"
@@ -170,7 +237,7 @@ export function App() {
           Seminararbeit Astronomie · Eigenanteil: digitale Drei-Körper-Simulation
         </div>
       </nav>
-      <main class="main" id="inhalt">
+      <main class="main" id="inhalt" ref={main} tabIndex={-1}>
         <Page route={route} />
       </main>
     </div>

@@ -208,4 +208,27 @@ describe('Flug', () => {
     expect(f.status).toBe('landed');
     expect(f.goals.has('soft')).toBe(true);
   });
+
+  it('zu steiler, schneller Wiedereintritt: die Rakete verglüht', () => {
+    const f = new Flight(['kapsel', 'tank-s', 'falke']);
+    f.status = 'flying';
+    f.landedOn = null;
+    f.y = EARTH.radius + 30_000;
+    f.vy = -4_500;
+    fly(f, 20);
+    expect(f.status).toBe('crashed');
+    expect(f.crashReason).toMatch(/verglüht/);
+  });
+
+  it('der Fallschirm ist nach der Landung verbraucht', () => {
+    const f = new Flight(template('huepfer'));
+    f.throttle = 1;
+    fly(f, 400, 1, () => {
+      if (f.active.fuel === 0 && f.chute === 'stowed') f.deployChute();
+    });
+    fly(f, 3000, 50);
+    expect(f.status).toBe('landed');
+    expect(f.chute).toBe('none');
+    expect(f.chuteOpen).toBe(0);
+  });
 });

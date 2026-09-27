@@ -271,6 +271,8 @@ export interface FlightSnapshot {
 export interface FlightEvent {
   id: number;
   kind: 'goal' | 'info' | 'warn' | 'fail';
+  /** Kurze Überschrift (bei Zielen: Titel und Punkte). */
+  title?: string;
   text: string;
 }
 
@@ -343,6 +345,12 @@ const LAND_TILT_LEGS = 0.65;
 /** Beschleunigung der Lagekontrolldüsen (RCS) in m/s². */
 const RCS_ACCEL = 0.6;
 const DOCK_DISTANCE = 20;
+/**
+ * Hitze nach Sutton-Graves (∝ √ρ·v³). Kalibriert: Rückkehr vom Mond mit Pe um 20 km erreicht
+ * etwa 55 %, ein senkrechter Sturz mit 4,5 km/s verglüht.
+ */
+const HEAT_SCALE = 4.2e10;
+const HEAT_COOLING = 0.08;
 const DOCK_SPEED = 2;
 
 function wrap(a: number): number {
@@ -379,6 +387,8 @@ export class Flight {
   /** RCS-Eingabe: x = nach rechts, y = nach vorn (je −1 … 1). */
   translate = { x: 0, y: 0 };
   target: TargetId | null = null;
+  /** Sandkasten: unendlich Treibstoff (dafür keine Punkte). */
+  sandbox = false;
   segs: Segment[];
   status: FlightStatus = 'landed';
   landedOn: Body | null = EARTH;
@@ -389,7 +399,10 @@ export class Flight {
   readonly events: FlightEvent[] = [];
   readonly debris: Debris[] = [];
   readonly particles: Particle[] = [];
+  maxHeat = 0;
   maxAltitude = 0;
+  /** Hitze durch Luftreibung: 0 = kalt, 1 = zerstört. */
+  heat = 0;
   crashReason = '';
   readonly design: Design;
   /** Winkel des Landeplatzes auf dem Körper (bei Monden relativ zur Drehung). */
@@ -852,7 +865,25 @@ export class Flight {
       this.chute = 'open';
       this.emit('info', 'Fallschirm offen!');
     }
-    if (this.chute === 'open') this.chuteOpen = Math.min(1, this.chuteOpen + dt / 2.5);
+    if (this.chute === 'open') {
+      this.chuteOpen = Math.min(1, this.chuteOpen + dt / 2.5);
+      if (air.rho > 0 && rv > 2 * CHUTE_MAX_SPEED) {
+        this.chute = 'none';
+        this.chuteOpen = 0;
+        this.emit('warn', 'Der Fallschirm ist bei zu hohem Tempo gerissen!');
+      }
+    }
+    // Hitze beim Wiedereintritt: wächst mit Luftdichte und Tempo³, kühlt langsam ab.
+    const heating = air.rho > 0 ? (Math.sqrt(air.rho) * rv ** 3) / HEAT_SCALE : 0;
+    this.heat = Math.max(0, this.heat + (heating - this.heat * HEAT_COOLING) * dt);
+    this.maxHeat = Math.max(this.maxHeat, this.heat);
+    if (this.heat >= 1) {
+      this.fail(
+        'Beim Wiedereintritt verglüht – zu schnell in zu dichte Luft. Flacher eintauchen: tiefster Punkt eher 30 km als 10 km.',
+        bodyV,
+      );
+      return dt;
+    }
     if (air.rho > 0) {
       const cda = ROCKET_CDA + (this.chute === 'open' ? CHUTE_CDA * this.chuteOpen : 0);
       const k = (0.5 * air.rho * cda) / mass;
@@ -863,7 +894,7 @@ export class Flight {
     if (burning) this.burn(flow * this.throttle * dt);
 
     this.checkContact();
-    if (this.status === 'flying' && this.target === 'station') this.checkDocking();
+    if (this.status === 'flying') this.checkDocking();
     return dt;
   }
 
@@ -889,6 +920,7 @@ export class Flight {
 
   private burn(amount: number): void {
     const seg = this.active;
+    if (this.sandbox) return;
     seg.fuel = Math.max(0, seg.fuel - amount);
     if (seg.fuel === 0 && !this.emptyWarned) {
       this.emptyWarned = true;
@@ -930,6 +962,12 @@ export class Flight {
       this.angle = up;
       this.angVel = 0;
       this.warpIndex = 0;
+      this.heat = 0;
+      // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht.
+      if (this.chute === 'open') {
+        this.chute = 'none';
+        this.chuteOpen = 0;
+      }
       if (speed < 2) this.goal('soft');
       if (body === MOON) this.goal('moonland');
       else if (body === MARS) this.goal('marsland');
@@ -940,25 +978,38 @@ export class Flight {
         this.emit('info', `Gelandet auf: ${body.name}, mit ${speed.toFixed(1)} m/s. Gut gemacht!`);
       return;
     }
-    this.status = 'crashed';
-    this.warpIndex = 0;
-    this.throttle = 0;
-    if (body === SUN) this.crashReason = 'In der Sonne verglüht – über 5.000 °C heiß.';
+    let reason: string;
+    if (body === SUN) reason = 'In der Sonne verglüht – über 5.000 °C heiß.';
     else if (!body.solid)
-      this.crashReason = `${body.name} hat keine feste Oberfläche – die Rakete ist in der Gashülle zerdrückt worden.`;
+      reason = `${body.name} hat keine feste Oberfläche – die Rakete ist in der Gashülle zerdrückt worden.`;
     else
-      this.crashReason =
+      reason =
         speed > speedLimit
           ? `Aufprall mit ${Math.round(speed)} m/s – sicher sind höchstens ${speedLimit} m/s${legs ? '' : ' (mit Landebeinen 14 m/s)'}.`
           : `Zu schräg aufgesetzt (${Math.round((tilt * 180) / Math.PI)}°). Die Rakete ist umgekippt.`;
+    this.fail(reason, c);
+  }
+
+  /** Flug scheitert: Explosion, Meldung, alles aus. */
+  private fail(reason: string, c: { vx: number; vy: number }): void {
+    this.status = 'crashed';
+    this.warpIndex = 0;
+    this.throttle = 0;
+    this.crashReason = reason;
     this.explode(this.x, this.y, c.vx, c.vy, 70);
-    this.emit('fail', this.crashReason);
+    this.emit('fail', reason);
   }
 
   // ---------------------------------------------------------------- Station
 
   private checkDocking(): void {
+    // Grobe Vorprüfung, damit nicht in jedem Schritt die genaue Rechnung nötig ist.
+    const [sx, sy] = stationState(this.t);
+    if (Math.abs(this.x - sx) > 200 || Math.abs(this.y - sy) > 200) return;
+    const target = this.target;
+    this.target = 'station';
     const ti = this.targetInfo();
+    this.target = target ?? 'station';
     if (!ti || ti.distance > DOCK_DISTANCE || ti.speed > DOCK_SPEED) return;
     this.status = 'docked';
     this.throttle = 0;
@@ -984,8 +1035,8 @@ export class Flight {
 
   // ---------------------------------------------------------------- Ziele und Ereignisse
 
-  private emit(kind: FlightEvent['kind'], text: string): void {
-    this.events.push({ id: eventId++, kind, text });
+  private emit(kind: FlightEvent['kind'], text: string, title?: string): void {
+    this.events.push({ id: eventId++, kind, text, title });
     if (this.events.length > 30) this.events.shift();
   }
 
@@ -993,7 +1044,7 @@ export class Flight {
     if (this.goals.has(id)) return;
     this.goals.add(id);
     const g = GOALS.find((x) => x.id === id)!;
-    this.emit('goal', `${g.title}! ${g.text} (+${g.points} Punkte)`);
+    this.emit('goal', g.text, `★ ${g.title} · +${g.points} Punkte`);
   }
 
   private checkGoals(): void {
