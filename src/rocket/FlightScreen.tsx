@@ -391,9 +391,7 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
             // Automatischer Zoom: Mit der Höhe wird herausgezoomt, damit der Boden im Bild bleibt.
             const altitude = Math.max(1, fl.relative().altitude);
             const near = 5 / Math.pow(1 + altitude / 300, 0.7);
-            const far = Math.min(near, (H * 0.28) / altitude);
-            const blend = Math.min(1, Math.max(0, (altitude - 2_000) / 20_000));
-            const base = Math.exp(Math.log(near) * (1 - blend) + Math.log(far) * blend);
+            const base = Math.min(near, (H * 0.3) / altitude);
             const scale = Math.min(24, Math.max(1e-6, base * zoom.current));
             drawFlight(ctx, fl, flightView(fl, W, H, scale), now / 1000);
           }
@@ -461,6 +459,19 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
   const vertical = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
   const fuel = f.fuelCapacity > 0 ? f.active.fuel / f.fuelCapacity : 0;
   const win = moonWindow(f);
+  // Landehilfe: Bremsweg bei Vollgas senkrecht nach oben im Vergleich zur Höhe.
+  const descent = -vertical;
+  const gLocal = ref.mu / rel.r ** 2;
+  const brake = f.engine().thrust / f.mass - gLocal;
+  const stopping = brake > 0 ? (descent * descent) / (2 * brake) : Infinity;
+  const landing =
+    f.status === 'flying' && descent > 4 && rel.altitude < 30_000 && f.chute !== 'open'
+      ? {
+          impact: rel.altitude / descent,
+          urgent: stopping > 0.75 * rel.altitude,
+          weak: brake <= 0 || f.active.fuel <= 0,
+        }
+      : null;
   const goals = new Set<string>([...knownGoals, ...f.goals]);
   const maxWarp = f.maxWarpIndex();
   const pilotAvailable =
@@ -611,6 +622,15 @@ export function FlightScreen({ design, knownGoals, onGoal, onExit }: Props) {
         ))}
       </div>
 
+      {landing && (landing.urgent || landing.impact < 60) && (
+        <div class={`landing-alert ${landing.urgent ? 'urgent' : ''}`} role="status">
+          {landing.urgent
+            ? landing.weak
+              ? 'Achtung: Mit diesem Triebwerk reicht der Schub nicht zum Bremsen!'
+              : 'Jetzt bremsen! Rakete aufrichten und Gas geben.'
+            : `Boden in ${fmt(landing.impact)} s – bald bremsen`}
+        </div>
+      )}
       {f.status !== 'crashed' && <div class="hud-tip">{tipFor(f, pilot.current !== null)}</div>}
 
       <div class="hud-bottom">

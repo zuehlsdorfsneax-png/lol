@@ -2607,3 +2607,30 @@ details.section .section-body {
   font-family: var(--font-body);
   line-height: 1.5;
 }
+
+.landing-alert {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgb(10 16 34 / 85%);
+  border: 1px solid #fcd34d;
+  color: #fde68a;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.landing-alert.urgent {
+  border-color: #f87171;
+  color: #fecaca;
+  background: rgb(80 10 10 / 80%);
+  animation: pulse-alert 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-alert {
+  to {
+    transform: translateX(-50%) scale(1.06);
+  }
+}
