@@ -1,14 +1,72 @@
-import { useMemo, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { CHAPTERS, PROBLEM_QUESTION } from '../app/content';
 import { MISSIONS } from '../missions/missions';
 import { progressStore } from '../missions/progress';
 import { Stars } from '../missions/Stars';
 import { REAL_PARAMS } from '../physics';
+import { drawRocket } from '../rocket/draw';
+import { TEMPLATES } from '../rocket/parts';
 import { Simulation } from '../sim/Simulation';
 import { SpaceCanvas } from '../sim/SpaceCanvas';
 import { DEFAULT_VIEW } from '../sim/view';
 import { LinkButton } from '../ui/content';
+import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { Icon } from '../ui/Icon';
+
+/** Bild für den Hinweis auf die Raketenwerft: Rakete über dem Erdrand, Mond im Hintergrund. */
+function RocketArt() {
+  const [box, size] = useElementSize<HTMLDivElement>();
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = canvas.current;
+    const { width: W, height: H } = size;
+    if (!c || W === 0) return;
+    let id = 0;
+    const draw = (now: number): void => {
+      const ctx = prepareCanvas(c, W, H);
+      if (!ctx) return;
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < 60; i++) {
+        const x = (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1;
+        const y = (((Math.sin(i * 78.233) * 12345.678) % 1) + 1) % 1;
+        ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.5 * (((i * 7) % 10) / 10)})`;
+        ctx.fillRect(x * W, y * H * 0.8, 1.4, 1.4);
+      }
+      ctx.fillStyle = '#b6bbc4';
+      ctx.beginPath();
+      ctx.arc(W * 0.82, H * 0.2, 18, 0, Math.PI * 2);
+      ctx.fill();
+      const g = ctx.createRadialGradient(W * 0.3, H * 2.4, H * 1.9, W * 0.3, H * 2.4, H * 2.1);
+      g.addColorStop(0, '#2764b8');
+      g.addColorStop(0.8, '#3f8fd8');
+      g.addColorStop(1, 'rgba(120,180,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(W * 0.3, H * 2.4, H * 2.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.translate(W * 0.52, H * 0.78);
+      ctx.rotate(0.5 + 0.03 * Math.sin(now / 900));
+      const scale = (H * 0.62) / 36;
+      ctx.scale(scale, -scale);
+      drawRocket(ctx, TEMPLATES[2]!.parts, {
+        throttle: 1,
+        air: 0.1,
+        chuteOpen: 0,
+        time: now / 1000,
+      });
+      ctx.restore();
+      id = requestAnimationFrame(draw);
+    };
+    id = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(id);
+  }, [size]);
+  return (
+    <div ref={box} aria-hidden="true">
+      <canvas ref={canvas} />
+    </div>
+  );
+}
 
 const HERO_VIEW = { ...DEFAULT_VIEW, frame: 'rotating' as const, labels: true, trailSpan: 0 };
 
@@ -19,10 +77,14 @@ export function HomePage() {
       particles: { count: 160, innerKm: 60_000, outerKm: 1_400_000, retrograde: false },
     }),
   );
+  const dayLabel = useRef<HTMLSpanElement>(null);
   const onFrame = (dt: number): void => {
+    const s = sim.current;
+    if (!s) return;
     // Ein Tag pro Sekunde; die Teilchenwolke zeigt, wo die Sonne Umlaufbahnen zerstört.
-    sim.current?.advance(86_400 * dt, 3000);
-    if (sim.current?.pending) sim.current.acknowledge();
+    s.advance(86_400 * dt, 20_000);
+    if (s.pending) s.acknowledge();
+    if (dayLabel.current) dayLabel.current.textContent = `Tag ${Math.floor(s.time / 86_400)}`;
   };
   const progress = useMemo(() => progressStore.load(), []);
   const stars = MISSIONS.reduce((s, m) => s + (progress.stars[m.id] ?? 0), 0);
@@ -45,6 +107,9 @@ export function HomePage() {
           </div>
         </div>
         <div class="hero-visual">
+          <span class="hero-day" ref={dayLabel} aria-hidden="true">
+            Tag 0
+          </span>
           <SpaceCanvas
             sim={sim}
             view={HERO_VIEW}
@@ -99,6 +164,24 @@ export function HomePage() {
         </div>
       </section>
 
+      <a class="rocket-banner" href="#rakete">
+        <div class="stack" style={{ gap: '10px' }}>
+          <div class="eyebrow" style={{ color: '#e2a846' }}>
+            Neu · Spiel
+          </div>
+          <h2>Raketenwerft: Bau dir deinen Weg zum Mond</h2>
+          <p>
+            Rakete aus Tanks, Triebwerken und Stufen zusammenbauen, starten, in die Umlaufbahn
+            fliegen und auf dem Mond landen – mit echter Schwerkraft von Erde und Mond. Für alle ab
+            etwa zehn Jahren, mit Hilfe-Pilot für den Anfang.
+          </p>
+          <span class="btn primary" style={{ justifySelf: 'start' }}>
+            Jetzt spielen <Icon name="arrow" />
+          </span>
+        </div>
+        <RocketArt />
+      </a>
+
       <section aria-labelledby="kapitel">
         <h2 id="kapitel">Der Weg durch die Arbeit</h2>
         <ol class="chapter-list">
@@ -135,6 +218,13 @@ export function HomePage() {
             <h3>Lagrange-Labor</h3>
             <p class="small muted">
               Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
+            </p>
+          </a>
+          <a class="tool-card" href="#rakete">
+            <h3>Raketenwerft</h3>
+            <p class="small muted">
+              Rakete bauen, starten und auf dem Mond landen – Schwerkraft, Treibstoff und
+              Luftwiderstand werden echt berechnet.
             </p>
           </a>
           <a class="tool-card" href="#spiel">

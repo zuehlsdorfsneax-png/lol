@@ -7,6 +7,7 @@ export function createMissionSim(m: SimMission, value: number): Simulation {
     rocheEvents: false,
     trailCapacity: 4000,
     trailInterval: (m.years * YEAR) / 3000,
+    trailAngle: 0.03,
   });
 }
 

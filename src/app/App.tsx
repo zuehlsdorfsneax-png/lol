@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ChapterPage } from '../pages/ChapterPage';
 import { HomePage } from '../pages/HomePage';
+import { DownloadPage } from '../pages/DownloadPage';
 import { KidsPage } from '../pages/KidsPage';
 import { LagrangePage } from '../pages/LagrangePage';
 import { MethodsPage } from '../pages/MethodsPage';
 import { MissionPage } from '../pages/MissionPage';
 import { MissionsPage } from '../pages/MissionsPage';
 import { QuizPage } from '../pages/QuizPage';
+import { RocketPage } from '../pages/RocketPage';
 import { SimulatorPage } from '../pages/SimulatorPage';
 import { SourcesPage } from '../pages/SourcesPage';
 import { StabilityMapPage } from '../pages/StabilityMapPage';
@@ -63,6 +65,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Spielen',
     items: [
+      { to: 'rakete', label: 'Raketenwerft', active: (r) => r.page === 'rakete' },
       { to: 'spiel', label: 'Lunas Sternenreise', active: (r) => r.page === 'spiel' },
       {
         to: 'missionen',
@@ -77,6 +80,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { to: 'methodik', label: 'Methodik & Validierung', active: (r) => r.page === 'methodik' },
       { to: 'quellen', label: 'Quellen & Formeln', active: (r) => r.page === 'quellen' },
+      { to: 'download', label: 'Download für Windows', active: (r) => r.page === 'download' },
     ],
   },
 ];
@@ -99,6 +103,10 @@ function Page({ route }: { route: Route }) {
       return <QuizPage />;
     case 'spiel':
       return <KidsPage />;
+    case 'rakete':
+      return <RocketPage />;
+    case 'download':
+      return <DownloadPage />;
     case 'methodik':
       return <MethodsPage />;
     case 'quellen':

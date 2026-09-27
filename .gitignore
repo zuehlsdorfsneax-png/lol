@@ -6,3 +6,7 @@ coverage
 .vite
 dist-artifact
 release
+
+# Windows-EXE (wird beim Bauen erzeugt)
+desktop/launcher/app/
+desktop/launcher/*.syso

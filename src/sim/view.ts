@@ -390,39 +390,45 @@ export function renderSpace(
     }
 
     TRACKED.forEach((body, col) => {
-      if (indices[body] < 0) return;
+      const bi = indices[body];
+      if (bi < 0) return;
       if (frame !== 'inertial' && body === 'earth') return;
+      // Bildschirmpunkte der Spur, zuletzt die aktuelle Position – die Spur endet am Körper.
+      const xs = new Float64Array(m + 1);
+      const ys = new Float64Array(m + 1);
+      for (let j = 0; j < m; j++) {
+        const i = samples[j]!;
+        const x = tr.x(i, col);
+        const y = tr.y(i, col);
+        if (!Number.isFinite(x)) {
+          xs[j] = NaN;
+          ys[j] = NaN;
+          continue;
+        }
+        const rx = x - ox[j]!;
+        const ry = y - oy[j]!;
+        xs[j] = sx(rx * cs[j]! + ry * sn[j]!);
+        ys[j] = sy(-rx * sn[j]! + ry * cs[j]!);
+      }
+      let total = m;
+      if (sys.alive[bi] && m > 0) {
+        const [fx, fy] = T(sys.x[bi]!, sys.y[bi]!);
+        xs[m] = sx(fx);
+        ys[m] = sy(fy);
+        total = m + 1;
+      }
       const segments = 6;
       ctx.lineWidth = body === 'moon' ? 1.6 : 1.3;
       ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
       ctx.strokeStyle = BODY_COLORS[body];
       for (let seg = 0; seg < segments; seg++) {
-        const a = Math.floor((seg * (m - 1)) / segments);
-        const b = Math.floor(((seg + 1) * (m - 1)) / segments);
+        const a = Math.floor((seg * (total - 1)) / segments);
+        const b = Math.floor(((seg + 1) * (total - 1)) / segments);
         if (b <= a) continue;
         ctx.globalAlpha = 0.12 + (0.75 * (seg + 1)) / segments;
         ctx.beginPath();
-        let pen = false;
-        for (let j = a; j <= b; j++) {
-          const i = samples[j]!;
-          const x = tr.x(i, col);
-          const y = tr.y(i, col);
-          if (!Number.isFinite(x)) {
-            pen = false;
-            continue;
-          }
-          const rx = x - ox[j]!;
-          const ry = y - oy[j]!;
-          const fx = rx * cs[j]! + ry * sn[j]!;
-          const fy = -rx * sn[j]! + ry * cs[j]!;
-          const px = sx(fx);
-          const py = sy(fy);
-          if (pen) ctx.lineTo(px, py);
-          else {
-            ctx.moveTo(px, py);
-            pen = true;
-          }
-        }
+        smoothPath(ctx, xs, ys, a, b, total);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
@@ -566,4 +572,41 @@ export function screenToFrame(
   py: number,
 ): [number, number] {
   return [cam.cx + (px - width / 2) / cam.scale, cam.cy - (py - height / 2) / cam.scale];
+}
+
+/**
+ * Zeichnet die Punkte a…b als glatte Kurve: Quadratische Bézierstücke laufen durch die
+ * Mittelpunkte benachbarter Punkte, die Punkte selbst sind Kontrollpunkte. Stücke, die an
+ * derselben Stelle enden und beginnen, fügen sich nahtlos aneinander. NaN trennt die Kurve.
+ */
+export function smoothPath(
+  ctx: CanvasRenderingContext2D,
+  xs: ArrayLike<number>,
+  ys: ArrayLike<number>,
+  a: number,
+  b: number,
+  n = xs.length,
+): void {
+  const ok = (i: number) => i >= 0 && i < n && Number.isFinite(xs[i]!) && Number.isFinite(ys[i]!);
+  const anchor = (i: number): [number, number] =>
+    ok(i - 1) && ok(i + 1)
+      ? [(xs[i]! + xs[i + 1]!) / 2, (ys[i]! + ys[i + 1]!) / 2]
+      : [xs[i]!, ys[i]!];
+  let pen = false;
+  for (let i = a; i <= b; i++) {
+    if (!ok(i)) {
+      pen = false;
+      continue;
+    }
+    if (!pen || !ok(i - 1)) {
+      const [x, y] = i === a ? anchor(i) : [xs[i]!, ys[i]!];
+      ctx.moveTo(x, y);
+      pen = true;
+    } else if (!ok(i + 1)) {
+      ctx.lineTo(xs[i]!, ys[i]!);
+    } else {
+      const [x, y] = anchor(i);
+      ctx.quadraticCurveTo(xs[i]!, ys[i]!, x, y);
+    }
+  }
 }

@@ -2,7 +2,15 @@ name: Windows-EXE
 
 on:
   push:
+    branches: [main, master, 'claude/**']
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-exe-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   exe:
@@ -13,10 +21,72 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
       - run: npm ci
-      - run: npm run exe
+      - name: EXE bauen
+        run: npm run exe
+
+      - name: Test – Server und Dateitypen
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path release/Orbitlabor.exe).Path
+          $env:ORBITLABOR_BROWSER = 'none'
+          $p = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 3
+          $index = Invoke-WebRequest -Uri http://127.0.0.1:47173/ -UseBasicParsing
+          if ($index.StatusCode -ne 200 -or $index.Content -notmatch 'Orbitlabor') { throw 'Startseite fehlt' }
+          $js = [regex]::Match($index.Content, 'assets/index-[^"]+\.js').Value
+          $r = Invoke-WebRequest -Uri "http://127.0.0.1:47173/$js" -UseBasicParsing
+          $type = "$($r.Headers['Content-Type'])"
+          if ($type -notmatch 'javascript') { throw "Falscher Dateityp für JavaScript: $type" }
+          Stop-Process -Id $p.Id -Force
+          Write-Host "Server-Test bestanden ($type)"
+
+      - name: Test – App-Fenster in Edge
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path release/Orbitlabor.exe).Path
+          Remove-Item Env:ORBITLABOR_BROWSER -ErrorAction SilentlyContinue
+          $p = Start-Process -FilePath $exe -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 45; $i++) {
+            Start-Sleep -Seconds 2
+            try {
+              $s = Invoke-RestMethod -Uri http://127.0.0.1:47173/__orbitlabor/status
+              if ($s.pings -gt 0) { $ok = $true; break }
+            } catch {}
+          }
+          Get-Process msedge -ErrorAction SilentlyContinue | Stop-Process -Force
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { throw 'Edge hat die App nicht geladen.' }
+          Write-Host 'Edge hat die App geladen und meldet sich.'
+
       - uses: actions/upload-artifact@v7
         with:
           name: Orbitlabor-Windows
-          path: release/*.exe
+          path: release/Orbitlabor.exe
           if-no-files-found: error
+
+      - name: Download-Link aktualisieren (GitHub-Release)
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          gh release delete app --repo $env:GITHUB_REPOSITORY --cleanup-tag --yes 2>$null
+          $notes = @"
+          Orbitlabor für Windows 10 und 11 – eine einzige Datei, ohne Installation.
+
+          1. Orbitlabor.exe herunterladen.
+          2. Doppelklicken. Zeigt Windows „Der Computer wurde durch Windows geschützt“, auf „Weitere Informationen“ und „Trotzdem ausführen“ klicken.
+          3. Die App öffnet sich in einem eigenen Fenster.
+
+          Gebaut aus Commit $env:GITHUB_SHA.
+          "@
+          gh release create app release/Orbitlabor.exe --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'Orbitlabor für Windows' --notes $notes --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release konnte nicht erstellt werden.' }

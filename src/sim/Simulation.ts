@@ -35,6 +35,11 @@ export interface SimSettings {
   rocheEvents: boolean;
   /** Abstand der Spurpunkte in s. */
   trailInterval: number;
+  /**
+   * Zusätzlicher Spurpunkt, sobald sich der Mond um diesen Winkel (rad) um die Erde gedreht
+   * hat – so bleiben auch schnelle, enge Bahnen rund. 0 schaltet das ab.
+   */
+  trailAngle: number;
   trailCapacity: number;
 }
 
@@ -46,7 +51,8 @@ export const DEFAULT_SETTINGS: SimSettings = {
   maxDt: 2 * DAY,
   rocheEvents: true,
   trailInterval: DAY / 4,
-  trailCapacity: 6000,
+  trailAngle: 0.02,
+  trailCapacity: 8000,
 };
 
 /** Testteilchen werden mit bis zu dreifach größeren Schritten gerechnet als der Mond. */
@@ -122,6 +128,7 @@ export class Simulation {
   intruderClosest = Infinity;
 
   private nextTrail = 0;
+  private trailAngleRef = NaN;
   private rocheArmed = true;
   private escapeReported = false;
   private readonly particleEscaped: Uint8Array;
@@ -383,6 +390,22 @@ export class Simulation {
     }
   }
 
+  /** Winkel des Mondes um die Erde (NaN ohne Mond). */
+  private moonAngle(): number {
+    if (!this.moonAlive) return NaN;
+    const { sys } = this;
+    const { earth, moon } = this.indices;
+    return Math.atan2(sys.y[moon]! - sys.y[earth]!, sys.x[moon]! - sys.x[earth]!);
+  }
+
+  private moonTurned(): boolean {
+    const limit = this.settings.trailAngle;
+    if (!(limit > 0) || !Number.isFinite(this.trailAngleRef)) return false;
+    let d = Math.abs(this.moonAngle() - this.trailAngleRef);
+    if (d > Math.PI) d = 2 * Math.PI - d;
+    return d > limit;
+  }
+
   private moonEscaped(d: number): boolean {
     const hill = this.hillRadius();
     if (Number.isFinite(hill)) return d > ESCAPE_HILL_FACTOR * hill;
@@ -392,7 +415,7 @@ export class Simulation {
 
   private record(): void {
     const { sys } = this;
-    if (this.time >= this.nextTrail) {
+    if (this.time >= this.nextTrail || this.moonTurned()) {
       TRACKED.forEach((name, k) => {
         const i = this.indices[name];
         const alive = i >= 0 && sys.alive[i] === 1;
@@ -401,6 +424,7 @@ export class Simulation {
       });
       this.trail.push(this.time, this.trailCoords);
       this.nextTrail = this.time + this.settings.trailInterval;
+      this.trailAngleRef = this.moonAngle();
     }
     if (this.series.due(this.time)) {
       const el = this.moonElements();

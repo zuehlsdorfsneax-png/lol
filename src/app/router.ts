@@ -10,6 +10,8 @@ export type PageId =
   | 'mission'
   | 'quiz'
   | 'spiel'
+  | 'rakete'
+  | 'download'
   | 'methodik'
   | 'quellen';
 
@@ -38,6 +40,8 @@ export function parseHash(hash: string): Route {
   if (token.startsWith('mission-')) return { page: 'mission', param: token.slice(8) };
   if (token === 'quiz') return { page: 'quiz', param: null };
   if (token === 'spiel') return { page: 'spiel', param: null };
+  if (token === 'rakete') return { page: 'rakete', param: null };
+  if (token === 'download') return { page: 'download', param: null };
   if (token === 'methodik') return { page: 'methodik', param: null };
   if (token === 'quellen') return { page: 'quellen', param: null };
   return { page: 'start', param: null };

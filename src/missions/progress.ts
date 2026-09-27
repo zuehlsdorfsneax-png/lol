@@ -8,6 +8,9 @@ export interface Progress {
   quizBest: number;
   /** Sterne je Level in "Lunas Sternenreise". */
   kids: Record<string, number>;
+  /** Raketenspiel: zuletzt gebaute Rakete und erreichte Ziele. */
+  rocketDesign: string[] | null;
+  rocketGoals: string[];
 }
 
 export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
@@ -15,6 +18,8 @@ export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
   best: {},
   quizBest: 0,
   kids: {},
+  rocketDesign: null,
+  rocketGoals: [],
 });
 
 export function recordStars(id: string, stars: number, best: string): Progress {

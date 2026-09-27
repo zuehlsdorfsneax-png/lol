@@ -18,15 +18,17 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
 
 ## 2. Zuordnung zur Gliederung der Arbeit
 
-| Gliederungspunkt der Arbeit                        | Umsetzung in der App                                                       |
-| -------------------------------------------------- | -------------------------------------------------------------------------- |
-| Hohle-Mond-Theorie (widerlegen)                    | Kapitel 1: Schalentheorem, Dichte-Rechner, Trägheitsmoment, Rollversuch    |
-| Herleitung der Gravitationsgesetze                 | Kapitel 2: Kepler-Labor, Mondrechnung, Kraftgesetz-Experiment              |
-| Wie stört die Sonne das Zwei-Körper-System?        | Kapitel 3: Gezeitenfeld, Präzessionsmessung, Voreinstellungen              |
-| Lagrange-Punkte (beweisen)                         | Kapitel 4 + Lagrange-Labor: Beweis, Eigenwerte, Nullgeschwindigkeitskurven |
-| Wieso ist das Drei-Körper-System stabil?           | Kapitel 5: Hill-Sphäre, Jacobi-Beweis, Stabilitätsgrenze                   |
-| Was braucht es, damit es instabil wird?            | Kapitel 8 + Stabilitätskarte: Grenzwerte aus Theorie und Simulation        |
-| Eigenanteil: Simulation mit anpassbaren Parametern | Simulator, Stabilitätskarte, Methodik & Validierung                        |
+| Gliederungspunkt der Arbeit     | Umsetzung in der App                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| 1 Einleitung                    | Kapitel 1: Problemfrage, Vorgehen, Aufbau                                       |
+| 2 Physikalische Grundlagen      | Kapitel 2: Newtonsche Gesetze (Texte der Arbeit), Kepler-Labor, Schwerpunkt     |
+| 3 Einfluss der Sonne            | Kapitel 3: Gezeitenfeld, Präzessionsmessung, Voreinstellungen                   |
+| 4 Lagrange-Punkte               | Kapitel 4 + Lagrange-Labor: Beweis, Eigenwerte, Nullgeschwindigkeitskurven      |
+| 5 Die Hill-Sphäre der Erde      | Kapitel 5: Hill-Radius, Jacobi-Beweis, Stabilitätsgrenze                        |
+| 6 Gezeitenreibung               | Kapitel 6: Tag- und Monatslänge aus der Drehimpulserhaltung                     |
+| 7 Hohle-Mond-Theorie widerlegen | Kapitel 7: Texte der Arbeit, Schalentheorem, Schwerpunkt- und Umlaufzeitrechner |
+| 8 Eigenanteil: Simulation       | Kapitel 8, Simulator, Stabilitätskarte, Methodik & Validierung                  |
+| 9 Fazit                         | Kapitel 9: Antwort auf die Problemfrage                                         |
 
 ## 3. Module
 
@@ -66,6 +68,15 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
   Treibstoffbudget
 - „Trojaner“: Asteroid bei L4 platzieren, 50 Jupiterumläufe überstehen
 - Quiz mit 18 Fragen; Fortschritt wird im Browser gespeichert
+- **Raketenwerft** (angelehnt an Raumfahrt-Bauspiele): Rakete aus Kapsel, Fallschirm, Tanks,
+  Triebwerken, Stufentrennern und Landebeinen bauen; die Werft zeigt Δv je Stufe nach der
+  Raketengleichung und das Schub-Gewichts-Verhältnis. Im Flug rechnet das Spiel Erde und Mond
+  (verkleinerte Welt, echte Oberflächenschwerkraft und echtes Massenverhältnis) mit Runge-Kutta 4,
+  dazu Schub, Treibstoff, Luftwiderstand und Fallschirm. Die Karte zeigt die Bahnvorhersage als
+  Drei-Körper-Rechnung, Ap/Pe, die Hill-Sphäre des Mondes und den Mond bei Ankunft. Ziele von
+  „Abheben“ bis „Heimkehr vom Mond“, Hilfe-Pilot bis zur Umlaufbahn, Zeitraffer, Tastatur und
+  Touch. Ein automatischer Test fliegt die komplette Mondmission mit der Vorlage „Luna 1“.
+- **Lunas Sternenreise** für Jüngere: Schleuder-Spiel mit sechs Leveln
 
 ## 4. Didaktisches Prinzip
 
@@ -80,6 +91,8 @@ zitieren lassen. Kästen „Merke“, „Beweisidee“ und „Für die Seminarar
 - Numerik: Velocity-Verlet mit adaptiver Schrittweite; Euler, Euler-Cromer, RK4 und Yoshida zum
   Vergleich
 - Kalibrierskript (`npm run calibrate`) bestimmt die Grenzwerte reproduzierbar
+- Windows-EXE (etwa 8 MB): Go-Starter mit eingebetteter App, lokaler Server auf 127.0.0.1 und
+  App-Fenster in Microsoft Edge; Bau, Test auf Windows und Veröffentlichung per GitHub-Action
 
 ## 6. Validierung
 
@@ -105,7 +118,6 @@ unabhängige Vorhersagen.
 ## 8. Ideen für später
 
 - Dreidimensionale Rechnung (Bahnneigung, Knotendrehung 18,6 Jahre, Finsternisse)
-- Gezeitenreibung (Mond entfernt sich, Tageslänge wächst)
 - Weitere Monde und Planeten (Mars mit Phobos, Jupiter mit galileischen Monden)
 - Resonanzen und chaotische Bereiche mit Ljapunov-Exponenten sichtbar machen
 - Offline-Nutzung als installierbare App (Service Worker)

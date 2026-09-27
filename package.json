@@ -1,7 +1,7 @@
 {
   "name": "orbitlabor",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Orbitlabor – interaktive Drei-Körper-Simulation zur Bahnstabilität von Erde, Mond und Sonne (Seminararbeit Astronomie)",
   "engines": {
@@ -20,16 +20,13 @@
     "test:watch": "vitest",
     "calibrate": "tsx scripts/calibrate.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
-    "desktop": "npm run build && electron .",
-    "exe": "npm run build && electron-builder --win portable"
+    "exe": "node scripts/build-exe.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/jost": "^5.3.0",
     "@fontsource/source-serif-4": "^5.3.0",
-    "electron": "^44.4.5",
-    "electron-builder": "^26.15.3",
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "jsdom": "^30.1.1",
@@ -42,6 +39,5 @@
     "vite": "^8.3.1",
     "vitest": "^5.0.2"
   },
-  "main": "desktop/main.cjs",
   "author": "Seminararbeit Astronomie"
 }
