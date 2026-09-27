@@ -89,6 +89,14 @@ describe('Bauteile und Raketengleichung', () => {
     }
   });
 
+  it('Seitenbooster geben der ersten Stufe Schub und Treibstoff', () => {
+    const without = stageStats(['kapsel', 'tank-l', 'titan'])[0]!;
+    const withB = stageStats(['kapsel', 'tank-l', 'booster', 'titan'])[0]!;
+    expect(withB.thrust).toBe(without.thrust + 360_000);
+    expect(withB.fuel).toBe(without.fuel + 9000);
+    expect(totalDeltaV(template('saturn'))).toBeGreaterThan(totalDeltaV(template('luna')));
+  });
+
   it('meldet Baufehler', () => {
     expect(checkDesign([])[0]!.level).toBe('error');
     expect(checkDesign(['tank-s', 'falke']).some((p) => p.text.includes('Kapsel'))).toBe(true);
@@ -114,7 +122,7 @@ describe('Flug', () => {
   });
 
   it('der Hilfe-Pilot erreicht mit Orbiter und Luna 1 eine Umlaufbahn', () => {
-    for (const id of ['orbiter', 'luna']) {
+    for (const id of ['orbiter', 'luna', 'saturn']) {
       const f = new Flight(template(id));
       const pilot = new OrbitPilot();
       fly(f, 900, 4, () => pilot.update(f));

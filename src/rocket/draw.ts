@@ -121,6 +121,40 @@ export function drawPart(
       ctx.restore();
       break;
     }
+    case 'booster': {
+      ctx.fillStyle = '#59616e';
+      ctx.fillRect(-w / 2 - 0.3, y0, w + 0.6, h);
+      const foot = Math.min(footY, y0);
+      const top = y0 + h + 1.4;
+      for (const sgn of [-1, 1]) {
+        const cx = sgn * (w / 2 + 0.62);
+        const bw = 1.1;
+        ctx.fillStyle = hGrad(ctx, bw, METAL);
+        ctx.save();
+        ctx.translate(cx, 0);
+        ctx.fillRect(-bw / 2, foot + 0.6, bw, top - foot - 0.6);
+        ctx.strokeRect(-bw / 2, foot + 0.6, bw, top - foot - 0.6);
+        ctx.fillStyle = '#e0503a';
+        ctx.fillRect(-bw / 2, top - 0.9, bw, 0.25);
+        ctx.beginPath();
+        ctx.moveTo(-bw / 2, top);
+        ctx.quadraticCurveTo(0, top + 1.8, bw / 2, top);
+        ctx.closePath();
+        ctx.fillStyle = '#e8ecf2';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#3b414c';
+        ctx.beginPath();
+        ctx.moveTo(-bw * 0.3, foot + 0.6);
+        ctx.lineTo(bw * 0.3, foot + 0.6);
+        ctx.lineTo(bw * 0.45, foot);
+        ctx.lineTo(-bw * 0.45, foot);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      break;
+    }
     case 'legs': {
       ctx.fillStyle = '#6b7380';
       ctx.fillRect(-w / 2, y0, w, h);
@@ -171,7 +205,19 @@ export function drawRocket(
   }
   const top = y;
 
-  if (look && look.throttle > 0) drawFlame(ctx, parts, look);
+  if (look && look.throttle > 0) {
+    drawFlame(ctx, parts, look);
+    // Seitenbooster der untersten Stufe brennen mit.
+    const bottom = segs[segs.length - 1] ?? [];
+    if (bottom.includes('booster')) {
+      for (const sgn of [-1, 1]) {
+        ctx.save();
+        ctx.translate(sgn * 1.82, 0);
+        drawFlame(ctx, parts, look, 0.95);
+        ctx.restore();
+      }
+    }
+  }
 
   y = 0;
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -187,9 +233,14 @@ export function drawRocket(
   if (look && look.chuteOpen > 0) drawChute(ctx, top, look.chuteOpen);
 }
 
-function drawFlame(ctx: CanvasRenderingContext2D, parts: string[], look: RocketLook): void {
+function drawFlame(
+  ctx: CanvasRenderingContext2D,
+  parts: string[],
+  look: RocketLook,
+  width?: number,
+): void {
   const engine = [...parts].reverse().find((id) => part(id).kind === 'engine');
-  const w = engine ? part(engine).width * 0.9 : 1.6;
+  const w = width ?? (engine ? part(engine).width * 0.9 : 1.6);
   const vacuum = 1 - Math.min(1, look.air / 1.2);
   const flicker = 0.85 + 0.15 * Math.sin(look.time * 47) * Math.sin(look.time * 31);
   const len = (5 + 12 * look.throttle) * (1 + vacuum * 0.6) * flicker;
@@ -624,8 +675,58 @@ export function drawFlight(ctx: CanvasRenderingContext2D, f: Flight, v: View, ti
       time,
     });
     ctx.restore();
+    drawHeating(ctx, f, v, heightM * scale, time);
     drawVelocityMarkers(ctx, f, v, heightM * scale);
   }
+}
+
+/**
+ * Wiedereintritt und Schallmauer: Bei hoher Geschwindigkeit in der Luft glüht die Luft vor der
+ * Rakete (Kompression), knapp über Schallgeschwindigkeit bildet sich ein Dampfkegel.
+ */
+function drawHeating(
+  ctx: CanvasRenderingContext2D,
+  f: Flight,
+  v: View,
+  rocketPx: number,
+  time: number,
+): void {
+  const rho = airDensity(f.altitudeEarth);
+  const speed = Math.hypot(f.vx, f.vy);
+  if (rho <= 0 || speed < 280 || f.status !== 'flying') return;
+  const [rx, ry] = toScreen(v, f.x, f.y);
+  const [ax, ay] = toScreen(v, f.x + f.vx, f.y + f.vy);
+  const len = Math.hypot(ax - rx, ay - ry) || 1;
+  const ux = (ax - rx) / len;
+  const uy = (ay - ry) / len;
+  const [cx, cy] = toScreen(v, v.cx, v.cy);
+  const r = Math.max(18, rocketPx * 0.45);
+  ctx.save();
+  // Dampfkegel um Mach 1 (≈ 340 m/s)
+  const mach = Math.max(0, 1 - Math.abs(speed - 345) / 70) * Math.min(1, rho / 0.2);
+  if (mach > 0.02) {
+    ctx.globalAlpha = 0.5 * mach;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * 1.1, r * 0.45, Math.atan2(uy, ux) + Math.PI / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const heat = Math.min(1, (speed - 700) / 1400) * Math.min(1, rho / 0.02);
+  if (heat > 0.02) {
+    const flick = 0.85 + 0.15 * Math.sin(time * 37);
+    const hx = cx + ux * r * 0.9;
+    const hy = cy + uy * r * 0.9;
+    const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 1.6);
+    g.addColorStop(0, `rgba(255,240,200,${0.9 * heat * flick})`);
+    g.addColorStop(0.35, `rgba(255,140,50,${0.7 * heat})`);
+    g.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(hx, hy, r * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 /** Kleine Marker für Flugrichtung (grün) und Gegenrichtung (orange) um die Rakete. */

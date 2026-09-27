@@ -11,6 +11,8 @@ export interface Progress {
   /** Raketenspiel: zuletzt gebaute Rakete und erreichte Ziele. */
   rocketDesign: string[] | null;
   rocketGoals: string[];
+  /** Eigene, benannte Raketen im Hangar. */
+  rocketHangar: Record<string, string[]>;
 }
 
 export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
@@ -20,6 +22,7 @@ export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
   kids: {},
   rocketDesign: null,
   rocketGoals: [],
+  rocketHangar: {},
 });
 
 export function recordStars(id: string, stars: number, best: string): Progress {

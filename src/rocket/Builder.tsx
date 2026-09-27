@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { Icon } from '../ui/Icon';
@@ -36,12 +37,16 @@ function PartIcon({ def }: { def: PartDef }) {
     const ctx = prepareCanvas(c, 44, 44);
     if (!ctx) return;
     ctx.clearRect(0, 0, 44, 44);
-    const h = def.kind === 'legs' ? def.height + 1.6 : def.height;
-    const s = Math.min(36 / Math.max(def.width + (def.kind === 'legs' ? 3 : 0), 0.5), 36 / h);
+    // Landebeine und Booster ragen nach unten über ihr Bauteil hinaus.
+    const below = def.kind === 'legs' ? 1.6 : def.kind === 'booster' ? 5.5 : 0;
+    const extra = def.kind === 'booster' ? 1.8 : 0;
+    const h = def.height + below + extra;
+    const wide = def.width + (def.kind === 'legs' ? 3 : def.kind === 'booster' ? 2.6 : 0);
+    const s = Math.min(36 / Math.max(wide, 0.5), 36 / h);
     ctx.save();
-    ctx.translate(22, 22 + (h * s) / 2 - (def.kind === 'legs' ? 1.6 * s : 0));
+    ctx.translate(22, 22 + (h * s) / 2 - below * s);
     ctx.scale(s, -s);
-    drawPart(ctx, def, 0, def.kind === 'legs' ? -1.4 : 0);
+    drawPart(ctx, def, 0, -below + (def.kind === 'legs' ? 0.2 : 0));
     ctx.restore();
   }, [def]);
   return <canvas ref={ref} class="part-icon" style={{ width: '44px', height: '44px' }} />;
@@ -163,6 +168,14 @@ export function Builder({
   onLaunch: () => void;
 }) {
   const [selected, setSelected] = useState(-1);
+  const [hangar, setHangar] = useState<Record<string, string[]>>(
+    () => progressStore.load().rocketHangar ?? {},
+  );
+  const [name, setName] = useState('');
+  const saveHangar = (next: Record<string, string[]>): void => {
+    setHangar(next);
+    progressStore.update((p) => ({ ...p, rocketHangar: next }));
+  };
   const stats = stageStats(design.length ? design : ['kapsel']);
   const problems = checkDesign(design);
   const blocked = problems.some((p) => p.level === 'error');
@@ -228,6 +241,55 @@ export function Builder({
           }}
         >
           Alles abbauen
+        </button>
+      </div>
+      <div class="build-templates hangar">
+        <span class="small muted">Hangar:</span>
+        {Object.keys(hangar).length === 0 && (
+          <span class="small muted">noch keine eigenen Raketen gespeichert</span>
+        )}
+        {Object.entries(hangar).map(([n, d]) => (
+          <span key={n} class="hangar-item">
+            <button
+              type="button"
+              class="btn small"
+              onClick={() => {
+                onChange([...d]);
+                setSelected(-1);
+                setName(n);
+              }}
+            >
+              {n}
+            </button>
+            <button
+              type="button"
+              class="btn small ghost"
+              aria-label={`${n} löschen`}
+              onClick={() => {
+                const next = { ...hangar };
+                delete next[n];
+                saveHangar(next);
+              }}
+            >
+              <Icon name="close" />
+            </button>
+          </span>
+        ))}
+        <input
+          class="hangar-name"
+          type="text"
+          maxLength={24}
+          placeholder="Name der Rakete"
+          value={name}
+          onInput={(e) => setName((e.target as HTMLInputElement).value)}
+        />
+        <button
+          type="button"
+          class="btn small"
+          disabled={!name.trim() || design.length === 0}
+          onClick={() => saveHangar({ ...hangar, [name.trim()]: [...design] })}
+        >
+          Speichern
         </button>
       </div>
 

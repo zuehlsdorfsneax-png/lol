@@ -2568,3 +2568,18 @@ details.section .section-body {
 .rocket-stage.is-map .rocket-canvas canvas:active {
   cursor: grabbing;
 }
+
+.hangar-item {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.hangar-name {
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  width: 160px;
+}

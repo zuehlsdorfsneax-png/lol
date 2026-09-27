@@ -1,6 +1,6 @@
 import { EARTH, G0, MOON } from './world';
 
-export type PartKind = 'capsule' | 'chute' | 'tank' | 'engine' | 'decoupler' | 'legs';
+export type PartKind = 'capsule' | 'chute' | 'tank' | 'engine' | 'decoupler' | 'legs' | 'booster';
 
 export interface PartDef {
   id: string;
@@ -128,6 +128,18 @@ export const PARTS: readonly PartDef[] = [
     info: 'Wirft beim Zünden der nächsten Stufe alles darunter ab. So muss die Rakete leere Tanks nicht mitschleppen.',
   },
   {
+    id: 'booster',
+    name: 'Seitenbooster (Paar)',
+    kind: 'booster',
+    width: 2.4,
+    height: 0.4,
+    dry: 1600,
+    fuel: 9000,
+    thrust: 360_000,
+    isp: 275,
+    info: 'Zwei Feststoff-Booster links und rechts. Sie zünden mit ihrer Stufe und fallen mit ihr ab – ideal als Starthilfe unten an der ersten Stufe.',
+  },
+  {
     id: 'beine',
     name: 'Landebeine',
     kind: 'legs',
@@ -177,6 +189,26 @@ export const TEMPLATES: readonly Template[] = [
     name: 'Orbiter',
     info: 'Zwei Stufen – genug für eine Umlaufbahn um die Erde.',
     parts: ['fallschirm', 'kapsel', 'tank-m', 'falke', 'trenner', 'tank-l', 'titan'],
+  },
+  {
+    id: 'saturn',
+    name: 'Mond-Riese',
+    info: 'Große Mondrakete mit Seitenboostern: viel Reserve für Landung, Rückflug und Umwege.',
+    parts: [
+      'fallschirm',
+      'kapsel',
+      'tank-m',
+      'beine',
+      'kolibri',
+      'trenner',
+      'tank-l',
+      'falke',
+      'trenner',
+      'tank-l',
+      'booster',
+      'tank-l',
+      'titan',
+    ],
   },
   {
     id: 'luna',
