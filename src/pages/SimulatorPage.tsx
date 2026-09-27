@@ -18,7 +18,7 @@ import { DEFAULT_VIEW, FRAMES, SPACE, type FrameId, type ViewOptions } from '../
 import { LineChart, type RefLine } from '../ui/charts/LineChart';
 import { PageHead, StatusChip } from '../ui/content';
 import { Segmented, Select, Slider, Toggle } from '../ui/controls';
-import { distance, duration, fmt, km, percent, sci, sig, speed } from '../ui/format';
+import { distance, duration, fmt, km, percent, pow10, sci, sig, speed } from '../ui/format';
 import { Icon } from '../ui/Icon';
 import { downloadText, downloadCanvas } from '../ui/download';
 import { CheckList } from '../ui/CheckList';
@@ -44,7 +44,10 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
   const [handoff] = useState(takePendingScenario);
   const [presetId, setPresetId] = useState(handoff ? 'eigene' : initial.id);
   const [params, setParams] = useState<ScenarioParams>(handoff?.params ?? initial.params);
-  const [settings, setSettings] = useState<SimSettings>({ ...DEFAULT_SETTINGS, ...initial.settings });
+  const [settings, setSettings] = useState<SimSettings>({
+    ...DEFAULT_SETTINGS,
+    ...initial.settings,
+  });
   const [view, setView] = useState<ViewOptions>({
     ...DEFAULT_VIEW,
     frame: handoff ? 'rotating' : initial.view.frame,
@@ -144,7 +147,11 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
       },
       { time: DAY, distance: KM, semiMajorAxis: KM, periapsis: KM },
     );
-    downloadText(`orbitlabor-${presetId}.csv`, `${csvHeader(params, settings)}\n${csv}`, 'text/csv');
+    downloadText(
+      `orbitlabor-${presetId}.csv`,
+      `${csvHeader(params, settings)}\n${csv}`,
+      'text/csv',
+    );
   };
 
   const exportPng = (): void => {
@@ -192,7 +199,13 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
             >
               <Icon name="step" />
             </button>
-            <button type="button" class="btn icon" title="Neu starten" aria-label="Neu starten" onClick={reset}>
+            <button
+              type="button"
+              class="btn icon"
+              title="Neu starten"
+              aria-label="Neu starten"
+              onClick={reset}
+            >
               <Icon name="reset" />
             </button>
             <span class="clock" aria-live="off">
@@ -215,7 +228,8 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
               options={FRAMES.map((f) => ({ value: f.value, label: f.label }))}
               onChange={(frame: FrameId) => {
                 setView((v) => ({ ...v, frame }));
-                if (frame === 'inertial' && view.frame !== 'inertial') setRadius(Math.max(radius, 1e9));
+                if (frame === 'inertial' && view.frame !== 'inertial')
+                  setRadius(Math.max(radius, 1e9));
               }}
             />
           </div>
@@ -240,7 +254,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 </div>
                 <div class="hud-row">
                   <span>d / r_H</span>
-                  <span>{Number.isFinite(stats.hillFraction) ? sig(stats.hillFraction, 3) : '–'}</span>
+                  <span>
+                    {Number.isFinite(stats.hillFraction) ? sig(stats.hillFraction, 3) : '–'}
+                  </span>
                 </div>
                 {limited && (
                   <div class="hud-row">
@@ -251,10 +267,22 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
             )}
             {view.vectors && (
               <div class="vector-legend">
-                <span><i style={{ background: SPACE.velocity }} />Geschwindigkeit</span>
-                <span><i style={{ background: SPACE.pullEarth }} />Anziehung Erde</span>
-                <span><i style={{ background: SPACE.pullSun }} />Anziehung Sonne</span>
-                <span><i style={{ background: SPACE.tidal }} />Gezeitenkraft ×20</span>
+                <span>
+                  <i style={{ background: SPACE.velocity }} />
+                  Geschwindigkeit
+                </span>
+                <span>
+                  <i style={{ background: SPACE.pullEarth }} />
+                  Anziehung Erde
+                </span>
+                <span>
+                  <i style={{ background: SPACE.pullSun }} />
+                  Anziehung Sonne
+                </span>
+                <span>
+                  <i style={{ background: SPACE.tidal }} />
+                  Gezeitenkraft ×20
+                </span>
               </div>
             )}
             {event && (
@@ -290,7 +318,11 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 <h3 id="prognose">Prognose aus den Startwerten</h3>
                 <StatusChip
                   status={
-                    assessment.verdict === 'stable' ? 'ok' : assessment.verdict === 'marginal' ? 'warn' : 'fail'
+                    assessment.verdict === 'stable'
+                      ? 'ok'
+                      : assessment.verdict === 'marginal'
+                        ? 'warn'
+                        : 'fail'
                   }
                 >
                   {assessment.verdict === 'stable'
@@ -335,7 +367,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                   <dt>Gezeitenstörung</dt>
                   <dd>{stats.tidalRatio ? percent(stats.tidalRatio, 2) : '–'}</dd>
                   <dt>Jacobi C / C(L1)</dt>
-                  <dd>{stats.jacobi ? `${fmt(stats.jacobi.C, 5)} / ${fmt(stats.jacobi.CL1, 5)}` : '–'}</dd>
+                  <dd>
+                    {stats.jacobi ? `${fmt(stats.jacobi.C, 5)} / ${fmt(stats.jacobi.CL1, 5)}` : '–'}
+                  </dd>
                   <dt>Energiefehler |ΔE/E|</dt>
                   <dd>{sci(stats.energyError)}</dd>
                   <dt>Schrittweite</dt>
@@ -344,7 +378,8 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                     <>
                       <dt>Teilchen gebunden / verloren</dt>
                       <dd>
-                        {stats.particles.alive} / {stats.particles.escaped + stats.particles.crashed}
+                        {stats.particles.alive} /{' '}
+                        {stats.particles.escaped + stats.particles.crashed}
                       </dd>
                     </>
                   )}
@@ -380,7 +415,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 label="Voreinstellung"
                 value={presetId}
                 options={[
-                  ...(presetId === 'eigene' ? [{ value: 'eigene', label: 'Eigene Einstellungen' }] : []),
+                  ...(presetId === 'eigene'
+                    ? [{ value: 'eigene', label: 'Eigene Einstellungen' }]
+                    : []),
                   ...PRESETS.map((p) => ({ value: p.id, label: p.title })),
                 ]}
                 onChange={(id) => id !== 'eigene' && applyPreset(id)}
@@ -396,10 +433,18 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 </a>
               ) : null}
               <div class="btn-row">
-                <button type="button" class="btn small" onClick={() => simRef.current?.kickMoon(0.95)}>
+                <button
+                  type="button"
+                  class="btn small"
+                  onClick={() => simRef.current?.kickMoon(0.95)}
+                >
                   Mond bremsen −5 %
                 </button>
-                <button type="button" class="btn small" onClick={() => simRef.current?.kickMoon(1.05)}>
+                <button
+                  type="button"
+                  class="btn small"
+                  onClick={() => simRef.current?.kickMoon(1.05)}
+                >
                   beschleunigen +5 %
                 </button>
               </div>
@@ -417,7 +462,11 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 max={3_000_000}
                 log
                 format={(v) => `${fmt(v)} km`}
-                hint={Number.isFinite(moonRH) ? `= ${sig(moonRH, 3)} Hill-Radien · realer Mond: 384 400 km` : 'realer Mond: 384 400 km'}
+                hint={
+                  Number.isFinite(moonRH)
+                    ? `= ${sig(moonRH, 3)} Hill-Radien · realer Mond: 384 400 km`
+                    : 'realer Mond: 384 400 km'
+                }
                 onChange={(v) => update({ moonDistance: Math.round(v / 100) * 100 })}
               />
               <Slider
@@ -530,7 +579,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 checked={params.particles !== null}
                 onChange={(on) =>
                   update({
-                    particles: on ? { count: 200, innerKm: 60_000, outerKm: 1_400_000, retrograde: false } : null,
+                    particles: on
+                      ? { count: 200, innerKm: 60_000, outerKm: 1_400_000, retrograde: false }
+                      : null,
                   })
                 }
               />
@@ -555,7 +606,12 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                     log
                     format={(v) => `${fmt(v)} km`}
                     onChange={(v) =>
-                      update({ particles: { ...params.particles!, innerKm: Math.min(v, params.particles!.outerKm) } })
+                      update({
+                        particles: {
+                          ...params.particles!,
+                          innerKm: Math.min(v, params.particles!.outerKm),
+                        },
+                      })
                     }
                   />
                   <Slider
@@ -567,14 +623,21 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                     log
                     format={(v) => `${fmt(v)} km`}
                     onChange={(v) =>
-                      update({ particles: { ...params.particles!, outerKm: Math.max(v, params.particles!.innerKm) } })
+                      update({
+                        particles: {
+                          ...params.particles!,
+                          outerKm: Math.max(v, params.particles!.innerKm),
+                        },
+                      })
                     }
                   />
                   <Toggle
                     id="particle-retro"
                     label="rückläufig (retrograd)"
                     checked={params.particles.retrograde}
-                    onChange={(retrograde) => update({ particles: { ...params.particles!, retrograde } })}
+                    onChange={(retrograde) =>
+                      update({ particles: { ...params.particles!, retrograde } })
+                    }
                   />
                 </>
               )}
@@ -584,7 +647,11 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 label="Störkörper fliegt vorbei"
                 checked={params.intruder !== null}
                 onChange={(on) =>
-                  update({ intruder: on ? { mass: 317.8, distance: 500_000, speed: 20, leadDays: 20 } : null })
+                  update({
+                    intruder: on
+                      ? { mass: 317.8, distance: 500_000, speed: 20, leadDays: 20 }
+                      : null,
+                  })
                 }
               />
               {params.intruder && (
@@ -608,7 +675,11 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                     max={20_000_000}
                     log
                     format={(v) => `${fmt(v)} km`}
-                    onChange={(v) => update({ intruder: { ...params.intruder!, distance: Math.round(v / 1000) * 1000 } })}
+                    onChange={(v) =>
+                      update({
+                        intruder: { ...params.intruder!, distance: Math.round(v / 1000) * 1000 },
+                      })
+                    }
                   />
                   <Slider
                     id="intruder-speed"
@@ -643,7 +714,12 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 />
               )}
               <p class="small muted">{FRAMES.find((f) => f.value === view.frame)?.description}</p>
-              <Toggle id="trails" label="Bahnspuren" checked={view.trails} onChange={(trails) => setView((v) => ({ ...v, trails }))} />
+              <Toggle
+                id="trails"
+                label="Bahnspuren"
+                checked={view.trails}
+                onChange={(trails) => setView((v) => ({ ...v, trails }))}
+              />
               <Select
                 id="trail-span"
                 label="Spurlänge"
@@ -651,16 +727,33 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 options={TRAIL_SPANS}
                 onChange={(s) => setView((v) => ({ ...v, trailSpan: Number(s) }))}
               />
-              <Toggle id="vectors" label="Kräfte und Geschwindigkeit" checked={view.vectors} onChange={(vectors) => setView((v) => ({ ...v, vectors }))} />
-              <Toggle id="limits" label="Hill-Sphäre, Roche-Grenze, L-Punkte" checked={view.limits} onChange={(limits) => setView((v) => ({ ...v, limits }))} />
-              <Toggle id="labels" label="Beschriftungen" checked={view.labels} onChange={(labels) => setView((v) => ({ ...v, labels }))} />
+              <Toggle
+                id="vectors"
+                label="Kräfte und Geschwindigkeit"
+                checked={view.vectors}
+                onChange={(vectors) => setView((v) => ({ ...v, vectors }))}
+              />
+              <Toggle
+                id="limits"
+                label="Hill-Sphäre, Roche-Grenze, L-Punkte"
+                checked={view.limits}
+                onChange={(limits) => setView((v) => ({ ...v, limits }))}
+              />
+              <Toggle
+                id="labels"
+                label="Beschriftungen"
+                checked={view.labels}
+                onChange={(labels) => setView((v) => ({ ...v, labels }))}
+              />
               <Toggle
                 id="exaggerate"
                 label="Körper vergrößert zeigen"
                 checked={view.exaggerate}
                 onChange={(exaggerate) => setView((v) => ({ ...v, exaggerate }))}
               />
-              <p class="small muted">Ziehen verschiebt, Mausrad oder zwei Finger zoomen, Doppelklick setzt zurück.</p>
+              <p class="small muted">
+                Ziehen verschiebt, Mausrad oder zwei Finger zoomen, Doppelklick setzt zurück.
+              </p>
             </div>
           </details>
 
@@ -719,7 +812,15 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
   );
 }
 
-function SeriesChart({ sim, chart, version }: { sim: Simulation; chart: ChartId; version: number }) {
+function SeriesChart({
+  sim,
+  chart,
+  version,
+}: {
+  sim: Simulation;
+  chart: ChartId;
+  version: number;
+}) {
   const s = sim.series;
   const n = s.length;
   const useYears = sim.time > 2 * YEAR;
@@ -791,7 +892,8 @@ function SeriesChart({ sim, chart, version }: { sim: Simulation; chart: ChartId;
       xLabel={xLabel}
       yLabel="|ΔE/E₀|"
       xFormat={xFormat}
-      yFormat={(v) => sci(v, 0)}
+      yFormat={pow10}
+      valueFormat={(v) => sci(v, 2)}
       yLog
       version={version}
     />

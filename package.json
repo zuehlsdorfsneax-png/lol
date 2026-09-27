@@ -1,9 +1,9 @@
 {
-  "name": "lol-game",
+  "name": "orbitlabor",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Grundgerüst für ein Web-App-Spiel (Vite + TypeScript + Canvas 2D)",
+  "description": "Orbitlabor – interaktive Drei-Körper-Simulation zur Bahnstabilität von Erde, Mond und Sonne (Seminararbeit Astronomie)",
   "engines": {
     "node": ">=22.13.0"
   },

@@ -15,7 +15,19 @@ interface SliderProps {
   onChange: (v: number) => void;
 }
 
-export function Slider({ id, label, value, min, max, step, log, format, hint, disabled, onChange }: SliderProps) {
+export function Slider({
+  id,
+  label,
+  value,
+  min,
+  max,
+  step,
+  log,
+  format,
+  hint,
+  disabled,
+  onChange,
+}: SliderProps) {
   const toPos = (v: number): number =>
     log ? (Math.log(v) - Math.log(min)) / (Math.log(max) - Math.log(min)) : (v - min) / (max - min);
   const fromPos = (p: number): number =>
@@ -83,11 +95,21 @@ interface SegmentedProps<T extends string> {
   onChange: (v: T) => void;
 }
 
-export function Segmented<T extends string>({ label, value, options, onChange }: SegmentedProps<T>) {
+export function Segmented<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: SegmentedProps<T>) {
   return (
     <div class="segmented" role="group" aria-label={label}>
       {options.map((o) => (
-        <button type="button" key={o.value} aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
+        <button
+          type="button"
+          key={o.value}
+          aria-pressed={o.value === value}
+          onClick={() => onChange(o.value)}
+        >
           {o.label}
         </button>
       ))}

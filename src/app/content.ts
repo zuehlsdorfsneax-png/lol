@@ -11,7 +11,11 @@ export const CHAPTERS: readonly ChapterMeta[] = [
   { n: 3, title: 'Störung durch die Sonne', question: 'Was macht die Sonne mit der Mondbahn?' },
   { n: 4, title: 'Lagrange-Punkte', question: 'Wo heben sich alle Kräfte auf?' },
   { n: 5, title: 'Warum stabil?', question: 'Warum bleibt der Mond seit Milliarden Jahren?' },
-  { n: 6, title: 'Wann instabil?', question: 'Was müsste passieren, damit er abstürzt oder flieht?' },
+  {
+    n: 6,
+    title: 'Wann instabil?',
+    question: 'Was müsste passieren, damit er abstürzt oder flieht?',
+  },
 ];
 
 export const PROBLEM_QUESTION =

@@ -466,7 +466,14 @@ svg {
   align-items: center;
   gap: 12px;
   padding: 6px 0;
+}
+
+/* Breite Formeln scrollen in ihrer eigenen Spalte, die Nummer bleibt sichtbar. */
+.equation-body {
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
 }
 
 .equation-num {
@@ -1364,4 +1371,317 @@ details.section .section-body {
 
 .chapter-nav-link.next {
   text-align: right;
+}
+
+/* ---------------------------- Missionen ---------------------------- */
+.stars {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.star {
+  display: inline-grid;
+  color: var(--surface-3);
+}
+
+.star svg {
+  width: 100%;
+  height: 100%;
+}
+
+.star.on {
+  color: var(--accent);
+}
+
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+
+.mission-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 8px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink);
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.mission-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.mission-card h3 {
+  font-size: 1.12rem;
+}
+
+.mission-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mission-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.result-card {
+  position: absolute;
+  inset: auto 12px 12px 12px;
+  margin: 0 auto;
+  max-width: 520px;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 45%);
+  padding: 16px 18px;
+  display: grid;
+  gap: 8px;
+  z-index: 3;
+}
+
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.rule-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pad-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(2, 48px);
+  gap: 6px;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pad-buttons button {
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1.2rem;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.pad-buttons button:active,
+.pad-buttons button.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+
+.l1-canvas {
+  aspect-ratio: 16 / 10;
+}
+
+@media (max-width: 640px) {
+  .l1-canvas {
+    aspect-ratio: 1 / 1.05;
+  }
+}
+
+.meter {
+  height: 8px;
+  border-radius: 8px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.meter > div {
+  height: 100%;
+  border-radius: 8px;
+  background: var(--accent);
+}
+
+.quiz-option {
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  min-height: 46px;
+  padding: 10px 14px;
+  font-weight: 400;
+}
+
+.quiz-option.ok {
+  background: var(--ok-soft);
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 500;
+}
+
+.quiz-option.fail {
+  background: var(--fail-soft);
+  border-color: var(--fail);
+  color: var(--fail);
+}
+
+/* ---------------------------- Startseite --------------------------- */
+.home {
+  display: grid;
+  gap: 48px;
+  max-width: 1180px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 36px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hero-text {
+  display: grid;
+  gap: 18px;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 2rem + 5vw, 5.4rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+.problem {
+  margin: 0;
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.problem p {
+  font-family: var(--font-body);
+  font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem);
+  line-height: 1.45;
+  font-style: italic;
+  color: var(--ink);
+}
+
+.hero-visual {
+  display: grid;
+  gap: 8px;
+}
+
+.answer {
+  display: grid;
+  gap: 16px;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+
+.answer-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 18px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.answer-card .chip {
+  justify-self: start;
+}
+
+.answer-card p {
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.chapter-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 10px;
+}
+
+.chapter-list a {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.chapter-list a:hover,
+.tool-card:hover {
+  border-color: var(--accent);
+}
+
+.chapter-list a > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.chapter-num {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 500;
+  color: var(--accent-ink);
+  width: 1.1em;
+  text-align: center;
+}
+
+.tools {
+  display: grid;
+  gap: 16px;
+}
+
+.tool-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
 }

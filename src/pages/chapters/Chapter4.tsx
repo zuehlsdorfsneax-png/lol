@@ -17,9 +17,9 @@ export function Chapter4() {
         <SectionTitle n="4.1">Das mitrotierende Bezugssystem</SectionTitle>
         <p>
           Wir betrachten das <strong>eingeschränkte Drei-Körper-Problem</strong>: Zwei Hauptkörper
-          (Massen <Tex>{'m_1 > m_2'}</Tex>) umkreisen einander auf Kreisbahnen, ein dritter Körper ist so
-          leicht, dass er sie nicht beeinflusst. In einem Koordinatensystem, das sich mit den beiden
-          Hauptkörpern mitdreht, stehen diese still. Mit normierten Einheiten (Abstand 1,
+          (Massen <Tex>{'m_1 > m_2'}</Tex>) umkreisen einander auf Kreisbahnen, ein dritter Körper
+          ist so leicht, dass er sie nicht beeinflusst. In einem Koordinatensystem, das sich mit den
+          beiden Hauptkörpern mitdreht, stehen diese still. Mit normierten Einheiten (Abstand 1,
           Gesamtmasse 1, Winkelgeschwindigkeit 1) und <Tex>{String.raw`\mu = m_2/(m_1+m_2)`}</Tex>{' '}
           liegen sie bei <Tex>{'(-\\mu, 0)'}</Tex> und <Tex>{'(1-\\mu, 0)'}</Tex>. Die Bewegung des
           dritten Körpers gehorcht dann
@@ -30,17 +30,18 @@ export function Chapter4() {
         />
         <p>
           Das <strong>effektive Potential</strong> <Tex>{'-\\Omega'}</Tex> enthält die Gravitation
-          beider Körper und die Zentrifugalkraft. Die Terme <Tex>{'\\mp 2\\dot y, \\pm 2\\dot x'}</Tex>{' '}
-          sind die Coriolis-Kraft; sie hängt von der Geschwindigkeit ab und spielt für die Stabilität
-          eine überraschende Rolle.
+          beider Körper und die Zentrifugalkraft. Die Terme{' '}
+          <Tex>{'\\mp 2\\dot y, \\pm 2\\dot x'}</Tex> sind die Coriolis-Kraft; sie hängt von der
+          Geschwindigkeit ab und spielt für die Stabilität eine überraschende Rolle.
         </p>
 
         <SectionTitle n="4.2">Gleichgewichtspunkte</SectionTitle>
         <p>
-          Ein Körper, der im rotierenden System ruht (<Tex>{String.raw`\dot x=\dot y=\ddot x=\ddot y=0`}</Tex>),
-          bleibt nach (4.1) genau dann in Ruhe, wenn <Tex>{String.raw`\nabla\Omega = 0`}</Tex> gilt.
-          Dort heben sich Gravitation beider Körper und Zentrifugalkraft auf. Es gibt genau fünf
-          solche Punkte – die Lagrange-Punkte (Euler 1767, Lagrange 1772).
+          Ein Körper, der im rotierenden System ruht (
+          <Tex>{String.raw`\dot x=\dot y=\ddot x=\ddot y=0`}</Tex>), bleibt nach (4.1) genau dann in
+          Ruhe, wenn <Tex>{String.raw`\nabla\Omega = 0`}</Tex> gilt. Dort heben sich Gravitation
+          beider Körper und Zentrifugalkraft auf. Es gibt genau fünf solche Punkte – die
+          Lagrange-Punkte (Euler 1767, Lagrange 1772).
         </p>
       </div>
 
@@ -56,8 +57,8 @@ export function Chapter4() {
           n="4.3"
         />
         <p>
-          Abseits der x-Achse sind <Tex>{'r_1'}</Tex> und <Tex>{'r_2'}</Tex> unabhängige Koordinaten.
-          Der Gradient verschwindet also genau dann, wenn beide Ableitungen null sind:
+          Abseits der x-Achse sind <Tex>{'r_1'}</Tex> und <Tex>{'r_2'}</Tex> unabhängige
+          Koordinaten. Der Gradient verschwindet also genau dann, wenn beide Ableitungen null sind:
         </p>
         <Equation
           tex={String.raw`\frac{\partial\Omega}{\partial r_1} = (1-\mu)\left(r_1 - \frac{1}{r_1^2}\right) = 0 \;\Rightarrow\; r_1 = 1,\qquad \text{ebenso}\quad r_2 = 1.`}
@@ -73,32 +74,37 @@ export function Chapter4() {
         <SectionTitle n="4.3">L1, L2 und L3 auf der Verbindungslinie</SectionTitle>
         <p>
           Auf der x-Achse ist <Tex>{String.raw`\partial\Omega/\partial y = 0`}</Tex> automatisch
-          erfüllt. Die Bedingung <Tex>{String.raw`\partial\Omega/\partial x = 0`}</Tex> führt auf eine
-          Gleichung fünften Grades ohne geschlossene Lösungsformel; der Simulator löst sie numerisch
-          (Bisektionsverfahren). Für kleine μ liegen L1 und L2 näherungsweise im Abstand
+          erfüllt. Die Bedingung <Tex>{String.raw`\partial\Omega/\partial x = 0`}</Tex> führt auf
+          eine Gleichung fünften Grades ohne geschlossene Lösungsformel; der Simulator löst sie
+          numerisch (Bisektionsverfahren). Für kleine μ liegen L1 und L2 näherungsweise im Abstand
         </p>
         <Equation tex={String.raw`r_{L1,L2} \approx d\,\sqrt[3]{\frac{\mu}{3}}`} n="4.5" />
         <p>
-          vom kleineren Körper – das ist der Hill-Radius aus Kapitel 5. Für Sonne und Erde ergibt die
-          exakte Rechnung {km(Math.abs(l1.x - (1 - muSE)) * AU)} (Näherung:{' '}
+          vom kleineren Körper – das ist der Hill-Radius aus Kapitel 5. Für Sonne und Erde ergibt
+          die exakte Rechnung {km(Math.abs(l1.x - (1 - muSE)) * AU)} (Näherung:{' '}
           {km(hillApproximation(muSE) * AU)}).
         </p>
 
         <SectionTitle n="4.4">Welche Punkte sind stabil?</SectionTitle>
         <p>
-          Für kleine Abweichungen <Tex>{'(\\xi, \\eta)'}</Tex> vom Gleichgewicht linearisiert man (4.1)
-          mit den zweiten Ableitungen <Tex>{String.raw`\Omega_{xx},\Omega_{yy},\Omega_{xy}`}</Tex>. Der
-          Ansatz <Tex>{String.raw`\xi,\eta\propto e^{\lambda t}`}</Tex> ergibt die charakteristische
+          Für kleine Abweichungen <Tex>{'(\\xi, \\eta)'}</Tex> vom Gleichgewicht linearisiert man
+          (4.1) mit den zweiten Ableitungen{' '}
+          <Tex>{String.raw`\Omega_{xx},\Omega_{yy},\Omega_{xy}`}</Tex>. Der Ansatz{' '}
+          <Tex>{String.raw`\xi,\eta\propto e^{\lambda t}`}</Tex> ergibt die charakteristische
           Gleichung
         </p>
-        <Equation tex={String.raw`\lambda^4 + \left(4-\Omega_{xx}-\Omega_{yy}\right)\lambda^2 + \Omega_{xx}\Omega_{yy}-\Omega_{xy}^2 = 0.`} n="4.6" />
+        <Equation
+          tex={String.raw`\lambda^4 + \left(4-\Omega_{xx}-\Omega_{yy}\right)\lambda^2 + \Omega_{xx}\Omega_{yy}-\Omega_{xy}^2 = 0.`}
+          n="4.6"
+        />
         <p>
           Hat ein Eigenwert λ einen positiven Realteil, wächst jede Abweichung exponentiell –{' '}
           <strong>instabil</strong>. Sind alle λ rein imaginär, pendelt der Körper um den Punkt –{' '}
-          <strong>stabil</strong>. Für L1–L3 ist <Tex>{String.raw`\Omega_{xx}>0>\Omega_{yy}`}</Tex>, das
-          konstante Glied negativ und damit ein λ² positiv: Sattelpunkte, immer instabil. An L4/L5 gilt{' '}
-          <Tex>{String.raw`\Omega_{xx}=\tfrac34,\ \Omega_{yy}=\tfrac94,\ \Omega_{xy}=\pm\tfrac{3\sqrt3}{4}(1-2\mu)`}</Tex>,
-          also
+          <strong>stabil</strong>. Für L1–L3 ist <Tex>{String.raw`\Omega_{xx}>0>\Omega_{yy}`}</Tex>,
+          das konstante Glied negativ und damit ein λ² positiv: Sattelpunkte, immer instabil. An
+          L4/L5 gilt{' '}
+          <Tex>{String.raw`\Omega_{xx}=\tfrac34,\ \Omega_{yy}=\tfrac94,\ \Omega_{xy}=\pm\tfrac{3\sqrt3}{4}(1-2\mu)`}</Tex>
+          , also
         </p>
         <Equation
           tex={String.raw`\lambda^4 + \lambda^2 + \tfrac{27}{4}\mu(1-\mu) = 0\quad\Rightarrow\quad \text{stabil} \iff 27\,\mu(1-\mu) \le 1 \iff \mu \le 0{,}0385.`}
@@ -106,9 +112,9 @@ export function Chapter4() {
         />
         <p>
           Das ist das <strong>Routh-Kriterium</strong> (1875). Bemerkenswert: L4 und L5 sind
-          <em> Maxima</em> des effektiven Potentials – ein Ball würde vom Gipfel rollen. Stabil werden
-          sie erst durch die Coriolis-Kraft, die ein wegrollendes Teilchen auf eine Bahn um den Punkt
-          umlenkt.
+          <em> Maxima</em> des effektiven Potentials – ein Ball würde vom Gipfel rollen. Stabil
+          werden sie erst durch die Coriolis-Kraft, die ein wegrollendes Teilchen auf eine Bahn um
+          den Punkt umlenkt.
         </p>
       </div>
 
@@ -121,16 +127,22 @@ export function Chapter4() {
 
       <div class="prose">
         <SectionTitle n="4.5">Jacobi-Konstante und verbotene Zonen</SectionTitle>
-        <p>Multipliziert man (4.1) mit der Geschwindigkeit und integriert, erhält man eine Erhaltungsgröße:</p>
-        <Equation tex={String.raw`C = 2\,\Omega(x,y) - \left(\dot x^2+\dot y^2\right) = \text{konst.}`} n="4.8" />
+        <p>
+          Multipliziert man (4.1) mit der Geschwindigkeit und integriert, erhält man eine
+          Erhaltungsgröße:
+        </p>
+        <Equation
+          tex={String.raw`C = 2\,\Omega(x,y) - \left(\dot x^2+\dot y^2\right) = \text{konst.}`}
+          n="4.8"
+        />
         <p>
           Weil <Tex>{String.raw`\dot x^2+\dot y^2 \ge 0`}</Tex> ist, kann ein Körper mit der
           Jacobi-Konstante <Tex>C</Tex> nur Orte mit <Tex>{String.raw`2\Omega(x,y)\ge C`}</Tex>{' '}
           erreichen. Die Grenzen heißen <strong>Nullgeschwindigkeitskurven</strong>. Für großes{' '}
-          <Tex>C</Tex> sind die erlaubten Gebiete um die beiden Körper getrennt. Sinkt <Tex>C</Tex> unter{' '}
-          <Tex>{'C(L_1)'}</Tex>, öffnet sich zwischen ihnen ein Tor bei L1, unter <Tex>{'C(L_2)'}</Tex>{' '}
-          eines nach außen. Genau diese Tore entscheiden in Kapitel 5 und 6, ob ein Mond seinem
-          Planeten entkommen kann.
+          <Tex>C</Tex> sind die erlaubten Gebiete um die beiden Körper getrennt. Sinkt <Tex>C</Tex>{' '}
+          unter <Tex>{'C(L_1)'}</Tex>, öffnet sich zwischen ihnen ein Tor bei L1, unter{' '}
+          <Tex>{'C(L_2)'}</Tex> eines nach außen. Genau diese Tore entscheiden in Kapitel 5 und 6,
+          ob ein Mond seinem Planeten entkommen kann.
         </p>
       </div>
 
@@ -149,19 +161,20 @@ export function Chapter4() {
             1996. Weil L1 instabil ist, braucht die Sonde regelmäßige Bahnkorrekturen.
           </li>
           <li>
-            <strong>Sonne–Erde L2</strong>: James-Webb-Weltraumteleskop und Gaia. Erde, Mond und Sonne
-            stehen von dort aus in einer Richtung – ideal, um sich gegen ihre Wärme abzuschirmen.
+            <strong>Sonne–Erde L2</strong>: James-Webb-Weltraumteleskop und Gaia. Erde, Mond und
+            Sonne stehen von dort aus in einer Richtung – ideal, um sich gegen ihre Wärme
+            abzuschirmen.
           </li>
           <li>
-            <strong>Sonne–Jupiter L4/L5</strong>: die Trojaner-Asteroiden, die Jupiter um 60° voraus-
-            bzw. hinterherlaufen. Die NASA-Sonde Lucy besucht einige von ihnen.
+            <strong>Sonne–Jupiter L4/L5</strong>: die Trojaner-Asteroiden, die Jupiter um 60°
+            voraus- bzw. hinterherlaufen. Die NASA-Sonde Lucy besucht einige von ihnen.
           </li>
           <li>
             <strong>Sonne–Erde L4</strong>: der Asteroid 2010 TK7 ist ein Erd-Trojaner.
           </li>
           <li>
-            <strong>Pluto–Charon</strong>: Mit μ ≈ 0,11 ist das Routh-Kriterium verletzt – dort gibt es
-            keine stabilen Trojaner.
+            <strong>Pluto–Charon</strong>: Mit μ ≈ 0,11 ist das Routh-Kriterium verletzt – dort gibt
+            es keine stabilen Trojaner.
           </li>
         </ul>
       </div>
@@ -213,14 +226,23 @@ function ZeroVelocityExplorer() {
   const [rel, setRel] = useState(1.02);
   // Regler von knapp unter C(L4) bis deutlich über C(L1), relativ zur Spanne.
   const C = cL4 + (cL1 - cL4) * rel;
-  const open = levels.slice(0, 4).filter((l) => C < l.C).map((l) => l.name);
-  const view = mu < 1e-3 ? { cx: 1 - mu, cy: 0, half: Math.max(5 * Math.cbrt(mu / 3), 0.03) } : { cx: 0.1, cy: 0, half: 1.55 };
+  const open = levels
+    .slice(0, 4)
+    .filter((l) => C < l.C)
+    .map((l) => l.name);
+  const view =
+    mu < 1e-3
+      ? { cx: 1 - mu, cy: 0, half: Math.max(5 * Math.cbrt(mu / 3), 0.03) }
+      : { cx: 0.1, cy: 0, half: 1.55 };
   return (
     <div class="stack" style={{ gap: '14px' }}>
       <Segmented
         label="System"
         value={systemId}
-        options={SYSTEMS.filter((s) => s.id !== 'pluto-charon').map((s) => ({ value: s.id, label: s.name }))}
+        options={SYSTEMS.filter((s) => s.id !== 'pluto-charon').map((s) => ({
+          value: s.id,
+          label: s.name,
+        }))}
         onChange={setSystemId}
       />
       <LagrangeCanvas

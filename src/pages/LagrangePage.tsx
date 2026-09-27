@@ -127,14 +127,27 @@ export function LagrangePage({ preset }: { preset: string | null }) {
             onWheel={(factor) => setZoom((z) => Math.min(Math.max(z / factor, 0.3), 200))}
             overlay={(ctx, toScreen) => {
               drawParticles(ctx, ps.particles, toScreen);
-              if (drag.current) drawDragArrow(ctx, toScreen(...drag.current.from), toScreen(...drag.current.to));
+              if (drag.current)
+                drawDragArrow(ctx, toScreen(...drag.current.from), toScreen(...drag.current.to));
             }}
           />
           <div class="legend">
-            <span class="legend-item"><span class="legend-swatch" style={{ background: '#cde2fb' }} />Potentialhügel (L4/L5)</span>
-            <span class="legend-item"><span class="legend-swatch" style={{ background: '#0d366b' }} />Potentialtal (nahe den Körpern)</span>
-            <span class="legend-item"><span class="legend-key" style={{ background: '#f2c46e' }} />Höhenlinien C(L1), C(L2), C(L3)</span>
-            <span class="legend-item"><span class="legend-key" style={{ background: '#ff8a7a' }} />Grenze der verbotenen Zone (letztes Teilchen)</span>
+            <span class="legend-item">
+              <span class="legend-swatch" style={{ background: '#cde2fb' }} />
+              Potentialhügel (L4/L5)
+            </span>
+            <span class="legend-item">
+              <span class="legend-swatch" style={{ background: '#0d366b' }} />
+              Potentialtal (nahe den Körpern)
+            </span>
+            <span class="legend-item">
+              <span class="legend-key" style={{ background: '#f2c46e' }} />
+              Höhenlinien C(L1), C(L2), C(L3)
+            </span>
+            <span class="legend-item">
+              <span class="legend-key" style={{ background: '#ff8a7a' }} />
+              Grenze der verbotenen Zone (letztes Teilchen)
+            </span>
           </div>
 
           <section class="panel panel-pad">
@@ -146,8 +159,8 @@ export function LagrangePage({ preset }: { preset: string | null }) {
             </div>
             <StabilityTable mu={mu} length={system?.length} secondary={system?.labels[1] ?? 'm₂'} />
             <p class="small muted">
-              Rein imaginäre Eigenwerte bedeuten Schwingung um den Punkt (stabil), ein positiver Realteil
-              exponentielles Wegdriften (instabil). Einheiten: Abstand der Hauptkörper = 1.
+              Rein imaginäre Eigenwerte bedeuten Schwingung um den Punkt (stabil), ein positiver
+              Realteil exponentielles Wegdriften (instabil). Einheiten: Abstand der Hauptkörper = 1.
             </p>
           </section>
         </div>
@@ -160,7 +173,10 @@ export function LagrangePage({ preset }: { preset: string | null }) {
                 id="cr3bp-system"
                 label="Hauptkörper"
                 value={systemId}
-                options={[...SYSTEMS.map((s) => ({ value: s.id, label: s.name })), { value: 'eigenes', label: 'Eigenes Massenverhältnis' }]}
+                options={[
+                  ...SYSTEMS.map((s) => ({ value: s.id, label: s.name })),
+                  { value: 'eigenes', label: 'Eigenes Massenverhältnis' },
+                ]}
                 onChange={(id) => {
                   setSystemId(id);
                   setZoom(1);
@@ -186,12 +202,35 @@ export function LagrangePage({ preset }: { preset: string | null }) {
           <details class="section" open>
             <summary>Darstellung</summary>
             <div class="section-body">
-              <Toggle id="heat" label="Effektives Potential als Farbe" checked={heat} onChange={setHeat} />
-              <Toggle id="forbidden" label="Verbotene Zone des letzten Teilchens" checked={showForbidden} onChange={setShowForbidden} />
-              <Slider id="lab-speed" label="Tempo" value={speed} min={0.1} max={10} log format={(v) => `${sig(v, 2)}×`} onChange={setSpeed} />
+              <Toggle
+                id="heat"
+                label="Effektives Potential als Farbe"
+                checked={heat}
+                onChange={setHeat}
+              />
+              <Toggle
+                id="forbidden"
+                label="Verbotene Zone des letzten Teilchens"
+                checked={showForbidden}
+                onChange={setShowForbidden}
+              />
+              <Slider
+                id="lab-speed"
+                label="Tempo"
+                value={speed}
+                min={0.1}
+                max={10}
+                log
+                format={(v) => `${sig(v, 2)}×`}
+                onChange={setSpeed}
+              />
               <div class="btn-row">
-                <button type="button" class="btn small" onClick={() => setZoom((z) => z * 1.5)}>Hineinzoomen</button>
-                <button type="button" class="btn small" onClick={() => setZoom((z) => z / 1.5)}>Herauszoomen</button>
+                <button type="button" class="btn small" onClick={() => setZoom((z) => z * 1.5)}>
+                  Hineinzoomen
+                </button>
+                <button type="button" class="btn small" onClick={() => setZoom((z) => z / 1.5)}>
+                  Herauszoomen
+                </button>
               </div>
             </div>
           </details>
@@ -208,12 +247,23 @@ export function LagrangePage({ preset }: { preset: string | null }) {
                   </Fragment>
                 ))}
                 <dt>Status</dt>
-                <dd>{last.status === 'active' ? 'unterwegs' : last.status === 'crashed' ? 'eingeschlagen' : 'entkommen'}</dd>
+                <dd>
+                  {last.status === 'active'
+                    ? 'unterwegs'
+                    : last.status === 'crashed'
+                      ? 'eingeschlagen'
+                      : 'entkommen'}
+                </dd>
                 <dt>Flugzeit</dt>
-                <dd>{timeUnit ? duration(last.age * timeUnit) : `${fmt(last.age, 1)} Einheiten`}</dd>
+                <dd>
+                  {timeUnit ? duration(last.age * timeUnit) : `${fmt(last.age, 1)} Einheiten`}
+                </dd>
               </dl>
             ) : (
-              <p class="small muted">Klicke und ziehe in die Darstellung: Startpunkt und Richtung bestimmen die Anfangsgeschwindigkeit.</p>
+              <p class="small muted">
+                Klicke und ziehe in die Darstellung: Startpunkt und Richtung bestimmen die
+                Anfangsgeschwindigkeit.
+              </p>
             )}
             <p class="small muted">
               Liegt C über C(L1), ist das Teilchen in seiner Region gefangen – die verbotene Zone

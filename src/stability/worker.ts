@@ -9,7 +9,8 @@ export interface RunMessage {
   cells: [number, number][];
 }
 
-export type WorkerReply = ({ type: 'cell'; job: number } & CellResult) | { type: 'done'; job: number };
+export type WorkerReply =
+  ({ type: 'cell'; job: number } & CellResult) | { type: 'done'; job: number };
 
 self.onmessage = (e: MessageEvent<RunMessage>) => {
   const { job, config, cells } = e.data;

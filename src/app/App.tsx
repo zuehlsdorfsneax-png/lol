@@ -16,7 +16,16 @@ import { useRoute, type Route } from './router';
 function BrandMark() {
   return (
     <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
-      <ellipse cx="20" cy="20" rx="17" ry="10" fill="none" stroke="var(--line-strong)" stroke-width="1.2" transform="rotate(-18 20 20)" />
+      <ellipse
+        cx="20"
+        cy="20"
+        rx="17"
+        ry="10"
+        fill="none"
+        stroke="var(--line-strong)"
+        stroke-width="1.2"
+        transform="rotate(-18 20 20)"
+      />
       <circle cx="20" cy="20" r="5" fill="var(--accent)" />
       <circle cx="34.5" cy="13.5" r="3" fill="var(--series-1)" />
       <circle cx="34.5" cy="13.5" r="6" fill="none" stroke="var(--ink-3)" stroke-width="0.8" />
@@ -53,7 +62,11 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Spielen',
     items: [
-      { to: 'missionen', label: 'Missionen', active: (r) => r.page === 'missionen' || r.page === 'mission' },
+      {
+        to: 'missionen',
+        label: 'Missionen',
+        active: (r) => r.page === 'missionen' || r.page === 'mission',
+      },
       { to: 'quiz', label: 'Quiz', active: (r) => r.page === 'quiz' },
     ],
   },
@@ -99,7 +112,12 @@ export function App() {
   return (
     <div class="app">
       <div class="topbar">
-        <button type="button" class="btn icon ghost" aria-label="Menü öffnen" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          class="btn icon ghost"
+          aria-label="Menü öffnen"
+          onClick={() => setOpen(true)}
+        >
           <Icon name="menu" />
         </button>
         <a class="brand" href="#start">
@@ -132,7 +150,9 @@ export function App() {
             ))}
           </div>
         ))}
-        <div class="sidebar-foot">Seminararbeit Astronomie · Eigenanteil: digitale Drei-Körper-Simulation</div>
+        <div class="sidebar-foot">
+          Seminararbeit Astronomie · Eigenanteil: digitale Drei-Körper-Simulation
+        </div>
       </nav>
       <main class="main" id="inhalt">
         <Page route={route} />

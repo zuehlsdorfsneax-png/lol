@@ -56,7 +56,10 @@ export const REAL_PARAMS: ScenarioParams = {
   moonDistance: (MOON.semiMajorAxis * (1 - MOON.eccentricity)) / KM,
   moonSpeed: Math.sqrt(1 + MOON.eccentricity),
   moonRetrograde: false,
-  moonAngle: 0,
+  // Die Startwerte sind oskulierende Bahnelemente. Weil die Sonne die Bahn periodisch verformt
+  // (Variation), hängt die mittlere Bahn von der Startphase ab. 35° ist so gewählt, dass die
+  // mittlere Umlaufzeit dem beobachteten siderischen Monat entspricht (siehe Methodik).
+  moonAngle: 35,
   intruder: null,
   particles: null,
 };

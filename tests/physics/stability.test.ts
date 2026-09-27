@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { KM, REAL_PARAMS, runStability, scenarioInfo, type ScenarioParams } from '../../src/physics';
+import {
+  KM,
+  REAL_PARAMS,
+  runStability,
+  scenarioInfo,
+  type ScenarioParams,
+} from '../../src/physics';
 
 const base: ScenarioParams = { ...REAL_PARAMS, moonDistance: 384_400, moonSpeed: 1 };
 const rh = scenarioInfo(base).hillRadius / KM;
@@ -15,7 +21,9 @@ describe('runStability', () => {
 
   it('zu langsam: Absturz, bzw. Zerreißen an der Roche-Grenze', () => {
     expect(runStability({ ...base, moonSpeed: 0.15 }, { years: 1 }).outcome).toBe('crash');
-    expect(runStability({ ...base, moonSpeed: 0.25 }, { years: 1, roche: true }).outcome).toBe('roche');
+    expect(runStability({ ...base, moonSpeed: 0.25 }, { years: 1, roche: true }).outcome).toBe(
+      'roche',
+    );
   });
 
   it('zu schnell oder zu weit außen: Flucht', () => {
@@ -26,9 +34,9 @@ describe('runStability', () => {
   it('retrograde Monde sind weiter außen noch stabil', () => {
     const d = 0.7 * rh;
     expect(runStability({ ...base, moonDistance: d }, { years: 20 }).outcome).toBe('escape');
-    expect(runStability({ ...base, moonDistance: d, moonRetrograde: true }, { years: 20 }).outcome).toBe(
-      'stable',
-    );
+    expect(
+      runStability({ ...base, moonDistance: d, moonRetrograde: true }, { years: 20 }).outcome,
+    ).toBe('stable');
   });
 
   it('ohne Sonne entkommt der Mond erst oberhalb der Fluchtgeschwindigkeit', () => {

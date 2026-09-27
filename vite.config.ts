@@ -6,6 +6,8 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // KaTeX (Formelsatz) macht gut die Hälfte des Bundles aus; gzip-komprimiert sind es ~170 kB.
+    chunkSizeWarningLimit: 700,
   },
   test: {
     environment: 'jsdom',

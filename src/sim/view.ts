@@ -5,13 +5,22 @@ import { TRACKED } from './Simulation';
 export type FrameId = 'inertial' | 'earth' | 'rotating';
 
 export const FRAMES: readonly { value: FrameId; label: string; description: string }[] = [
-  { value: 'earth', label: 'Erde fest', description: 'Die Erde steht im Mittelpunkt; man sieht die Mondbahn wie von der Erde aus.' },
+  {
+    value: 'earth',
+    label: 'Erde fest',
+    description: 'Die Erde steht im Mittelpunkt; man sieht die Mondbahn wie von der Erde aus.',
+  },
   {
     value: 'rotating',
     label: 'Mitrotierend',
-    description: 'Die Linie Sonne–Erde bleibt fest (Sonne links). So stehen die Lagrange-Punkte still.',
+    description:
+      'Die Linie Sonne–Erde bleibt fest (Sonne links). So stehen die Lagrange-Punkte still.',
   },
-  { value: 'inertial', label: 'Ruhend (Sonne)', description: 'Das Schwerpunktsystem, in dem die Sonne fast ruht.' },
+  {
+    value: 'inertial',
+    label: 'Ruhend (Sonne)',
+    description: 'Das Schwerpunktsystem, in dem die Sonne fast ruht.',
+  },
 ];
 
 export interface Camera {
@@ -128,7 +137,11 @@ function currentTransform(sim: Simulation, frame: FrameId): Transform {
 }
 
 /** Aktuelle Position eines Körpers im Bezugssystem. */
-export function framePosition(sim: Simulation, frame: FrameId, body: TrackedBody): [number, number] | null {
+export function framePosition(
+  sim: Simulation,
+  frame: FrameId,
+  body: TrackedBody,
+): [number, number] | null {
   const i = sim.indices[body];
   if (i < 0 || !sim.sys.alive[i]) return null;
   return currentTransform(sim, frame)(sim.sys.x[i]!, sim.sys.y[i]!);
@@ -169,7 +182,14 @@ function formatScale(m: number): string {
   return `${(m / 1000).toLocaleString('de-DE')} km`;
 }
 
-function arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number, color: string): void {
+function arrow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  color: string,
+): void {
   const len = Math.hypot(dx, dy);
   if (len < 2) return;
   const ux = dx / len;
@@ -271,12 +291,29 @@ export function renderSpace(
     const retro = el ? el.h < 0 : sim.params.moonRetrograde;
     if (Number.isFinite(hill)) {
       circle(ctx, ex, ey, hill * k, SPACE.hill, [5, 5], 'Hill-Sphäre');
-      const crit = criticalMoonDistance(retro, sim.params.earthEccentricity, 0) * sim.info.hillRadius;
+      const crit =
+        criticalMoonDistance(retro, sim.params.earthEccentricity, 0) * sim.info.hillRadius;
       ctx.globalAlpha = 0.7;
-      circle(ctx, ex, ey, crit * k, SPACE.stability, [1.5, 4], retro ? 'Grenze retrograd' : 'Stabilitätsgrenze');
+      circle(
+        ctx,
+        ex,
+        ey,
+        crit * k,
+        SPACE.stability,
+        [1.5, 4],
+        retro ? 'Grenze retrograd' : 'Stabilitätsgrenze',
+      );
       ctx.globalAlpha = 1;
     }
-    circle(ctx, ex, ey, sim.info.rocheFluid * k, SPACE.roche, [3, 3], sim.info.rocheFluid * k > 30 ? 'Roche-Grenze' : undefined);
+    circle(
+      ctx,
+      ex,
+      ey,
+      sim.info.rocheFluid * k,
+      SPACE.roche,
+      [3, 3],
+      sim.info.rocheFluid * k > 30 ? 'Roche-Grenze' : undefined,
+    );
 
     const s = indices.sun;
     if (s >= 0 && sys.alive[s]) {
@@ -521,6 +558,12 @@ export function renderSpace(
 }
 
 /** Wandelt eine Bildschirmposition in Bezugssystem-Koordinaten um. */
-export function screenToFrame(cam: Camera, width: number, height: number, px: number, py: number): [number, number] {
+export function screenToFrame(
+  cam: Camera,
+  width: number,
+  height: number,
+  px: number,
+  py: number,
+): [number, number] {
   return [cam.cx + (px - width / 2) / cam.scale, cam.cy - (py - height / 2) / cam.scale];
 }

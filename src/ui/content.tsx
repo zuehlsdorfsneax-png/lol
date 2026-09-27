@@ -6,7 +6,8 @@ import { Icon } from './Icon';
 /** Formel mit KaTeX (inline). */
 export function Tex({ children, block = false }: { children: string; block?: boolean }) {
   const html = useMemo(
-    () => katex.renderToString(children, { displayMode: block, throwOnError: false, strict: false }),
+    () =>
+      katex.renderToString(children, { displayMode: block, throwOnError: false, strict: false }),
     [children, block],
   );
   return <span dangerouslySetInnerHTML={{ __html: html }} />;
@@ -16,7 +17,9 @@ export function Tex({ children, block = false }: { children: string; block?: boo
 export function Equation({ tex, n }: { tex: string; n?: string }) {
   return (
     <div class="equation">
-      <Tex block>{tex}</Tex>
+      <div class="equation-body">
+        <Tex block>{tex}</Tex>
+      </div>
       {n && <span class="equation-num">({n})</span>}
     </div>
   );

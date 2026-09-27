@@ -41,10 +41,15 @@ describe('Hohlmond', () => {
   });
 
   it('im Hohlraum herrscht keine Schwerkraft (Schalentheorem)', () => {
-    expect(gravityInsideShell(0.5 * MOON.radius, MOON.mass, MOON.radius, 0.8 * MOON.radius)).toBe(0);
+    expect(gravityInsideShell(0.5 * MOON.radius, MOON.mass, MOON.radius, 0.8 * MOON.radius)).toBe(
+      0,
+    );
     const outside = gravityInsideShell(2 * MOON.radius, MOON.mass, MOON.radius, 0.8 * MOON.radius);
     expect(outside).toBeCloseTo((G * MOON.mass) / (2 * MOON.radius) ** 2, 10);
-    expect(gravityInsideShell(MOON.radius, MOON.mass, MOON.radius, 0)).toBeCloseTo(MOON.surfaceGravity, 2);
+    expect(gravityInsideShell(MOON.radius, MOON.mass, MOON.radius, 0)).toBeCloseTo(
+      MOON.surfaceGravity,
+      2,
+    );
   });
 
   it('die Schale würde unter ihrem Gewicht zerdrückt', () => {

@@ -75,3 +75,8 @@ export function speed(mps: number): string {
 export function percent(v: number, digits = 1): string {
   return `${de(v * 100, digits)} %`;
 }
+
+/** Zehnerpotenz als Achsenbeschriftung: 10⁻⁶ (für logarithmische Achsen). */
+export function pow10(v: number): string {
+  return `10${superscript(Math.round(Math.log10(v)))}`;
+}

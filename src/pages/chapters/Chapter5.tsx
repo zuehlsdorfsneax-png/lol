@@ -14,7 +14,15 @@ import {
   jacobiCheck,
 } from '../../physics';
 import { LagrangeCanvas } from '../../lagrange/LagrangeCanvas';
-import { Callout, Equation, Figure, LinkButton, SectionTitle, StatusChip, Tex } from '../../ui/content';
+import {
+  Callout,
+  Equation,
+  Figure,
+  LinkButton,
+  SectionTitle,
+  StatusChip,
+  Tex,
+} from '../../ui/content';
 import { Segmented, Slider } from '../../ui/controls';
 import { distance, fmt, sig } from '../../ui/format';
 
@@ -41,22 +49,26 @@ export function Chapter5() {
           <strong> hierarchischen</strong> Drei-Körper-Systeme – ein enges Paar, weit entfernt ein
           dritter Körper – sind oft über sehr lange Zeiten stabil, während Systeme mit ähnlichen
           Abständen meist chaotisch zerfallen. Wie in Kapitel 3 gezeigt, stört die Sonne die
-          Mondbahn nur mit etwa 1 % der Erdanziehung. Drei Überlegungen machen genau, warum das reicht.
+          Mondbahn nur mit etwa 1 % der Erdanziehung. Drei Überlegungen machen genau, warum das
+          reicht.
         </p>
 
         <SectionTitle n="5.2">Grund 1: Der Mond liegt tief in der Hill-Sphäre</SectionTitle>
         <p>
-          Wie weit reicht die „Herrschaft“ der Erde? Im mitrotierenden System wirken auf einen Körper
-          auf der Linie Sonne–Erde im Abstand <Tex>r</Tex> von der Erde die Gezeitenkraft der Sonne
-          und die Zentrifugalkraft, zusammen <Tex>{String.raw`3\,GM_\odot\, r/d^3`}</Tex>. Setzt man
-          sie der Anziehung der Erde gleich, erhält man den <strong>Hill-Radius</strong>:
+          Wie weit reicht die „Herrschaft“ der Erde? Im mitrotierenden System wirken auf einen
+          Körper auf der Linie Sonne–Erde im Abstand <Tex>r</Tex> von der Erde die Gezeitenkraft der
+          Sonne und die Zentrifugalkraft, zusammen <Tex>{String.raw`3\,GM_\odot\, r/d^3`}</Tex>.
+          Setzt man sie der Anziehung der Erde gleich, erhält man den <strong>Hill-Radius</strong>:
         </p>
-        <Equation tex={String.raw`\frac{G M_\oplus}{r_H^2} = \frac{3\,G M_\odot\, r_H}{d^3}\quad\Rightarrow\quad r_H = d\,\sqrt[3]{\frac{M_\oplus}{3 M_\odot}} \approx 1{,}5\ \text{Mio. km}.`} n="5.1" />
+        <Equation
+          tex={String.raw`\frac{G M_\oplus}{r_H^2} = \frac{3\,G M_\odot\, r_H}{d^3}\quad\Rightarrow\quad r_H = d\,\sqrt[3]{\frac{M_\oplus}{3 M_\odot}} \approx 1{,}5\ \text{Mio. km}.`}
+          n="5.1"
+        />
         <p>
           Er stimmt mit dem Abstand von L1 und L2 überein (Kapitel 4). Der Mond kreist bei{' '}
           <strong>{fmt(moonFrac, 3)} r_H</strong>. Dort ist die Anziehung der Erde rund{' '}
-          {fmt(1 / (3 * moonFrac ** 3 / 1), 0)}-mal stärker als die störende Gezeitenwirkung der Sonne (sie
-          wächst mit <Tex>r^3</Tex>, die Erdanziehung fällt mit <Tex>{'1/r^2'}</Tex>).
+          {fmt(1 / ((3 * moonFrac ** 3) / 1), 0)}-mal stärker als die störende Gezeitenwirkung der
+          Sonne (sie wächst mit <Tex>r^3</Tex>, die Erdanziehung fällt mit <Tex>{'1/r^2'}</Tex>).
         </p>
       </div>
 
@@ -72,14 +84,16 @@ export function Chapter5() {
         <p>
           Die Jacobi-Konstante aus Kapitel 4 liefert einen echten mathematischen Beweis. Betrachtet
           man Sonne und Erde als Hauptkörper auf einer Kreisbahn und den Mond als leichten dritten
-          Körper, gilt: Ist <Tex>{String.raw`C_\text{Mond} > C(L_1)`}</Tex>, dann ist die erlaubte Region
-          um die Erde vollständig von einer verbotenen Zone umschlossen. Der Mond kann die Umgebung
-          der Erde <strong>niemals</strong> verlassen – egal wie lange man wartet. Man nennt das
+          Körper, gilt: Ist <Tex>{String.raw`C_\text{Mond} > C(L_1)`}</Tex>, dann ist die erlaubte
+          Region um die Erde vollständig von einer verbotenen Zone umschlossen. Der Mond kann die
+          Umgebung der Erde <strong>niemals</strong> verlassen – egal wie lange man wartet. Man
+          nennt das
           <em> Hill-Stabilität</em>.
         </p>
         <p>
-          Für den heutigen Mond ergibt sich <Tex>{String.raw`C = 3{,}00131 > C(L_1) = 3{,}00089`}</Tex>.
-          Der Mond ist also beweisbar an die Erde gebunden (im Rahmen der Näherung). Abb. 5.2 zeigt die
+          Für den heutigen Mond ergibt sich{' '}
+          <Tex>{String.raw`C = 3{,}00131 > C(L_1) = 3{,}00089`}</Tex>. Der Mond ist also beweisbar
+          an die Erde gebunden (im Rahmen der Näherung). Abb. 5.2 zeigt die
           Nullgeschwindigkeitskurve für verschiedene Mondbahnen.
         </p>
       </div>
@@ -95,9 +109,9 @@ export function Chapter5() {
         <SectionTitle n="5.4">Grund 3: Die Stabilitätsgrenze liegt viel weiter außen</SectionTitle>
         <p>
           Das Jacobi-Kriterium ist <em>hinreichend</em>, aber nicht <em>notwendig</em>: Auch Monde
-          mit <Tex>{String.raw`C < C(L_1)`}</Tex> können stabil sein, wenn sie das offene Tor einfach
-          nie treffen. Die tatsächliche Grenze lässt sich nur numerisch bestimmen. Domingos, Winter
-          und Yokoyama (2006) fanden in umfangreichen Simulationen:
+          mit <Tex>{String.raw`C < C(L_1)`}</Tex> können stabil sein, wenn sie das offene Tor
+          einfach nie treffen. Die tatsächliche Grenze lässt sich nur numerisch bestimmen. Domingos,
+          Winter und Yokoyama (2006) fanden in umfangreichen Simulationen:
         </p>
         <Equation
           tex={String.raw`a_\text{krit} \approx 0{,}49\,(1 - 1{,}03\,e_P - 0{,}27\,e_M)\,r_H\ \text{(prograd)},\qquad a_\text{krit} \approx 0{,}93\,(1 - 1{,}08\,e_P - 0{,}98\,e_M)\,r_H\ \text{(retrograd)}.`}
@@ -106,32 +120,33 @@ export function Chapter5() {
         <p>
           Der Simulator bestätigt das: Kreisbahnen um die Erde bleiben prograd bis{' '}
           <strong>0,478 r_H</strong> und retrograd bis <strong>0,923 r_H</strong> stabil (30 Jahre,
-          Skript <code>npm run calibrate</code>). Der Mond hat also fast die doppelte Sicherheitsreserve.
+          Skript <code>npm run calibrate</code>). Der Mond hat also fast die doppelte
+          Sicherheitsreserve.
         </p>
         <p>
           Warum sind rückläufige Monde so viel stabiler? Im mitrotierenden System wirkt auf einen
-          bewegten Körper die Coriolis-Kraft <Tex>{String.raw`-2\,\vec\omega\times\vec v`}</Tex>. Für
-          einen prograden Mond zeigt sie von der Erde <em>weg</em> und schwächt die Bindung; für einen
-          retrograden Mond zeigt sie zur Erde <em>hin</em> und hält ihn zusätzlich fest. Außerdem
-          wechselt ein retrograder Mond schneller zwischen den Stellungen zur Sonne, sodass sich die
-          Störungen eher ausmitteln.
+          bewegten Körper die Coriolis-Kraft <Tex>{String.raw`-2\,\vec\omega\times\vec v`}</Tex>.
+          Für einen prograden Mond zeigt sie von der Erde <em>weg</em> und schwächt die Bindung; für
+          einen retrograden Mond zeigt sie zur Erde <em>hin</em> und hält ihn zusätzlich fest.
+          Außerdem wechselt ein retrograder Mond schneller zwischen den Stellungen zur Sonne, sodass
+          sich die Störungen eher ausmitteln.
         </p>
 
         <SectionTitle n="5.5">Und in ferner Zukunft?</SectionTitle>
         <p>
-          Die Gezeitenreibung bremst die Erdrotation und schiebt den Mond nach außen – heute um
-          3,8 cm pro Jahr (gemessen mit Laserreflektoren). Das endet, wenn ein Erdtag so lang ist wie
+          Die Gezeitenreibung bremst die Erdrotation und schiebt den Mond nach außen – heute um 3,8
+          cm pro Jahr (gemessen mit Laserreflektoren). Das endet, wenn ein Erdtag so lang ist wie
           ein Monat. Aus der Erhaltung des Drehimpulses von Erdrotation und Mondbahn folgt dafür ein
-          Abstand von etwa 555 000 km. Das sind rund <strong>0,37 r_H</strong> – immer noch
-          deutlich innerhalb der Stabilitätsgrenze. Dieser Zustand würde erst in vielen Milliarden
-          Jahren erreicht, lange nachdem sich die Sonne zum Roten Riesen aufgebläht hat.
+          Abstand von etwa 555 000 km. Das sind rund <strong>0,37 r_H</strong> – immer noch deutlich
+          innerhalb der Stabilitätsgrenze. Dieser Zustand würde erst in vielen Milliarden Jahren
+          erreicht, lange nachdem sich die Sonne zum Roten Riesen aufgebläht hat.
         </p>
       </div>
 
       <Callout kind="merke">
         Der Mond ist stabil, weil er (1) bei nur einem Viertel des Hill-Radius kreist, wo die Erde
-        die Sonne um fast das Hundertfache übertrifft, (2) seine Jacobi-Konstante größer als C(L1) ist
-        und die Erdumgebung damit beweisbar geschlossen bleibt, und (3) die numerisch bestimmte
+        die Sonne um fast das Hundertfache übertrifft, (2) seine Jacobi-Konstante größer als C(L1)
+        ist und die Erdumgebung damit beweisbar geschlossen bleibt, und (3) die numerisch bestimmte
         Stabilitätsgrenze bei 0,48 r_H fast doppelt so weit außen liegt.
       </Callout>
 
@@ -171,16 +186,45 @@ function HillCalculator() {
                 <td>{p.name}</td>
                 <td class="num">{sig(p.m, 3)}</td>
                 <td class="num">{sig(p.a, 3)}</td>
-                <td class="num">{fmt(hillRadius(p.a * AU, p.m * EARTH.mass, SUN.mass) / 1e9, 2)} Mio. km</td>
+                <td class="num">
+                  {fmt(hillRadius(p.a * AU, p.m * EARTH.mass, SUN.mass) / 1e9, 2)} Mio. km
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div class="stack">
-        <Slider id="hill-star" label="Sternmasse" value={star} min={0.1} max={20} log format={(v) => `${sig(v, 2)} M☉`} onChange={setStar} />
-        <Slider id="hill-planet" label="Planetenmasse" value={planet} min={0.01} max={1000} log format={(v) => `${sig(v, 2)} M⊕`} onChange={setPlanet} />
-        <Slider id="hill-a" label="Abstand zum Stern" value={a} min={0.05} max={40} log format={(v) => `${sig(v, 3)} AE`} onChange={setA} />
+        <Slider
+          id="hill-star"
+          label="Sternmasse"
+          value={star}
+          min={0.1}
+          max={20}
+          log
+          format={(v) => `${sig(v, 2)} M☉`}
+          onChange={setStar}
+        />
+        <Slider
+          id="hill-planet"
+          label="Planetenmasse"
+          value={planet}
+          min={0.01}
+          max={1000}
+          log
+          format={(v) => `${sig(v, 2)} M⊕`}
+          onChange={setPlanet}
+        />
+        <Slider
+          id="hill-a"
+          label="Abstand zum Stern"
+          value={a}
+          min={0.05}
+          max={40}
+          log
+          format={(v) => `${sig(v, 3)} AE`}
+          onChange={setA}
+        />
         <dl class="kv">
           <dt>Hill-Radius</dt>
           <dd>{distance(r)}</dd>
@@ -191,7 +235,9 @@ function HillCalculator() {
           <dt>Unser Mond (384 400 km) läge bei</dt>
           <dd>{fmt(MOON.semiMajorAxis / r, 2)} r_H</dd>
         </dl>
-        <StatusChip status={MOON.semiMajorAxis < pro ? 'ok' : MOON.semiMajorAxis < retro ? 'warn' : 'fail'}>
+        <StatusChip
+          status={MOON.semiMajorAxis < pro ? 'ok' : MOON.semiMajorAxis < retro ? 'warn' : 'fail'}
+        >
           {MOON.semiMajorAxis < pro
             ? 'Ein Mond wie unserer wäre hier stabil'
             : MOON.semiMajorAxis < retro
@@ -260,8 +306,27 @@ function MoonJacobi() {
       />
       <div class="grid-2">
         <div class="stack">
-          <Slider id="jac-dist" label="Mondabstand" value={dist} min={100_000} max={1_500_000} log format={(v) => `${fmt(v)} km`} hint={`= ${fmt((dist * KM) / EARTH_HILL_RADIUS, 2)} r_H`} onChange={(v) => setDist(Math.round(v / 1000) * 1000)} />
-          <Slider id="jac-speed" label="Geschwindigkeit (× v_Kreis)" value={speed} min={0.5} max={1.5} step={0.01} format={(v) => fmt(v, 2)} onChange={setSpeed} />
+          <Slider
+            id="jac-dist"
+            label="Mondabstand"
+            value={dist}
+            min={100_000}
+            max={1_500_000}
+            log
+            format={(v) => `${fmt(v)} km`}
+            hint={`= ${fmt((dist * KM) / EARTH_HILL_RADIUS, 2)} r_H`}
+            onChange={(v) => setDist(Math.round(v / 1000) * 1000)}
+          />
+          <Slider
+            id="jac-speed"
+            label="Geschwindigkeit (× v_Kreis)"
+            value={speed}
+            min={0.5}
+            max={1.5}
+            step={0.01}
+            format={(v) => fmt(v, 2)}
+            onChange={setSpeed}
+          />
           <Segmented
             label="Umlaufrichtung"
             value={dir}
@@ -282,11 +347,13 @@ function MoonJacobi() {
             <dd>{fmt((check.C - check.CL1) * 1e4, 2)} · 10⁻⁴</dd>
           </dl>
           <StatusChip status={check.trapped ? 'ok' : 'warn'}>
-            {check.trapped ? 'Tor bei L1 geschlossen: beweisbar gebunden' : 'Tor offen: Flucht möglich, aber nicht sicher'}
+            {check.trapped
+              ? 'Tor bei L1 geschlossen: beweisbar gebunden'
+              : 'Tor offen: Flucht möglich, aber nicht sicher'}
           </StatusChip>
           <p class="small muted">
-            Probiere den heutigen Mond retrograd: Er ist trotzdem stabil, obwohl das Kriterium knapp wird
-            – das Jacobi-Kriterium ist streng, aber vorsichtig.
+            Probiere den heutigen Mond retrograd: Er ist trotzdem stabil, obwohl das Kriterium knapp
+            wird – das Jacobi-Kriterium ist streng, aber vorsichtig.
           </p>
         </div>
       </div>

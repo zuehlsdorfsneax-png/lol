@@ -18,8 +18,7 @@ export interface Assessment {
   checks: StabilityCheck[];
 }
 
-const fmtKm = (m: number): string =>
-  `${Math.round(m / 1000).toLocaleString('de-DE')} km`;
+const fmtKm = (m: number): string => `${Math.round(m / 1000).toLocaleString('de-DE')} km`;
 
 /**
  * Prognose aus den Startwerten – vor jeder Simulation. Verbindet die Kriterien aus Kapitel 5
@@ -30,7 +29,13 @@ export function assessStability(params: ScenarioParams): Assessment {
   const earth = bodies[indices.earth]!;
   const moon = bodies[indices.moon]!;
   const mu = G * (earth.mass + moon.mass);
-  const el = orbitalElements(mu, moon.x - earth.x, moon.y - earth.y, moon.vx - earth.vx, moon.vy - earth.vy);
+  const el = orbitalElements(
+    mu,
+    moon.x - earth.x,
+    moon.y - earth.y,
+    moon.vx - earth.vx,
+    moon.vy - earth.vy,
+  );
   const checks: StabilityCheck[] = [];
   const crashDistance = info.earthRadius + info.moonRadius;
 
@@ -45,7 +50,11 @@ export function assessStability(params: ScenarioParams): Assessment {
     id: 'roche',
     title: 'Außerhalb der Roche-Grenze',
     status:
-      el.periapsis < info.rocheFluid ? 'fail' : el.periapsis < 1.5 * info.rocheFluid ? 'warn' : 'ok',
+      el.periapsis < info.rocheFluid
+        ? 'fail'
+        : el.periapsis < 1.5 * info.rocheFluid
+          ? 'warn'
+          : 'ok',
     detail: `Roche-Grenze ${fmtKm(info.rocheFluid)} (flüssig) bzw. ${fmtKm(info.rocheRigid)} (starr).`,
   });
 
@@ -59,8 +68,18 @@ export function assessStability(params: ScenarioParams): Assessment {
   });
 
   if (indices.sun < 0) {
-    checks.push({ id: 'hill', title: 'Innerhalb der Hill-Sphäre', status: 'na', detail: 'Ohne Sonne gibt es keine Hill-Grenze.' });
-    checks.push({ id: 'jacobi', title: 'Jacobi-Kriterium', status: 'na', detail: 'Nur mit Sonne definiert.' });
+    checks.push({
+      id: 'hill',
+      title: 'Innerhalb der Hill-Sphäre',
+      status: 'na',
+      detail: 'Ohne Sonne gibt es keine Hill-Grenze.',
+    });
+    checks.push({
+      id: 'jacobi',
+      title: 'Jacobi-Kriterium',
+      status: 'na',
+      detail: 'Nur mit Sonne definiert.',
+    });
   } else {
     const retrograde = el.h < 0;
     const ecc = Math.min(el.e, 0.99);
@@ -73,7 +92,13 @@ export function assessStability(params: ScenarioParams): Assessment {
       detail: `Halbachse ${Number.isFinite(a) ? (a / info.hillRadius).toFixed(2) : '∞'} r_H – Grenze ${(crit / info.hillRadius).toFixed(2)} r_H (${retrograde ? 'retrograd' : 'prograd'}, Domingos et al. 2006).`,
     });
     const sun = bodies[indices.sun]!;
-    const j = jacobiCheck(G * (sun.mass + earth.mass), earth.mass / (sun.mass + earth.mass), sun, earth, moon);
+    const j = jacobiCheck(
+      G * (sun.mass + earth.mass),
+      earth.mass / (sun.mass + earth.mass),
+      sun,
+      earth,
+      moon,
+    );
     checks.push({
       id: 'jacobi',
       title: 'Jacobi-Kriterium (Hill-Stabilität)',

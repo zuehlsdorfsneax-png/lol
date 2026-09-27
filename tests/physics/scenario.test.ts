@@ -24,7 +24,13 @@ describe('buildScenario', () => {
     const { bodies, indices } = buildScenario(REAL_PARAMS);
     const e = bodies[indices.earth]!;
     const m = bodies[indices.moon]!;
-    const el = orbitalElements(G * (e.mass + m.mass), m.x - e.x, m.y - e.y, m.vx - e.vx, m.vy - e.vy);
+    const el = orbitalElements(
+      G * (e.mass + m.mass),
+      m.x - e.x,
+      m.y - e.y,
+      m.vx - e.vx,
+      m.vy - e.vy,
+    );
     expect(el.e).toBeCloseTo(MOON.eccentricity, 6);
     expect(el.a / MOON.semiMajorAxis).toBeCloseTo(1, 6);
     expect(el.h).toBeGreaterThan(0);
@@ -73,7 +79,10 @@ describe('Kriterien', () => {
     expect(rh / KM).toBeGreaterThan(1.49e6);
     expect(rh / KM).toBeLessThan(1.51e6);
     expect(MOON.semiMajorAxis / rh).toBeCloseTo(0.256, 2);
-    expect(perihelionHillRadius(AU, 0.1, EARTH.mass, SUN.mass)).toBeCloseTo(0.9 * hillRadius(AU, EARTH.mass, SUN.mass), 0);
+    expect(perihelionHillRadius(AU, 0.1, EARTH.mass, SUN.mass)).toBeCloseTo(
+      0.9 * hillRadius(AU, EARTH.mass, SUN.mass),
+      0,
+    );
   });
 
   it('Roche-Grenze der Erde für den Mond', () => {

@@ -15,7 +15,7 @@ export interface ForceLawOrbit {
 
 /** Theoretischer Apsidenwinkel (Peri → Apo) für fast kreisförmige Bahnen: π/√(3 − n). */
 export function theoreticalApsidalAngle(n: number): number {
-  return n < 3 ? (180 / Math.sqrt(3 - n)) : NaN;
+  return n < 3 ? 180 / Math.sqrt(3 - n) : NaN;
 }
 
 export function simulateForceLaw(

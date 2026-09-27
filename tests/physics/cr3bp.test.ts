@@ -86,11 +86,15 @@ describe('Bewegung im rotierenden System', () => {
 
   it('der reale Mond ist nach dem Jacobi-Kriterium in der Hill-Sphäre gefangen', () => {
     const s = buildScenario({ ...REAL_PARAMS, moonDistance: 384_400, moonSpeed: 1 });
-    const [sun, earth, moon] = [s.indices.sun, s.indices.earth, s.indices.moon].map((i) => s.bodies[i]!);
+    const [sun, earth, moon] = [s.indices.sun, s.indices.earth, s.indices.moon].map(
+      (i) => s.bodies[i]!,
+    );
     const check = jacobiCheck(G * (sun!.mass + earth!.mass), MU_SE, sun!, earth!, moon!);
     expect(check.trapped).toBe(true);
     const far = buildScenario({ ...REAL_PARAMS, moonDistance: 900_000, moonSpeed: 1 });
     const b = [far.indices.sun, far.indices.earth, far.indices.moon].map((i) => far.bodies[i]!);
-    expect(jacobiCheck(G * (b[0]!.mass + b[1]!.mass), MU_SE, b[0]!, b[1]!, b[2]!).trapped).toBe(false);
+    expect(jacobiCheck(G * (b[0]!.mass + b[1]!.mass), MU_SE, b[0]!, b[1]!, b[2]!).trapped).toBe(
+      false,
+    );
   });
 });

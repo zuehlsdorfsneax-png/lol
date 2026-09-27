@@ -1,4 +1,9 @@
-export { GameLoop, animationFrameScheduler, type FrameScheduler, type GameLoopOptions } from './GameLoop';
+export {
+  GameLoop,
+  animationFrameScheduler,
+  type FrameScheduler,
+  type GameLoopOptions,
+} from './GameLoop';
 export { Input, type KeyBindings, type PointerState } from './Input';
 export { SaveStore } from './SaveStore';
 export { SoundPlayer } from './SoundPlayer';

@@ -251,7 +251,11 @@ export class Simulation {
     const mEarth = sys.mass[earth]!;
     const mu = G * (mEarth + (el ? sys.mass[moon]! : 0));
     let alive = 0;
-    for (let i = Math.max(this.indices.firstParticle, 0); i < sys.n && this.indices.firstParticle >= 0; i++) {
+    for (
+      let i = Math.max(this.indices.firstParticle, 0);
+      i < sys.n && this.indices.firstParticle >= 0;
+      i++
+    ) {
       if (sys.alive[i] && !this.particleEscaped[i]) alive++;
     }
     return {
@@ -359,7 +363,9 @@ export class Simulation {
     const first = indices.firstParticle;
     if (first >= 0) {
       const hill = this.hillRadius();
-      const escapeLimit = Number.isFinite(hill) ? ESCAPE_HILL_FACTOR * hill : 50 * info.moonDistance;
+      const escapeLimit = Number.isFinite(hill)
+        ? ESCAPE_HILL_FACTOR * hill
+        : 50 * info.moonDistance;
       for (let p = first; p < sys.n; p++) {
         if (!sys.alive[p]) continue;
         for (const s of sources) {
@@ -419,7 +425,9 @@ export function integratorName(id: IntegratorId): string {
 /** Menschenlesbare Dauer: Stunden, Tage oder Jahre. */
 export function formatDuration(seconds: number): string {
   const abs = Math.abs(seconds);
-  if (abs < DAY) return `${(seconds / 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Stunden`;
-  if (abs < 2 * YEAR) return `${(seconds / DAY).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Tagen`;
+  if (abs < DAY)
+    return `${(seconds / 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Stunden`;
+  if (abs < 2 * YEAR)
+    return `${(seconds / DAY).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Tagen`;
   return `${(seconds / YEAR).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Jahren`;
 }

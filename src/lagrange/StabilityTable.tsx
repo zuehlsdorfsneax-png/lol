@@ -4,8 +4,20 @@ import { distance, fmt, sig } from '../ui/format';
 import { twoOmega } from './field';
 
 /** Tabelle der Lagrange-Punkte mit linearer Stabilitätsanalyse. */
-export function StabilityTable({ mu, length, secondary }: { mu: number; length?: number; secondary: string }) {
-  const rows = lagrangePoints(mu).map((p) => ({ p, s: linearStability(mu, p), C: twoOmega(mu, p.x, p.y) }));
+export function StabilityTable({
+  mu,
+  length,
+  secondary,
+}: {
+  mu: number;
+  length?: number;
+  secondary: string;
+}) {
+  const rows = lagrangePoints(mu).map((p) => ({
+    p,
+    s: linearStability(mu, p),
+    C: twoOmega(mu, p.x, p.y),
+  }));
   return (
     <div class="table-wrap">
       <table class="data">
@@ -33,11 +45,15 @@ export function StabilityTable({ mu, length, secondary }: { mu: number; length?:
                 <td>{p.name}</td>
                 <td class="num">{fmt(p.x, 5)}</td>
                 <td class="num">{fmt(p.y, 5)}</td>
-                {length && <td class="num">{distance(Math.hypot(p.x - (1 - mu), p.y) * length)}</td>}
+                {length && (
+                  <td class="num">{distance(Math.hypot(p.x - (1 - mu), p.y) * length)}</td>
+                )}
                 <td class="num">{fmt(C, 6)}</td>
                 <td class="num">{lambda}</td>
                 <td>
-                  <StatusChip status={s.stable ? 'ok' : 'fail'}>{s.stable ? 'stabil' : 'instabil'}</StatusChip>
+                  <StatusChip status={s.stable ? 'ok' : 'fail'}>
+                    {s.stable ? 'stabil' : 'instabil'}
+                  </StatusChip>
                 </td>
               </tr>
             );

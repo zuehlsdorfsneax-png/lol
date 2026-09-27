@@ -135,7 +135,10 @@ export const PRESETS: readonly Preset[] = [
     title: 'Teilchenwolke: Wo endet die Stabilität?',
     description:
       '300 masselose Testteilchen auf Kreisbahnen von 60 000 bis 1,4 Mio. km. Nach wenigen Jahren bleiben nur die inneren – die Grenze liegt bei etwa der Hälfte des Hill-Radius.',
-    params: { ...REAL_PARAMS, particles: { count: 300, innerKm: 60_000, outerKm: 1_400_000, retrograde: false } },
+    params: {
+      ...REAL_PARAMS,
+      particles: { count: 300, innerKm: 60_000, outerKm: 1_400_000, retrograde: false },
+    },
     view: { frame: 'rotating', radius: 2.4e9, speedIndex: 2 },
     chapter: 5,
   },
@@ -144,7 +147,10 @@ export const PRESETS: readonly Preset[] = [
     title: 'Teilchenwolke rückläufig',
     description:
       'Dieselbe Wolke, aber alle Teilchen kreisen rückwärts. Deutlich mehr überleben – retrograde Bahnen sind bis fast zum Hill-Radius stabil.',
-    params: { ...REAL_PARAMS, particles: { count: 300, innerKm: 60_000, outerKm: 1_400_000, retrograde: true } },
+    params: {
+      ...REAL_PARAMS,
+      particles: { count: 300, innerKm: 60_000, outerKm: 1_400_000, retrograde: true },
+    },
     view: { frame: 'rotating', radius: 2.4e9, speedIndex: 2 },
     chapter: 5,
   },

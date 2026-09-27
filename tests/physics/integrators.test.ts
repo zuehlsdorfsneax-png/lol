@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { G, INTEGRATORS, NBody, integrate, dynamicalTimescale, type IntegratorId } from '../../src/physics';
+import {
+  G,
+  INTEGRATORS,
+  NBody,
+  integrate,
+  dynamicalTimescale,
+  type IntegratorId,
+} from '../../src/physics';
 
 /** Zwei Körper auf Kreisbahnen um den gemeinsamen Schwerpunkt. */
 function binary(): NBody {
@@ -8,8 +15,26 @@ function binary(): NBody {
   const d = 3.84e8;
   const v = Math.sqrt((G * (m1 + m2)) / d);
   const sys = new NBody([
-    { name: 'A', kind: 'planet', mass: m1, radius: 6e6, x: (-d * m2) / (m1 + m2), y: 0, vx: 0, vy: (-v * m2) / (m1 + m2) },
-    { name: 'B', kind: 'moon', mass: m2, radius: 1.7e6, x: (d * m1) / (m1 + m2), y: 0, vx: 0, vy: (v * m1) / (m1 + m2) },
+    {
+      name: 'A',
+      kind: 'planet',
+      mass: m1,
+      radius: 6e6,
+      x: (-d * m2) / (m1 + m2),
+      y: 0,
+      vx: 0,
+      vy: (-v * m2) / (m1 + m2),
+    },
+    {
+      name: 'B',
+      kind: 'moon',
+      mass: m2,
+      radius: 1.7e6,
+      x: (d * m1) / (m1 + m2),
+      y: 0,
+      vx: 0,
+      vy: (v * m1) / (m1 + m2),
+    },
   ]);
   return sys;
 }

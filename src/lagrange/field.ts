@@ -24,7 +24,13 @@ export interface Grid {
 }
 
 /** Wertet 2Ω auf einem Raster über dem Ausschnitt aus. */
-export function sampleGrid(mu: number, view: LView, width: number, height: number, cell: number): Grid {
+export function sampleGrid(
+  mu: number,
+  view: LView,
+  width: number,
+  height: number,
+  cell: number,
+): Grid {
   const nx = Math.max(2, Math.ceil(width / cell) + 1);
   const ny = Math.max(2, Math.ceil(height / cell) + 1);
   const scale = width / (2 * view.half);
@@ -54,7 +60,8 @@ export function contour(grid: Grid, level: number): number[] {
       const b = values[j * nx + i + 1]!;
       const c = values[(j + 1) * nx + i + 1]!;
       const d = values[(j + 1) * nx + i]!;
-      const code = (a > level ? 8 : 0) | (b > level ? 4 : 0) | (c > level ? 2 : 0) | (d > level ? 1 : 0);
+      const code =
+        (a > level ? 8 : 0) | (b > level ? 4 : 0) | (c > level ? 2 : 0) | (d > level ? 1 : 0);
       if (code === 0 || code === 15) continue;
       // Kantenpunkte: oben (a–b), rechts (b–c), unten (d–c), links (a–d).
       const top = (): [number, number] => [i + lerp(a, b), j];
@@ -105,11 +112,25 @@ export function contour(grid: Grid, level: number): number[] {
 
 /** Jacobi-Konstanten der Lagrange-Punkte (Grenzwerte der Nullgeschwindigkeitskurven). */
 export function lagrangeLevels(mu: number): { name: string; C: number; x: number; y: number }[] {
-  return lagrangePoints(mu).map((p) => ({ name: p.name, x: p.x, y: p.y, C: twoOmega(mu, p.x, p.y) }));
+  return lagrangePoints(mu).map((p) => ({
+    name: p.name,
+    x: p.x,
+    y: p.y,
+    C: twoOmega(mu, p.x, p.y),
+  }));
 }
 
 /** Sequentielle Blau-Skala (hell = hohes effektives Potential −Ω, also "Hügel" bei L4/L5). */
-const RAMP = ['#0b1a3a', '#0d366b', '#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4', '#cde2fb'];
+const RAMP = [
+  '#0b1a3a',
+  '#0d366b',
+  '#184f95',
+  '#256abf',
+  '#3987e5',
+  '#6da7ec',
+  '#9ec5f4',
+  '#cde2fb',
+];
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);

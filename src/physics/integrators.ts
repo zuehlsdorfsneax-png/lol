@@ -190,10 +190,8 @@ function stepRk4(sys: NBody, dt: number): void {
     if (!alive[i]) continue;
     x[i] = s.x0[i]! + w * (s.kx[0]![i]! + 2 * s.kx[1]![i]! + 2 * s.kx[2]![i]! + s.kx[3]![i]!);
     y[i] = s.y0[i]! + w * (s.ky[0]![i]! + 2 * s.ky[1]![i]! + 2 * s.ky[2]![i]! + s.ky[3]![i]!);
-    vx[i] =
-      s.vx0[i]! + w * (s.kvx[0]![i]! + 2 * s.kvx[1]![i]! + 2 * s.kvx[2]![i]! + s.kvx[3]![i]!);
-    vy[i] =
-      s.vy0[i]! + w * (s.kvy[0]![i]! + 2 * s.kvy[1]![i]! + 2 * s.kvy[2]![i]! + s.kvy[3]![i]!);
+    vx[i] = s.vx0[i]! + w * (s.kvx[0]![i]! + 2 * s.kvx[1]![i]! + 2 * s.kvx[2]![i]! + s.kvx[3]![i]!);
+    vy[i] = s.vy0[i]! + w * (s.kvy[0]![i]! + 2 * s.kvy[1]![i]! + 2 * s.kvy[2]![i]! + s.kvy[3]![i]!);
   }
   sys.accValid = false;
 }

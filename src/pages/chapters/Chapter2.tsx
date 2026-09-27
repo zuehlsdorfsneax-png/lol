@@ -27,8 +27,8 @@ export function Chapter2() {
       <div class="prose">
         <SectionTitle n="2.1">Kepler: drei Gesetze aus Beobachtungen</SectionTitle>
         <p>
-          Johannes Kepler fand 1609 und 1619 aus den Mars-Beobachtungen Tycho Brahes drei Regeln – ohne
-          zu wissen, warum sie gelten:
+          Johannes Kepler fand 1609 und 1619 aus den Mars-Beobachtungen Tycho Brahes drei Regeln –
+          ohne zu wissen, warum sie gelten:
         </p>
         <ol>
           <li>Planeten bewegen sich auf Ellipsen, in deren einem Brennpunkt die Sonne steht.</li>
@@ -50,36 +50,45 @@ export function Chapter2() {
       <div class="prose">
         <SectionTitle n="2.2">Newton: vom 3. Keplerschen Gesetz zum 1/r²-Gesetz</SectionTitle>
         <p>
-          Isaac Newton zeigte 1687 in den <em>Principia</em>, dass alle drei Regeln aus einem einzigen
-          Kraftgesetz folgen. Die Herleitung gelingt am einfachsten für eine Kreisbahn mit Radius{' '}
-          <Tex>r</Tex> und Umlaufzeit <Tex>T</Tex>. Ein Körper auf der Kreisbahn braucht die
+          Isaac Newton zeigte 1687 in den <em>Principia</em>, dass alle drei Regeln aus einem
+          einzigen Kraftgesetz folgen. Die Herleitung gelingt am einfachsten für eine Kreisbahn mit
+          Radius <Tex>r</Tex> und Umlaufzeit <Tex>T</Tex>. Ein Körper auf der Kreisbahn braucht die
           Zentripetalbeschleunigung
         </p>
-        <Equation tex={String.raw`a_z = \frac{v^2}{r} = \frac{(2\pi r/T)^2}{r} = \frac{4\pi^2 r}{T^2}.`} n="2.1" />
+        <Equation
+          tex={String.raw`a_z = \frac{v^2}{r} = \frac{(2\pi r/T)^2}{r} = \frac{4\pi^2 r}{T^2}.`}
+          n="2.1"
+        />
         <p>
           Setzt man das dritte Keplersche Gesetz <Tex>{String.raw`T^2 = C\,r^3`}</Tex> ein, bleibt
         </p>
-        <Equation tex={String.raw`a_z = \frac{4\pi^2 r}{C\,r^3} = \frac{4\pi^2}{C}\cdot\frac{1}{r^2}.`} n="2.2" />
+        <Equation
+          tex={String.raw`a_z = \frac{4\pi^2 r}{C\,r^3} = \frac{4\pi^2}{C}\cdot\frac{1}{r^2}.`}
+          n="2.2"
+        />
         <p>
           Die Beschleunigung nimmt also mit dem <strong>Quadrat des Abstands</strong> ab. Weil nach
           dem dritten Newtonschen Axiom (actio = reactio) die Kraft zwischen zwei Körpern für beide
           gleich groß ist, muss sie zu beiden Massen proportional sein. Zusammen ergibt das das
           Gravitationsgesetz
         </p>
-        <Equation tex={String.raw`\vec F_{12} = -\,G\,\frac{m_1 m_2}{r^2}\,\hat r_{12},\qquad G = 6{,}674\cdot10^{-11}\,\tfrac{\text{m}^3}{\text{kg}\,\text{s}^2}.`} n="2.3" />
+        <Equation
+          tex={String.raw`\vec F_{12} = -\,G\,\frac{m_1 m_2}{r^2}\,\hat r_{12},\qquad G = 6{,}674\cdot10^{-11}\,\tfrac{\text{m}^3}{\text{kg}\,\text{s}^2}.`}
+          n="2.3"
+        />
         <p>
           Den Wert von <Tex>G</Tex> maß Henry Cavendish 1798 mit einer Torsionswaage im Labor. Erst
-          damit wurde es möglich, aus Umlaufbahnen Massen in Kilogramm zu berechnen – zum Beispiel die
-          der Erde oder des Jupiters (Tabelle in Abb. 2.1).
+          damit wurde es möglich, aus Umlaufbahnen Massen in Kilogramm zu berechnen – zum Beispiel
+          die der Erde oder des Jupiters (Tabelle in Abb. 2.1).
         </p>
 
         <SectionTitle n="2.3">Die Mondrechnung: der Apfel und der Mond</SectionTitle>
         <p>
           Newtons entscheidender Test: Wenn dieselbe Kraft den Apfel fallen lässt und den Mond auf
           seiner Bahn hält, muss die Beschleunigung des Mondes um den Faktor{' '}
-          <Tex>{String.raw`(r_\text{Mond}/R_\oplus)^2 \approx 60^2 = 3600`}</Tex> kleiner sein als die
-          Fallbeschleunigung <Tex>g</Tex> an der Erdoberfläche. Die Bahnbeschleunigung des Mondes
-          lässt sich mit (2.1) aus Abstand und Umlaufzeit berechnen:
+          <Tex>{String.raw`(r_\text{Mond}/R_\oplus)^2 \approx 60^2 = 3600`}</Tex> kleiner sein als
+          die Fallbeschleunigung <Tex>g</Tex> an der Erdoberfläche. Die Bahnbeschleunigung des
+          Mondes lässt sich mit (2.1) aus Abstand und Umlaufzeit berechnen:
         </p>
       </div>
 
@@ -93,40 +102,47 @@ export function Chapter2() {
       <div class="prose">
         <SectionTitle n="2.4">Was die Simulation daraus macht</SectionTitle>
         <p>
-          Mit dem zweiten Newtonschen Axiom <Tex>{String.raw`\vec F = m\vec a`}</Tex> folgt für jeden
-          Körper <Tex>i</Tex> eines Systems aus <Tex>N</Tex> Körpern die Bewegungsgleichung
+          Mit dem zweiten Newtonschen Axiom <Tex>{String.raw`\vec F = m\vec a`}</Tex> folgt für
+          jeden Körper <Tex>i</Tex> eines Systems aus <Tex>N</Tex> Körpern die Bewegungsgleichung
         </p>
-        <Equation tex={String.raw`\ddot{\vec r}_i = \sum_{j\neq i} G\,m_j\,\frac{\vec r_j-\vec r_i}{\lvert\vec r_j-\vec r_i\rvert^3}.`} n="2.4" />
+        <Equation
+          tex={String.raw`\ddot{\vec r}_i = \sum_{j\neq i} G\,m_j\,\frac{\vec r_j-\vec r_i}{\lvert\vec r_j-\vec r_i\rvert^3}.`}
+          n="2.4"
+        />
         <p>
-          Für zwei Körper lässt sich diese Gleichung exakt lösen – das Ergebnis sind Keplers Ellipsen.
-          Für drei Körper gibt es keine allgemeine Lösungsformel (Poincaré, 1890). Genau deshalb löst
-          der Simulator Gleichung (2.4) numerisch: Er rechnet die Bewegung in vielen kleinen
-          Zeitschritten aus (Details unter <a href="#methodik">Methodik</a>).
+          Für zwei Körper lässt sich diese Gleichung exakt lösen – das Ergebnis sind Keplers
+          Ellipsen. Für drei Körper gibt es keine allgemeine Lösungsformel (Poincaré, 1890). Genau
+          deshalb löst der Simulator Gleichung (2.4) numerisch: Er rechnet die Bewegung in vielen
+          kleinen Zeitschritten aus (Details unter <a href="#methodik">Methodik</a>).
         </p>
 
         <SectionTitle n="2.5">Energie und Fluchtgeschwindigkeit</SectionTitle>
         <p>
           Aus dem Gravitationsgesetz folgt die potentielle Energie{' '}
-          <Tex>{String.raw`E_\text{pot} = -G\,Mm/r`}</Tex>. Die Gesamtenergie pro Masse entscheidet über
-          die Bahnform:
+          <Tex>{String.raw`E_\text{pot} = -G\,Mm/r`}</Tex>. Die Gesamtenergie pro Masse entscheidet
+          über die Bahnform:
         </p>
-        <Equation tex={String.raw`\varepsilon = \frac{v^2}{2} - \frac{GM}{r}\;\begin{cases}<0 & \text{gebunden (Ellipse)}\\=0 & \text{Parabel}\\>0 & \text{ungebunden (Hyperbel)}\end{cases}`} n="2.5" />
+        <Equation
+          tex={String.raw`\varepsilon = \frac{v^2}{2} - \frac{GM}{r}\;\begin{cases}<0 & \text{gebunden (Ellipse)}\\=0 & \text{Parabel}\\>0 & \text{ungebunden (Hyperbel)}\end{cases}`}
+          n="2.5"
+        />
         <p>
           Daraus ergeben sich die Kreisbahngeschwindigkeit{' '}
           <Tex>{String.raw`v_K = \sqrt{GM/r}`}</Tex> und die Fluchtgeschwindigkeit{' '}
-          <Tex>{String.raw`v_F = \sqrt{2GM/r} = \sqrt2\,v_K`}</Tex>. Für den Mond im Abstand 384 400 km
-          sind das 1,02 km/s und 1,45 km/s. Die allgemeine Beziehung zwischen Geschwindigkeit, Abstand
-          und Bahngröße ist die <strong>Vis-viva-Gleichung</strong>{' '}
-          <Tex>{String.raw`v^2 = GM\left(\tfrac2r - \tfrac1a\right)`}</Tex>. In Kapitel 6 zeigt sich,
-          dass ein Mond im Drei-Körper-System schon deutlich unterhalb von <Tex>v_F</Tex> verloren
-          gehen kann.
+          <Tex>{String.raw`v_F = \sqrt{2GM/r} = \sqrt2\,v_K`}</Tex>. Für den Mond im Abstand 384 400
+          km sind das 1,02 km/s und 1,45 km/s. Die allgemeine Beziehung zwischen Geschwindigkeit,
+          Abstand und Bahngröße ist die <strong>Vis-viva-Gleichung</strong>{' '}
+          <Tex>{String.raw`v^2 = GM\left(\tfrac2r - \tfrac1a\right)`}</Tex>. In Kapitel 6 zeigt
+          sich, dass ein Mond im Drei-Körper-System schon deutlich unterhalb von <Tex>v_F</Tex>{' '}
+          verloren gehen kann.
         </p>
 
         <SectionTitle n="2.6">Warum gerade 1/r²?</SectionTitle>
         <p>
           Man kann fragen, ob Bahnen auch mit einem anderen Kraftgesetz stabil wären. Der Satz von
-          Bertrand (1873) gibt eine überraschende Antwort: Nur für <Tex>{String.raw`F\propto 1/r^2`}</Tex>{' '}
-          und für die Federkraft <Tex>{String.raw`F\propto r`}</Tex> schließen sich <em>alle</em>
+          Bertrand (1873) gibt eine überraschende Antwort: Nur für{' '}
+          <Tex>{String.raw`F\propto 1/r^2`}</Tex> und für die Federkraft{' '}
+          <Tex>{String.raw`F\propto r`}</Tex> schließen sich <em>alle</em>
           gebundenen Bahnen. Für <Tex>{String.raw`F\propto 1/r^n`}</Tex> mit <Tex>{'n \\ge 3'}</Tex>{' '}
           gibt es überhaupt keine stabilen Bahnen – jede kleine Störung führt zum Absturz oder zur
           Flucht. Das Experiment in Abb. 2.3 zeigt beides.
@@ -141,9 +157,9 @@ export function Chapter2() {
       </Figure>
 
       <Callout kind="merke">
-        Das 1/r²-Gesetz ist kein Zufall: Es folgt aus dem dritten Keplerschen Gesetz, besteht Newtons
-        Mondtest und ist das einzige Potenzgesetz mit geschlossenen, stabilen Bahnen. Für drei Körper
-        muss man es numerisch lösen – das ist die Grundlage des Simulators.
+        Das 1/r²-Gesetz ist kein Zufall: Es folgt aus dem dritten Keplerschen Gesetz, besteht
+        Newtons Mondtest und ist das einzige Potenzgesetz mit geschlossenen, stabilen Bahnen. Für
+        drei Körper muss man es numerisch lösen – das ist die Grundlage des Simulators.
       </Callout>
     </>
   );
@@ -174,7 +190,9 @@ function MoonTest() {
           />
           <dl class="kv">
             <dt>Mondabstand r</dt>
-            <dd>{fmt(r / KM)} km = {sig(ratio, 4)} R⊕</dd>
+            <dd>
+              {fmt(r / KM)} km = {sig(ratio, 4)} R⊕
+            </dd>
             <dt>Siderische Umlaufzeit T</dt>
             <dd>{sig(T / DAY, 6)} Tage</dd>
             <dt>Gemessen: a = 4π²r / T²</dt>
@@ -222,7 +240,22 @@ function MoonTest() {
 function KeplerLab() {
   const [e, setE] = useState(0.5);
   const sectors = 12;
-  const draw = (ctx: CanvasRenderingContext2D, w: number, h: number, c: { ink: string; ink2: string; ink3: string; axis: string; series: string[]; accent: string; fontUi: string; surface2: string }, time: number) => {
+  const draw = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    c: {
+      ink: string;
+      ink2: string;
+      ink3: string;
+      axis: string;
+      series: string[];
+      accent: string;
+      fontUi: string;
+      surface2: string;
+    },
+    time: number,
+  ) => {
     ctx.clearRect(0, 0, w, h);
     const a = 1;
     const b = Math.sqrt(1 - e * e);
@@ -288,10 +321,26 @@ function KeplerLab() {
 
   return (
     <div class="stack" style={{ gap: '16px' }}>
-      <Slider id="kepler-e" label="Exzentrizität der Bahn" value={e} min={0} max={0.9} step={0.01} format={(v) => fmt(v, 2)} onChange={setE} />
-      <CanvasBox draw={draw} deps={[e]} animate aspect="2 / 1" label="Ellipsenbahn mit Sektoren gleicher Fläche" />
+      <Slider
+        id="kepler-e"
+        label="Exzentrizität der Bahn"
+        value={e}
+        min={0}
+        max={0.9}
+        step={0.01}
+        format={(v) => fmt(v, 2)}
+        onChange={setE}
+      />
+      <CanvasBox
+        draw={draw}
+        deps={[e]}
+        animate
+        aspect="2 / 1"
+        label="Ellipsenbahn mit Sektoren gleicher Fläche"
+      />
       <p class="small muted">
-        Jeder Sektor hat die Fläche πab/{sectors} = {sig((Math.PI * Math.sqrt(1 - e * e)) / sectors, 3)} (für a = 1).
+        Jeder Sektor hat die Fläche πab/{sectors} ={' '}
+        {sig((Math.PI * Math.sqrt(1 - e * e)) / sectors, 3)} (für a = 1).
       </p>
       <div class="grid-2">
         <div class="table-wrap">
@@ -341,13 +390,15 @@ function KeplerLab() {
                 <td>Mond (Erde)</td>
                 <td class="num">{fmt(MOON.semiMajorAxis / KM)}</td>
                 <td class="num">{sig(MOON.siderealPeriod / DAY, 4)}</td>
-                <td class="num">{sci(centralMass(MOON.semiMajorAxis, MOON.siderealPeriod, G), 3)} kg</td>
+                <td class="num">
+                  {sci(centralMass(MOON.semiMajorAxis, MOON.siderealPeriod, G), 3)} kg
+                </td>
               </tr>
             </tbody>
           </table>
           <p class="small muted" style={{ marginTop: '8px' }}>
-            Aus M = 4π²a³/(G T²). Letzte Zeile: Erde + Mond ({sci(EARTH.mass + MOON.mass, 3)} kg). Sonne:{' '}
-            {sci(SUN.mass, 3)} kg.
+            Aus M = 4π²a³/(G T²). Letzte Zeile: Erde + Mond ({sci(EARTH.mass + MOON.mass, 3)} kg).
+            Sonne: {sci(SUN.mass, 3)} kg.
           </p>
         </div>
       </div>
@@ -359,7 +410,19 @@ function ForceLawLab() {
   const [n, setN] = useState(2);
   const [f, setF] = useState(0.85);
   const orbit = useMemo(() => simulateForceLaw(n, f, 80), [n, f]);
-  const draw = (ctx: CanvasRenderingContext2D, w: number, h: number, c: { ink2: string; ink3: string; series: string[]; accent: string; fontUi: string; grid: string }) => {
+  const draw = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    c: {
+      ink2: string;
+      ink3: string;
+      series: string[];
+      accent: string;
+      fontUi: string;
+      grid: string;
+    },
+  ) => {
     ctx.clearRect(0, 0, w, h);
     let maxR = 1;
     for (const p of orbit.points) maxR = Math.max(maxR, Math.hypot(p.x, p.y));
@@ -397,7 +460,11 @@ function ForceLawLab() {
   };
   const theory = theoreticalApsidalAngle(n);
   const outcome =
-    orbit.outcome === 'crash' ? 'Absturz ins Zentrum' : orbit.outcome === 'escape' ? 'Flucht' : 'gebunden';
+    orbit.outcome === 'crash'
+      ? 'Absturz ins Zentrum'
+      : orbit.outcome === 'escape'
+        ? 'Flucht'
+        : 'gebunden';
   return (
     <div class="grid-2">
       <div class="stack">
@@ -412,8 +479,26 @@ function ForceLawLab() {
           ]}
           onChange={(v) => setN(Number(v))}
         />
-        <Slider id="force-n" label="Exponent n" value={n} min={1} max={3.5} step={0.05} format={(v) => sig(v, 3)} onChange={setN} />
-        <Slider id="force-f" label="Startgeschwindigkeit (× Kreisbahn)" value={f} min={0.6} max={1.3} step={0.01} format={(v) => fmt(v, 2)} onChange={setF} />
+        <Slider
+          id="force-n"
+          label="Exponent n"
+          value={n}
+          min={1}
+          max={3.5}
+          step={0.05}
+          format={(v) => sig(v, 3)}
+          onChange={setN}
+        />
+        <Slider
+          id="force-f"
+          label="Startgeschwindigkeit (× Kreisbahn)"
+          value={f}
+          min={0.6}
+          max={1.3}
+          step={0.01}
+          format={(v) => fmt(v, 2)}
+          onChange={setF}
+        />
         <dl class="kv">
           <dt>Ergebnis</dt>
           <dd>{outcome}</dd>
@@ -423,11 +508,16 @@ function ForceLawLab() {
           <dd>{Number.isFinite(theory) ? `${sig(2 * theory, 4)}°` : 'keine stabile Bahn'}</dd>
         </dl>
         <p class="small muted">
-          Bei 360° schließt sich die Bahn nach einem Umlauf. Weicht der Winkel ab, dreht sich die Ellipse
-          bei jedem Umlauf weiter – es entsteht eine Rosette.
+          Bei 360° schließt sich die Bahn nach einem Umlauf. Weicht der Winkel ab, dreht sich die
+          Ellipse bei jedem Umlauf weiter – es entsteht eine Rosette.
         </p>
       </div>
-      <CanvasBox draw={draw} deps={[orbit]} aspect="1 / 1" label={`Bahn im Kraftfeld mit Exponent ${n}`} />
+      <CanvasBox
+        draw={draw}
+        deps={[orbit]}
+        aspect="1 / 1"
+        label={`Bahn im Kraftfeld mit Exponent ${n}`}
+      />
     </div>
   );
 }

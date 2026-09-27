@@ -25,6 +25,8 @@ interface Props {
   yLabel: string;
   xFormat: (v: number) => string;
   yFormat: (v: number) => string;
+  /** Genauere Formatierung für Tooltip und Tabelle (Standard: yFormat). */
+  valueFormat?: (v: number) => string;
   yLog?: boolean;
   yMin?: number;
   yMax?: number;
@@ -163,7 +165,9 @@ export function LineChart(props: Props) {
               {tooltip.map(({ s, i, y }) => (
                 <div class="tooltip-row" key={s.id}>
                   <span class="legend-key" style={{ background: seriesColor(s, i, colors) }} />
-                  <strong>{Number.isFinite(y) ? props.yFormat(y) : '–'}</strong>
+                  <strong>
+                    {Number.isFinite(y) ? (props.valueFormat ?? props.yFormat)(y) : '–'}
+                  </strong>
                   <span class="muted">{s.label}</span>
                 </div>
               ))}
@@ -175,7 +179,8 @@ export function LineChart(props: Props) {
   );
 }
 
-function DataTable({ series, xLabel, xFormat, yFormat }: Props) {
+function DataTable({ series, xLabel, xFormat, yFormat, valueFormat }: Props) {
+  const format = valueFormat ?? yFormat;
   const base = series[0];
   if (!base) return null;
   const n = len(base);
@@ -205,7 +210,7 @@ function DataTable({ series, xLabel, xFormat, yFormat }: Props) {
                 const y = idx >= 0 ? s.y[idx]! : NaN;
                 return (
                   <td class="num" key={s.id}>
-                    {Number.isFinite(y) ? yFormat(y) : '–'}
+                    {Number.isFinite(y) ? format(y) : '–'}
                   </td>
                 );
               })}
@@ -282,7 +287,8 @@ function draw(
   const sx = (v: number): number => x0 + ((v - xMin) / (xMax - xMin)) * (x1 - x0);
   const sy = p.yLog
     ? (v: number): number =>
-        y0 - ((Math.log10(v) - Math.log10(yMin)) / (Math.log10(yMax) - Math.log10(yMin))) * (y0 - y1)
+        y0 -
+        ((Math.log10(v) - Math.log10(yMin)) / (Math.log10(yMax) - Math.log10(yMin))) * (y0 - y1)
     : (v: number): number => y0 - ((v - yMin) / (yMax - yMin)) * (y0 - y1);
 
   // Raster und Achsen.

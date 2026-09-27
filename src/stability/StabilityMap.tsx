@@ -40,7 +40,12 @@ interface Props {
   compact?: boolean;
 }
 
-function configFromPreset(id: string | null | undefined, nx: number, ny: number, years: number): MapConfig {
+function configFromPreset(
+  id: string | null | undefined,
+  nx: number,
+  ny: number,
+  years: number,
+): MapConfig {
   const p = MAP_PRESETS.find((m) => m.id === id) ?? MAP_PRESETS[0]!;
   return { ...p.config, nx, ny, years, roche: true, base: DEFAULT_BASE };
 }
@@ -48,7 +53,8 @@ function configFromPreset(id: string | null | undefined, nx: number, ny: number,
 /** Farbe einer Zelle. */
 function cellColor(r: CellResult, mode: Mode, years: number, c: ThemeColors): string {
   const cls = outcomeClass(r.outcome);
-  if (mode === 'outcome') return cls === 'stable' ? c.series[2]! : cls === 'crash' ? c.series[1]! : c.series[0]!;
+  if (mode === 'outcome')
+    return cls === 'stable' ? c.series[2]! : cls === 'crash' ? c.series[1]! : c.series[0]!;
   // Lebensdauer: sequentielle Blau-Skala, dunkel = lange stabil.
   const ramp = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
   if (cls === 'stable') return ramp[ramp.length - 1]!;
@@ -57,11 +63,15 @@ function cellColor(r: CellResult, mode: Mode, years: number, c: ThemeColors): st
 }
 
 export function StabilityMap({ preset, compact = false }: Props) {
-  const [presetId, setPresetId] = useState(MAP_PRESETS.find((m) => m.id === preset)?.id ?? MAP_PRESETS[0]!.id);
+  const [presetId, setPresetId] = useState(
+    MAP_PRESETS.find((m) => m.id === preset)?.id ?? MAP_PRESETS[0]!.id,
+  );
   const [res, setRes] = useState<string>(compact ? '24' : '40');
   const [years, setYears] = useState<string>('10');
   const resolution = RESOLUTIONS.find((r) => r.value === res)!;
-  const [config, setConfig] = useState<MapConfig>(() => configFromPreset(presetId, resolution.nx, resolution.ny, Number(years)));
+  const [config, setConfig] = useState<MapConfig>(() =>
+    configFromPreset(presetId, resolution.nx, resolution.ny, Number(years)),
+  );
   const [mode, setMode] = useState<Mode>('outcome');
   const [progress, setProgress] = useState({ done: 0, total: 0, running: false, seconds: 0 });
   const [hover, setHover] = useState<{ i: number; j: number; px: number; py: number } | null>(null);
@@ -113,7 +123,12 @@ export function StabilityMap({ preset, compact = false }: Props) {
           dirty.current = true;
         } else if (++finished === count) {
           worker.terminate();
-          setProgress({ done: total, total, running: false, seconds: (performance.now() - startTime.current) / 1000 });
+          setProgress({
+            done: total,
+            total,
+            running: false,
+            seconds: (performance.now() - startTime.current) / 1000,
+          });
           return;
         }
       };
@@ -166,7 +181,9 @@ export function StabilityMap({ preset, compact = false }: Props) {
     dirty.current = true;
   }, [size.width, colors, mode, hover, selected, config]);
 
-  const height = compact ? Math.max(260, size.width * 0.55) : Math.max(320, Math.min(size.width * 0.62, 620));
+  const height = compact
+    ? Math.max(260, size.width * 0.55)
+    : Math.max(320, Math.min(size.width * 0.62, 620));
 
   const scales = (): { x0: number; x1: number; y0: number; y1: number } => ({
     x0: M.left,
@@ -177,7 +194,9 @@ export function StabilityMap({ preset, compact = false }: Props) {
 
   function toPx(axis: AxisKey, min: number, max: number, v: number, a: number, b: number): number {
     const def = AXES[axis];
-    const t = def.log ? (Math.log(v) - Math.log(min)) / (Math.log(max) - Math.log(min)) : (v - min) / (max - min);
+    const t = def.log
+      ? (Math.log(v) - Math.log(min)) / (Math.log(max) - Math.log(min))
+      : (v - min) / (max - min);
     return a + t * (b - a);
   }
 
@@ -211,7 +230,9 @@ export function StabilityMap({ preset, compact = false }: Props) {
     ctx.fillStyle = c.ink3;
     const xDef = AXES[cfg.x];
     const yDef = AXES[cfg.y];
-    const xt = xDef.log ? logTicksExtended(cfg.xMin, cfg.xMax) : niceTicks(cfg.xMin, cfg.xMax, Math.max(3, Math.floor((x1 - x0) / 90)));
+    const xt = xDef.log
+      ? logTicksExtended(cfg.xMin, cfg.xMax)
+      : niceTicks(cfg.xMin, cfg.xMax, Math.max(3, Math.floor((x1 - x0) / 90)));
     const yt = yDef.log ? logTicksExtended(cfg.yMin, cfg.yMax) : niceTicks(cfg.yMin, cfg.yMax, 5);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -245,8 +266,17 @@ export function StabilityMap({ preset, compact = false }: Props) {
     ctx.rect(x0, y1, x1 - x0, y0 - y1);
     ctx.clip();
     for (const o of theoryOverlays(cfg)) {
-      const pts = o.points.map(([x, y]) => [toPx(cfg.x, cfg.xMin, cfg.xMax, x, x0, x1), toPx(cfg.y, cfg.yMin, cfg.yMax, y, y0, y1)] as const);
-      for (const [stroke, w] of [[c.surface, 4], [c.ink, 1.6]] as const) {
+      const pts = o.points.map(
+        ([x, y]) =>
+          [
+            toPx(cfg.x, cfg.xMin, cfg.xMax, x, x0, x1),
+            toPx(cfg.y, cfg.yMin, cfg.yMax, y, y0, y1),
+          ] as const,
+      );
+      for (const [stroke, w] of [
+        [c.surface, 4],
+        [c.ink, 1.6],
+      ] as const) {
         ctx.strokeStyle = stroke;
         ctx.lineWidth = w;
         ctx.beginPath();
@@ -258,9 +288,12 @@ export function StabilityMap({ preset, compact = false }: Props) {
       for (let k = 0; k < pts.length - 1; k++) {
         const [ax, ay] = pts[k]!;
         const [bx, by] = pts[k + 1]!;
-        for (let s = 0; s < 20; s++) dense.push([ax + ((bx - ax) * s) / 20, ay + ((by - ay) * s) / 20]);
+        for (let s = 0; s < 20; s++)
+          dense.push([ax + ((bx - ax) * s) / 20, ay + ((by - ay) * s) / 20]);
       }
-      const vis = dense.find(([x, y]) => x >= x0 + 4 && x <= x1 - 150 && y >= y1 + 22 && y <= y0 - 4);
+      const vis = dense.find(
+        ([x, y]) => x >= x0 + 4 && x <= x1 - 150 && y >= y1 + 22 && y <= y0 - 4,
+      );
       if (vis) {
         ctx.font = `11px ${c.fontUi}`;
         const w = ctx.measureText(o.label).width;
@@ -325,7 +358,14 @@ export function StabilityMap({ preset, compact = false }: Props) {
   const exportCsv = (): void => {
     const lines = [
       `# Stabilitätskarte Orbitlabor; ${config.years} Jahre; ${config.retrograde ? 'retrograd' : 'prograd'}`,
-      [AXES[config.x].label, AXES[config.y].label, 'Ergebnis', 'Zeit bis Ereignis (Jahre)', 'min. Abstand (km)', 'max. Abstand (km)'].join(';'),
+      [
+        AXES[config.x].label,
+        AXES[config.y].label,
+        'Ergebnis',
+        'Zeit bis Ereignis (Jahre)',
+        'min. Abstand (km)',
+        'max. Abstand (km)',
+      ].join(';'),
     ];
     for (let j = 0; j < config.ny; j++) {
       for (let i = 0; i < config.nx; i++) {
@@ -333,7 +373,9 @@ export function StabilityMap({ preset, compact = false }: Props) {
         if (!r) continue;
         lines.push(
           [x, y, OUTCOME_LABELS[r.outcome], r.time / YEAR, r.minDistance / KM, r.maxDistance / KM]
-            .map((v) => (typeof v === 'number' ? String(Number(v.toPrecision(6))).replace('.', ',') : v))
+            .map((v) =>
+              typeof v === 'number' ? String(Number(v.toPrecision(6))).replace('.', ',') : v,
+            )
             .join(';'),
         );
       }
@@ -350,7 +392,10 @@ export function StabilityMap({ preset, compact = false }: Props) {
   const hoverInfo = hover ? describe(hover.i, hover.j) : null;
   const selInfo = selected ? describe(selected.i, selected.j) : null;
   const presetMeta = MAP_PRESETS.find((m) => m.id === presetId);
-  const axisOptions = (Object.keys(AXES) as AxisKey[]).map((k) => ({ value: k, label: AXES[k].label }));
+  const axisOptions = (Object.keys(AXES) as AxisKey[]).map((k) => ({
+    value: k,
+    label: AXES[k].label,
+  }));
 
   return (
     <div class="stack" style={{ gap: '14px' }}>
@@ -392,10 +437,32 @@ export function StabilityMap({ preset, compact = false }: Props) {
           <summary>Achsen und Rechenparameter</summary>
           <div class="section-body">
             <div class="grid-2">
-              <Select id="map-x" label="x-Achse" value={config.x} options={axisOptions} onChange={(x: AxisKey) => updateConfig({ x, xMin: AXES[x].min, xMax: AXES[x].max })} />
-              <Select id="map-y" label="y-Achse" value={config.y} options={axisOptions} onChange={(y: AxisKey) => updateConfig({ y, yMin: AXES[y].min, yMax: AXES[y].max })} />
-              <RangeInputs axis={config.x} min={config.xMin} max={config.xMax} onChange={(xMin, xMax) => updateConfig({ xMin, xMax })} />
-              <RangeInputs axis={config.y} min={config.yMin} max={config.yMax} onChange={(yMin, yMax) => updateConfig({ yMin, yMax })} />
+              <Select
+                id="map-x"
+                label="x-Achse"
+                value={config.x}
+                options={axisOptions}
+                onChange={(x: AxisKey) => updateConfig({ x, xMin: AXES[x].min, xMax: AXES[x].max })}
+              />
+              <Select
+                id="map-y"
+                label="y-Achse"
+                value={config.y}
+                options={axisOptions}
+                onChange={(y: AxisKey) => updateConfig({ y, yMin: AXES[y].min, yMax: AXES[y].max })}
+              />
+              <RangeInputs
+                axis={config.x}
+                min={config.xMin}
+                max={config.xMax}
+                onChange={(xMin, xMax) => updateConfig({ xMin, xMax })}
+              />
+              <RangeInputs
+                axis={config.y}
+                min={config.yMin}
+                max={config.yMax}
+                onChange={(yMin, yMax) => updateConfig({ yMin, yMax })}
+              />
             </div>
             <div class="row">
               <span class="small muted">Auflösung</span>
@@ -422,9 +489,22 @@ export function StabilityMap({ preset, compact = false }: Props) {
                 }}
               />
             </div>
-            <Toggle id="map-retro" label="Mond rückläufig (retrograd)" checked={config.retrograde} onChange={(retrograde) => updateConfig({ retrograde })} />
-            <Toggle id="map-roche" label="Roche-Grenze zählt als Zerstörung" checked={config.roche} onChange={(roche) => updateConfig({ roche })} />
-            <p class="small muted">Änderungen gelten nach „Neu berechnen“. Jede Zelle ist eine eigene Simulation mit Velocity-Verlet und adaptiver Schrittweite.</p>
+            <Toggle
+              id="map-retro"
+              label="Mond rückläufig (retrograd)"
+              checked={config.retrograde}
+              onChange={(retrograde) => updateConfig({ retrograde })}
+            />
+            <Toggle
+              id="map-roche"
+              label="Roche-Grenze zählt als Zerstörung"
+              checked={config.roche}
+              onChange={(roche) => updateConfig({ roche })}
+            />
+            <p class="small muted">
+              Änderungen gelten nach „Neu berechnen“. Jede Zelle ist eine eigene Simulation mit
+              Velocity-Verlet und adaptiver Schrittweite.
+            </p>
           </div>
         </details>
       )}
@@ -443,16 +523,25 @@ export function StabilityMap({ preset, compact = false }: Props) {
           }}
         />
         {hover && hoverInfo && (
-          <div class="tooltip" style={{ left: `${Math.min(hover.px + 14, size.width - 210)}px`, top: `${Math.max(hover.py - 90, 0)}px` }}>
+          <div
+            class="tooltip"
+            style={{
+              left: `${Math.min(hover.px + 14, size.width - 210)}px`,
+              top: `${Math.max(hover.py - 90, 0)}px`,
+            }}
+          >
             <div class="tooltip-head">
-              {AXES[config.x].short} = {AXES[config.x].format(hoverInfo.x)} · {AXES[config.y].short} = {AXES[config.y].format(hoverInfo.y)}
+              {AXES[config.x].short} = {AXES[config.x].format(hoverInfo.x)} · {AXES[config.y].short}{' '}
+              = {AXES[config.y].format(hoverInfo.y)}
             </div>
             {hoverInfo.r ? (
               <>
                 <div class="tooltip-row">
                   <strong>{OUTCOME_LABELS[hoverInfo.r.outcome]}</strong>
                 </div>
-                {hoverInfo.r.outcome !== 'stable' && <div class="tooltip-row">nach {duration(hoverInfo.r.time)}</div>}
+                {hoverInfo.r.outcome !== 'stable' && (
+                  <div class="tooltip-row">nach {duration(hoverInfo.r.time)}</div>
+                )}
                 <div class="tooltip-row muted">Klicken für Details</div>
               </>
             ) : (
@@ -466,16 +555,29 @@ export function StabilityMap({ preset, compact = false }: Props) {
         <div class="legend">
           {mode === 'outcome' ? (
             <>
-              <span class="legend-item"><span class="legend-swatch" style={{ background: 'var(--series-3)' }} />stabil ({counts.stable})</span>
-              <span class="legend-item"><span class="legend-swatch" style={{ background: 'var(--series-2)' }} />Absturz / zerrissen ({counts.crash})</span>
-              <span class="legend-item"><span class="legend-swatch" style={{ background: 'var(--series-1)' }} />entkommen ({counts.escape})</span>
+              <span class="legend-item">
+                <span class="legend-swatch" style={{ background: 'var(--series-3)' }} />
+                stabil ({counts.stable})
+              </span>
+              <span class="legend-item">
+                <span class="legend-swatch" style={{ background: 'var(--series-2)' }} />
+                Absturz / zerrissen ({counts.crash})
+              </span>
+              <span class="legend-item">
+                <span class="legend-swatch" style={{ background: 'var(--series-1)' }} />
+                entkommen ({counts.escape})
+              </span>
             </>
           ) : (
             <span class="legend-item">
-              Zeit bis zum Ereignis: hell = sofort, dunkel = lange; ganz dunkel = {config.years} Jahre stabil
+              Zeit bis zum Ereignis: hell = sofort, dunkel = lange; ganz dunkel = {config.years}{' '}
+              Jahre stabil
             </span>
           )}
-          <span class="legend-item"><span class="legend-key" style={{ background: 'var(--ink)' }} />Theorie</span>
+          <span class="legend-item">
+            <span class="legend-key" style={{ background: 'var(--ink)' }} />
+            Theorie
+          </span>
         </div>
         <div class="btn-row">
           <span class="small muted">
@@ -488,14 +590,37 @@ export function StabilityMap({ preset, compact = false }: Props) {
           <button type="button" class="btn small" onClick={exportCsv} disabled={progress.running}>
             <Icon name="download" /> CSV
           </button>
-          <button type="button" class="btn small" onClick={() => canvasRef.current && downloadCanvas(canvasRef.current, `stabilitaetskarte-${presetId}.png`)}>
+          <button
+            type="button"
+            class="btn small"
+            onClick={() =>
+              canvasRef.current &&
+              downloadCanvas(canvasRef.current, `stabilitaetskarte-${presetId}.png`)
+            }
+          >
             <Icon name="camera" /> Bild
           </button>
         </div>
       </div>
       {progress.running && (
-        <div style={{ height: '4px', background: 'var(--surface-3)', borderRadius: '4px', overflow: 'hidden' }} role="progressbar" aria-valuenow={progress.done} aria-valuemax={progress.total}>
-          <div style={{ height: '100%', width: `${(progress.done / Math.max(1, progress.total)) * 100}%`, background: 'var(--accent)' }} />
+        <div
+          style={{
+            height: '4px',
+            background: 'var(--surface-3)',
+            borderRadius: '4px',
+            overflow: 'hidden',
+          }}
+          role="progressbar"
+          aria-valuenow={progress.done}
+          aria-valuemax={progress.total}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${(progress.done / Math.max(1, progress.total)) * 100}%`,
+              background: 'var(--accent)',
+            }}
+          />
         </div>
       )}
 
@@ -503,12 +628,18 @@ export function StabilityMap({ preset, compact = false }: Props) {
         <div class="panel panel-pad">
           <div class="panel-title">
             <h3>
-              {AXES[config.x].short} = {AXES[config.x].format(selInfo.x)}, {AXES[config.y].short} = {AXES[config.y].format(selInfo.y)}
+              {AXES[config.x].short} = {AXES[config.x].format(selInfo.x)}, {AXES[config.y].short} ={' '}
+              {AXES[config.y].format(selInfo.y)}
             </h3>
             <button
               type="button"
               class="btn small primary"
-              onClick={() => openInSimulator(cellParams(config, selected.i, selected.j), 'Aus der Stabilitätskarte')}
+              onClick={() =>
+                openInSimulator(
+                  cellParams(config, selected.i, selected.j),
+                  'Aus der Stabilitätskarte',
+                )
+              }
             >
               Im Simulator ansehen <Icon name="arrow" />
             </button>
@@ -518,7 +649,11 @@ export function StabilityMap({ preset, compact = false }: Props) {
               <dt>Ergebnis</dt>
               <dd>{OUTCOME_LABELS[selInfo.r.outcome]}</dd>
               <dt>Zeit</dt>
-              <dd>{selInfo.r.outcome === 'stable' ? `${config.years} Jahre überstanden` : `nach ${duration(selInfo.r.time)}`}</dd>
+              <dd>
+                {selInfo.r.outcome === 'stable'
+                  ? `${config.years} Jahre überstanden`
+                  : `nach ${duration(selInfo.r.time)}`}
+              </dd>
               <dt>Kleinster / größter Abstand</dt>
               <dd>
                 {fmt(selInfo.r.minDistance / KM)} / {fmt(selInfo.r.maxDistance / KM)} km
@@ -546,14 +681,42 @@ function logTicksExtended(min: number, max: number): number[] {
   return out;
 }
 
-function RangeInputs({ axis, min, max, onChange }: { axis: AxisKey; min: number; max: number; onChange: (min: number, max: number) => void }) {
+function RangeInputs({
+  axis,
+  min,
+  max,
+  onChange,
+}: {
+  axis: AxisKey;
+  min: number;
+  max: number;
+  onChange: (min: number, max: number) => void;
+}) {
   const def = AXES[axis];
   const lo = def.log ? def.min / 10 : def.min - (def.max - def.min);
   const hi = def.log ? def.max * 10 : def.max + (def.max - def.min);
   return (
     <div class="grid-2" style={{ gap: '10px' }}>
-      <Slider id={`${axis}-min`} label={`${def.short} von`} value={min} min={Math.max(lo, def.log ? 1e-3 : -Infinity)} max={hi} log={def.log} format={def.format} onChange={(v) => onChange(Math.min(v, max * 0.99), max)} />
-      <Slider id={`${axis}-max`} label="bis" value={max} min={Math.max(lo, def.log ? 1e-3 : -Infinity)} max={hi} log={def.log} format={def.format} onChange={(v) => onChange(min, Math.max(v, min * 1.01 + 1e-9))} />
+      <Slider
+        id={`${axis}-min`}
+        label={`${def.short} von`}
+        value={min}
+        min={Math.max(lo, def.log ? 1e-3 : -Infinity)}
+        max={hi}
+        log={def.log}
+        format={def.format}
+        onChange={(v) => onChange(Math.min(v, max * 0.99), max)}
+      />
+      <Slider
+        id={`${axis}-max`}
+        label="bis"
+        value={max}
+        min={Math.max(lo, def.log ? 1e-3 : -Infinity)}
+        max={hi}
+        log={def.log}
+        format={def.format}
+        onChange={(v) => onChange(min, Math.max(v, min * 1.01 + 1e-9))}
+      />
     </div>
   );
 }

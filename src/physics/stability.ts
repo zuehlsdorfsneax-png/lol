@@ -46,7 +46,8 @@ export function runStability(params: ScenarioParams, options: StabilityOptions):
   const eta = options.eta ?? 0.03;
   const duration = options.years * YEAR;
   const crashDistance = info.earthRadius + info.moonRadius;
-  const hillFactor = info.sunMass > 0 ? Math.cbrt((info.earthMass + info.moonMass) / (3 * info.sunMass)) : 0;
+  const hillFactor =
+    info.sunMass > 0 ? Math.cbrt((info.earthMass + info.moonMass) / (3 * info.sunMass)) : 0;
   const gmEM = G * (info.earthMass + info.moonMass);
   const sunCrash = sun >= 0 ? info.sunRadius : 0;
 

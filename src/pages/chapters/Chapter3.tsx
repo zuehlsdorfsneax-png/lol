@@ -1,5 +1,18 @@
 import { useMemo, useState } from 'preact/hooks';
-import { AU, EARTH, G, MOON, REAL_PARAMS, SUN, YEAR, DAY, linearRegression, unwrap, pullRatio, tidalRatio } from '../../physics';
+import {
+  AU,
+  EARTH,
+  G,
+  MOON,
+  REAL_PARAMS,
+  SUN,
+  YEAR,
+  DAY,
+  linearRegression,
+  unwrap,
+  pullRatio,
+  tidalRatio,
+} from '../../physics';
 import { Simulation } from '../../sim/Simulation';
 import { CanvasBox } from '../../ui/CanvasBox';
 import { LineChart } from '../../ui/charts/LineChart';
@@ -21,10 +34,10 @@ export function Chapter3() {
         />
         <p>
           Die Sonne zieht den Mond also mehr als <strong>doppelt so stark</strong> an wie die Erde.
-          Warum bleibt er trotzdem bei uns? Weil die Sonne die Erde fast genauso stark anzieht.
-          Erde und Mond „fallen“ gemeinsam um die Sonne. Für die Bewegung des Mondes <em>relativ</em>{' '}
-          zur Erde zählt nur der <strong>Unterschied</strong> der Sonnenanziehung an beiden Orten –
-          die Gezeitenbeschleunigung:
+          Warum bleibt er trotzdem bei uns? Weil die Sonne die Erde fast genauso stark anzieht. Erde
+          und Mond „fallen“ gemeinsam um die Sonne. Für die Bewegung des Mondes <em>relativ</em> zur
+          Erde zählt nur der <strong>Unterschied</strong> der Sonnenanziehung an beiden Orten – die
+          Gezeitenbeschleunigung:
         </p>
         <Equation
           tex={String.raw`\vec a_\text{Gez} = \vec a_\odot(\text{Mond}) - \vec a_\odot(\text{Erde}) \approx \frac{G M_\odot\, r}{d^3}\,\bigl(2\cos\varphi\;\hat e_\parallel - \sin\varphi\;\hat e_\perp\bigr).`}
@@ -97,7 +110,9 @@ export function Chapter3() {
               <tr>
                 <td>Knotendrehung</td>
                 <td class="num">18,6 Jahre</td>
-                <td>Die geneigte Bahnebene dreht sich rückläufig (bestimmt die Finsterniszyklen)</td>
+                <td>
+                  Die geneigte Bahnebene dreht sich rückläufig (bestimmt die Finsterniszyklen)
+                </td>
                 <td>Antike (Babylonier)</td>
               </tr>
             </tbody>
@@ -131,11 +146,11 @@ export function Chapter3() {
       <div class="prose">
         <SectionTitle n="3.4">Die Mondbahn um die Sonne</SectionTitle>
         <p>
-          Aus der Sicht der Sonne beschreibt der Mond keine Schleifen, wie man es von einem Bild „Mond
-          kreist um die Erde, Erde kreist um die Sonne“ erwarten könnte. Weil die Sonne den Mond
-          stärker anzieht als die Erde, ist seine Bahn überall zur Sonne hin gekrümmt – eine leicht
-          gewellte, nirgends rückläufige Kurve. Man kann den Mond deshalb mit gutem Recht auch als
-          Doppelplaneten-Partner der Erde betrachten, der von der Erde nur „gestört“ wird.
+          Aus der Sicht der Sonne beschreibt der Mond keine Schleifen, wie man es von einem Bild
+          „Mond kreist um die Erde, Erde kreist um die Sonne“ erwarten könnte. Weil die Sonne den
+          Mond stärker anzieht als die Erde, ist seine Bahn überall zur Sonne hin gekrümmt – eine
+          leicht gewellte, nirgends rückläufige Kurve. Man kann den Mond deshalb mit gutem Recht
+          auch als Doppelplaneten-Partner der Erde betrachten, der von der Erde nur „gestört“ wird.
         </p>
       </div>
       <div class="btn-row">
@@ -168,12 +183,27 @@ function TidalField() {
   const dx = -d - mx;
   const dy = -my;
   const dm = Math.hypot(dx, dy);
-  const aSunMoon: [number, number] = [((G * SUN.mass) / dm ** 2) * (dx / dm), ((G * SUN.mass) / dm ** 2) * (dy / dm)];
+  const aSunMoon: [number, number] = [
+    ((G * SUN.mass) / dm ** 2) * (dx / dm),
+    ((G * SUN.mass) / dm ** 2) * (dy / dm),
+  ];
   const tidal: [number, number] = [aSunMoon[0] + aSunEarth, aSunMoon[1]];
   const aEarth = (G * EARTH.mass) / r ** 2;
   const tidalMag = Math.hypot(...tidal);
 
-  const draw = (ctx: CanvasRenderingContext2D, w: number, h: number, c: { ink2: string; ink3: string; grid: string; series: string[]; accent: string; fontUi: string }) => {
+  const draw = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    c: {
+      ink2: string;
+      ink3: string;
+      grid: string;
+      series: string[];
+      accent: string;
+      fontUi: string;
+    },
+  ) => {
     ctx.clearRect(0, 0, w, h);
     const cx = w * 0.56;
     const cy = h / 2;
@@ -208,7 +238,15 @@ function TidalField() {
       const ax = 2 * k * r * Math.cos(p);
       const ay = -k * r * Math.sin(p);
       // Sonne liegt links (−x): Richtung "weg von der Sonne" = +x.
-      drawArrow(ctx, cx + R * Math.cos(p), cy - R * Math.sin(p), ax * tScale, -ay * tScale, c.series[4]!, 1.5);
+      drawArrow(
+        ctx,
+        cx + R * Math.cos(p),
+        cy - R * Math.sin(p),
+        ax * tScale,
+        -ay * tScale,
+        c.series[4]!,
+        1.5,
+      );
     }
     // Erde.
     ctx.fillStyle = c.series[0]!;
@@ -234,13 +272,37 @@ function TidalField() {
 
   return (
     <div class="grid-2">
-      <CanvasBox draw={draw} deps={[angle]} aspect="4 / 3" label="Gezeitenfeld der Sonne um die Erde" />
+      <CanvasBox
+        draw={draw}
+        deps={[angle]}
+        aspect="4 / 3"
+        label="Gezeitenfeld der Sonne um die Erde"
+      />
       <div class="stack">
-        <Slider id="tidal-angle" label="Position des Mondes" value={angle} min={0} max={360} step={1} format={(v) => `${fmt(v)}°`} hint="0° = Vollmond (von der Sonne weg), 180° = Neumond" onChange={setAngle} />
+        <Slider
+          id="tidal-angle"
+          label="Position des Mondes"
+          value={angle}
+          min={0}
+          max={360}
+          step={1}
+          format={(v) => `${fmt(v)}°`}
+          hint="0° = Vollmond (von der Sonne weg), 180° = Neumond"
+          onChange={setAngle}
+        />
         <div class="legend">
-          <span class="legend-item"><span class="legend-key" style={{ background: 'var(--accent)' }} />Anziehung der Sonne</span>
-          <span class="legend-item"><span class="legend-key" style={{ background: 'var(--series-2)' }} />Gezeitenkraft ×100</span>
-          <span class="legend-item"><span class="legend-key" style={{ background: 'var(--series-5)' }} />Gezeitenfeld</span>
+          <span class="legend-item">
+            <span class="legend-key" style={{ background: 'var(--accent)' }} />
+            Anziehung der Sonne
+          </span>
+          <span class="legend-item">
+            <span class="legend-key" style={{ background: 'var(--series-2)' }} />
+            Gezeitenkraft ×100
+          </span>
+          <span class="legend-item">
+            <span class="legend-key" style={{ background: 'var(--series-5)' }} />
+            Gezeitenfeld
+          </span>
         </div>
         <dl class="kv">
           <dt>Sonne → Mond</dt>
@@ -263,7 +325,15 @@ function TidalField() {
   );
 }
 
-function drawArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number, color: string, width: number): void {
+function drawArrow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  color: string,
+  width: number,
+): void {
   const len = Math.hypot(dx, dy);
   if (len < 1.5) return;
   const ux = dx / len;
@@ -300,7 +370,11 @@ function measure(): PrecessionData {
     const sim = new Simulation({ ...REAL_PARAMS, sunMass }, { trailCapacity: 2 });
     sim.advance(years * YEAR, 5_000_000);
     const s = sim.series;
-    return { t: s.time.slice(0, s.length), omega: s.data.omega.slice(0, s.length), e: s.data.eccentricity.slice(0, s.length) };
+    return {
+      t: s.time.slice(0, s.length),
+      omega: s.data.omega.slice(0, s.length),
+      e: s.data.eccentricity.slice(0, s.length),
+    };
   };
   const withSun = run(1, 20);
   const noSun = run(0, 20);
@@ -345,7 +419,9 @@ function PrecessionExperiment() {
         </div>
         <div class="panel panel-pad" style={{ gap: '4px' }}>
           <div class="small muted">Abweichung</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>{fmt(((data.period - 8.85) / 8.85) * 100, 1)} %</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>
+            {fmt(((data.period - 8.85) / 8.85) * 100, 1)} %
+          </div>
         </div>
       </div>
       <LineChart
@@ -373,8 +449,8 @@ function PrecessionExperiment() {
         height={210}
       />
       <p class="small muted">
-        Die Planarsimulation vernachlässigt die Neigung der Mondbahn (5,1°) und andere Planeten; die
-        Abweichung von unter einem Prozent zeigt, dass die Sonne den Effekt allein erklärt.
+        Die ebene Simulation vernachlässigt die Neigung der Mondbahn (5,1°) und andere Planeten; die
+        Abweichung von rund einem Prozent zeigt, dass die Sonne den Effekt allein erklärt.
         Bestimmtheitsmaß der Ausgleichsgeraden: R² = {fmt(data.r2, 4)}.
       </p>
     </div>

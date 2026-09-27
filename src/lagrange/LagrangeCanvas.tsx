@@ -4,7 +4,13 @@ import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { contour, lagrangeLevels, rampColor, sampleGrid, type Grid, type LView } from './field';
 
 export interface Overlay {
-  (ctx: CanvasRenderingContext2D, toScreen: (x: number, y: number) => [number, number], scale: number, width: number, height: number): void;
+  (
+    ctx: CanvasRenderingContext2D,
+    toScreen: (x: number, y: number) => [number, number],
+    scale: number,
+    width: number,
+    height: number,
+  ): void;
 }
 
 interface Props {
@@ -55,7 +61,17 @@ export function LagrangeCanvas(props: Props) {
     ];
 
     // Hintergrund (nur neu berechnen, wenn sich etwas geändert hat).
-    const key = [mu, view.cx, view.cy, view.half, width, height, p.heat, p.contours, p.forbiddenC].join('|');
+    const key = [
+      mu,
+      view.cx,
+      view.cy,
+      view.half,
+      width,
+      height,
+      p.heat,
+      p.contours,
+      p.forbiddenC,
+    ].join('|');
     if (!background.current || background.current.key !== key) {
       background.current = { key, ...renderBackground(p, width, height) };
     }
@@ -124,7 +140,10 @@ export function LagrangeCanvas(props: Props) {
     const r = canvasRef.current!.getBoundingClientRect();
     const { view } = propsRef.current;
     const scale = r.width / (2 * view.half);
-    return [view.cx + (e.clientX - r.left - r.width / 2) / scale, view.cy - (e.clientY - r.top - r.height / 2) / scale];
+    return [
+      view.cx + (e.clientX - r.left - r.width / 2) / scale,
+      view.cy - (e.clientY - r.top - r.height / 2) / scale,
+    ];
   };
 
   useEffect(() => {
@@ -145,7 +164,11 @@ export function LagrangeCanvas(props: Props) {
         ref={canvasRef}
         role="img"
         aria-label={props.label}
-        style={{ position: 'absolute', inset: 0, cursor: props.onPointer ? 'crosshair' : 'default' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          cursor: props.onPointer ? 'crosshair' : 'default',
+        }}
         onPointerDown={(e) => {
           if (!props.onPointer) return;
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -158,7 +181,11 @@ export function LagrangeCanvas(props: Props) {
   );
 }
 
-function renderBackground(p: Props, width: number, height: number): { canvas: HTMLCanvasElement; grid: Grid } {
+function renderBackground(
+  p: Props,
+  width: number,
+  height: number,
+): { canvas: HTMLCanvasElement; grid: Grid } {
   const cell = 3;
   const grid = sampleGrid(p.mu, p.view, width, height, cell);
   const off = document.createElement('canvas');
@@ -178,7 +205,8 @@ function renderBackground(p: Props, width: number, height: number): { canvas: HT
       const t = 1 - (Math.log(Math.max(v - base, 1e-6) + 1e-4) - lo) / (hi - lo);
       rgb = rampColor(t * 0.92);
     }
-    if (p.forbiddenC != null && v < p.forbiddenC) rgb = [rgb[0] * 0.2 + 5, rgb[1] * 0.2 + 7, rgb[2] * 0.2 + 15];
+    if (p.forbiddenC != null && v < p.forbiddenC)
+      rgb = [rgb[0] * 0.2 + 5, rgb[1] * 0.2 + 7, rgb[2] * 0.2 + 15];
     img.data[4 * k] = rgb[0];
     img.data[4 * k + 1] = rgb[1];
     img.data[4 * k + 2] = rgb[2];

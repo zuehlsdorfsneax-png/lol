@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { prepareCanvas, useElementSize, useThemeColors, type ThemeColors } from './hooks';
 
-export type DrawFn = (ctx: CanvasRenderingContext2D, width: number, height: number, colors: ThemeColors, time: number) => void;
+export type DrawFn = (
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  colors: ThemeColors,
+  time: number,
+) => void;
 
 interface Props {
   draw: DrawFn;
@@ -32,7 +38,14 @@ export function CanvasBox(props: Props) {
     const canvas = canvasRef.current;
     if (!canvas || size.width === 0 || size.height === 0) return;
     const ctx = prepareCanvas(canvas, size.width, size.height);
-    if (ctx) drawRef.current(ctx, size.width, size.height, colors, (performance.now() - t0.current) / 1000);
+    if (ctx)
+      drawRef.current(
+        ctx,
+        size.width,
+        size.height,
+        colors,
+        (performance.now() - t0.current) / 1000,
+      );
   };
 
   useEffect(paint, [size.width, size.height, colors, ...props.deps]);
@@ -66,7 +79,13 @@ export function CanvasBox(props: Props) {
         ref={canvasRef}
         role="img"
         aria-label={props.label}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: props.onPointerDown ? 'none' : undefined }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          touchAction: props.onPointerDown ? 'none' : undefined,
+        }}
         onPointerDown={
           props.onPointerDown &&
           ((e) => {

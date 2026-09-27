@@ -107,7 +107,10 @@ export class SeriesBuffer<K extends string> {
   }
 
   /** Als CSV-Text (Semikolon-getrennt, Dezimalkomma – öffnet sich direkt in deutschem Excel). */
-  toCsv(headers: Record<K | 'time', string>, scale: Partial<Record<K | 'time', number>> = {}): string {
+  toCsv(
+    headers: Record<K | 'time', string>,
+    scale: Partial<Record<K | 'time', number>> = {},
+  ): string {
     const cols: (K | 'time')[] = ['time', ...this.keys];
     const lines = [cols.map((c) => headers[c]).join(';')];
     for (let i = 0; i < this.length; i++) {

@@ -25,26 +25,26 @@ export function Chapter1() {
       <div class="prose">
         <SectionTitle n="1.1">Woher die Idee stammt</SectionTitle>
         <p>
-          1970 veröffentlichten die sowjetischen Autoren Michail Wassin und Alexander Schtscherbakow in
-          der Zeitschrift <em>Sputnik</em> den Artikel „Ist der Mond eine Schöpfung außerirdischer
-          Intelligenz?“. Ihre These: Der Mond sei ein ausgehöhlter Himmelskörper, vielleicht sogar ein
-          Raumschiff. Als Belege dienten zwei Beobachtungen:
+          1970 veröffentlichten die sowjetischen Autoren Michail Wassin und Alexander Schtscherbakow
+          in der Zeitschrift <em>Sputnik</em> den Artikel „Ist der Mond eine Schöpfung
+          außerirdischer Intelligenz?“. Ihre These: Der Mond sei ein ausgehöhlter Himmelskörper,
+          vielleicht sogar ein Raumschiff. Als Belege dienten zwei Beobachtungen:
         </p>
         <ul>
           <li>
-            Die mittlere Dichte des Mondes (3,34 g/cm³) ist deutlich kleiner als die der Erde
-            (5,51 g/cm³).
+            Die mittlere Dichte des Mondes (3,34 g/cm³) ist deutlich kleiner als die der Erde (5,51
+            g/cm³).
           </li>
           <li>
-            Als die Mission Apollo 12 im November 1969 die ausgediente Aufstiegsstufe ihrer Mondfähre
-            gezielt auf den Mond stürzen ließ, registrierten die Seismometer Erschütterungen, die fast
-            eine Stunde anhielten – der Mond „läutete wie eine Glocke“.
+            Als die Mission Apollo 12 im November 1969 die ausgediente Aufstiegsstufe ihrer
+            Mondfähre gezielt auf den Mond stürzen ließ, registrierten die Seismometer
+            Erschütterungen, die fast eine Stunde anhielten – der Mond „läutete wie eine Glocke“.
           </li>
         </ul>
         <p>
-          Die Frage ist physikalisch gut prüfbar. Wir müssen nur herausfinden, welche Messgrößen etwas
-          über das <strong>Innere</strong> eines Himmelskörpers verraten – und genau das ist der
-          lehrreiche Teil.
+          Die Frage ist physikalisch gut prüfbar. Wir müssen nur herausfinden, welche Messgrößen
+          etwas über das <strong>Innere</strong> eines Himmelskörpers verraten – und genau das ist
+          der lehrreiche Teil.
         </p>
 
         <SectionTitle n="1.2">Was Bahnen verraten – und was nicht</SectionTitle>
@@ -53,7 +53,10 @@ export function Chapter1() {
           Gesetz für das System Erde–Mond, aus der Taumelbewegung der Erde um den gemeinsamen
           Schwerpunkt und aus den Bahnen von Raumsonden. Sie beträgt
         </p>
-        <Equation tex={String.raw`M_{\text{Mond}} = 7{,}342\cdot10^{22}\,\text{kg},\qquad R_{\text{Mond}} = 1737{,}4\,\text{km}\;\Rightarrow\;\bar\rho = \frac{M}{\tfrac43\pi R^3} = 3{,}34\,\tfrac{\text{g}}{\text{cm}^3}.`} n="1.1" />
+        <Equation
+          tex={String.raw`M_{\text{Mond}} = 7{,}342\cdot10^{22}\,\text{kg},\qquad R_{\text{Mond}} = 1737{,}4\,\text{km}\;\Rightarrow\;\bar\rho = \frac{M}{\tfrac43\pi R^3} = 3{,}34\,\tfrac{\text{g}}{\text{cm}^3}.`}
+          n="1.1"
+        />
         <p>
           Über das Innere sagt die Bahn aber nichts. Newtons <strong>Schalentheorem</strong> besagt:
           Außerhalb einer kugelsymmetrischen Masse wirkt die Gravitation genau so, als säße die
@@ -71,8 +74,8 @@ export function Chapter1() {
 
       <Callout kind="merke">
         Aus der Bahn eines Mondes lässt sich nur seine Gesamtmasse bestimmen. Um die Hohlmond-These
-        zu prüfen, braucht man Messgrößen, die von der <em>Verteilung</em> der Masse abhängen: Dichte
-        der Schale, Trägheitsmoment und Ausbreitung von Erdbebenwellen.
+        zu prüfen, braucht man Messgrößen, die von der <em>Verteilung</em> der Masse abhängen:
+        Dichte der Schale, Trägheitsmoment und Ausbreitung von Erdbebenwellen.
       </Callout>
 
       <div class="prose">
@@ -81,11 +84,14 @@ export function Chapter1() {
           Ist der Mond hohl, muss eine Kugelschale der Dicke <Tex>{'d'}</Tex> die gesamte gemessene
           Masse tragen. Ihre Dichte wäre
         </p>
-        <Equation tex={String.raw`\rho_{\text{Schale}} = \frac{M_\text{Mond}}{\tfrac43\pi\left(R^3-(R-d)^3\right)}.`} n="1.2" />
+        <Equation
+          tex={String.raw`\rho_{\text{Schale}} = \frac{M_\text{Mond}}{\tfrac43\pi\left(R^3-(R-d)^3\right)}.`}
+          n="1.2"
+        />
         <p>
-          Für dünne Schalen ergeben sich Werte, die kein bekanntes Material erreicht – selbst Osmium,
-          das dichteste Element, hat nur 22,6 g/cm³. Erst wenn die „Schale“ so dick ist, dass kaum
-          noch Hohlraum übrig bleibt, landet man bei normalem Gestein.
+          Für dünne Schalen ergeben sich Werte, die kein bekanntes Material erreicht – selbst
+          Osmium, das dichteste Element, hat nur 22,6 g/cm³. Erst wenn die „Schale“ so dick ist,
+          dass kaum noch Hohlraum übrig bleibt, landet man bei normalem Gestein.
         </p>
       </div>
 
@@ -102,23 +108,26 @@ export function Chapter1() {
           Das Trägheitsmoment beschreibt, wie schwer sich ein Körper in Drehung versetzen lässt. Es
           hängt davon ab, wie weit die Masse von der Drehachse entfernt ist. Man schreibt es als
         </p>
-        <Equation tex={String.raw`I = k\cdot M R^2,\qquad k_{\text{Vollkugel}} = \tfrac25 = 0{,}4,\qquad k_{\text{dünne Hohlkugel}} = \tfrac23 \approx 0{,}667.`} n="1.3" />
+        <Equation
+          tex={String.raw`I = k\cdot M R^2,\qquad k_{\text{Vollkugel}} = \tfrac25 = 0{,}4,\qquad k_{\text{dünne Hohlkugel}} = \tfrac23 \approx 0{,}667.`}
+          n="1.3"
+        />
         <p>
-          Jede Hohlkugel hat <Tex>{'k > 0{,}4'}</Tex>, weil ihre Masse nach außen verlagert ist.
-          Ein Körper mit dichtem Kern hat dagegen <Tex>{'k < 0{,}4'}</Tex>. Für den Mond lässt sich
-          <Tex>{'k'}</Tex> messen: Die Erde übt ein Drehmoment auf den leicht abgeplatteten Mond aus, und
-          wie stark er darauf mit Schwankungen seiner Drehung (physische Libration) reagiert, hängt vom
-          Trägheitsmoment ab. Die Laser-Reflektoren, die Apollo 11, 14 und 15 sowie die sowjetischen
-          Lunochod-Rover auf dem Mond hinterlassen haben, erlauben es, diese Bewegung auf Zentimeter
-          genau zu verfolgen. Zusammen mit den Schwerefeld-Messungen der Sonden Lunar Prospector und
-          GRAIL ergibt sich
+          Jede Hohlkugel hat <Tex>{'k > 0{,}4'}</Tex>, weil ihre Masse nach außen verlagert ist. Ein
+          Körper mit dichtem Kern hat dagegen <Tex>{'k < 0{,}4'}</Tex>. Für den Mond lässt sich
+          <Tex>{'k'}</Tex> messen: Die Erde übt ein Drehmoment auf den leicht abgeplatteten Mond
+          aus, und wie stark er darauf mit Schwankungen seiner Drehung (physische Libration)
+          reagiert, hängt vom Trägheitsmoment ab. Die Laser-Reflektoren, die Apollo 11, 14 und 15
+          sowie die sowjetischen Lunochod-Rover auf dem Mond hinterlassen haben, erlauben es, diese
+          Bewegung auf Zentimeter genau zu verfolgen. Zusammen mit den Schwerefeld-Messungen der
+          Sonden Lunar Prospector und GRAIL ergibt sich
         </p>
         <Equation tex={String.raw`k_\text{Mond} = 0{,}3929 \pm 0{,}0009 \;<\; 0{,}4.`} n="1.4" />
         <p>
-          Der Mond ist also nicht nur voll, sondern hat sogar einen etwas dichteren Kern – das genaue
-          Gegenteil eines Hohlkörpers. Wie groß der Unterschied im Verhalten ist, zeigt ein einfacher
-          Versuch: Eine Hohlkugel rollt eine schiefe Ebene langsamer hinab als eine Vollkugel gleicher
-          Masse, weil mehr Energie in ihre Drehung fließt:
+          Der Mond ist also nicht nur voll, sondern hat sogar einen etwas dichteren Kern – das
+          genaue Gegenteil eines Hohlkörpers. Wie groß der Unterschied im Verhalten ist, zeigt ein
+          einfacher Versuch: Eine Hohlkugel rollt eine schiefe Ebene langsamer hinab als eine
+          Vollkugel gleicher Masse, weil mehr Energie in ihre Drehung fließt:
           <Tex>{String.raw`\;a = \dfrac{g\sin\alpha}{1+k}`}</Tex>.
         </p>
       </div>
@@ -134,30 +143,33 @@ export function Chapter1() {
         <SectionTitle n="1.5">Argument 3: Mondbeben</SectionTitle>
         <p>
           Zwischen 1969 und 1977 zeichneten die Apollo-Seismometer rund 12 000 Mondbeben und
-          Einschläge auf. Dass die Signale so lange nachklingen, hat eine gut verstandene Ursache: Die
-          obersten Kilometer der Mondkruste sind durch Milliarden Jahre Einschläge zerrüttet und
+          Einschläge auf. Dass die Signale so lange nachklingen, hat eine gut verstandene Ursache:
+          Die obersten Kilometer der Mondkruste sind durch Milliarden Jahre Einschläge zerrüttet und
           vollkommen trocken. Die Wellen werden an unzähligen Rissen gestreut, aber kaum gedämpft –
-          auf der Erde schluckt das Wasser in den Gesteinsporen diese Energie. Ein Hohlraum wäre dagegen
-          im Laufzeitverhalten der Wellen deutlich zu erkennen.
+          auf der Erde schluckt das Wasser in den Gesteinsporen diese Energie. Ein Hohlraum wäre
+          dagegen im Laufzeitverhalten der Wellen deutlich zu erkennen.
         </p>
         <p>
           Eine Neuauswertung der Apollo-Daten (Weber et al., 2011) fand stattdessen einen festen
           inneren Eisenkern mit etwa 240 km Radius und einen flüssigen äußeren Kern. Der kleine Kern
-          erklärt auch die geringere mittlere Dichte: Nach der heute anerkannten
-          Kollisionstheorie entstand der Mond vor 4,5 Milliarden Jahren vor allem aus Mantelgestein
-          der jungen Erde und des Protoplaneten Theia – eisenarmem Material.
+          erklärt auch die geringere mittlere Dichte: Nach der heute anerkannten Kollisionstheorie
+          entstand der Mond vor 4,5 Milliarden Jahren vor allem aus Mantelgestein der jungen Erde
+          und des Protoplaneten Theia – eisenarmem Material.
         </p>
 
         <SectionTitle n="1.6">Argument 4: Die Schale würde zerbrechen</SectionTitle>
         <p>
-          Eine dünne Kugelschale muss ihr eigenes Gewicht tragen. In der Näherung einer dünnen Schale
-          (Membranspannung) ergibt sich die Druckspannung
+          Eine dünne Kugelschale muss ihr eigenes Gewicht tragen. In der Näherung einer dünnen
+          Schale (Membranspannung) ergibt sich die Druckspannung
         </p>
-        <Equation tex={String.raw`\sigma \approx \frac{w\,R}{2d},\qquad w = \frac{M}{4\pi R^2}\cdot\frac{g}{2}.`} n="1.5" />
+        <Equation
+          tex={String.raw`\sigma \approx \frac{w\,R}{2d},\qquad w = \frac{M}{4\pi R^2}\cdot\frac{g}{2}.`}
+          n="1.5"
+        />
         <p>
-          Für eine 50 km dicke Schale sind das rund 27 GPa – über hundertmal mehr, als Granit
-          (≈ 0,2 GPa) aushält. Die Schale würde unter ihrem eigenen Gewicht zusammenbrechen. Der
-          Rechner in Abb. 1.2 zeigt den Wert für jede Schalendicke.
+          Für eine 50 km dicke Schale sind das rund 27 GPa – über hundertmal mehr, als Granit (≈ 0,2
+          GPa) aushält. Die Schale würde unter ihrem eigenen Gewicht zusammenbrechen. Der Rechner in
+          Abb. 1.2 zeigt den Wert für jede Schalendicke.
         </p>
 
         <SectionTitle n="1.7">Fazit</SectionTitle>
@@ -323,12 +335,27 @@ function DensityScale({ needed }: { needed: number }) {
         Dichte im Vergleich (logarithmische Skala, g/cm³)
       </div>
       <div style={{ position: 'relative', height: '96px' }}>
-        <div style={{ position: 'absolute', left: 0, right: 0, top: '48px', height: '2px', background: 'var(--axis)' }} />
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '48px',
+            height: '2px',
+            background: 'var(--axis)',
+          }}
+        />
         {[1, 10, 100, 1000].map((t) => (
           <div
             key={t}
             class="num small"
-            style={{ position: 'absolute', left: `${pos(t * 1000)}%`, top: '56px', transform: 'translateX(-50%)', color: 'var(--ink-3)' }}
+            style={{
+              position: 'absolute',
+              left: `${pos(t * 1000)}%`,
+              top: '56px',
+              transform: 'translateX(-50%)',
+              color: 'var(--ink-3)',
+            }}
           >
             {t}
           </div>
@@ -346,10 +373,21 @@ function DensityScale({ needed }: { needed: number }) {
               justifyItems: 'center',
             }}
           >
-            <span class="small" style={{ whiteSpace: 'nowrap', color: 'var(--ink-2)', fontSize: '0.72rem' }}>
+            <span
+              class="small"
+              style={{ whiteSpace: 'nowrap', color: 'var(--ink-2)', fontSize: '0.72rem' }}
+            >
               {m.name.split(' ')[0]}
             </span>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--ink-3)', marginTop: i % 2 === 0 ? '22px' : '4px' }} />
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'var(--ink-3)',
+                marginTop: i % 2 === 0 ? '22px' : '4px',
+              }}
+            />
           </div>
         ))}
         <div
@@ -362,7 +400,15 @@ function DensityScale({ needed }: { needed: number }) {
             justifyItems: 'center',
           }}
         >
-          <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'var(--series-2)', border: '2px solid var(--surface)' }} />
+          <span
+            style={{
+              width: '14px',
+              height: '14px',
+              borderRadius: '50%',
+              background: 'var(--series-2)',
+              border: '2px solid var(--surface)',
+            }}
+          />
           <span class="small" style={{ fontWeight: 600, whiteSpace: 'nowrap', marginTop: '20px' }}>
             benötigt: {sig(needed / 1000, 3)}
           </span>
@@ -388,7 +434,12 @@ function RollingRace() {
   );
   const [done, setDone] = useState(false);
 
-  const draw = (ctx: CanvasRenderingContext2D, w: number, h: number, c: { ink3: string; axis: string; ink2: string; series: string[]; fontUi: string }) => {
+  const draw = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    c: { ink3: string; axis: string; ink2: string; series: string[]; fontUi: string },
+  ) => {
     ctx.clearRect(0, 0, w, h);
     const elapsed = start === null ? 0 : (performance.now() - start) / 1000;
     const lane = h / BALLS.length;
@@ -462,11 +513,18 @@ function RollingRace() {
         </button>
         {done && (
           <span class="small muted">
-            Die Hohlkugel braucht {sig(((times[2]! - times[0]!) / times[0]!) * 100, 2)} % länger als die Vollkugel.
+            Die Hohlkugel braucht {sig(((times[2]! - times[0]!) / times[0]!) * 100, 2)} % länger als
+            die Vollkugel.
           </span>
         )}
       </div>
-      <CanvasBox draw={draw} deps={[start]} animate={start !== null && !done} height={240} label="Drei Kugeln rollen eine schiefe Ebene hinab" />
+      <CanvasBox
+        draw={draw}
+        deps={[start]}
+        animate={start !== null && !done}
+        height={240}
+        label="Drei Kugeln rollen eine schiefe Ebene hinab"
+      />
     </div>
   );
 }

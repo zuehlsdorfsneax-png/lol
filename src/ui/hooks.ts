@@ -6,10 +6,7 @@ export interface Size {
 }
 
 /** Beobachtet die Größe eines Elements (CSS-Pixel). */
-export function useElementSize<T extends HTMLElement>(): [
-  { current: T | null },
-  Size,
-] {
+export function useElementSize<T extends HTMLElement>(): [{ current: T | null }, Size] {
   const ref = useRef<T>(null);
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
   useLayoutEffect(() => {
@@ -35,7 +32,11 @@ export function useElementSize<T extends HTMLElement>(): [
  * Bereitet einen Canvas für die gegebene CSS-Größe vor (scharf auf HiDPI-Bildschirmen) und
  * liefert den Kontext mit Transformation auf CSS-Pixel.
  */
-export function prepareCanvas(canvas: HTMLCanvasElement, width: number, height: number): CanvasRenderingContext2D | null {
+export function prepareCanvas(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+): CanvasRenderingContext2D | null {
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const w = Math.max(1, Math.round(width * dpr));
   const h = Math.max(1, Math.round(height * dpr));
@@ -112,7 +113,10 @@ export function useThemeColors(): ThemeColors {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     mq.addEventListener('change', update);
     const mo = new MutationObserver(update);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+    mo.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    });
     // Webfonts können nach dem ersten Zeichnen eintreffen.
     void document.fonts?.ready.then(update);
     return () => {
@@ -124,7 +128,10 @@ export function useThemeColors(): ThemeColors {
 }
 
 /** Zustand, der im localStorage gemerkt wird (fehlertolerant). */
-export function usePersistentState<T>(key: string, initial: T): [T, (v: T | ((p: T) => T)) => void] {
+export function usePersistentState<T>(
+  key: string,
+  initial: T,
+): [T, (v: T | ((p: T) => T)) => void] {
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = localStorage.getItem(key);

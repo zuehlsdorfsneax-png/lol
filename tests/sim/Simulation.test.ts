@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { DAY, KM, MOON, REAL_PARAMS, YEAR, assessStability, linearRegression, unwrap } from '../../src/physics';
+import {
+  DAY,
+  KM,
+  MOON,
+  REAL_PARAMS,
+  YEAR,
+  assessStability,
+  linearRegression,
+  unwrap,
+} from '../../src/physics';
 import { SeriesBuffer, TrailBuffer } from '../../src/sim/buffers';
 import { Simulation } from '../../src/sim/Simulation';
 
@@ -94,9 +103,16 @@ describe('assessStability', () => {
     const crash = assessStability({ ...base, moonSpeed: 0.1 });
     expect(crash.verdict).toBe('unstable');
     expect(crash.checks.find((c) => c.id === 'crash')?.status).toBe('fail');
-    expect(assessStability({ ...base, moonSpeed: 1.5 }).checks.find((c) => c.id === 'escape')?.status).toBe('fail');
-    expect(assessStability({ ...base, moonDistance: 900_000 }).checks.find((c) => c.id === 'hill')?.status).toBe('fail');
-    expect(assessStability({ ...base, sunMass: 0 }).checks.find((c) => c.id === 'jacobi')?.status).toBe('na');
+    expect(
+      assessStability({ ...base, moonSpeed: 1.5 }).checks.find((c) => c.id === 'escape')?.status,
+    ).toBe('fail');
+    expect(
+      assessStability({ ...base, moonDistance: 900_000 }).checks.find((c) => c.id === 'hill')
+        ?.status,
+    ).toBe('fail');
+    expect(
+      assessStability({ ...base, sunMass: 0 }).checks.find((c) => c.id === 'jacobi')?.status,
+    ).toBe('na');
   });
 });
 
