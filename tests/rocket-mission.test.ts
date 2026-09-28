@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { OrbitPilot, steerTo } from '../src/rocket/autopilot';
+import { NodeExecutor, OrbitPilot, steerTo } from '../src/rocket/autopilot';
+import { arrivalPeriapsis, makePlan } from '../src/rocket/planner';
 import { Flight, WARPS } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import { EARTH, MOON, MOON_DISTANCE, MOON_HILL, MOON_RATE, moonAngle } from '../src/rocket/world';
@@ -110,26 +111,32 @@ describe('Raketenwerft – vollständige Mondmission', () => {
     expect(Math.abs(Math.hypot(after.vx, after.vy))).toBeLessThan(1e-6);
     expect(Math.atan2(after.ry, after.rx)).not.toBeCloseTo(Math.atan2(before.ry, before.rx), 3);
 
-    // 5. Rückflug: aus dem Mondsystem heraus, Erdnähe in die Atmosphäre legen
+    // 5. Rückflug: mit dem Hilfe-Piloten in eine niedrige Mondbahn, dann plant der Bordcomputer
+    //    den Heimweg.
+    const ascent = new OrbitPilot(MOON);
+    run(f, 1, () => ascent.update(f) === 'done');
+    expect(f.orbit(MOON).bound).toBe(true);
+    expect(makePlan(f, 'return').ok).toBe(true);
+    const home = new NodeExecutor();
     run(f, 1, () => {
-      const r = f.relative(MOON);
-      const up = Math.atan2(r.ry, r.rx);
-      const m = f.moon();
-      const back = Math.atan2(-m.vy, -m.vx);
-      const side = wrap(back - up) > 0 ? up + Math.PI / 2 : up - Math.PI / 2;
-      steerTo(f, r.altitude < 3_000 ? up : side);
-      f.throttle = 1;
-      return !f.orbit(MOON).bound;
+      const phase = home.update(f);
+      return phase === 'done' || phase === 'failed';
     });
     f.throttle = 0;
-    run(f, 5000, () => f.refBody() === EARTH && f.relative(MOON).r > MOON_HILL * 1.05);
-    run(f, 1, () => {
-      steerTo(f, Math.atan2(-f.vy, -f.vx));
-      f.throttle = 1;
-      return f.orbit(EARTH).periapsis < 25_000 || f.active.fuel <= 0;
-    });
+    run(f, 5000, () => f.refBody() === EARTH && f.relative(MOON).r > MOON_HILL * 1.2);
+    // Kurskorrektur: Der Bordcomputer legt den tiefsten Punkt der echten Mehrkörperbahn auf 25 km.
+    // (So nah am Mond stimmt die Zwei-Körper-Näherung nicht – ein paar m/s machen Hunderte km aus.)
+    if (makePlan(f, 'deorbit').ok) {
+      const exec = new NodeExecutor();
+      run(f, 1, () => {
+        const phase = exec.update(f);
+        return phase === 'done' || phase === 'failed';
+      });
+    }
     f.throttle = 0;
-    expect(f.orbit(EARTH).periapsis).toBeLessThan(EARTH.atmosphere);
+    const pe = arrivalPeriapsis(f.predict(), EARTH, 0)!;
+    expect(pe).toBeLessThan(EARTH.atmosphere);
+    expect(pe).toBeGreaterThan(10_000);
 
     // 6. Wiedereintritt: Die Luft bremst, der Fallschirm öffnet sich
     f.deployChute();

@@ -14,7 +14,8 @@ export const G0 = 9.81;
 export const SCALE = 600_000 / 6_371_000;
 const AU = 1.496e11 * SCALE;
 
-export type BodyId = 'sun' | 'venus' | 'earth' | 'moon' | 'mars' | 'phobos' | 'jupiter';
+export type BodyId =
+  'sun' | 'mercury' | 'venus' | 'earth' | 'moon' | 'mars' | 'phobos' | 'jupiter' | 'europa';
 
 export interface Body {
   id: BodyId;
@@ -51,6 +52,13 @@ const SUN_MU = 274 * (696_000_000 * SCALE) ** 2;
 const EARTH_R = 600_000;
 const MARS_R = 3_390_000 * SCALE;
 const MARS_MU = 3.72 * MARS_R ** 2;
+const JUPITER_R = 69_911_000 * SCALE;
+const JUPITER_MU = 24.8 * JUPITER_R ** 2;
+/**
+ * Bahnwinkel der Erde beim Start: Die Sonne steht dann genau über der Startrampe (Mittag).
+ * Alle Planeten sind um denselben Winkel gedreht, ihre Stellung zueinander bleibt gleich.
+ */
+const NOON = -Math.PI / 2;
 
 export const SUN = body({
   id: 'sun',
@@ -67,6 +75,22 @@ export const SUN = body({
   info: 'Ein Stern – über 300.000-mal so schwer wie die Erde. Wer ihr zu nahe kommt, verglüht.',
 });
 
+export const MERCURY = body({
+  id: 'mercury',
+  name: 'Merkur',
+  radius: 2_439_700 * SCALE,
+  g: 3.7,
+  atmosphere: 0,
+  density0: 0,
+  scaleHeight: 1,
+  solid: true,
+  parent: 'sun',
+  distance: 0.387 * AU,
+  phase0: NOON + 2.1,
+  parentMu: SUN_MU,
+  info: 'Der sonnennächste Planet: keine Luft, voller Krater, tagsüber über 400 °C heiß.',
+});
+
 export const VENUS = body({
   id: 'venus',
   name: 'Venus',
@@ -78,7 +102,7 @@ export const VENUS = body({
   solid: true,
   parent: 'sun',
   distance: 0.723 * AU,
-  phase0: 1.2,
+  phase0: NOON + 1.2,
   parentMu: SUN_MU,
   info: 'Dichte, heiße Atmosphäre – Fallschirme wirken hier sehr stark.',
 });
@@ -94,7 +118,7 @@ export const EARTH = body({
   solid: true,
   parent: 'sun',
   distance: AU,
-  phase0: 0,
+  phase0: NOON,
   parentMu: SUN_MU,
   info: 'Unser Heimatplanet mit der Startrampe.',
 });
@@ -127,7 +151,7 @@ export const MARS = body({
   solid: true,
   parent: 'sun',
   distance: 1.524 * AU,
-  phase0: 0.75,
+  phase0: NOON + 0.75,
   parentMu: SUN_MU,
   info: 'Dünne Luft: Der Fallschirm bremst nur bis etwa 30 m/s, den Rest muss das Triebwerk erledigen.',
 });
@@ -151,7 +175,7 @@ export const PHOBOS = body({
 export const JUPITER = body({
   id: 'jupiter',
   name: 'Jupiter',
-  radius: 69_911_000 * SCALE,
+  radius: JUPITER_R,
   g: 24.8,
   atmosphere: 400_000,
   density0: 5,
@@ -159,12 +183,38 @@ export const JUPITER = body({
   solid: false,
   parent: 'sun',
   distance: 5.203 * AU,
-  phase0: 2.6,
+  phase0: NOON + 2.6,
   parentMu: SUN_MU,
   info: 'Riesenplanet aus Gas ohne feste Oberfläche. Ein Vorbeiflug schleudert Raketen weit hinaus.',
 });
 
-export const BODIES: readonly Body[] = [SUN, VENUS, EARTH, MOON, MARS, PHOBOS, JUPITER];
+export const EUROPA = body({
+  id: 'europa',
+  name: 'Europa',
+  radius: 1_560_800 * SCALE,
+  g: 1.315,
+  atmosphere: 0,
+  density0: 0,
+  scaleHeight: 1,
+  solid: true,
+  parent: 'jupiter',
+  distance: 671_100_000 * SCALE,
+  phase0: 1,
+  parentMu: JUPITER_MU,
+  info: 'Eismond des Jupiter. Unter seinem Eispanzer liegt ein Ozean aus flüssigem Wasser.',
+});
+
+export const BODIES: readonly Body[] = [
+  SUN,
+  MERCURY,
+  VENUS,
+  EARTH,
+  MOON,
+  MARS,
+  PHOBOS,
+  JUPITER,
+  EUROPA,
+];
 const BY_ID = new Map(BODIES.map((b) => [b.id, b]));
 
 export function bodyById(id: BodyId): Body {

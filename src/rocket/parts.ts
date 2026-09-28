@@ -1,6 +1,19 @@
 import { EARTH, G0, MOON } from './world';
 
-export type PartKind = 'capsule' | 'chute' | 'tank' | 'engine' | 'decoupler' | 'legs' | 'booster';
+export type PartKind =
+  | 'capsule'
+  | 'probe'
+  | 'payload'
+  | 'chute'
+  | 'shield'
+  | 'tank'
+  | 'engine'
+  | 'decoupler'
+  | 'legs'
+  | 'booster';
+
+/** Aussehen der Triebwerksflamme. */
+export type FlameKind = 'chemisch' | 'atom' | 'ionen';
 
 export interface PartDef {
   id: string;
@@ -16,6 +29,9 @@ export interface PartDef {
   thrust: number;
   isp: number;
   info: string;
+  /** Ab so vielen Punkten freigeschaltet (im Sandkasten immer). */
+  unlock?: number;
+  flame?: FlameKind;
 }
 
 export const PARTS: readonly PartDef[] = [
@@ -29,7 +45,31 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 0,
     isp: 0,
-    info: 'Hier sitzt die Crew. Ohne Kapsel startet keine Rakete.',
+    info: 'Hier sitzt die Crew. Jede Rakete braucht eine Kapsel oder einen Sondenkern.',
+  },
+  {
+    id: 'sonde',
+    name: 'Sondenkern',
+    kind: 'probe',
+    width: 1.4,
+    height: 0.9,
+    dry: 150,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Ein Bordcomputer statt Crew: steuert unbemannte Sonden. Leicht – aber ohne Menschen an Bord zählt keine Heimkehr.',
+  },
+  {
+    id: 'satellit',
+    name: 'Satellit',
+    kind: 'payload',
+    width: 2.0,
+    height: 1.8,
+    dry: 500,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Nutzlast: Im Flug mit N aussetzen – dann kreist er allein weiter und bleibt auch für spätere Flüge auf seiner Bahn.',
   },
   {
     id: 'fallschirm',
@@ -42,6 +82,18 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Bremst in der Erdatmosphäre auf Landegeschwindigkeit. Auf dem Mond wirkungslos – dort gibt es keine Luft.',
+  },
+  {
+    id: 'hitzeschild',
+    name: 'Hitzeschild',
+    kind: 'shield',
+    width: 2.6,
+    height: 0.35,
+    dry: 300,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Schluckt drei Viertel der Hitze beim Wiedereintritt – aber nur, wenn er vorn ist: als unterstes Teil der Rakete und mit dem Boden voran (SAS: retrograd).',
   },
   {
     id: 'tank-s',
@@ -80,6 +132,19 @@ export const PARTS: readonly PartDef[] = [
     info: 'Großer Tank (10 t).',
   },
   {
+    id: 'tank-xl',
+    name: 'Tank XL',
+    kind: 'tank',
+    width: 3.2,
+    height: 11,
+    dry: 1900,
+    fuel: 21_000,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    info: 'Riesentank (21 t) mit 3,2 m Durchmesser – für schwere Erststufen.',
+  },
+  {
     id: 'kolibri',
     name: 'Triebwerk Kolibri',
     kind: 'engine',
@@ -114,6 +179,47 @@ export const PARTS: readonly PartDef[] = [
     thrust: 620_000,
     isp: 285,
     info: 'Sehr viel Schub für die erste Stufe, aber durstig.',
+  },
+  {
+    id: 'mammut',
+    name: 'Triebwerk Mammut',
+    kind: 'engine',
+    width: 3.2,
+    height: 3.2,
+    dry: 4500,
+    fuel: 0,
+    thrust: 1_500_000,
+    isp: 290,
+    unlock: 150,
+    info: 'Das stärkste Triebwerk: 1.500 kN hebt auch die schwersten Raketen von der Rampe.',
+  },
+  {
+    id: 'atom',
+    name: 'Atomtriebwerk',
+    kind: 'engine',
+    width: 1.8,
+    height: 2.8,
+    dry: 3000,
+    fuel: 0,
+    thrust: 60_000,
+    isp: 800,
+    unlock: 300,
+    flame: 'atom',
+    info: 'Ein Kernreaktor heizt Wasserstoff auf: fast dreimal so sparsam wie chemische Triebwerke, aber schwer und schwach. Für lange Reisen im All.',
+  },
+  {
+    id: 'ionen',
+    name: 'Ionentriebwerk',
+    kind: 'engine',
+    width: 1.2,
+    height: 0.9,
+    dry: 400,
+    fuel: 0,
+    thrust: 4_000,
+    isp: 4200,
+    unlock: 550,
+    flame: 'ionen',
+    info: 'Beschleunigt geladene Teilchen mit Strom: extrem sparsam, aber mit winzigem Schub. Brennt dafür stundenlang – bei schwachem Schub ist Zeitraffer bis 100× erlaubt.',
   },
   {
     id: 'trenner',
@@ -163,6 +269,17 @@ export function part(id: string): PartDef {
 
 export function isPart(id: string): boolean {
   return BY_ID.has(id);
+}
+
+/** Ist das Teil bei so vielen Punkten schon freigeschaltet? */
+export function unlocked(id: string, points: number, sandbox = false): boolean {
+  return sandbox || points >= (part(id).unlock ?? 0);
+}
+
+/** Steuert ein Teil die Rakete (Kapsel oder Sondenkern)? */
+export function isControl(id: string): boolean {
+  const k = part(id).kind;
+  return k === 'capsule' || k === 'probe';
 }
 
 /** Eine Rakete: Bauteile von oben nach unten. */
@@ -236,6 +353,44 @@ export const TEMPLATES: readonly Template[] = [
     ],
   },
   {
+    id: 'satnet',
+    name: 'Satellitenträger',
+    info: 'Unbemannt mit drei Satelliten: in die Umlaufbahn, dann nacheinander aussetzen (N) – fertig ist das Satellitennetz.',
+    parts: [
+      'satellit',
+      'satellit',
+      'satellit',
+      'sonde',
+      'tank-m',
+      'falke',
+      'trenner',
+      'tank-l',
+      'titan',
+    ],
+  },
+  {
+    id: 'selene',
+    name: 'Selene (Mond)',
+    info: 'Mondrakete mit Hitzeschild: Die Landefähre bleibt vor dem Wiedereintritt zurück, die Kapsel taucht mit dem Schild voran ein.',
+    parts: [
+      'fallschirm',
+      'kapsel',
+      'hitzeschild',
+      'trenner',
+      'tank-m',
+      'beine',
+      'kolibri',
+      'trenner',
+      'tank-l',
+      'falke',
+      'trenner',
+      'tank-l',
+      'booster',
+      'tank-l',
+      'titan',
+    ],
+  },
+  {
     id: 'ares',
     name: 'Ares (Mars)',
     info: 'Für den Flug zum Mars: große Transferstufe, Landefähre mit Fallschirm und Beinen. Reicht bis zur Marslandung.',
@@ -255,6 +410,30 @@ export const TEMPLATES: readonly Template[] = [
       'tank-l',
       'booster',
       'titan',
+    ],
+  },
+  {
+    id: 'jupiter',
+    name: 'Jupiter-Sonde',
+    info: 'Unbemannte Sonde mit Atomtriebwerk und Satellit – für Jupiter und seinen Eismond Europa.',
+    parts: [
+      'sonde',
+      'satellit',
+      'tank-m',
+      'beine',
+      'kolibri',
+      'trenner',
+      'tank-l',
+      'atom',
+      'trenner',
+      'tank-xl',
+      'tank-l',
+      'titan',
+      'trenner',
+      'tank-xl',
+      'booster',
+      'tank-xl',
+      'mammut',
     ],
   },
 ];
@@ -340,8 +519,11 @@ export type DesignProblem = { level: 'error' | 'warn'; text: string };
 export function checkDesign(design: Design): DesignProblem[] {
   const problems: DesignProblem[] = [];
   if (design.length === 0) return [{ level: 'error', text: 'Die Rakete hat noch keine Teile.' }];
-  if (!design.some((id) => part(id).kind === 'capsule'))
-    problems.push({ level: 'error', text: 'Es fehlt eine Kapsel – wer soll denn fliegen?' });
+  if (!design.some(isControl))
+    problems.push({
+      level: 'error',
+      text: 'Es fehlt eine Kapsel oder ein Sondenkern – wer soll die Rakete steuern?',
+    });
   const stats = stageStats(design);
   const first = stats[0]!;
   if (first.thrust === 0)
@@ -355,12 +537,18 @@ export function checkDesign(design: Design): DesignProblem[] {
     });
   if (design[design.length - 1] && part(design[design.length - 1]!).kind === 'decoupler')
     problems.push({ level: 'warn', text: 'Ganz unten hängt ein Stufentrenner ohne Stufe.' });
-  if (!design.includes('fallschirm'))
+  if (design.includes('kapsel') && !design.includes('fallschirm'))
     problems.push({
       level: 'warn',
       text: 'Ohne Fallschirm ist eine Landung auf der Erde nur mit Triebwerk möglich.',
     });
   if (design.length > MAX_PARTS)
     problems.push({ level: 'error', text: `Höchstens ${MAX_PARTS} Teile.` });
+  const shield = design.indexOf('hitzeschild');
+  if (shield >= 0 && shield < design.length - 1 && part(design[shield + 1]!).kind !== 'decoupler')
+    problems.push({
+      level: 'warn',
+      text: 'Der Hitzeschild wirkt nur als unterstes Teil: Setze einen Stufentrenner direkt darunter, damit er beim Wiedereintritt vorn ist.',
+    });
   return problems;
 }

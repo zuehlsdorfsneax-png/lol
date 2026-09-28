@@ -1,15 +1,20 @@
+import { goalById, type GoalId } from './goals';
+import { elements, stateAt, timeToPeriapsis, timeToRadius, type Elements } from './kepler';
 import { part, segments, type Design } from './parts';
 import {
   BODIES,
   EARTH,
+  EUROPA,
   G0,
   JUPITER,
   MARS,
+  MERCURY,
   MOON,
   PHOBOS,
   STATION,
   SUN,
   VENUS,
+  bodyById,
   bodyState,
   densityAt,
   dominantBody,
@@ -23,6 +28,16 @@ import {
   type Orbit,
 } from './world';
 
+export {
+  GOALS,
+  RANKS,
+  careerPoints,
+  goalPoints,
+  rankFor,
+  type GoalDef,
+  type GoalId,
+} from './goals';
+
 /** Stufen der Zeitraffer-Anzeige. */
 export const WARPS = [
   1, 2, 4, 10, 50, 100, 500, 1000, 5000, 10_000, 50_000, 200_000, 1_000_000, 5_000_000,
@@ -30,225 +45,83 @@ export const WARPS = [
 /** Höchster Zeitraffer bei laufendem Triebwerk, in der Atmosphäre oder dicht über dem Boden. */
 const WARP_LIMITED = 4;
 
-export type GoalId =
-  | 'lift'
-  | 'km10'
-  | 'space'
-  | 'orbit'
-  | 'high'
-  | 'dock'
-  | 'refuel'
-  | 'soi'
-  | 'flyby'
-  | 'moonorbit'
-  | 'moonland'
-  | 'return'
-  | 'soft'
-  | 'escape'
-  | 'venus'
-  | 'venusland'
-  | 'mars'
-  | 'marsorbit'
-  | 'marsland'
-  | 'phobos'
-  | 'jupiter'
-  | 'sunclose';
-
-export interface GoalDef {
-  id: GoalId;
-  title: string;
-  text: string;
-  points: number;
-  group: 'Erde' | 'Station' | 'Mond' | 'Planeten' | 'Können';
-}
-
-export const GOALS: readonly GoalDef[] = [
-  {
-    id: 'lift',
-    group: 'Erde',
-    points: 5,
-    title: 'Abheben',
-    text: 'Die Rakete verlässt die Startrampe.',
-  },
-  {
-    id: 'km10',
-    group: 'Erde',
-    points: 5,
-    title: '10 km Höhe',
-    text: 'Höher als jedes Verkehrsflugzeug.',
-  },
-  {
-    id: 'space',
-    group: 'Erde',
-    points: 10,
-    title: 'Weltraum',
-    text: 'Über 40 km: Hier endet die Atmosphäre im Spiel.',
-  },
-  {
-    id: 'orbit',
-    group: 'Erde',
-    points: 20,
-    title: 'Umlaufbahn',
-    text: 'Der tiefste Bahnpunkt liegt über der Atmosphäre – die Rakete fällt ständig um die Erde herum.',
-  },
-  {
-    id: 'high',
-    group: 'Erde',
-    points: 15,
-    title: 'Hohe Bahn',
-    text: 'Eine geschlossene Erdbahn, deren höchster Punkt über 1.000 km liegt.',
-  },
-  {
-    id: 'dock',
-    group: 'Station',
-    points: 30,
-    title: 'Angedockt',
-    text: 'An der Raumstation Kepler festgemacht – Rendezvous im Orbit geschafft.',
-  },
-  {
-    id: 'refuel',
-    group: 'Station',
-    points: 10,
-    title: 'Aufgetankt',
-    text: 'Alle Tanks an der Station gefüllt. Mit vollen Tanks aus der Umlaufbahn reicht es weit.',
-  },
-  {
-    id: 'soi',
-    group: 'Mond',
-    points: 15,
-    title: 'Hill-Sphäre des Mondes',
-    text: 'Ab hier zieht der Mond stärker an der Bahn als die Erde (Kapitel 5).',
-  },
-  {
-    id: 'flyby',
-    group: 'Mond',
-    points: 15,
-    title: 'Mondvorbeiflug',
-    text: 'Durch die Hill-Sphäre des Mondes und wieder hinaus – der Mond lenkt die Bahn um wie ein Katapult.',
-  },
-  {
-    id: 'moonorbit',
-    group: 'Mond',
-    points: 20,
-    title: 'Mondumlaufbahn',
-    text: 'Vom Mond eingefangen.',
-  },
-  {
-    id: 'moonland',
-    group: 'Mond',
-    points: 40,
-    title: 'Mondlandung',
-    text: 'Sanft auf dem Mond aufgesetzt.',
-  },
-  {
-    id: 'return',
-    group: 'Mond',
-    points: 50,
-    title: 'Heimkehr',
-    text: 'Vom Mond zurück und sicher auf der Erde gelandet.',
-  },
-  {
-    id: 'escape',
-    group: 'Planeten',
-    points: 30,
-    title: 'Flucht aus dem System',
-    text: 'Raus aus der Hill-Sphäre der Erde – jetzt kreist die Rakete um die Sonne. Genau das passiert einem Mond mit zu viel Tempo (Problemfrage).',
-  },
-  {
-    id: 'venus',
-    group: 'Planeten',
-    points: 40,
-    title: 'Venus erreicht',
-    text: 'In der Hill-Sphäre der Venus angekommen.',
-  },
-  {
-    id: 'venusland',
-    group: 'Planeten',
-    points: 60,
-    title: 'Venuslandung',
-    text: 'Durch die dichte Venusatmosphäre bis zum Boden.',
-  },
-  {
-    id: 'mars',
-    group: 'Planeten',
-    points: 40,
-    title: 'Mars erreicht',
-    text: 'In der Hill-Sphäre des Mars angekommen.',
-  },
-  {
-    id: 'marsorbit',
-    group: 'Planeten',
-    points: 40,
-    title: 'Marsumlaufbahn',
-    text: 'Vom Mars eingefangen.',
-  },
-  {
-    id: 'marsland',
-    group: 'Planeten',
-    points: 80,
-    title: 'Marslandung',
-    text: 'Fallschirm und Triebwerk zusammen – sicher auf dem roten Planeten.',
-  },
-  {
-    id: 'phobos',
-    group: 'Planeten',
-    points: 60,
-    title: 'Phobos-Landung',
-    text: 'Auf dem winzigen Marsmond aufgesetzt – fast schwerelos.',
-  },
-  {
-    id: 'jupiter',
-    group: 'Planeten',
-    points: 70,
-    title: 'Jupiter-Vorbeiflug',
-    text: 'In die Hill-Sphäre des Riesenplaneten eingedrungen.',
-  },
-  {
-    id: 'sunclose',
-    group: 'Planeten',
-    points: 50,
-    title: 'Sonnennah',
-    text: 'Näher an der Sonne als die Venus.',
-  },
-  {
-    id: 'soft',
-    group: 'Können',
-    points: 10,
-    title: 'Butterweich',
-    text: 'Eine Landung mit weniger als 2 m/s.',
-  },
-];
-
-export const RANKS: readonly { points: number; title: string }[] = [
-  { points: 0, title: 'Kadett' },
-  { points: 50, title: 'Raketenbauer' },
-  { points: 120, title: 'Pilot' },
-  { points: 250, title: 'Astronaut' },
-  { points: 450, title: 'Kommandant' },
-  { points: 700, title: 'Raumfahrt-Legende' },
-];
-
-export function goalPoints(goals: Iterable<string>): number {
-  let sum = 0;
-  for (const id of goals) sum += GOALS.find((g) => g.id === id)?.points ?? 0;
-  return sum;
-}
-
-export function rankFor(points: number): { title: string; next: number | null; index: number } {
-  let index = 0;
-  RANKS.forEach((r, i) => {
-    if (points >= r.points) index = i;
-  });
-  return { title: RANKS[index]!.title, next: RANKS[index + 1]?.points ?? null, index };
-}
-
 export type FlightStatus = 'landed' | 'flying' | 'crashed' | 'docked';
 export type ChuteState = 'none' | 'stowed' | 'armed' | 'open';
 export type TargetId = 'station' | BodyId;
 
+/**
+ * Lageregelung (SAS): Die Rakete hält selbst eine Richtung – in Flugrichtung (prograd), dagegen
+ * (retrograd), vom Körper weg oder zu ihm hin (radial), zum Ziel, auf das geplante Manöver oder
+ * in eine angetippte Richtung.
+ */
+export type SasMode =
+  | 'off'
+  | 'prograde'
+  | 'retrograde'
+  | 'radialOut'
+  | 'radialIn'
+  | 'target'
+  | 'antiTarget'
+  | 'maneuver'
+  | 'point';
+
+/** Geplantes Manöver: ein Schub zu einer bestimmten Zeit, zerlegt in Flugrichtung und radial. */
+export interface ManeuverNode {
+  t: number;
+  /** Δv in Flugrichtung und nach außen (m/s). */
+  prograde: number;
+  radial: number;
+  /** Schubvektor zur Manöverzeit in Weltkoordinaten (für die Vorhersage). */
+  dx: number;
+  dy: number;
+  /**
+   * Schon erbrachtes Δv während des Brennens, in Flugrichtung und radial. Gezählt wird im
+   * mitlaufenden Bezugssystem: Die Rakete folgt beim Brennen der Flugrichtung, so geht bei
+   * langen Brennphasen keine Energie verloren.
+   */
+  doneP: number;
+  doneR: number;
+  /** Brennen hat begonnen: Das Manöver lässt sich nicht mehr ändern. */
+  frozen: boolean;
+  /**
+   * Bahnenergie nach dem Manöver (J/kg relativ zu `ref`). Bei Schüben fast nur in Flugrichtung
+   * wird gebrannt, bis sie erreicht ist – so gleicht der Computer Verluste langer Brennphasen aus.
+   */
+  energy: number | null;
+  ref: BodyId;
+  /** Zwischengespeicherter Zustand zur Manöverzeit (ohne Schub). */
+  at: [number, number, number, number] | null;
+}
+
+/** Ein ausgesetzter Satellit auf seiner Kepler-Bahn. */
+export interface Satellite {
+  id: number;
+  name: string;
+  body: BodyId;
+  el: Elements;
+}
+
+/** Landeplatz auf einem Körper (Winkel mitdrehend wie die Oberfläche). */
+export interface LandingSite {
+  body: BodyId;
+  angle: number;
+  name: string;
+}
+
+export interface FlightStats {
+  maxSpeed: number;
+  maxG: number;
+  dvUsed: number;
+  distance: number;
+  burnSeconds: number;
+  /** Zeitpunkt des Abhebens (null = noch nicht gestartet). */
+  liftoff: number | null;
+  landings: number;
+}
+
 /** Gespeicherter Spielstand eines Flugs (Schnellspeichern). */
 export interface FlightSnapshot {
-  v: 1;
+  v: 1 | 2;
   design: string[];
   t: number;
   x: number;
@@ -266,6 +139,13 @@ export interface FlightSnapshot {
   goals: GoalId[];
   target: TargetId | null;
   maxAltitude: number;
+  sas?: SasMode;
+  sasAngle?: number;
+  node?: ManeuverNode | null;
+  satellites?: Satellite[];
+  stats?: FlightStats;
+  maxHeat?: number;
+  site?: LandingSite | null;
 }
 
 export interface FlightEvent {
@@ -274,6 +154,8 @@ export interface FlightEvent {
   /** Kurze Überschrift (bei Zielen: Titel und Punkte). */
   title?: string;
   text: string;
+  /** Bei Zielen: welches Ziel. */
+  goal?: GoalId;
 }
 
 interface Segment {
@@ -300,7 +182,7 @@ export interface Particle {
   life: number;
   max: number;
   size: number;
-  kind: 'smoke' | 'fire' | 'spark';
+  kind: 'smoke' | 'fire' | 'spark' | 'dust';
 }
 
 export interface Encounter {
@@ -318,6 +200,9 @@ export interface Prediction {
   /** Positionen im Erdsystem und zugehörige Zeiten. */
   xs: Float64Array;
   ys: Float64Array;
+  /** Geschwindigkeiten (für Bahnelemente an jedem Punkt). */
+  vxs: Float64Array;
+  vys: Float64Array;
   ts: Float64Array;
   n: number;
   /** Bezugskörper für die Darstellung. */
@@ -326,11 +211,21 @@ export interface Prediction {
   impact: Body | null;
   /** Erste Begegnung mit einem anderen Körper. */
   encounter: Encounter | null;
-  /** Nächste Annäherung an die Station (wenn sie das Ziel ist). */
+  /** Nächste Annäherung an das Ziel (Station: Abstand, Körper: Höhe über dem Boden). */
   closest: { t: number; distance: number; index: number } | null;
   /** Indizes von tiefstem und höchstem Punkt relativ zum Bezugskörper (-1 = keiner). */
   low: number;
   high: number;
+  /**
+   * Manöver: letzter Punkt vor dem Manöver und erster danach (dazwischen kann eine Lücke liegen,
+   * wenn das Manöver weit in der Zukunft liegt). -1 = kein Manöver in der Vorhersage.
+   */
+  preEnd: number;
+  nodeIndex: number;
+  nodeRef: Body | null;
+  /** Tiefster und höchster Punkt der geplanten Bahn nach dem Manöver. */
+  planLow: number;
+  planHigh: number;
 }
 
 const TURN_RATE = 1.1;
@@ -351,18 +246,130 @@ const DOCK_DISTANCE = 20;
  */
 const HEAT_SCALE = 4.2e10;
 const HEAT_COOLING = 0.08;
+/** Anteil der Hitze, der mit dem Hitzeschild voran noch ankommt. */
+const SHIELD_FACTOR = 0.25;
 const DOCK_SPEED = 2;
+const YEAR = 2 * Math.PI * Math.sqrt(EARTH.distance ** 3 / SUN.mu);
+/** Höchstens so viele Satelliten bleiben gespeichert. */
+export const MAX_SATELLITES = 24;
 
 function wrap(a: number): number {
   return Math.atan2(Math.sin(a), Math.cos(a));
 }
 
+function clamp(x: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, x));
+}
+
 /** Monde drehen sich gebunden mit ihrer Bahn (zeigen dem Planeten immer dieselbe Seite). */
-function spin(b: Body, t: number): number {
+export function bodySpin(b: Body, t: number): number {
   return b.parent && b.parent !== 'sun' ? orbitAngle(b, t) : 0;
 }
 
+/** Ort eines Satelliten zur Zeit t (Weltkoordinaten). */
+export function satelliteState(s: Satellite, t: number): [number, number, number, number] {
+  const [bx, by, bvx, bvy] = bodyState(bodyById(s.body), t);
+  const [x, y, vx, vy] = stateAt(s.el, t);
+  return [bx + x, by + y, bvx + vx, bvy + vy];
+}
+
+/** Tiefster und höchster Abstand zum Mittelpunkt einer Kepler-Bahn. */
+export function apsides(el: Elements): { peri: number; apo: number } {
+  return { peri: el.p / (1 + el.e), apo: el.e < 1 ? el.p / (1 - el.e) : Infinity };
+}
+
+interface Coast {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  t: number;
+}
+
+/** Schrittweite der Bahnvorhersage: Bruchteil der kürzesten Umlaufzeitskala. */
+function coastDt(x: number, y: number, t: number): number {
+  let tau = Infinity;
+  for (const b of BODIES) {
+    const [bx, by] = bodyState(b, t);
+    tau = Math.min(tau, Math.sqrt(Math.hypot(x - bx, y - by) ** 3 / b.mu));
+  }
+  return Math.max(0.05, 0.02 * tau);
+}
+
+/** Ein Runge-Kutta-Schritt ohne Schub. */
+function coastStep(s: Coast, dt: number): void {
+  const { x, y, vx, vy, t } = s;
+  const [a1x, a1y] = gravity(x, y, t);
+  const [a2x, a2y] = gravity(x + (vx * dt) / 2, y + (vy * dt) / 2, t + dt / 2);
+  const v2x = vx + (a1x * dt) / 2;
+  const v2y = vy + (a1y * dt) / 2;
+  const [a3x, a3y] = gravity(x + (v2x * dt) / 2, y + (v2y * dt) / 2, t + dt / 2);
+  const v3x = vx + (a2x * dt) / 2;
+  const v3y = vy + (a2y * dt) / 2;
+  const [a4x, a4y] = gravity(x + v3x * dt, y + v3y * dt, t + dt);
+  const v4x = vx + a3x * dt;
+  const v4y = vy + a3y * dt;
+  s.x = x + (dt / 6) * (vx + 2 * v2x + 2 * v3x + v4x);
+  s.y = y + (dt / 6) * (vy + 2 * v2y + 2 * v3y + v4y);
+  s.vx = vx + (dt / 6) * (a1x + 2 * a2x + 2 * a3x + a4x);
+  s.vy = vy + (dt / 6) * (a1y + 2 * a2y + 2 * a3y + a4y);
+  s.t = t + dt;
+}
+
+/** Freier Flug bis `until` (ohne Schub). false, wenn die Schrittgrenze oder ein Körper stört. */
+function coastTo(s: Coast, until: number, maxSteps: number): boolean {
+  for (let i = 0; i < maxSteps && s.t < until - 1e-9; i++) {
+    coastStep(s, Math.min(coastDt(s.x, s.y, s.t), until - s.t));
+    for (const b of BODIES) {
+      const [bx, by] = bodyState(b, s.t);
+      if (Math.hypot(s.x - bx, s.y - by) < b.radius) return false;
+    }
+  }
+  return s.t >= until - 1e-9;
+}
+
+/** Wie weit die Vorhersage von diesem Zustand aus reichen soll. */
+function horizonFor(s: Coast): number {
+  const ref = dominantBody(s.x, s.y, s.t);
+  const [bx, by, bvx, bvy] = bodyState(ref, s.t);
+  const o = orbitAround(ref, s.x - bx, s.y - by, s.vx - bvx, s.vy - bvy);
+  if (o.bound) return Math.min(1.02 * o.period, 3 * YEAR);
+  if (ref === SUN) return 3 * YEAR;
+  // Auf Fluchtbahn: so weit rechnen, wie die neue Bahn um den Mutterkörper dauert.
+  const parent = ref.parent ? bodyById(ref.parent) : SUN;
+  const [px, py, pvx, pvy] = bodyState(parent, s.t);
+  const po = orbitAround(parent, s.x - px, s.y - py, s.vx - pvx, s.vy - pvy);
+  let h = po.bound ? Math.min(1.02 * po.period, 3 * YEAR) : YEAR;
+  if (ref === EARTH || ref === MOON) h = Math.max(h, 12 * 86_400);
+  return h;
+}
+
+/** Richtungen „prograd“ und „radial nach außen“ relativ zu einem Körper. */
+export function nodeFrame(
+  b: Body,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  t: number,
+): [number, number, number, number] {
+  const [bx, by, bvx, bvy] = bodyState(b, t);
+  const rvx = vx - bvx;
+  const rvy = vy - bvy;
+  const sp = Math.hypot(rvx, rvy) || 1;
+  const px = rvx / sp;
+  const py = rvy / sp;
+  let qx = -py;
+  let qy = px;
+  if (qx * (x - bx) + qy * (y - by) < 0) {
+    qx = -qx;
+    qy = -qy;
+  }
+  return [px, py, qx, qy];
+}
+
 let eventId = 1;
+let satId = 1;
 
 /**
  * Ein Raketenflug. Die Rakete ist ein Massenpunkt mit Ausrichtung; ihr Ort ist die Unterkante
@@ -382,11 +389,21 @@ export class Flight {
   throttle = 0;
   /** Steuereingabe −1 (links) … 1 (rechts). */
   turn = 0;
+  /** Feinsteuerung: langsamer drehen (für genaues Ausrichten). */
+  fine = false;
   /** Lagekontrolldüsen an? Dann verschieben `translate` die Rakete sanft. */
   rcs = false;
   /** RCS-Eingabe: x = nach rechts, y = nach vorn (je −1 … 1). */
   translate = { x: 0, y: 0 };
+  sas: SasMode = 'off';
+  /** Richtung für SAS „Zeigen“ (Weltwinkel). */
+  sasAngle = Math.PI / 2;
+  node: ManeuverNode | null = null;
+  /** Zeitsprung: bis zu diesem Zeitpunkt automatisch vorspulen. */
+  warpTarget: number | null = null;
   target: TargetId | null = null;
+  /** Landeplatz einer Herausforderung (wird auf Karte und Boden markiert). */
+  site: LandingSite | null = null;
   /** Sandkasten: unendlich Treibstoff (dafür keine Punkte). */
   sandbox = false;
   segs: Segment[];
@@ -399,17 +416,36 @@ export class Flight {
   readonly events: FlightEvent[] = [];
   readonly debris: Debris[] = [];
   readonly particles: Particle[] = [];
+  /** Alle Satelliten (auch die aus früheren Flügen). */
+  satellites: Satellite[] = [];
+  readonly stats: FlightStats = {
+    maxSpeed: 0,
+    maxG: 0,
+    dvUsed: 0,
+    distance: 0,
+    burnSeconds: 0,
+    liftoff: null,
+    landings: 0,
+  };
+  /** Momentane Belastung in g (ohne Schwerkraft: Schub, Luftwiderstand). */
+  gForce = 0;
+  /** Effekte für die Darstellung: Wackeln und Lichtblitz (0…1, klingen ab). */
+  shake = 0;
+  flash = 0;
   maxHeat = 0;
   maxAltitude = 0;
   /** Hitze durch Luftreibung: 0 = kalt, 1 = zerstört. */
   heat = 0;
+  /** Schützt der Hitzeschild gerade? */
+  shielded = false;
   crashReason = '';
   readonly design: Design;
+  /** Welche Körper die Rakete besucht hat (Hill-Sphäre). */
+  readonly visited = new Set<BodyId>();
   /** Winkel des Landeplatzes auf dem Körper (bei Monden relativ zur Drehung). */
   private landAngle = Math.PI / 2;
   private emptyWarned = false;
   private rng = 1;
-  private visited = new Set<BodyId>();
 
   constructor(design: Design) {
     this.design = [...design];
@@ -425,7 +461,7 @@ export class Flight {
   snapshot(): FlightSnapshot | null {
     if (this.status === 'crashed') return null;
     return {
-      v: 1,
+      v: 2,
       design: [...this.design],
       t: this.t,
       x: this.x,
@@ -443,6 +479,13 @@ export class Flight {
       goals: [...this.goals],
       target: this.target,
       maxAltitude: this.maxAltitude,
+      sas: this.sas,
+      sasAngle: this.sasAngle,
+      node: this.node ? { ...this.node, at: this.node.at ? [...this.node.at] : null } : null,
+      satellites: this.satellites.map((s) => ({ ...s, el: { ...s.el } })),
+      stats: { ...this.stats },
+      maxHeat: this.maxHeat,
+      site: this.site,
     };
   }
 
@@ -461,12 +504,51 @@ export class Flight {
       chuteOpen: s.chuteOpen,
       target: s.target,
       maxAltitude: s.maxAltitude,
+      sas: s.sas ?? 'off',
+      sasAngle: s.sasAngle ?? Math.PI / 2,
+      node: s.node ? { ...s.node } : null,
+      satellites: (s.satellites ?? []).map((q) => ({ ...q, el: { ...q.el } })),
+      maxHeat: s.maxHeat ?? 0,
+      site: s.site ?? null,
     });
+    if (s.stats) Object.assign(f.stats, s.stats);
     f.segs = s.segs.map((q) => ({ parts: [...q.parts], fuel: q.fuel }));
-    f.landedOn = s.landedOn ? BODIES.find((b) => b.id === s.landedOn)! : null;
+    f.landedOn = s.landedOn ? bodyById(s.landedOn) : null;
     f.landAngle = s.landAngle;
     for (const g of s.goals) f.goals.add(g);
     return f;
+  }
+
+  // ---------------------------------------------------------------- Startsituationen
+
+  /** Auf eine Kreisbahn um einen Körper setzen (im Uhrzeigersinn, wie alle Körper). */
+  placeInOrbit(body: Body, altitude: number, angle: number): void {
+    const [bx, by, bvx, bvy] = bodyState(body, this.t);
+    const r = body.radius + altitude;
+    const v = Math.sqrt(body.mu / r);
+    this.status = 'flying';
+    this.landedOn = null;
+    this.x = bx + r * Math.cos(angle);
+    this.y = by + r * Math.sin(angle);
+    this.vx = bvx + v * Math.sin(angle);
+    this.vy = bvy - v * Math.cos(angle);
+    this.angle = angle - Math.PI / 2;
+    this.angVel = 0;
+  }
+
+  /** Auf einem Körper landen lassen (Winkel mitdrehend). */
+  placeLanded(body: Body, angle: number): void {
+    this.status = 'landed';
+    this.landedOn = body;
+    this.landAngle = angle;
+    const [bx, by, bvx, bvy] = bodyState(body, this.t);
+    const local = bodySpin(body, this.t) + angle;
+    this.x = bx + body.radius * Math.cos(local);
+    this.y = by + body.radius * Math.sin(local);
+    this.vx = bvx;
+    this.vy = bvy;
+    this.angle = local;
+    this.angVel = 0;
   }
 
   // ---------------------------------------------------------------- Eigenschaften
@@ -513,6 +595,16 @@ export class Flight {
     return this.active.parts.includes('beine');
   }
 
+  /** Sitzt der Hitzeschild ganz unten? */
+  get shieldAtBottom(): boolean {
+    const a = this.active.parts;
+    return a[a.length - 1] === 'hitzeschild';
+  }
+
+  get satellitesOnBoard(): number {
+    return this.segs.reduce((s, seg) => s + seg.parts.filter((id) => id === 'satellit').length, 0);
+  }
+
   get thrusting(): boolean {
     return this.throttle > 0 && this.active.fuel > 0 && this.engine().thrust > 0;
   }
@@ -537,6 +629,39 @@ export class Flight {
       above = start;
     }
     return dv;
+  }
+
+  /** Brenndauer bei Vollgas für ein Δv, über die Stufen hinweg (∞ = reicht nicht). */
+  burnTime(dv: number): number {
+    let time = 0;
+    let left = dv;
+    let mass = this.mass;
+    for (let i = this.segs.length - 1; i >= 0 && left > 1e-6; i--) {
+      const seg = this.segs[i]!;
+      const dry = seg.parts.reduce((s, id) => s + part(id).dry, 0);
+      let thrust = 0;
+      let flow = 0;
+      for (const id of seg.parts) {
+        const p = part(id);
+        if (p.thrust > 0) {
+          thrust += p.thrust;
+          flow += p.thrust / (p.isp * G0);
+        }
+      }
+      if (thrust > 0 && (seg.fuel > 0 || this.sandbox)) {
+        const ve = thrust / flow;
+        const stageDv = this.sandbox ? Infinity : ve * Math.log(mass / (mass - seg.fuel));
+        if (left <= stageDv) {
+          time += (mass * (1 - Math.exp(-left / ve))) / flow;
+          left = 0;
+          break;
+        }
+        time += seg.fuel / flow;
+        left -= stageDv;
+      }
+      mass -= dry + seg.fuel;
+    }
+    return left > 1e-6 ? Infinity : time;
   }
 
   /** Ort und Geschwindigkeit eines Körpers jetzt. */
@@ -570,6 +695,12 @@ export class Flight {
     return orbitAround(body, rel.rx, rel.ry, rel.vx, rel.vy);
   }
 
+  /** Kepler-Bahnelemente relativ zum Bezugskörper (für Zeit bis Ap/Pe). */
+  elements(body: Body = this.refBody()): Elements {
+    const rel = this.relative(body);
+    return elements(body.mu, rel.rx, rel.ry, rel.vx, rel.vy, this.t);
+  }
+
   get altitudeEarth(): number {
     return Math.hypot(this.x, this.y) - EARTH.radius;
   }
@@ -595,38 +726,115 @@ export class Flight {
     return { rho: densityAt(body, altitude), body, altitude };
   }
 
+  /** Mitte der Rakete (für Zielrichtung und Kamera). */
+  center(): [number, number] {
+    const h = this.length * 0.5;
+    return [this.x + Math.cos(this.angle) * h, this.y + Math.sin(this.angle) * h];
+  }
+
+  /** Ort und Geschwindigkeit des Ziels (Station: Andockstutzen). */
+  targetState(): { x: number; y: number; vx: number; vy: number; surface: number } | null {
+    if (!this.target) return null;
+    if (this.target === 'station') {
+      const [x, y] = stationPort(this.t);
+      const [, , vx, vy] = stationState(this.t);
+      return { x, y, vx, vy, surface: 0 };
+    }
+    const b = bodyById(this.target);
+    const [x, y, vx, vy] = bodyState(b, this.t);
+    return { x, y, vx, vy, surface: b.radius };
+  }
+
   /** Abstand und Relativgeschwindigkeit zum gewählten Ziel. */
   targetInfo(): { name: string; distance: number; speed: number; closing: number } | null {
-    if (!this.target) return null;
-    let x: number;
-    let y: number;
-    let vx: number;
-    let vy: number;
-    let name: string;
-    let surface = 0;
-    if (this.target === 'station') {
-      [x, y] = stationPort(this.t);
-      [, , vx, vy] = stationState(this.t);
-      name = STATION.name;
-    } else {
-      const b = BODIES.find((q) => q.id === this.target)!;
-      [x, y, vx, vy] = bodyState(b, this.t);
-      name = b.name;
-      surface = b.radius;
-    }
-    const cx = this.x + Math.cos(this.angle) * this.length * 0.5;
-    const cy = this.y + Math.sin(this.angle) * this.length * 0.5;
-    const dx = x - cx;
-    const dy = y - cy;
+    const s = this.targetState();
+    if (!s || !this.target) return null;
+    const name = this.target === 'station' ? STATION.name : bodyById(this.target).name;
+    const [cx, cy] = this.center();
+    const dx = s.x - cx;
+    const dy = s.y - cy;
     const d = Math.hypot(dx, dy);
-    const rvx = this.vx - vx;
-    const rvy = this.vy - vy;
+    const rvx = this.vx - s.vx;
+    const rvy = this.vy - s.vy;
     return {
       name,
-      distance: d - surface,
+      distance: d - s.surface,
       speed: Math.hypot(rvx, rvy),
       closing: d > 0 ? (rvx * dx + rvy * dy) / d : 0,
     };
+  }
+
+  /**
+   * Geschwindigkeit für Anzeige und SAS: nahe der Station relativ zu ihr (wie beim echten
+   * Andocken), sonst relativ zum Bezugskörper.
+   */
+  speedFrame(): { vx: number; vy: number; mode: 'orbit' | 'target' } {
+    if (this.target === 'station') {
+      const ti = this.targetInfo();
+      if (ti && ti.distance < 20_000) {
+        const [, , svx, svy] = stationState(this.t);
+        return { vx: this.vx - svx, vy: this.vy - svy, mode: 'target' };
+      }
+    }
+    const rel = this.relative();
+    return { vx: rel.vx, vy: rel.vy, mode: 'orbit' };
+  }
+
+  /** Richtung, die das SAS gerade hält (Weltwinkel), oder null. */
+  sasDirection(mode: SasMode = this.sas): number | null {
+    switch (mode) {
+      case 'off':
+        return null;
+      case 'point':
+        return this.sasAngle;
+      case 'maneuver': {
+        const r = this.nodeRemaining();
+        return r.mag > 0.01 ? Math.atan2(r.y, r.x) : null;
+      }
+      case 'target':
+      case 'antiTarget': {
+        const s = this.targetState();
+        if (!s) return null;
+        const [cx, cy] = this.center();
+        const a = Math.atan2(s.y - cy, s.x - cx);
+        return mode === 'target' ? a : wrap(a + Math.PI);
+      }
+      default: {
+        const s = this.speedFrame();
+        if (Math.hypot(s.vx, s.vy) < 0.05) return null;
+        const pro = Math.atan2(s.vy, s.vx);
+        if (mode === 'prograde') return pro;
+        if (mode === 'retrograde') return wrap(pro + Math.PI);
+        const rel = this.relative();
+        let qx = -s.vy;
+        let qy = s.vx;
+        if (qx * rel.rx + qy * rel.ry < 0) {
+          qx = -qx;
+          qy = -qy;
+        }
+        const out = Math.atan2(qy, qx);
+        return mode === 'radialOut' ? out : wrap(out + Math.PI);
+      }
+    }
+  }
+
+  /** Abstand zum Landeplatz einer Herausforderung entlang der Oberfläche. */
+  siteInfo(): { distance: number; body: Body; name: string } | null {
+    const s = this.site;
+    if (!s) return null;
+    const b = bodyById(s.body);
+    const c = this.state(b);
+    const local = Math.atan2(this.y - c.y, this.x - c.x) - bodySpin(b, this.t);
+    return { distance: b.radius * Math.abs(wrap(local - s.angle)), body: b, name: s.name };
+  }
+
+  /** Zeitraffer bei laufendem Triebwerk: in Bodennähe 4×, im freien Raum mehr. */
+  private burnWarpLimit(): number {
+    if (this.rcs && (this.translate.x || this.translate.y)) return WARP_LIMITED;
+    const { body, altitude } = this.nearest();
+    if (altitude < Math.max(body.atmosphere, 30_000)) return WARP_LIMITED;
+    const accel = (this.engine().thrust * this.throttle) / this.mass;
+    return accel <= 2 ? 100 : 10;
   }
 
   /** Größter erlaubter Zeitraffer in der momentanen Lage. */
@@ -636,45 +844,121 @@ export class Flight {
     if (this.status === 'landed' || this.status === 'docked') {
       if (this.thrusting) return 0;
     } else {
-      const limited = WARPS.indexOf(WARP_LIMITED);
-      if (this.thrusting || (this.rcs && (this.translate.x || this.translate.y))) return limited;
+      if (this.thrusting || (this.rcs && (this.translate.x || this.translate.y)))
+        limit = WARPS.indexOf(this.burnWarpLimit() as (typeof WARPS)[number]);
       const { body, altitude } = this.nearest();
-      if (altitude < 3_000) limit = WARPS.indexOf(10);
-      else if (altitude < 30_000 || altitude < body.atmosphere) limit = WARPS.indexOf(50);
+      if (altitude < 3_000) limit = Math.min(limit, WARPS.indexOf(10));
+      else if (altitude < 30_000 || altitude < body.atmosphere)
+        limit = Math.min(limit, WARPS.indexOf(50));
       // Nahe der Station nicht vorbeirasen.
       const ti = this.target === 'station' ? this.targetInfo() : null;
       if (ti && ti.distance < 5_000) limit = Math.min(limit, WARPS.indexOf(10));
     }
     // Pro Bild höchstens etwa 1500 Rechenschritte – sonst ruckelt es nahe großer Körper.
-    const step = this.stepEstimate();
-    while (limit > 0 && WARPS[limit]! / 60 > step * 1500) limit--;
-    // Vor einem Aufprall (oder dem Eintauchen in eine Atmosphäre) automatisch abbremsen:
+    // Auf Schienen (Kepler-Bahn) gibt es diese Grenze nicht.
+    if (!this.railsBody()) {
+      const step = this.stepEstimate();
+      while (limit > 0 && WARPS[limit]! / 60 > step * 1500) limit--;
+    }
+    // Vor dem Brennen eines Manövers abbremsen.
+    if (this.node && !this.node.frozen) {
+      const left = this.nodeBurnStart() - this.t;
+      while (limit > 0 && WARPS[limit]! / 60 > Math.max(left, 0) / 10) limit--;
+    }
+    // Vor einem Aufprall (oder dem Eintauchen in eine Atmosphäre), vor dem Eintritt in eine
+    // Hill-Sphäre und vor dem tiefsten Punkt eines Vorbeiflugs automatisch abbremsen:
     // mindestens zehn Bilder bis dahin.
     if (this.status === 'flying') {
-      const ttc = this.timeToSurface();
+      const ttc = Math.min(this.timeToSurface(), this.timeToEvent());
       while (limit > 0 && WARPS[limit]! / 60 > ttc / 10) limit--;
     }
     return limit;
   }
 
-  /** Geschätzte Zeit bis zum Boden bzw. bis zur Atmosphäre des nächsten Körpers (∞ = steigt). */
+  /**
+   * Zeit bis zum Boden bzw. bis zur Atmosphäre des nächsten Körpers (∞ = kein Aufprall). Aus der
+   * Kepler-Bahn: Eine Umlaufbahn über der Atmosphäre bremst den Zeitraffer also nicht.
+   */
   timeToSurface(): number {
     let best = Infinity;
     for (const b of BODIES) {
       const c = this.state(b);
       const rx = this.x - c.x;
       const ry = this.y - c.y;
+      const vx = this.vx - c.vx;
+      const vy = this.vy - c.vy;
       const r = Math.hypot(rx, ry);
-      const radial = ((this.vx - c.vx) * rx + (this.vy - c.vy) * ry) / r;
-      if (radial >= 0) continue;
-      const h = r - b.radius - (b.atmosphere > 0 && r - b.radius > b.atmosphere ? b.atmosphere : 0);
-      // Freier Fall beschleunigt: t aus h = v·t + g/2·t²
-      const g = b.mu / (r * r);
-      const v = -radial;
-      const t = (-v + Math.sqrt(v * v + 2 * g * Math.max(h, 0))) / g;
-      best = Math.min(best, t);
+      const radial = (vx * rx + vy * ry) / r;
+      const top = b.radius + (b.atmosphere > 0 && r - b.radius > b.atmosphere ? b.atmosphere : 0);
+      if (r - top < 50) {
+        // In der Luft: freier Fall mit g aus h = v·t + g/2·t²
+        if (radial >= 0) continue;
+        const g = b.mu / (r * r);
+        const v = -radial;
+        best = Math.min(best, (-v + Math.sqrt(v * v + 2 * g * Math.max(r - b.radius, 0))) / g);
+        continue;
+      }
+      if (r > b.hill) continue;
+      const el = elements(b.mu, rx, ry, vx, vy, this.t);
+      if (el.p / (1 + el.e) > top) continue;
+      best = Math.min(best, timeToRadius(el, this.t, top));
     }
     return best;
+  }
+
+  /**
+   * Zeit bis zum nächsten Ereignis, bei dem man nicht vorbeirasen sollte: Eintritt in die
+   * Hill-Sphäre eines anderen Körpers oder der tiefste Punkt eines Vorbeiflugs.
+   */
+  timeToEvent(): number {
+    let best = Infinity;
+    const ref = this.refBody();
+    const o = ref === SUN ? null : this.orbit(ref);
+    // Gebunden an den Bezugskörper: nur dessen Monde, und nur, wenn die Bahn so weit hinausreicht.
+    const reach = o && o.bound ? o.apoapsis + ref.radius : Infinity;
+    for (const b of BODIES) {
+      if (b === SUN || b === ref) continue;
+      if (Number.isFinite(reach) && (b.parent !== ref.id || reach < b.distance - b.hill)) continue;
+      const c = this.state(b);
+      const rx = this.x - c.x;
+      const ry = this.y - c.y;
+      const d = Math.hypot(rx, ry);
+      if (d < b.hill) continue;
+      const closing = -((this.vx - c.vx) * rx + (this.vy - c.vy) * ry) / d;
+      if (closing > 0) best = Math.min(best, (d - b.hill) / closing);
+    }
+    if (ref !== SUN) {
+      const el = this.elements(ref);
+      if (el.e >= 1) best = Math.min(best, timeToPeriapsis(el, this.t));
+    }
+    return best;
+  }
+
+  /**
+   * „Auf Schienen“: Bei hohem Zeitraffer fliegt eine stabile Umlaufbahn (weit innerhalb der
+   * Hill-Sphäre, über der Atmosphäre) als exakte Kepler-Ellipse – wie in großen Raumfahrtspielen.
+   * Die Störungen durch andere Körper sind dort winzig; dafür läuft die Zeit beliebig schnell.
+   */
+  private railsBody(): Body | null {
+    if (this.status !== 'flying' || this.thrusting) return null;
+    if (this.rcs && (this.translate.x || this.translate.y)) return null;
+    const ref = this.refBody();
+    if (ref === SUN) return null;
+    const o = this.orbit(ref);
+    if (!o.bound || o.apoapsis + ref.radius > 0.1 * ref.hill) return null;
+    if (o.periapsis < Math.max(ref.atmosphere, 10_000)) return null;
+    return ref;
+  }
+
+  private rails(ref: Body, dt: number): void {
+    const el = this.elements(ref);
+    this.t += dt;
+    const [x, y, vx, vy] = stateAt(el, this.t);
+    const [bx, by, bvx, bvy] = bodyState(ref, this.t);
+    this.x = bx + x;
+    this.y = by + y;
+    this.vx = bvx + vx;
+    this.vy = bvy + vy;
   }
 
   private stepEstimate(): number {
@@ -687,8 +971,17 @@ export class Flight {
     return Math.max(0.02, 0.01 * tau);
   }
 
+  /** Zeitraffer von Hand wählen (beendet einen laufenden Zeitsprung). */
   setWarp(index: number): void {
+    this.warpTarget = null;
     this.warpIndex = Math.max(0, Math.min(index, this.maxWarpIndex()));
+  }
+
+  /** Automatisch bis zu einem Zeitpunkt vorspulen und dort auf 1× abbremsen. */
+  warpTo(t: number): boolean {
+    if (!(t > this.t + 0.5) || this.status === 'crashed' || !Number.isFinite(t)) return false;
+    this.warpTarget = t;
+    return true;
   }
 
   // ---------------------------------------------------------------- Steuerung
@@ -723,6 +1016,8 @@ export class Flight {
     this.vx += ax * 2;
     this.vy += ay * 2;
     this.emptyWarned = false;
+    this.shake = Math.max(this.shake, 0.35);
+    this.puff(this.x, this.y, 14);
     this.emit(
       'info',
       `Stufe abgetrennt – noch ${this.segs.length} Stufe${this.segs.length > 1 ? 'n' : ''}.`,
@@ -760,33 +1055,284 @@ export class Flight {
     this.emit('info', 'Abgelegt. Gute Reise!');
   }
 
+  /** Den obersten Satelliten aussetzen: Er fliegt danach allein auf seiner Kepler-Bahn weiter. */
+  deploySatellite(): boolean {
+    if (this.status !== 'flying') {
+      this.emit('info', 'Satelliten lassen sich nur im Flug aussetzen.');
+      return false;
+    }
+    const seg = this.segs.find((s) => s.parts.includes('satellit'));
+    if (!seg) {
+      this.emit('info', 'Kein Satellit an Bord.');
+      return false;
+    }
+    const ax = Math.cos(this.angle);
+    const ay = Math.sin(this.angle);
+    const top = this.length;
+    seg.parts.splice(seg.parts.indexOf('satellit'), 1);
+    // Mit Federn sanft nach vorn abgestoßen.
+    const sx = this.x + ax * (top + 0.5);
+    const sy = this.y + ay * (top + 0.5);
+    const svx = this.vx + ax * 0.6;
+    const svy = this.vy + ay * 0.6;
+    this.vx -= ax * 0.1;
+    this.vy -= ay * 0.1;
+    this.shake = Math.max(this.shake, 0.12);
+    const ref = dominantBody(sx, sy, this.t);
+    const [bx, by, bvx, bvy] = bodyState(ref, this.t);
+    const el = elements(ref.mu, sx - bx, sy - by, svx - bvx, svy - bvy, this.t);
+    const { peri, apo } = apsides(el);
+    if (el.e >= 1) {
+      this.emit(
+        'warn',
+        `Satellit ausgesetzt – aber auf einer Fluchtbahn. Er verlässt ${ref.name} für immer.`,
+      );
+      return true;
+    }
+    if (peri - ref.radius < Math.max(ref.atmosphere, 1_000)) {
+      this.debris.push({
+        x: sx,
+        y: sy,
+        vx: svx,
+        vy: svy,
+        angle: this.angle,
+        spin: 0.2,
+        parts: ['satellit'],
+        age: 0,
+      });
+      this.emit(
+        'warn',
+        `Satellit ausgesetzt – doch seine Bahn führt in ${ref.atmosphere > 0 ? 'die Atmosphäre' : 'den Boden'}: Er stürzt ab. Erst eine stabile Umlaufbahn fliegen!`,
+      );
+      return true;
+    }
+    const n = this.satellites.length + 1;
+    this.satellites.push({ id: satId++, name: `Satellit ${n}`, body: ref.id, el });
+    if (this.satellites.length > MAX_SATELLITES) this.satellites.shift();
+    const km = (m: number): string =>
+      `${Math.round((m - ref.radius) / 1000).toLocaleString('de-DE')} km`;
+    this.emit(
+      'info',
+      `Satellit ${n} kreist jetzt um ${ref.name}: ${km(peri)} bis ${km(apo)} hoch.`,
+    );
+    this.satelliteGoals();
+    return true;
+  }
+
+  private satelliteGoals(): void {
+    const around = (b: BodyId): Satellite[] => this.satellites.filter((s) => s.body === b);
+    const earth = around('earth');
+    if (earth.length) this.goal('satellite');
+    if (earth.some((s) => apsides(s.el).peri - EARTH.radius > 2_000_000)) this.goal('highsat');
+    if (earth.length >= 3) this.goal('network');
+    if (around('moon').length) this.goal('moonsat');
+    if (this.satellites.some((s) => !['earth', 'moon', 'sun'].includes(s.body)))
+      this.goal('planetsat');
+  }
+
+  // ---------------------------------------------------------------- Manöver
+
+  /** Neues Manöver planen (ersetzt ein altes). */
+  setNode(t: number, prograde = 0, radial = 0): void {
+    this.node = {
+      t: Math.max(t, this.t + 1),
+      prograde,
+      radial,
+      dx: 0,
+      dy: 0,
+      doneP: 0,
+      doneR: 0,
+      frozen: false,
+      energy: null,
+      ref: this.refBody().id,
+      at: null,
+    };
+    this.refreshNode();
+  }
+
+  /** Manöver ändern (nur solange noch nicht gebrannt wird). */
+  editNode(change: { t?: number; prograde?: number; radial?: number }): void {
+    const n = this.node;
+    if (!n || n.frozen) return;
+    if (change.prograde !== undefined) n.prograde = change.prograde;
+    if (change.radial !== undefined) n.radial = change.radial;
+    if (change.t !== undefined && change.t !== n.t) {
+      n.t = Math.max(change.t, this.t + 1);
+      n.at = null;
+    }
+    this.refreshNode();
+  }
+
+  clearNode(): void {
+    this.node = null;
+    if (this.sas === 'maneuver') this.sas = 'off';
+  }
+
+  /** Schubvektor des Manövers aus dem Zustand zur Manöverzeit berechnen. */
+  refreshNode(): void {
+    const n = this.node;
+    if (!n || n.frozen) return;
+    if (!n.at) {
+      const s: Coast = { x: this.x, y: this.y, vx: this.vx, vy: this.vy, t: this.t };
+      if (this.status === 'flying' && n.t > s.t && !coastTo(s, n.t, 200_000)) return;
+      n.at = [s.x, s.y, s.vx, s.vy];
+    }
+    const [x, y, vx, vy] = n.at;
+    const b = dominantBody(x, y, n.t);
+    const [px, py, qx, qy] = nodeFrame(b, x, y, vx, vy, n.t);
+    n.dx = n.prograde * px + n.radial * qx;
+    n.dy = n.prograde * py + n.radial * qy;
+    n.ref = b.id;
+  }
+
+  /** Noch zu brennendes Δv des Manövers, als Richtung im jetzigen Bezugssystem (Welt). */
+  nodeRemaining(): { x: number; y: number; mag: number; prograde: number; radial: number } {
+    const n = this.node;
+    if (!n) return { x: 0, y: 0, mag: 0, prograde: 0, radial: 0 };
+    let p = n.prograde - n.doneP;
+    const r = n.radial - n.doneR;
+    const b = bodyById(n.ref);
+    if (n.frozen && n.energy !== null && Math.abs(p) <= Math.abs(n.prograde) * 1.15 + 5) {
+      // Fehlendes Δv aus der Energie: ΔE ≈ v·Δv.
+      const rel = this.relative(b);
+      const v = Math.hypot(rel.vx, rel.vy);
+      const e = (v * v) / 2 - b.mu / rel.r;
+      p = (n.energy - e) / Math.max(v, 1);
+    }
+    const [px, py, qx, qy] = nodeFrame(b, this.x, this.y, this.vx, this.vy, this.t);
+    return {
+      x: p * px + r * qx,
+      y: p * py + r * qy,
+      mag: Math.hypot(p, r),
+      prograde: p,
+      radial: r,
+    };
+  }
+
+  /** Wann das Brennen beginnen sollte (Mitte des Brennens = Manöverzeit). */
+  nodeBurnStart(): number {
+    const n = this.node;
+    if (!n) return Infinity;
+    const bt = this.burnTime(Math.hypot(n.dx, n.dy));
+    return n.t - (Number.isFinite(bt) ? bt / 2 : 0);
+  }
+
+  private updateNode(): void {
+    const n = this.node;
+    if (!n) return;
+    if (!n.frozen && this.t >= this.nodeBurnStart() - 1) {
+      // Kurz vor dem Brennen den Schubvektor aus dem jetzigen Zustand genau bestimmen.
+      n.at = null;
+      this.refreshNode();
+      n.frozen = true;
+      // (refreshNode hat `at` gerade neu gesetzt.)
+      const at = n.at as ManeuverNode['at'];
+      if (at && Math.abs(n.radial) < 0.25 * Math.abs(n.prograde)) {
+        const b = bodyById(n.ref);
+        const [x, y, vx, vy] = at;
+        const [bx, by, bvx, bvy] = bodyState(b, n.t);
+        const v2 = (vx + n.dx - bvx) ** 2 + (vy + n.dy - bvy) ** 2;
+        n.energy = v2 / 2 - b.mu / Math.hypot(x - bx, y - by);
+      }
+    }
+    if (!n.frozen) return;
+    const left = this.nodeRemaining();
+    const rp = left.prograde;
+    const rr = left.radial;
+    const rem = left.mag;
+    const total = Math.hypot(n.prograde, n.radial);
+    const over = rp * n.prograde + rr * n.radial < 0;
+    // Kleine Kurskorrekturen brauchen viel mehr Genauigkeit als große Brennphasen.
+    const tolerance = Math.min(0.2, Math.max(0.004, total * 0.002));
+    if (total < 0.004 || rem < tolerance || over) {
+      this.node = null;
+      if (this.sas === 'maneuver') this.sas = 'off';
+      this.emit(
+        'info',
+        rem <= 1
+          ? `Manöver ausgeführt – auf ${rem.toLocaleString('de-DE', { maximumFractionDigits: rem < 0.1 ? 2 : 1 })} m/s genau.`
+          : `Manöver beendet, ${Math.round(rem)} m/s daneben.`,
+      );
+      if (rem <= 1 && total >= 5) this.goal('node');
+    }
+  }
+
   // ---------------------------------------------------------------- Simulation
 
   /** Rechnet `realDt` Sekunden Echtzeit (mal Zeitraffer) weiter. */
   update(realDt: number): void {
     realDt = Math.min(realDt, 0.1);
-    if (this.warpIndex > this.maxWarpIndex()) this.setWarp(this.maxWarpIndex());
-    if (this.status !== 'crashed') {
-      // Drehen: direkt gesteuert, mit kurzer Trägheit.
-      // Im Physik-Zeitraffer (bis 4×) dreht die Rakete mit, im schnellen Zeitraffer nicht.
-      const physics = this.warp <= WARP_LIMITED;
-      const target = this.status === 'flying' && physics ? this.turn * TURN_RATE : 0;
-      const dv = target - this.angVel;
-      const maxStep = TURN_ACCEL * realDt;
-      this.angVel += Math.max(-maxStep, Math.min(maxStep, dv));
-      if (this.status === 'flying' && physics)
-        this.angle = wrap(this.angle - this.angVel * realDt * this.warp);
-    }
+    this.driveWarpTo(realDt);
+    if (this.warpIndex > this.maxWarpIndex()) this.warpIndex = this.maxWarpIndex();
+    if (this.status !== 'crashed') this.rotate(realDt);
     let remaining = realDt * this.warp;
+    if (this.warpTarget !== null) remaining = Math.min(remaining, this.warpTarget - this.t);
+    const railsRef = this.warp >= 1000 ? this.railsBody() : null;
+    if (railsRef && remaining > 0) {
+      this.rails(railsRef, remaining);
+      remaining = 0;
+    }
     let guard = 0;
     while (remaining > 1e-9 && this.status !== 'crashed' && guard++ < 4_000) {
       remaining -= this.substep(remaining);
     }
     // Falls die Schrittgrenze erreicht wurde, läuft die Zeit einfach etwas langsamer.
+    if (this.warpTarget !== null && this.t >= this.warpTarget - 1e-6) {
+      this.warpTarget = null;
+      this.warpIndex = 0;
+    }
+    this.updateNode();
     this.updateDebris(realDt * this.warp);
     this.updateParticles(realDt);
-    if (this.status !== 'crashed' && this.thrusting && this.warp <= WARP_LIMITED) this.exhaust();
+    this.shake = Math.max(0, this.shake - realDt * 1.4);
+    this.flash = Math.max(0, this.flash - realDt * 1.8);
+    if (this.status !== 'crashed' && this.thrusting && this.warp <= 10) this.exhaust();
     this.checkGoals();
+  }
+
+  private driveWarpTo(realDt: number): void {
+    if (this.warpTarget === null) return;
+    if (this.thrusting || this.status === 'crashed') {
+      this.warpTarget = null;
+      return;
+    }
+    const left = this.warpTarget - this.t;
+    if (left <= 1e-3) {
+      this.warpTarget = null;
+      this.warpIndex = 0;
+      return;
+    }
+    let i = this.maxWarpIndex();
+    // Kurz vor dem Ziel stufenweise abbremsen.
+    while (i > 0 && WARPS[i]! * Math.max(realDt, 1 / 60) > left / 3) i--;
+    this.warpIndex = i;
+  }
+
+  /** Drehen: von Hand oder durch das SAS, mit kurzer Trägheit. */
+  private rotate(realDt: number): void {
+    const flying = this.status === 'flying';
+    // Im Physik-Zeitraffer dreht die Rakete mit, im schnellen Zeitraffer nicht.
+    const limit = this.thrusting ? this.burnWarpLimit() : WARP_LIMITED;
+    const rotates = flying && this.warp <= limit;
+    let cmd = flying ? this.turn * (this.fine ? 0.3 : 1) : 0;
+    if (flying && this.turn === 0 && this.sas !== 'off') {
+      const dir = this.sasDirection();
+      if (dir !== null) {
+        if (rotates) {
+          const err = wrap(this.angle - dir);
+          cmd = clamp((err * 2.5) / Math.max(1, this.warp) - this.angVel * 0.9, -1, 1);
+        } else {
+          this.angle = dir;
+          this.angVel = 0;
+        }
+      }
+    }
+    if (this.turn !== 0 && this.sas === 'point') this.sas = 'off';
+    const target = rotates ? cmd * TURN_RATE : 0;
+    const dv = target - this.angVel;
+    const maxStep = TURN_ACCEL * realDt;
+    this.angVel += clamp(dv, -maxStep, maxStep);
+    if (rotates) this.angle = wrap(this.angle - this.angVel * realDt * this.warp);
   }
 
   private substep(maxDt: number): number {
@@ -807,11 +1353,12 @@ export class Flight {
       if (accel > g * 1.02) {
         this.status = 'flying';
         this.landedOn = null;
+        if (this.stats.liftoff === null) this.stats.liftoff = this.t;
       } else {
         const dt = Math.min(maxDt, burning ? 0.02 : maxDt);
         if (burning) this.burn(flow * this.throttle * dt);
         this.t += dt;
-        const local = spin(body, this.t) + this.landAngle;
+        const local = bodySpin(body, this.t) + this.landAngle;
         const c = this.state(body);
         this.x = c.x + body.radius * Math.cos(local);
         this.y = c.y + body.radius * Math.sin(local);
@@ -849,6 +1396,24 @@ export class Flight {
       ty += RCS_ACCEL * (this.translate.y * ay - this.translate.x * ax);
     }
     this.rk4(dt, tx, ty);
+    const push = Math.hypot(tx, ty);
+    if (push > 0) {
+      this.stats.dvUsed += push * dt;
+      const n = this.node;
+      if (n?.frozen) {
+        const [px, py, qx, qy] = nodeFrame(
+          bodyById(n.ref),
+          this.x,
+          this.y,
+          this.vx,
+          this.vy,
+          this.t,
+        );
+        n.doneP += (tx * px + ty * py) * dt;
+        n.doneR += (tx * qx + ty * qy) * dt;
+      }
+    }
+    if (burning) this.stats.burnSeconds += dt;
 
     // Luftwiderstand implizit (stabil auch bei offenem Fallschirm), relativ zur Luft des Körpers.
     const air = this.air();
@@ -856,6 +1421,8 @@ export class Flight {
     const rvx = this.vx - bodyV.vx;
     const rvy = this.vy - bodyV.vy;
     const rv = Math.hypot(rvx, rvy);
+    this.stats.maxSpeed = Math.max(this.stats.maxSpeed, rv);
+    this.stats.distance += rv * dt;
     if (
       this.chute === 'armed' &&
       air.rho > 0.002 &&
@@ -863,6 +1430,7 @@ export class Flight {
       rv < CHUTE_MAX_SPEED
     ) {
       this.chute = 'open';
+      this.shake = Math.max(this.shake, 0.25);
       this.emit('info', 'Fallschirm offen!');
     }
     if (this.chute === 'open') {
@@ -874,23 +1442,37 @@ export class Flight {
       }
     }
     // Hitze beim Wiedereintritt: wächst mit Luftdichte und Tempo³, kühlt langsam ab.
-    const heating = air.rho > 0 ? (Math.sqrt(air.rho) * rv ** 3) / HEAT_SCALE : 0;
+    // Mit dem Hitzeschild voran kommt nur ein Viertel an.
+    this.shielded =
+      this.shieldAtBottom && rv > 1 && -(ax * rvx + ay * rvy) / rv > 0.5 && air.rho > 0;
+    const heating =
+      air.rho > 0
+        ? ((Math.sqrt(air.rho) * rv ** 3) / HEAT_SCALE) * (this.shielded ? SHIELD_FACTOR : 1)
+        : 0;
     this.heat = Math.max(0, this.heat + (heating - this.heat * HEAT_COOLING) * dt);
     this.maxHeat = Math.max(this.maxHeat, this.heat);
     if (this.heat >= 1) {
       this.fail(
-        'Beim Wiedereintritt verglüht – zu schnell in zu dichte Luft. Flacher eintauchen: tiefster Punkt eher 30 km als 10 km.',
+        this.shieldAtBottom
+          ? 'Beim Wiedereintritt verglüht – der Hitzeschild zeigte nicht nach vorn. Mit SAS „retrograd“ fliegt er voran.'
+          : 'Beim Wiedereintritt verglüht – zu schnell in zu dichte Luft. Flacher eintauchen (tiefster Punkt eher 30 km als 10 km) oder einen Hitzeschild einbauen.',
         bodyV,
       );
       return dt;
     }
+    let drag = 0;
     if (air.rho > 0) {
       const cda = ROCKET_CDA + (this.chute === 'open' ? CHUTE_CDA * this.chuteOpen : 0);
       const k = (0.5 * air.rho * cda) / mass;
       const f = 1 / (1 + k * rv * dt);
       this.vx = bodyV.vx + rvx * f;
       this.vy = bodyV.vy + rvy * f;
+      drag = (rv * (1 - f)) / dt;
     }
+    // Belastung in g: alles außer der Schwerkraft (die spürt man im freien Fall nicht).
+    const g = (push + drag) / G0;
+    this.gForce += (g - this.gForce) * Math.min(1, dt * 4);
+    this.stats.maxG = Math.max(this.stats.maxG, this.gForce);
     if (burning) this.burn(flow * this.throttle * dt);
 
     this.checkContact();
@@ -956,24 +1538,35 @@ export class Flight {
     if (body.solid && speed <= speedLimit && tilt <= tiltLimit) {
       this.status = 'landed';
       this.landedOn = body;
-      this.landAngle = up - spin(body, this.t);
+      this.landAngle = up - bodySpin(body, this.t);
       this.vx = c.vx;
       this.vy = c.vy;
       this.angle = up;
       this.angVel = 0;
       this.warpIndex = 0;
+      this.warpTarget = null;
       this.heat = 0;
+      this.stats.landings++;
+      this.puff(this.x, this.y, 20, 'dust');
       // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht.
       if (this.chute === 'open') {
         this.chute = 'none';
         this.chuteOpen = 0;
       }
       if (speed < 2) this.goal('soft');
+      if (this.maxHeat > 0.7) this.goal('fire');
       if (body === MOON) this.goal('moonland');
       else if (body === MARS) this.goal('marsland');
       else if (body === VENUS) this.goal('venusland');
       else if (body === PHOBOS) this.goal('phobos');
-      else if (body === EARTH && this.goals.has('moonland')) this.goal('return');
+      else if (body === MERCURY) this.goal('mercuryland');
+      else if (body === EUROPA) this.goal('europaland');
+      else if (body === EARTH) {
+        if (this.goals.has('moonland')) this.goal('return');
+        if (this.goals.has('marsland')) this.goal('marsreturn');
+        if (this.goals.has('orbit') && EARTH.radius * Math.abs(wrap(up - Math.PI / 2)) < 5_000)
+          this.goal('pinpoint');
+      }
       if (!this.events.length || this.events[this.events.length - 1]!.kind !== 'goal')
         this.emit('info', `Gelandet auf: ${body.name}, mit ${speed.toFixed(1)} m/s. Gut gemacht!`);
       return;
@@ -990,13 +1583,41 @@ export class Flight {
     this.fail(reason, c);
   }
 
-  /** Flug scheitert: Explosion, Meldung, alles aus. */
+  /** Flug scheitert: Explosion, Trümmer, Meldung, alles aus. */
   private fail(reason: string, c: { vx: number; vy: number }): void {
     this.status = 'crashed';
     this.warpIndex = 0;
+    this.warpTarget = null;
     this.throttle = 0;
     this.crashReason = reason;
-    this.explode(this.x, this.y, c.vx, c.vy, 70);
+    this.shake = 1;
+    this.flash = 1;
+    // Die Teile fliegen auseinander.
+    const { body } = this.nearest();
+    const bc = this.state(body);
+    const ux = (this.x - bc.x) / (Math.hypot(this.x - bc.x, this.y - bc.y) || 1);
+    const uy = (this.y - bc.y) / (Math.hypot(this.x - bc.x, this.y - bc.y) || 1);
+    const ax = Math.cos(this.angle);
+    const ay = Math.sin(this.angle);
+    let h = 0;
+    const parts = this.segs.flatMap((s) => s.parts).reverse();
+    for (const id of parts.slice(0, 14)) {
+      const a = this.random() * Math.PI * 2;
+      const s = 6 + this.random() * 22;
+      this.debris.push({
+        x: this.x + ax * h + ux * 1,
+        y: this.y + ay * h + uy * 1,
+        vx: c.vx + Math.cos(a) * s + ux * (6 + this.random() * 14),
+        vy: c.vy + Math.sin(a) * s + uy * (6 + this.random() * 14),
+        angle: this.angle + (this.random() - 0.5),
+        spin: (this.random() - 0.5) * 5,
+        parts: [id],
+        age: 0,
+      });
+      h += part(id).height;
+    }
+    this.segs = [{ parts: [], fuel: 0 }];
+    this.explode(this.x, this.y, c.vx, c.vy, 90);
     this.emit('fail', reason);
   }
 
@@ -1014,7 +1635,9 @@ export class Flight {
     this.status = 'docked';
     this.throttle = 0;
     this.warpIndex = 0;
+    this.warpTarget = null;
     this.translate = { x: 0, y: 0 };
+    this.shake = Math.max(this.shake, 0.18);
     this.attachToStation();
     this.goal('dock');
   }
@@ -1035,16 +1658,16 @@ export class Flight {
 
   // ---------------------------------------------------------------- Ziele und Ereignisse
 
-  private emit(kind: FlightEvent['kind'], text: string, title?: string): void {
-    this.events.push({ id: eventId++, kind, text, title });
+  private emit(kind: FlightEvent['kind'], text: string, title?: string, goal?: GoalId): void {
+    this.events.push({ id: eventId++, kind, text, title, goal });
     if (this.events.length > 30) this.events.shift();
   }
 
   private goal(id: GoalId): void {
     if (this.goals.has(id)) return;
     this.goals.add(id);
-    const g = GOALS.find((x) => x.id === id)!;
-    this.emit('goal', g.text, `★ ${g.title} · +${g.points} Punkte`);
+    const g = goalById(id);
+    this.emit('goal', g.text, `★ ${g.title} · +${g.points} Punkte`, id);
   }
 
   private checkGoals(): void {
@@ -1071,6 +1694,8 @@ export class Flight {
       this.goal('escape');
       const [sx, sy] = bodyState(SUN, this.t);
       if (Math.hypot(this.x - sx, this.y - sy) < VENUS.distance) this.goal('sunclose');
+    } else if (ref === MERCURY) {
+      this.goal('mercury');
     } else if (ref === VENUS) {
       this.goal('venus');
     } else if (ref === MARS || ref === PHOBOS) {
@@ -1078,8 +1703,12 @@ export class Flight {
       const o = this.orbit(MARS);
       if (o.bound && o.periapsis > MARS.atmosphere && o.apoapsis + MARS.radius < MARS.hill)
         this.goal('marsorbit');
-    } else if (ref === JUPITER) {
+    } else if (ref === JUPITER || ref === EUROPA) {
       this.goal('jupiter');
+      if (ref === EUROPA) this.goal('europa');
+      const o = this.orbit(JUPITER);
+      if (o.bound && o.periapsis > JUPITER.atmosphere && o.apoapsis + JUPITER.radius < JUPITER.hill)
+        this.goal('jupiterorbit');
     }
   }
 
@@ -1098,52 +1727,102 @@ export class Flight {
   private exhaust(): void {
     const ax = Math.cos(this.angle);
     const ay = Math.sin(this.angle);
-    const air = this.air().rho;
-    const n = air > 0.01 ? 3 : 1;
+    const air = this.air();
+    const thick = air.rho > 0.01;
+    const n = thick ? 3 : 1;
+    const f = part([...this.active.parts].reverse().find((id) => part(id).thrust > 0) ?? 'falke');
+    if (f.flame === 'ionen') return;
     for (let i = 0; i < n; i++) {
       const spread = (this.random() - 0.5) * 14;
+      const speed = 40 + this.random() * 30;
       this.particles.push({
         x: this.x - ax * 2,
         y: this.y - ay * 2,
-        vx: this.vx - ax * 30 - ay * spread,
-        vy: this.vy - ay * 30 + ax * spread,
+        vx: this.vx - ax * speed - ay * spread,
+        vy: this.vy - ay * speed + ax * spread,
         life: 0,
-        max: air > 0.01 ? 2.5 + this.random() * 1.5 : 0.5,
+        max: thick ? 3 + this.random() * 2.5 : 0.5,
         size: 2.5 + this.random() * 2,
-        kind: air > 0.01 ? 'smoke' : 'spark',
+        kind: thick ? 'smoke' : 'spark',
       });
     }
-    if (this.particles.length > 700) this.particles.splice(0, this.particles.length - 700);
+    // Der Strahl trifft auf den Boden: Staub und Rauch quellen zur Seite.
+    if (air.altitude < 60 + this.length && air.body.solid) {
+      const c = this.state(air.body);
+      const r = Math.hypot(this.x - c.x, this.y - c.y) || 1;
+      const ux = (this.x - c.x) / r;
+      const uy = (this.y - c.y) / r;
+      const gx = c.x + ux * air.body.radius;
+      const gy = c.y + uy * air.body.radius;
+      const k = this.throttle * (1 - air.altitude / (60 + this.length));
+      for (let i = 0; i < 3; i++) {
+        if (this.random() > k) continue;
+        const side = this.random() < 0.5 ? -1 : 1;
+        const s = 15 + this.random() * 55;
+        this.particles.push({
+          x: gx + uy * side * 3,
+          y: gy - ux * side * 3,
+          vx: c.vx + uy * side * s + ux * this.random() * 8,
+          vy: c.vy - ux * side * s + uy * this.random() * 8,
+          life: 0,
+          max: 3 + this.random() * 3,
+          size: 4 + this.random() * 4,
+          kind: 'dust',
+        });
+      }
+    }
+    if (this.particles.length > 900) this.particles.splice(0, this.particles.length - 900);
+  }
+
+  /** Kleine Wolke (Stufentrennung, Landung). */
+  private puff(x: number, y: number, n: number, kind: Particle['kind'] = 'spark'): void {
+    for (let i = 0; i < n; i++) {
+      const a = this.random() * Math.PI * 2;
+      const s = 2 + this.random() * 10;
+      this.particles.push({
+        x,
+        y,
+        vx: this.vx + Math.cos(a) * s,
+        vy: this.vy + Math.sin(a) * s,
+        life: 0,
+        max: 0.6 + this.random() * 1.2,
+        size: 1.5 + this.random() * 2.5,
+        kind,
+      });
+    }
   }
 
   explode(x: number, y: number, vx: number, vy: number, n: number): void {
     for (let i = 0; i < n; i++) {
       const a = this.random() * Math.PI * 2;
-      const s = 5 + this.random() * 40;
+      const s = 5 + this.random() * 45;
       this.particles.push({
         x,
         y,
         vx: vx + Math.cos(a) * s,
         vy: vy + Math.sin(a) * s,
         life: 0,
-        max: 0.8 + this.random() * 1.8,
-        size: 2 + this.random() * 5,
-        kind: i % 3 === 0 ? 'smoke' : 'fire',
+        max: 0.8 + this.random() * 2.2,
+        size: 2 + this.random() * 6,
+        kind: i % 3 === 0 ? 'smoke' : i % 7 === 0 ? 'spark' : 'fire',
       });
     }
   }
 
   private updateParticles(dt: number): void {
-    const bx = this.status === 'crashed' ? 0 : this.vx;
-    const by = this.status === 'crashed' ? 0 : this.vy;
+    // Rauch und Staub bremsen gegen die Luft des nächsten Körpers ab – so entsteht eine Spur.
+    const near = this.air();
+    const c = this.state(near.body);
+    const thick = near.rho > 0.002;
     for (const p of this.particles) {
       p.life += dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      const drag = p.kind === 'smoke' ? 1.2 : 0.4;
-      // Teilchen gleichen sich langsam der Rakete bzw. dem Boden an.
-      p.vx += (bx - p.vx) * Math.min(1, drag * dt * 0.3);
-      p.vy += (by - p.vy) * Math.min(1, drag * dt * 0.3);
+      const drag =
+        p.kind === 'smoke' ? 2.2 : p.kind === 'dust' ? 1.6 : p.kind === 'fire' ? 1.4 : 0.1;
+      const k = Math.min(1, drag * dt * (thick || p.kind === 'dust' ? 1 : 0.15));
+      p.vx += (c.vx - p.vx) * k;
+      p.vy += (c.vy - p.vy) * k;
     }
     for (let i = this.particles.length - 1; i >= 0; i--)
       if (this.particles[i]!.life > this.particles[i]!.max) this.particles.splice(i, 1);
@@ -1165,7 +1844,7 @@ export class Flight {
         const [ax, ay] = gravity(d.x, d.y, t);
         d.vx += ax * dt;
         d.vy += ay * dt;
-        const rho = airDensity(Math.hypot(d.x, d.y) - EARTH.radius);
+        const rho = densityAt(EARTH, Math.hypot(d.x, d.y) - EARTH.radius);
         if (rho > 0) {
           const f = 1 / (1 + ((0.5 * rho * 3) / 2000) * Math.hypot(d.vx, d.vy) * dt);
           d.vx *= f;
@@ -1178,7 +1857,8 @@ export class Flight {
         for (const b of BODIES) {
           const [bx, by] = bodyState(b, t);
           if (Math.hypot(d.x - bx, d.y - by) < b.radius) {
-            if (simDt < 1) this.explode(d.x, d.y, 0, 0, 25);
+            const [, , bvx, bvy] = bodyState(b, t);
+            if (simDt < 1) this.explode(d.x, d.y, bvx, bvy, 18);
             gone = true;
             break;
           }
@@ -1196,141 +1876,204 @@ export class Flight {
   /**
    * Sagt die Bahn ohne Schub voraus – mit allen Körpern, also als echte Mehrkörperbahn.
    * Nahe anderer Körper weicht sie deshalb von einer Ellipse ab (Vorbeiflug, Einfang).
+   * Ein geplantes Manöver wird zu seiner Zeit angewendet; danach folgt die geplante Bahn.
    */
-  predict(maxPoints = 3000): Prediction {
+  predict(maxPoints = 3000, skipPre = false): Prediction {
     const xs = new Float64Array(maxPoints);
     const ys = new Float64Array(maxPoints);
+    const vxs = new Float64Array(maxPoints);
+    const vys = new Float64Array(maxPoints);
     const ts = new Float64Array(maxPoints);
     const ref = this.refBody();
-    const o = this.orbit(ref);
-    const YEAR = 2 * Math.PI * Math.sqrt(EARTH.distance ** 3 / SUN.mu);
-    let horizon: number;
-    if (o.bound) horizon = Math.min(1.02 * o.period, 3 * YEAR);
-    else if (ref !== SUN) {
-      // Auf Fluchtbahn: so weit rechnen, wie die neue Bahn um die Sonne (bzw. den Planeten) dauert.
-      const parent = ref.parent ? BODIES.find((b) => b.id === ref.parent)! : SUN;
-      const po = this.orbit(parent);
-      horizon = po.bound ? Math.min(1.02 * po.period, 3 * YEAR) : YEAR;
-      if (ref === EARTH || ref === MOON) horizon = Math.max(horizon, 12 * 86_400);
-    } else horizon = 3 * YEAR;
-    let { x, y, vx, vy, t } = this;
-    const t0 = t;
+    const s: Coast = { x: this.x, y: this.y, vx: this.vx, vy: this.vy, t: this.t };
+    const t0 = s.t;
     let n = 0;
-    let impact: Body | null = null;
-    let encounter: Encounter | null = null;
-    let closest: Prediction['closest'] = null;
     const push = (): void => {
-      xs[n] = x;
-      ys[n] = y;
-      ts[n] = t;
+      xs[n] = s.x;
+      ys[n] = s.y;
+      vxs[n] = s.vx;
+      vys[n] = s.vy;
+      ts[n] = s.t;
       n++;
     };
     push();
-    if (this.status !== 'flying') {
-      return {
-        xs,
-        ys,
-        ts,
-        n,
-        ref,
-        impact: null,
-        encounter: null,
-        closest: null,
-        low: -1,
-        high: -1,
-      };
+    const result: Prediction = {
+      xs,
+      ys,
+      vxs,
+      vys,
+      ts,
+      n,
+      ref,
+      impact: null,
+      encounter: null,
+      closest: null,
+      low: -1,
+      high: -1,
+      preEnd: -1,
+      nodeIndex: -1,
+      nodeRef: null,
+      planLow: -1,
+      planHigh: -1,
+    };
+    if (this.status !== 'flying') return result;
+
+    const node = this.node;
+    let pending = false;
+    let postStart = t0;
+    const applyNode = (): void => {
+      const nd = node!;
+      let dx: number;
+      let dy: number;
+      if (nd.frozen) {
+        const r = this.nodeRemaining();
+        dx = r.x;
+        dy = r.y;
+      } else {
+        nd.at = [s.x, s.y, s.vx, s.vy];
+        this.refreshNode();
+        dx = nd.dx;
+        dy = nd.dy;
+      }
+      s.vx += dx;
+      s.vy += dy;
+      result.nodeRef = dominantBody(s.x, s.y, s.t);
+    };
+    if (node) {
+      if (node.frozen || node.t <= s.t + 1e-6) {
+        // Das Brennen läuft (oder ist fällig): den Rest sofort anwenden.
+        applyNode();
+        result.preEnd = 0;
+        result.nodeIndex = 0;
+      } else pending = true;
     }
+    const preLimit = pending ? Math.min(node!.t - t0, horizonFor(s)) : 0;
+    // Für den Bordcomputer zählt nur die Bahn nach dem Manöver.
+    const preCap = skipPre ? 1 : Math.floor(maxPoints / 2);
+    let postHorizon = pending ? 0 : horizonFor(s);
+
     const others = BODIES.filter((b) => b !== ref && b.id !== ref.parent && b !== SUN);
     const inside = new Map<Body, boolean>();
     for (const b of others) {
-      const [bx, by] = bodyState(b, t);
-      inside.set(b, Math.hypot(x - bx, y - by) < b.hill);
+      const [bx, by] = bodyState(b, s.t);
+      inside.set(b, Math.hypot(s.x - bx, s.y - by) < b.hill);
     }
-    let minStation = Infinity;
-    while (n < maxPoints && t - t0 < horizon) {
-      let tau = Infinity;
-      for (const b of BODIES) {
-        const [bx, by] = bodyState(b, t);
-        tau = Math.min(tau, Math.sqrt(Math.hypot(x - bx, y - by) ** 3 / b.mu));
+    let minTarget = Infinity;
+    const target = this.target;
+    const targetBody = target && target !== 'station' ? bodyById(target) : null;
+
+    for (;;) {
+      if (pending) {
+        if (n >= preCap || s.t - t0 >= preLimit) {
+          // Bis zum Manöver ohne Speichern vorspulen.
+          result.preEnd = n - 1;
+          if (!coastTo(s, node!.t, 150_000)) break;
+          push();
+          applyNode();
+          vxs[n - 1] = s.vx;
+          vys[n - 1] = s.vy;
+          result.nodeIndex = n - 1;
+          pending = false;
+          postStart = s.t;
+          postHorizon = horizonFor(s);
+          continue;
+        }
+      } else if (n >= maxPoints || s.t - postStart >= postHorizon) break;
+
+      let dt = coastDt(s.x, s.y, s.t);
+      let hitNode = false;
+      if (pending && s.t + dt >= node!.t) {
+        dt = node!.t - s.t;
+        hitNode = true;
       }
-      const dt = Math.max(0.05, 0.02 * tau);
-      const [a1x, a1y] = gravity(x, y, t);
-      const [a2x, a2y] = gravity(x + (vx * dt) / 2, y + (vy * dt) / 2, t + dt / 2);
-      const v2x = vx + (a1x * dt) / 2;
-      const v2y = vy + (a1y * dt) / 2;
-      const [a3x, a3y] = gravity(x + (v2x * dt) / 2, y + (v2y * dt) / 2, t + dt / 2);
-      const v3x = vx + (a2x * dt) / 2;
-      const v3y = vy + (a2y * dt) / 2;
-      const [a4x, a4y] = gravity(x + v3x * dt, y + v3y * dt, t + dt);
-      const v4x = vx + a3x * dt;
-      const v4y = vy + a3y * dt;
-      x += (dt / 6) * (vx + 2 * v2x + 2 * v3x + v4x);
-      y += (dt / 6) * (vy + 2 * v2y + 2 * v3y + v4y);
-      vx += (dt / 6) * (a1x + 2 * a2x + 2 * a3x + a4x);
-      vy += (dt / 6) * (a1y + 2 * a2y + 2 * a3y + a4y);
-      t += dt;
+      if (dt > 1e-9) coastStep(s, dt);
       push();
+      const i = n - 1;
       for (const b of BODIES) {
-        const [bx, by] = bodyState(b, t);
-        if (Math.hypot(x - bx, y - by) < b.radius) impact = b;
+        const [bx, by] = bodyState(b, s.t);
+        if (Math.hypot(s.x - bx, s.y - by) < b.radius) result.impact = b;
       }
-      if (impact) break;
+      if (result.impact) break;
       for (const b of others) {
-        const [bx, by] = bodyState(b, t);
-        const d = Math.hypot(x - bx, y - by);
+        const [bx, by] = bodyState(b, s.t);
+        const d = Math.hypot(s.x - bx, s.y - by);
         const was = inside.get(b)!;
         const now = d < b.hill;
-        if (now && !was && !encounter)
-          encounter = { body: b, t, distance: d, index: n - 1, enter: n - 1, exit: n - 1 };
-        if (encounter?.body === b && now) {
-          encounter.exit = n - 1;
-          if (d < encounter.distance) {
-            encounter.distance = d;
-            encounter.t = t;
-            encounter.index = n - 1;
+        if (now && !was && !result.encounter)
+          result.encounter = { body: b, t: s.t, distance: d, index: i, enter: i, exit: i };
+        const enc = result.encounter;
+        if (enc?.body === b && now) {
+          enc.exit = i;
+          if (d < enc.distance) {
+            enc.distance = d;
+            enc.t = s.t;
+            enc.index = i;
           }
         }
         inside.set(b, now);
       }
-      if (this.target === 'station') {
-        const [sx, sy] = stationState(t);
-        const d = Math.hypot(x - sx, y - sy);
-        if (d < minStation) {
-          minStation = d;
-          closest = { t, distance: d, index: n - 1 };
+      // Nächste Annäherung ans Ziel – mit Manöver erst auf der geplanten Bahn.
+      if (target && (!node || !pending)) {
+        let d: number;
+        if (targetBody) {
+          const [bx, by] = bodyState(targetBody, s.t);
+          d = Math.hypot(s.x - bx, s.y - by) - targetBody.radius;
+        } else {
+          const [sx, sy] = stationState(s.t);
+          d = Math.hypot(s.x - sx, s.y - sy);
+        }
+        if (d < minTarget) {
+          minTarget = d;
+          result.closest = { t: s.t, distance: d, index: i };
         }
       }
-    }
-    // Tiefster und höchster Punkt relativ zum Bezugskörper, solange die Bahn in seiner Hill-Sphäre bleibt.
-    let low = -1;
-    let high = -1;
-    let lowD = Infinity;
-    let highD = -Infinity;
-    let last = n;
-    for (let i = 1; i < n; i++) {
-      const [cx, cy] = bodyState(ref, ts[i]!);
-      const d = Math.hypot(xs[i]! - cx, ys[i]! - cy);
-      if (d > ref.hill) {
-        last = i;
-        break;
-      }
-      if (d < lowD) {
-        lowD = d;
-        low = i;
-      }
-      if (d > highD) {
-        highD = d;
-        high = i;
+      if (hitNode) {
+        applyNode();
+        vxs[i] = s.vx;
+        vys[i] = s.vy;
+        result.preEnd = i;
+        result.nodeIndex = i;
+        pending = false;
+        postStart = s.t;
+        postHorizon = horizonFor(s);
       }
     }
-    // Nur echte Extrempunkte (nicht Anfang oder Ende der Vorhersage) markieren.
-    if (low >= last - 2 && !impact) low = -1;
-    if (impact && low === n - 1) low = -1;
-    if (high >= last - 2) high = -1;
-    return { xs, ys, ts, n, ref, impact, encounter, closest, low, high };
+    result.n = n;
+    // Tiefster und höchster Punkt – vor dem Manöver relativ zum jetzigen Bezugskörper, danach
+    // relativ zum Körper am Manöver.
+    const extremes = (from: number, to: number, body: Body): [number, number] => {
+      let low = -1;
+      let high = -1;
+      let lowD = Infinity;
+      let highD = -Infinity;
+      let last = to + 1;
+      for (let i = from + 1; i <= to; i++) {
+        const [cx, cy] = bodyState(body, ts[i]!);
+        const d = Math.hypot(xs[i]! - cx, ys[i]! - cy);
+        if (d > body.hill) {
+          last = i;
+          break;
+        }
+        if (d < lowD) {
+          lowD = d;
+          low = i;
+        }
+        if (d > highD) {
+          highD = d;
+          high = i;
+        }
+      }
+      // Nur echte Extrempunkte (nicht Anfang oder Ende der Vorhersage) markieren.
+      const endsInImpact = !!result.impact && to === n - 1;
+      if (low >= last - 2 && !endsInImpact) low = -1;
+      if (endsInImpact && low === n - 1) low = -1;
+      if (high >= last - 2) high = -1;
+      return [low, high];
+    };
+    if (result.nodeIndex >= 0 && result.nodeRef) {
+      if (result.preEnd > 0) [result.low, result.high] = extremes(0, result.preEnd, ref);
+      [result.planLow, result.planHigh] = extremes(result.nodeIndex, n - 1, result.nodeRef);
+    } else [result.low, result.high] = extremes(0, n - 1, ref);
+    return result;
   }
-}
-
-function airDensity(altitude: number): number {
-  return densityAt(EARTH, altitude);
 }

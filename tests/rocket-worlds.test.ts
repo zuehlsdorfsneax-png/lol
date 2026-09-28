@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { OrbitPilot, steerTo } from '../src/rocket/autopilot';
+import { LandingPilot, NodeExecutor, OrbitPilot } from '../src/rocket/autopilot';
+import { makePlan } from '../src/rocket/planner';
 import { Flight, WARPS, goalPoints, rankFor } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import {
@@ -12,9 +13,6 @@ import {
   angularRate,
   bodyState,
   dominantBody,
-  excessSpeed,
-  phaseLead,
-  requiredExcess,
   stationPort,
   stationState,
   transferWindow,
@@ -161,7 +159,7 @@ describe('Spielstand und Punkte', () => {
 });
 
 describe('Marsmission', () => {
-  it('Ares erreicht den Mars, schwenkt ein und landet', () => {
+  it('Ares: Bordcomputer plant den Transfer, schwenkt ein und landet auf dem Mars', () => {
     const f = new Flight(template('ares'));
     const pilot = new OrbitPilot();
     run(f, 4, () => {
@@ -170,114 +168,74 @@ describe('Marsmission', () => {
     });
     expect(f.goals.has('orbit')).toBe(true);
 
-    // Auf das Startfenster springen (die Erdumlaufbahn bleibt dabei erhalten).
-    const w = transferWindow(EARTH, MARS);
-    const rel = angularRate(EARTH) - angularRate(MARS);
-    const ideal = ((w.lead % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const gap =
-      (((phaseLead(EARTH, MARS, f.t) - ideal) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    f.t += gap / rel;
-
-    // Einen Umlauf lang Zündpunkte ausprobieren und den nehmen, der den Mars trifft.
-    const start = f.snapshot()!;
-    const o = f.orbit(EARTH);
-    let hit: ReturnType<Flight['snapshot']> = null;
-    const candidates: NonNullable<ReturnType<Flight['snapshot']>>[] = [];
-    const probe = Flight.restore(start);
-    for (let k = 0; k < 48; k++) {
-      candidates.push(probe.snapshot()!);
-      run(probe, 10, () => probe.t > start.t + ((k + 1) * o.period) / 48);
+    // Auf das Startfenster warten (Zeitsprung), dann den Transfer planen.
+    f.target = 'mars';
+    let plan = makePlan(f, 'transfer');
+    if (!plan.ok && plan.wait) {
+      f.warpTo(f.t + plan.wait - f.orbit(EARTH).period);
+      runFrames(f, () => f.warpTarget === null);
+      plan = makePlan(f, 'transfer');
     }
-    const vinf = requiredExcess(EARTH, MARS);
-    search: for (const factor of [1, 1.03, 0.98, 1.06]) {
-      for (const c of candidates) {
-        const g = Flight.restore(c);
-        run(g, 1, () => {
-          if (g.active.fuel <= 0 && g.segs.length > 1) g.stage();
-          steerTo(g, Math.atan2(g.vy, g.vx));
-          g.throttle = 1;
-          const r = g.relative(EARTH);
-          return excessSpeed(EARTH, r.rx, r.ry, r.vx, r.vy) > vinf * factor;
-        });
-        g.throttle = 0;
-        const p = g.predict();
-        if (p.encounter?.body === MARS && p.encounter.distance > MARS.radius * 1.05) {
-          hit = g.snapshot();
-          break search;
-        }
-      }
-    }
-    expect(hit).not.toBeNull();
-    const m = Flight.restore(hit!);
+    expect(plan.ok, plan.text).toBe(true);
+    expect(execute(f)).toBe('done');
+    // Kurskorrektur unterwegs: tiefster Punkt knapp über der Marsatmosphäre.
+    const fix = makePlan(f, 'correct');
+    if (fix.ok) expect(execute(f)).toBe('done');
+    const p = f.predict();
+    expect(p.encounter?.body).toBe(MARS);
 
     // Flug zum Mars im Zeitraffer
     expect(
       run(
-        m,
-        () => WARPS[m.maxWarpIndex()]!,
-        () => m.refBody() === MARS,
+        f,
+        () => WARPS[f.maxWarpIndex()]!,
+        () => f.refBody() === MARS,
       ),
     ).toBe(true);
-    expect(m.goals.has('escape')).toBe(true);
-    expect(m.goals.has('mars')).toBe(true);
+    expect(f.goals.has('escape')).toBe(true);
+    expect(f.goals.has('mars')).toBe(true);
 
-    // Am marsnächsten Punkt einschwenken, dann die Periapsis in die Atmosphäre legen
-    run(
-      m,
-      () => WARPS[m.maxWarpIndex()]!,
-      () => {
-        const r = m.relative(MARS);
-        return r.altitude < 1_500_000 || r.rx * r.vx + r.ry * r.vy > 0;
-      },
-    );
-    run(m, 1, () => {
-      if (m.active.fuel <= 0 && m.segs.length > 1) m.stage();
-      const r = m.relative(MARS);
-      steerTo(m, Math.atan2(-r.vy, -r.vx));
-      m.throttle = 1;
-      const o2 = m.orbit(MARS);
-      return o2.bound && o2.apoapsis < 0.3 * MARS.hill;
+    // Anflug noch einmal fein korrigieren, am tiefsten Punkt einschwenken, dann landen.
+    const approach = makePlan(f, 'correct');
+    if (approach.ok) expect(execute(f)).toBe('done');
+    expect(makePlan(f, 'circ-pe').ok).toBe(true);
+    expect(execute(f)).toBe('done');
+    expect(f.orbit(MARS).bound).toBe(true);
+    expect(f.goals.has('marsorbit')).toBe(true);
+    expect(makePlan(f, 'deorbit').ok).toBe(true);
+    expect(execute(f)).toBe('done');
+
+    // Fallschirm scharf, der Lande-Autopilot übernimmt den Rest.
+    while (f.segs.length > 1 && f.active.fuel <= 0) f.stage();
+    f.deployChute();
+    const lander = new LandingPilot();
+    runFrames(f, () => {
+      const ph = lander.update(f);
+      return ph === 'done' || ph === 'failed';
     });
-    expect(m.orbit(MARS).bound).toBe(true);
-    run(m, 1, () => {
-      if (m.active.fuel <= 0 && m.segs.length > 1) m.stage();
-      const r = m.relative(MARS);
-      steerTo(m, Math.atan2(-r.vy, -r.vx));
-      m.throttle = 1;
-      return m.orbit(MARS).periapsis < 12_000;
-    });
-    m.throttle = 0;
-    while (m.segs.length > 1 && m.active.fuel <= 0) m.stage();
-    m.deployChute();
-    run(
-      m,
-      () => (m.relative(MARS).altitude > 400_000 ? WARPS[m.maxWarpIndex()]! : 1),
-      () => {
-        if (m.relative(MARS).altitude > 400_000) return false;
-        if (m.segs.length > 1) m.stage();
-        const r = m.relative(MARS);
-        const ux = r.rx / r.r;
-        const uy = r.ry / r.r;
-        const radial = r.vx * ux + r.vy * uy;
-        const hx = r.vx - radial * ux;
-        const hy = r.vy - radial * uy;
-        const g = MARS.mu / r.r ** 2;
-        const amax = m.engine().thrust / m.mass;
-        if (Math.hypot(hx, hy) > 3) {
-          steerTo(m, Math.atan2(-hy, -hx));
-          m.throttle = 1;
-        } else {
-          steerTo(m, Math.atan2(uy, ux));
-          const need = (radial * radial - 4) / (2 * Math.max(r.altitude, 1)) + g;
-          m.throttle =
-            need > 0.7 * amax || r.altitude < 50 ? Math.min(1, Math.max(0, need / amax)) : 0;
-        }
-        return m.status !== 'flying';
-      },
-    );
-    expect(m.crashReason).toBe('');
-    expect(m.status).toBe('landed');
-    expect(m.landedOn).toBe(MARS);
-    expect(m.goals.has('marsland')).toBe(true);
+    expect(f.crashReason).toBe('');
+    expect(f.status, `${lander.phase}: ${lander.message}`).toBe('landed');
+    expect(f.landedOn).toBe(MARS);
+    expect(f.goals.has('marsland')).toBe(true);
   }, 240_000);
 });
+
+/** Bilder zu 1/60 s, ohne den Zeitraffer anzufassen (Zeitsprung und Autopiloten steuern ihn). */
+function runFrames(f: Flight, until: () => boolean, maxFrames = 400_000): boolean {
+  for (let i = 0; i < maxFrames; i++) {
+    if (until()) return true;
+    if (f.status === 'crashed') return false;
+    f.update(1 / 60);
+  }
+  return until();
+}
+
+function execute(f: Flight): string {
+  const x = new NodeExecutor();
+  runFrames(f, () => {
+    const p = x.update(f);
+    return p === 'done' || p === 'failed';
+  });
+  f.throttle = 0;
+  return x.phase;
+}
