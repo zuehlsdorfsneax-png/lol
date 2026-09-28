@@ -31,6 +31,7 @@ import {
   type MapHits,
 } from './mapdraw';
 import { applyRules, applySandbox, type SandboxSettings } from './sandbox';
+import { forTouch, isTouch } from './touch';
 import { Navball, SAS_MODES } from './Navball';
 import { ChallengeBrief, ChallengeResultView, FlightReport, FlightStatsTable } from './Overlays';
 import type { Design } from './parts';
@@ -220,7 +221,7 @@ function tipFor(f: Flight, pilot: string | null): string {
     return 'In der Umlaufbahn! Mit N setzt du einen Satelliten aus – er kreist danach allein weiter.';
   if (o.apoapsis > 0.5 * MOON_DISTANCE)
     return 'Unterwegs! Zeitraffer hoch (.) oder „Zeitsprung“ – er bremst vor dem Ziel von selbst ab.';
-  return 'Umlaufbahn geschafft! Wähle rechts ein Ziel: Station, Mond oder einen Planeten. Der Bordcomputer (B) plant den Weg.';
+  return 'Umlaufbahn geschafft! Wähle oben rechts ein Ziel: Station, Mond oder einen Planeten. Der Bordcomputer (B) plant den Weg.';
 }
 
 const MUTE_KEY = 'orbitlabor/rakete-ton-aus';
@@ -360,6 +361,7 @@ export function FlightScreen({
   const [report, setReport] = useState(false);
   /** Welche Menü-Aktion auf ein zweites Tippen wartet („Wirklich …?“). */
   const [confirm, setConfirm] = useState<'restart' | 'exit' | null>(null);
+  const [touch] = useState(isTouch);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [saved, setSaved] = useState<FlightSnapshot | null>(() => loadSnapshot(sandbox));
   const [toasts, setToasts] = useState<FlightEvent[]>([]);
@@ -1387,7 +1389,15 @@ export function FlightScreen({
     !(o.bound && o.periapsis > Math.max(ref.atmosphere, 5_000)) &&
     (!challenge || challenge.computer);
   const newGoals = [...f.goals].filter((g) => !startGoals.current.has(g));
-  const navSize = size.width < 640 ? 88 : size.width < 1000 ? 112 : 128;
+  // Im Querformat auf dem Handy ist wenig Höhe: dann eine kleine Lageanzeige.
+  const navSize =
+    size.height > 0 && size.height < 480
+      ? 76
+      : size.width < 640
+        ? 88
+        : size.width < 1000
+          ? 112
+          : 128;
   // Auf dem Handy stehen Meldungen unter dem Tipp, sonst links unter den Flugdaten.
   const phoneLayout = size.width > 0 && size.width < 760;
   const toastList = (
@@ -1636,8 +1646,12 @@ export function FlightScreen({
           <div class="hud-tip">
             {challenge && !pilotLabel
               ? // Tipps der Herausforderung, alle paar Sekunden der nächste
-                challenge.tips[Math.floor(performance.now() / 7000) % challenge.tips.length]
-              : tipFor(f, pilotLabel)}
+                (touch ? forTouch : (t: string) => t)(
+                  challenge.tips[Math.floor(performance.now() / 7000) % challenge.tips.length]!,
+                )
+              : touch
+                ? forTouch(tipFor(f, pilotLabel))
+                : tipFor(f, pilotLabel)}
           </div>
         )}
         {phoneLayout && toastList}
@@ -2084,18 +2098,26 @@ export function FlightScreen({
       {help && (
         <div class="rocket-overlay help" role="dialog" aria-label="Hilfe">
           <h3>Steuerung</h3>
-          <table class="table">
-            <tbody>
-              {HELP_ROWS.map(([keys, text]) => (
-                <tr key={text}>
-                  <td class="keys">
-                    <KeyCaps keys={keys} />
-                  </td>
-                  <td>{text}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {touch && (
+            <table class="table">
+              <tbody>
+                {TOUCH_ROWS.map(([what, how]) => (
+                  <tr key={what}>
+                    <th scope="row">{what}</th>
+                    <td>{how}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {touch ? (
+            <details class="help-keys">
+              <summary>Mit Tastatur</summary>
+              <KeyTable />
+            </details>
+          ) : (
+            <KeyTable />
+          )}
           <button type="button" class="btn primary" onClick={() => setHelp(false)}>
             Verstanden
           </button>
@@ -2202,6 +2224,37 @@ const HELP_ROWS: [string[] | string, string][] = [
   [['Esc', '/', 'H'], 'Menü (Pause, Speichern, Ton, Vollbild) / diese Hilfe'],
   ['Gamepad', 'Stick drehen, Trigger Schub, A Stufe, B Fallschirm, X RCS, Y Karte'],
 ];
+
+/** Bedienung mit dem Finger (Handy, Tablet). */
+const TOUCH_ROWS: [string, string][] = [
+  ['Drehen', 'Runde Pfeilknöpfe unten links gedrückt halten'],
+  ['Schub', 'Regler rechts hoch- und runterziehen; darunter „Vollgas“ und „Aus“'],
+  ['Start und Stufen', 'Großer Knopf rechts: vor dem Start „Start“, im Flug die nächste Stufe'],
+  ['Ausrichten', 'In der Flugansicht kurz gedrückt halten: Die Rakete zeigt dorthin'],
+  ['SAS', 'Knöpfe an der Lageanzeige: prograd, retrograd, radial, Ziel, Manöver'],
+  ['Zoomen', 'Mit zwei Fingern auseinander- oder zusammenziehen'],
+  ['Karte', 'Kartenknopf oben links; auf der Karte die Bahn antippen plant ein Manöver'],
+  ['Zeitraffer', 'Pfeile oben in der Mitte, der Doppelpfeil daneben springt vor'],
+  ['Ziel und Bordcomputer', 'Oben rechts'],
+  ['Menü', 'Knopf oben links: Pause, Speichern, Ton, Vollbild, Hilfe'],
+];
+
+function KeyTable() {
+  return (
+    <table class="table">
+      <tbody>
+        {HELP_ROWS.map(([keys, text]) => (
+          <tr key={text}>
+            <td class="keys">
+              <KeyCaps keys={keys} />
+            </td>
+            <td>{text}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 const KEY_JOINERS = new Set(['/', 'oder', 'und', 'dann', 'bis']);
 

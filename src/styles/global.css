@@ -2140,6 +2140,11 @@ details.section .section-body {
   gap: 10px;
 }
 
+/* Beide Knöpfe gleich breit, auf dem Handy untereinander */
+.launcher-actions .btn {
+  flex: 1 1 200px;
+}
+
 .btn.big {
   min-height: 48px;
   padding: 0 22px;
@@ -2228,6 +2233,16 @@ details.section .section-body {
 
 .doc-panel {
   max-width: 900px;
+}
+
+/* Auf dem Handy brechen die Reiter um, statt abgeschnitten zu werden. */
+@media (max-width: 640px) {
+  .doc-tabs .seg {
+    flex-wrap: wrap;
+  }
+  .doc-tabs .seg button {
+    flex: 1 1 auto;
+  }
 }
 
 .doc-panel .steps {

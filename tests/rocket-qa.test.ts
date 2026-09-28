@@ -3,6 +3,7 @@ import { OrbitPilot } from '../src/rocket/autopilot';
 import { Flight, type Satellite } from '../src/rocket/flight';
 import { TEMPLATES, checkDesign, stageStats } from '../src/rocket/parts';
 import { DEFAULT_SANDBOX, applySandbox } from '../src/rocket/sandbox';
+import { forTouch } from '../src/rocket/touch';
 import { EARTH, JUPITER, MARS, MOON, circularSpeed, stationState } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
@@ -223,5 +224,17 @@ describe('Werft (QA)', () => {
       checkDesign(heavy, rules).some((p) => p.text.startsWith('Zu schwer'));
     expect(heavyWarn()).toBe(true);
     expect(heavyWarn({ thrust: 1, infiniteFuel: false, body: MOON })).toBe(false);
+  });
+});
+
+describe('Touchscreen-Tipps (QA)', () => {
+  it('nennen keine Tasten, behalten aber Inhalte in Klammern', () => {
+    expect(forTouch('Fallschirm scharf (P), SAS retrograd (Taste 3).')).toBe(
+      'Fallschirm scharf, SAS retrograd.',
+    );
+    expect(forTouch('„Wiedereintritt“ (Pe 25 km)')).toBe('„Wiedereintritt“ (Pe 25 km)');
+    expect(forTouch('Schub hochziehen (W / ↑, Z = Vollgas) – los!')).toBe(
+      'Schub hochziehen – los!',
+    );
   });
 });

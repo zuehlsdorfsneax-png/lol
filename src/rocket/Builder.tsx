@@ -309,6 +309,8 @@ function Menu({
         class={`gbtn ${open ? 'on' : ''}`}
         aria-expanded={open}
         aria-haspopup="true"
+        aria-label={label}
+        title={label}
         onClick={() => setOpen(!open)}
       >
         <Icon name={icon} />
@@ -421,6 +423,8 @@ export function Builder({
               aria-selected={tab === t.id}
               class={tab === t.id ? 'on' : ''}
               onClick={() => onTab(t.id)}
+              aria-label={t.meta ? `${t.label} (${t.meta})` : t.label}
+              title={t.label}
             >
               <Icon name={t.icon} />
               <span class="gbtn-label">{t.label}</span>
