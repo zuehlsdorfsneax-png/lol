@@ -1,6 +1,7 @@
 /**
  * Herausforderungen: feste Rakete, feste Startsituation, klares Ziel und bis zu drei Sterne.
- * Von der Flugschule (erster Hüpfer, erste Umlaufbahn) bis zur Selbstmordbremsung auf dem Mars.
+ * Von der Flugschule (erster Hüpfer, erste Umlaufbahn) bis zum Bremsen in letzter Sekunde auf dem
+ * Mars.
  */
 import { apsides, bodySpin, satelliteState, type Flight } from './flight';
 import { km } from './format';
@@ -12,6 +13,8 @@ export interface ChallengeResult {
   success: boolean;
   stars: number;
   text: string;
+  /** Welche Stern-Bedingungen erfüllt sind (die erste: geschafft). */
+  met?: boolean[];
 }
 
 /** Merkzettel einer laufenden Herausforderung (z. B. seit wann das Triebwerk aus ist). */
@@ -53,8 +56,9 @@ function settled(f: Flight, memo: Memo, ok: boolean): boolean {
   return f.t - memo.since > 3;
 }
 
-function stars(...conditions: boolean[]): number {
-  return conditions.filter(Boolean).length;
+/** Sterne zählen – und festhalten, welche Bedingung erfüllt ist (sie sind oft unabhängig). */
+function stars(...conditions: boolean[]): { stars: number; met: boolean[] } {
+  return { stars: conditions.filter(Boolean).length, met: conditions };
 }
 
 /** Senkrecht über einem Körper, mit Tempo nach unten. */
@@ -107,7 +111,7 @@ export const CHALLENGES: readonly Challenge[] = [
         };
       return {
         success: true,
-        stars: stars(true, f.maxAltitude > 40_000, land.speed < 4),
+        ...stars(true, f.maxAltitude > 40_000, land.speed < 4),
         text: `${km(f.maxAltitude)} hoch, gelandet mit ${land.speed.toFixed(1)} m/s.`,
       };
     },
@@ -140,7 +144,7 @@ export const CHALLENGES: readonly Challenge[] = [
       const dv = f.deltaV();
       return {
         success: true,
-        stars: stars(true, dv > 1_000, o.apoapsis - o.periapsis < 15_000),
+        ...stars(true, dv > 1_000, o.apoapsis - o.periapsis < 15_000),
         text: `Ap ${km(o.apoapsis)}, Pe ${km(o.periapsis)}, noch ${Math.round(dv)} m/s Δv.`,
       };
     },
@@ -176,7 +180,7 @@ export const CHALLENGES: readonly Challenge[] = [
       if (!settled(f, memo, ok)) return null;
       return {
         success: true,
-        stars: stars(true, f.t < 3600, f.stats.dvUsed <= 560),
+        ...stars(true, f.t < 3600, f.stats.dvUsed <= 560),
         text: `Pe ${km(o.periapsis)}, Ap ${km(o.apoapsis)}, ${Math.round(f.stats.dvUsed)} m/s verbraucht.`,
       };
     },
@@ -210,7 +214,7 @@ export const CHALLENGES: readonly Challenge[] = [
       if (f.status !== 'docked') return null;
       return {
         success: true,
-        stars: stars(true, f.t < 3600, f.stats.dvUsed < 200),
+        ...stars(true, f.t < 3600, f.stats.dvUsed < 200),
         text: `Angedockt nach ${Math.round(f.t / 60)} min mit ${Math.round(f.stats.dvUsed)} m/s Δv.`,
       };
     },
@@ -262,7 +266,7 @@ export const CHALLENGES: readonly Challenge[] = [
       const even = gaps.every((g) => g > (100 * Math.PI) / 180);
       return {
         success: true,
-        stars: stars(true, high, even),
+        ...stars(true, high, even),
         text: `Kleinste Lücke ${Math.round((Math.min(...gaps) * 180) / Math.PI)}°, tiefster Satellit ${km(Math.min(...sats.map((s) => apsides(s.el).peri)) - EARTH.radius)}.`,
       };
     },
@@ -293,7 +297,7 @@ export const CHALLENGES: readonly Challenge[] = [
       const d = f.siteInfo()!.distance;
       return {
         success: true,
-        stars: stars(true, d <= 20_000, d <= 2_000),
+        ...stars(true, d <= 20_000, d <= 2_000),
         text: `Gelandet ${d < 10_000 ? `${Math.round(d)} m` : km(d)} neben der Basis.`,
       };
     },
@@ -307,7 +311,7 @@ export const CHALLENGES: readonly Challenge[] = [
   {
     id: 'suicide',
     group: 'Profi',
-    title: 'Selbstmordbremsung',
+    title: 'Bremsen in letzter Sekunde',
     brief: '12 km über dem Mars, 250 m/s nach unten, kein Fallschirm: Bremse im letzten Moment.',
     tips: [
       'Früh bremsen kostet Treibstoff – die Schwerkraft zieht die ganze Zeit.',
@@ -329,7 +333,7 @@ export const CHALLENGES: readonly Challenge[] = [
       const left = f.active.fuel / f.fuelCapacity;
       return {
         success: true,
-        stars: stars(true, left >= 0.5, left >= 0.7),
+        ...stars(true, left >= 0.5, left >= 0.7),
         text: `Gelandet mit ${pct(left)} Treibstoff.`,
       };
     },
@@ -337,7 +341,7 @@ export const CHALLENGES: readonly Challenge[] = [
   },
   {
     id: 'glider',
-    group: 'Profi',
+    group: 'Meister',
     title: 'Mars-Gleiter',
     brief:
       'Flacher Einflug in die dünne Marsluft mit 700 m/s. Luftbremsen und großer Fallschirm sparen Treibstoff – lande mit möglichst vollem Tank.',
@@ -366,7 +370,7 @@ export const CHALLENGES: readonly Challenge[] = [
       const left = f.active.fuel / f.fuelCapacity;
       return {
         success: true,
-        stars: stars(true, left >= 0.4, left >= 0.75),
+        ...stars(true, left >= 0.4, left >= 0.75),
         text: `Gelandet mit ${pct(left)} Treibstoff.`,
       };
     },
@@ -413,7 +417,7 @@ export const CHALLENGES: readonly Challenge[] = [
       if (f.status !== 'landed' || f.landedOn !== EARTH) return null;
       return {
         success: true,
-        stars: stars(true, f.maxHeat < 0.6, f.maxHeat < 0.35),
+        ...stars(true, f.maxHeat < 0.6, f.maxHeat < 0.35),
         text: `Gelandet! Höchste Hitze: ${pct(f.maxHeat)}.`,
       };
     },
@@ -459,7 +463,7 @@ export const CHALLENGES: readonly Challenge[] = [
       if (Math.abs(memo.start - d) < 500 && d > 250) return null;
       return {
         success: true,
-        stars: stars(true, d <= 250, d <= 50),
+        ...stars(true, d <= 250, d <= 50),
         text: `Gelandet ${Math.round(d)} m neben der Station.`,
       };
     },

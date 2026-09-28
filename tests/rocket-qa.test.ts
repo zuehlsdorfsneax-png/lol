@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { OrbitPilot } from '../src/rocket/autopilot';
 import { Flight, type Satellite } from '../src/rocket/flight';
-import { TEMPLATES } from '../src/rocket/parts';
+import { TEMPLATES, checkDesign, stageStats } from '../src/rocket/parts';
 import { DEFAULT_SANDBOX, applySandbox } from '../src/rocket/sandbox';
-import { EARTH, JUPITER, MARS, circularSpeed, stationState } from '../src/rocket/world';
+import { EARTH, JUPITER, MARS, MOON, circularSpeed, stationState } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 
@@ -190,5 +190,38 @@ describe('Spiellogik (QA)', () => {
     // Ohne Luft bliebe die Bahngeschwindigkeit fast gleich.
     expect(v1).toBeLessThan(v0 - 5);
     expect(circularSpeed(MARS, 5_000)).toBeGreaterThan(1_000);
+  });
+});
+
+describe('Werft (QA)', () => {
+  const chuteWarn = (d: string[]): boolean =>
+    checkDesign(d).some((p) => p.text.startsWith('Ohne Fallschirm'));
+
+  it('Fallschirm-Warnung kennt alle Kapseln und Schirme', () => {
+    expect(chuteWarn(['kapsel', 'tank-m', 'falke'])).toBe(true);
+    expect(chuteWarn(['kapsel-xl', 'tank-m', 'falke'])).toBe(true);
+    expect(chuteWarn(['fallschirm-xl', 'kapsel', 'tank-m', 'falke'])).toBe(false);
+    expect(chuteWarn(['sonde', 'tank-m', 'falke'])).toBe(false);
+  });
+
+  it('Sandkasten-Regeln ändern Schub, Δv und Startschwerkraft in der Werft', () => {
+    const d = ['kapsel', 'tank-m', 'falke'];
+    const base = stageStats(d)[0]!;
+    const fast = stageStats(d, { thrust: 10, infiniteFuel: false, body: EARTH })[0]!;
+    expect(fast.twrStart).toBeCloseTo(base.twrEarth * 10, 6);
+    expect(fast.deltaV).toBeCloseTo(base.deltaV, 6);
+    expect(fast.burnTime).toBeCloseTo(base.burnTime / 10, 6);
+    const endless = stageStats(d, { thrust: 1, infiniteFuel: true, body: EARTH })[0]!;
+    expect(endless.deltaV).toBe(Infinity);
+    const moon = stageStats(d, { thrust: 1, infiniteFuel: false, body: MOON })[0]!;
+    expect(moon.twrStart).toBeCloseTo(base.twrMoon, 6);
+  });
+
+  it('eine zu schwere Rakete hebt auf dem Mond ab – die Warnung passt sich an', () => {
+    const heavy = ['kapsel', 'tank-l', 'tank-l', 'kolibri'];
+    const heavyWarn = (rules?: Parameters<typeof checkDesign>[1]): boolean =>
+      checkDesign(heavy, rules).some((p) => p.text.startsWith('Zu schwer'));
+    expect(heavyWarn()).toBe(true);
+    expect(heavyWarn({ thrust: 1, infiniteFuel: false, body: MOON })).toBe(false);
   });
 });

@@ -1,5 +1,12 @@
 import { SaveStore } from '../engine';
 
+/** Bestes Ergebnis einer Herausforderung; `met` = je Stern-Bedingung, ob sie je erfüllt wurde. */
+export interface ChallengeRecord {
+  stars: number;
+  text: string;
+  met?: boolean[];
+}
+
 export interface Progress {
   /** Beste Sternezahl je Mission. */
   stars: Record<string, number>;
@@ -16,7 +23,7 @@ export interface Progress {
   /** Gewählte Lackierung der Raketen. */
   rocketPaint: string;
   /** Beste Sterne und Ergebnis je Herausforderung der Raketenwerft. */
-  rocketChallenges: Record<string, { stars: number; text: string }>;
+  rocketChallenges: Record<string, ChallengeRecord>;
   /** Ausgesetzte Satelliten (bleiben für spätere Flüge auf ihrer Bahn). */
   rocketSats: unknown[];
   /** Hinweise der Raketenwerft, die schon gezeigt wurden. */
@@ -47,4 +54,35 @@ export function recordStars(id: string, stars: number, best: string): Progress {
       ? { ...p, stars: { ...p.stars, [id]: stars }, best: { ...p.best, [id]: best } }
       : p;
   });
+}
+
+/** Spielstände der Raketenwerft (Schnellspeichern), die außerhalb des Fortschritts liegen. */
+const ROCKET_SAVES = ['orbitlabor/rakete-spielstand', 'orbitlabor/rakete-spielstand-sandkasten'];
+
+function removeKeys(keys: readonly string[]): void {
+  try {
+    for (const k of keys) localStorage.removeItem(k);
+  } catch {
+    // Ohne Speicherzugriff gibt es nichts zu löschen.
+  }
+}
+
+/** Karriere der Raketenwerft neu beginnen: Punkte, Sterne, Satelliten, Spielstände. */
+export function resetRocketCareer(): Progress {
+  removeKeys(ROCKET_SAVES);
+  return progressStore.update((p) => ({
+    ...p,
+    rocketGoals: [],
+    rocketChallenges: {},
+    rocketSats: [],
+    rocketSeen: [],
+    rocketPaint: 'klassisch',
+  }));
+}
+
+/** Allen Fortschritt der App löschen (Missionen, Quiz, Luna, Raketenwerft mit Hangar). */
+export function resetAllProgress(): Progress {
+  removeKeys(ROCKET_SAVES);
+  progressStore.clear();
+  return progressStore.load();
 }

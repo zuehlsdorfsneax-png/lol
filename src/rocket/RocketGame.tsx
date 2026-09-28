@@ -1,6 +1,6 @@
 import './game.css';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { progressStore } from '../missions/progress';
+import { progressStore, resetRocketCareer } from '../missions/progress';
 import { Builder } from './Builder';
 import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
 import { FlightScreen } from './FlightScreen';
@@ -53,6 +53,14 @@ function loadSats(): Satellite[] {
 }
 
 export type Tab = 'werft' | 'herausforderungen' | 'karriere';
+
+/** Welche Stern-Bedingungen einer Herausforderung schon einmal erfüllt wurden. */
+function bestMet(id: string): boolean[] {
+  const r = progressStore.load().rocketChallenges?.[id];
+  if (!r) return [false, false, false];
+  // Ältere Spielstände kennen nur die Anzahl der Sterne.
+  return r.met ?? [0, 1, 2].map((i) => i < r.stars);
+}
 
 /**
  * Das Spiel läuft als eigener Bildschirm über der ganzen App – wie ein richtiges Spiel.
@@ -156,15 +164,17 @@ export function RocketGame({
 
   const finishChallenge = (id: string, r: ChallengeResult): void => {
     if (!r.success) return;
-    setStars((old) => ({ ...old, [id]: Math.max(old[id] ?? 0, r.stars) }));
-    progressStore.update((p) => {
-      const old = p.rocketChallenges?.[id];
-      if (old && old.stars >= r.stars) return p;
-      return {
-        ...p,
-        rocketChallenges: { ...p.rocketChallenges, [id]: { stars: r.stars, text: r.text } },
-      };
-    });
+    // Jede Stern-Bedingung zählt für sich – auch wenn sie in verschiedenen Flügen erfüllt wurde.
+    const old = progressStore.load().rocketChallenges?.[id];
+    const oldMet = bestMet(id);
+    const met = [0, 1, 2].map((i) => !!(r.met?.[i] ?? i < r.stars) || !!oldMet[i]);
+    const count = Math.max(old?.stars ?? 0, met.filter(Boolean).length);
+    const text = !old || r.stars >= old.stars ? r.text : old.text;
+    setStars((s) => ({ ...s, [id]: count }));
+    progressStore.update((p) => ({
+      ...p,
+      rocketChallenges: { ...p.rocketChallenges, [id]: { stars: count, text, met } },
+    }));
   };
 
   const startChallenge = (c: Challenge): void => {
@@ -192,6 +202,7 @@ export function RocketGame({
           satellites={sats}
           challenge={challenge}
           bestStars={challenge ? (stars[challenge.id] ?? 0) : 0}
+          bestMet={challenge ? bestMet(challenge.id) : []}
           onGoal={reachGoal}
           onSatellites={saveFlightSats}
           onChallenge={finishChallenge}
@@ -226,6 +237,13 @@ export function RocketGame({
           sandboxSettings={sandboxSettings}
           onSandboxSettings={changeSandbox}
           onClose={onClose}
+          onResetCareer={() => {
+            resetRocketCareer();
+            setGoals([]);
+            setStars({});
+            setSats([]);
+            setPaintId('klassisch');
+          }}
         />
       )}
     </div>

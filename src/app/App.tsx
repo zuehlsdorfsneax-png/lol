@@ -2,6 +2,7 @@ import type { ComponentType } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { HomePage } from '../pages/HomePage';
 import { Icon, type IconName } from '../ui/Icon';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { usePersistentState } from '../ui/hooks';
 import { useTheme, type ThemeChoice } from '../ui/theme';
 import { CHAPTERS } from './content';
@@ -345,7 +346,9 @@ export function App() {
         </div>
       </nav>
       <main class="main" id="inhalt" ref={main} tabIndex={-1}>
-        <Page route={route} />
+        <ErrorBoundary key={`${route.page}-${route.param ?? ''}`} where="Diese Seite">
+          <Page route={route} />
+        </ErrorBoundary>
       </main>
     </div>
   );

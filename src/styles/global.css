@@ -756,6 +756,13 @@ svg {
   background: var(--surface-2);
 }
 
+/* Nachfrage vor Unumkehrbarem („Wirklich löschen?“) */
+.btn.danger,
+.btn.danger:hover {
+  border-color: var(--fail);
+  color: var(--fail);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -2356,4 +2363,40 @@ kbd {
   .grid-2.even {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* Fortschritt löschen (Missionen) */
+.reset-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.reset-box p {
+  margin: 0;
+  max-width: 62ch;
+}
+
+/* Fehler beim Zeichnen einer Seite oder des Spiels */
+.error-box {
+  display: grid;
+  gap: 10px;
+  max-width: 640px;
+  padding: 20px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--fail);
+  background: var(--surface);
+}
+
+.error-box h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.error-box p {
+  margin: 0;
 }

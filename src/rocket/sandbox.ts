@@ -1,4 +1,5 @@
 import type { Flight } from './flight';
+import type { BuildRules } from './parts';
 import {
   EARTH,
   EUROPA,
@@ -58,6 +59,8 @@ export interface StartOption {
   label: string;
   /** Gruppe in der Auswahl. */
   group: 'Erde' | 'Mond' | 'Planeten';
+  /** Körper am Startort (für die Werte in der Werft). */
+  body: Body;
   place: (f: Flight) => void;
 }
 
@@ -71,12 +74,19 @@ function landed(body: Body): (f: Flight) => void {
 }
 
 export const START_OPTIONS: readonly StartOption[] = [
-  { id: 'rampe', label: 'Startrampe', group: 'Erde', place: () => undefined },
-  { id: 'orbit', label: 'Erdumlaufbahn (150 km)', group: 'Erde', place: orbit(EARTH, 150_000) },
+  { id: 'rampe', label: 'Startrampe', group: 'Erde', body: EARTH, place: () => undefined },
+  {
+    id: 'orbit',
+    label: 'Erdumlaufbahn (150 km)',
+    group: 'Erde',
+    body: EARTH,
+    place: orbit(EARTH, 150_000),
+  },
   {
     id: 'station',
     label: 'Neben der Raumstation',
     group: 'Erde',
+    body: EARTH,
     place(f) {
       // 300 m hinter der Station auf ihrer eigenen Bahn: bleibt dicht dran.
       const [x, y, vx, vy] = stationState(f.t);
@@ -91,16 +101,39 @@ export const START_OPTIONS: readonly StartOption[] = [
       f.rcs = true;
     },
   },
-  { id: 'mond', label: 'Auf dem Mond', group: 'Mond', place: landed(MOON) },
-  { id: 'mondorbit', label: 'Mondumlaufbahn', group: 'Mond', place: orbit(MOON) },
-  { id: 'mars', label: 'Auf dem Mars', group: 'Planeten', place: landed(MARS) },
-  { id: 'marsorbit', label: 'Marsumlaufbahn', group: 'Planeten', place: orbit(MARS) },
-  { id: 'phobos', label: 'Auf Phobos', group: 'Planeten', place: landed(PHOBOS) },
-  { id: 'venusorbit', label: 'Venusumlaufbahn', group: 'Planeten', place: orbit(VENUS) },
-  { id: 'merkur', label: 'Auf Merkur', group: 'Planeten', place: landed(MERCURY) },
-  { id: 'europa', label: 'Auf Europa', group: 'Planeten', place: landed(EUROPA) },
-  { id: 'jupiterorbit', label: 'Jupiterumlaufbahn', group: 'Planeten', place: orbit(JUPITER) },
+  { id: 'mond', label: 'Auf dem Mond', group: 'Mond', body: MOON, place: landed(MOON) },
+  { id: 'mondorbit', label: 'Mondumlaufbahn', group: 'Mond', body: MOON, place: orbit(MOON) },
+  { id: 'mars', label: 'Auf dem Mars', group: 'Planeten', body: MARS, place: landed(MARS) },
+  {
+    id: 'marsorbit',
+    label: 'Marsumlaufbahn',
+    group: 'Planeten',
+    body: MARS,
+    place: orbit(MARS),
+  },
+  { id: 'phobos', label: 'Auf Phobos', group: 'Planeten', body: PHOBOS, place: landed(PHOBOS) },
+  {
+    id: 'venusorbit',
+    label: 'Venusumlaufbahn',
+    group: 'Planeten',
+    body: VENUS,
+    place: orbit(VENUS),
+  },
+  { id: 'merkur', label: 'Auf Merkur', group: 'Planeten', body: MERCURY, place: landed(MERCURY) },
+  { id: 'europa', label: 'Auf Europa', group: 'Planeten', body: EUROPA, place: landed(EUROPA) },
+  {
+    id: 'jupiterorbit',
+    label: 'Jupiterumlaufbahn',
+    group: 'Planeten',
+    body: JUPITER,
+    place: orbit(JUPITER),
+  },
 ];
+
+/** Werte der Werft passend zu den Sandkasten-Einstellungen. */
+export function buildRules(s: SandboxSettings): BuildRules {
+  return { thrust: s.thrust, infiniteFuel: s.fuel, body: startOption(s.start).body };
+}
 
 export function startOption(id: StartId): StartOption {
   return START_OPTIONS.find((s) => s.id === id) ?? START_OPTIONS[0]!;

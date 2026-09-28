@@ -6,6 +6,7 @@
  */
 export class SaveStore<T extends object> {
   private readonly storage: Storage | null;
+  private ok = true;
 
   constructor(
     private readonly key: string,
@@ -31,13 +32,20 @@ export class SaveStore<T extends object> {
 
   /** Gibt `false` zurück, wenn nicht gespeichert werden konnte. */
   save(data: T): boolean {
+    this.ok = false;
     if (!this.storage) return false;
     try {
       this.storage.setItem(this.key, JSON.stringify(data));
+      this.ok = true;
       return true;
     } catch {
       return false;
     }
+  }
+
+  /** Hat das letzte Speichern (auch über `update`) geklappt? */
+  get lastSaveOk(): boolean {
+    return this.ok;
   }
 
   /** Lädt, ändert und speichert in einem Schritt. */

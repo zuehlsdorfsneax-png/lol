@@ -17,6 +17,7 @@ import {
   orbitalPeriod,
 } from '../rocket/world';
 import { Callout, PageHead } from '../ui/content';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Icon } from '../ui/Icon';
 
 const fmt = (x: number, d = 0): string =>
@@ -140,13 +141,21 @@ export function RocketPage() {
       </section>
 
       {game && (
-        <RocketGame
-          startTab={game}
+        <ErrorBoundary
+          where="Die Raketenwerft"
           onClose={() => {
             setGame(null);
             opener.current?.focus();
           }}
-        />
+        >
+          <RocketGame
+            startTab={game}
+            onClose={() => {
+              setGame(null);
+              opener.current?.focus();
+            }}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );

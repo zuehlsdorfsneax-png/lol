@@ -282,6 +282,8 @@ interface Props {
   satellites: Satellite[];
   challenge: Challenge | null;
   bestStars: number;
+  /** Welche Stern-Bedingungen schon einmal erfüllt wurden. */
+  bestMet?: boolean[];
   onGoal: (id: GoalId) => void;
   onSatellites: (s: Satellite[]) => void;
   onChallenge: (id: string, result: ChallengeResult) => void;
@@ -334,6 +336,7 @@ export function FlightScreen({
   satellites,
   challenge,
   bestStars,
+  bestMet = [],
   onGoal,
   onSatellites,
   onChallenge,
@@ -2102,7 +2105,7 @@ export function FlightScreen({
       {briefing && challenge && (
         <ChallengeBrief
           challenge={challenge}
-          best={bestStars}
+          best={bestMet}
           onStart={() => {
             audio.current.unlock();
             setBriefing(false);
@@ -2116,6 +2119,7 @@ export function FlightScreen({
           challenge={challenge}
           result={result}
           best={bestStars}
+          bestMet={bestMet}
           f={f}
           onRetry={() => restart()}
           onNext={result.success ? onNextChallenge : null}

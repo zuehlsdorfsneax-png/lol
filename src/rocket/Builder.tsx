@@ -3,10 +3,17 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
+import { ConfirmButton } from '../ui/ConfirmButton';
 import { Icon, type IconName } from '../ui/Icon';
 import { CHALLENGES, type Challenge, type ChallengeGroup } from './challenges';
 import { PAINTS, drawPart, drawRocket, setPaint, visualWidth } from './draw';
-import { START_OPTIONS, THRUST_FACTORS, type SandboxSettings, type StartId } from './sandbox';
+import {
+  START_OPTIONS,
+  THRUST_FACTORS,
+  buildRules,
+  type SandboxSettings,
+  type StartId,
+} from './sandbox';
 import { apsides, type Satellite } from './flight';
 import { km } from './format';
 import { GOALS, GOAL_GROUPS, RANKS, STAR_POINTS, careerPoints, rankFor } from './goals';
@@ -21,7 +28,9 @@ import {
   stageStats,
   totalDeltaV,
   totalMass,
+  isPart,
   unlocked,
+  type BuildRules,
   type Design,
   type PartDef,
 } from './parts';
@@ -70,10 +79,12 @@ function Preview({
   design,
   selected,
   onSelect,
+  rules,
 }: {
   design: Design;
   selected: number;
   onSelect: (i: number) => void;
+  rules?: BuildRules;
 }) {
   const [box, size] = useElementSize<HTMLDivElement>();
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -91,7 +102,8 @@ function Preview({
     if (!ctx) return;
     // Blaupause: feines Raster je Meter, kräftige Linien alle 5 m
     const total = Math.max(designHeight(design), 8);
-    const base = height - 44;
+    // Mit gewähltem Teil steht unten die Werkzeugleiste: dann die Rakete darüber zeichnen.
+    const base = height - (selected >= 0 ? 92 : 44);
     // Oben bleibt Platz für die Werkzeugleiste (auf dem Handy auch für die Datenzeile).
     const topPad = width < 520 ? 124 : 70;
     const scale = Math.min((base - topPad) / (total + 1), 30);
@@ -162,7 +174,7 @@ function Preview({
     // Stufen wie in Spaceflight Simulator am Bauplan markieren: Klammer, Nummer, Δv
     const segs = segments(design);
     if (segs.length > 1) {
-      const st = stageStats(design);
+      const st = stageStats(design, rules);
       const maxW = Math.max(...design.map((id) => visualWidth(part(id))));
       const bx = Math.round(cx - (maxW / 2) * scale - 20) + 0.5;
       let idx = 0;
@@ -191,7 +203,7 @@ function Preview({
         ctx.textAlign = 'center';
         ctx.fillText(String(number), bx - 11, mid + 4);
         const dv = st[number - 1]?.deltaV ?? 0;
-        if (dv > 0 && y1 - y0 > 26) {
+        if (dv > 0 && Number.isFinite(dv) && y1 - y0 > 26) {
           const text = `${fmt(dv)} m/s`;
           ctx.textAlign = 'right';
           if (bx - 26 - ctx.measureText(text).width > 6) {
@@ -204,7 +216,8 @@ function Preview({
     }
     if (selected >= 0 && spans[selected]) {
       const [a, b] = spans[selected];
-      const w = part(design[selected]!).width;
+      // Wie gezeichnet: Booster sitzen seitlich und sind breiter als ihr Rumpfmaß.
+      const w = visualWidth(part(design[selected]!));
       const x0 = cx - (w / 2) * scale - 6;
       const y0 = base - b * scale - 4;
       const bw = w * scale + 12;
@@ -232,10 +245,10 @@ function Preview({
       ctx.fillStyle = 'rgba(223,229,245,0.75)';
       ctx.textAlign = 'center';
       ctx.font = '500 16px Jost, system-ui, sans-serif';
-      ctx.fillText('Wähle links ein Bauteil –', cx, height / 2 - 12);
+      ctx.fillText('Wähle ein Bauteil aus der Liste –', cx, height / 2 - 12);
       ctx.fillText('oder oben eine Vorlage.', cx, height / 2 + 12);
     }
-  }, [design, selected, size]);
+  }, [design, selected, size, rules?.thrust, rules?.infiniteFuel]);
 
   const click = (e: MouseEvent): void => {
     const c = canvas.current;
@@ -245,7 +258,7 @@ function Preview({
     const m = (base - (e.clientY - r.top)) / scale;
     const x = Math.abs(e.clientX - r.left - r.width / 2) / scale;
     const hit = spans.findIndex(
-      (s, i) => s && m >= s[0] && m <= s[1] && x <= part(design[i]!).width / 2 + 1.5,
+      (s, i) => s && m >= s[0] && m <= s[1] && x <= visualWidth(part(design[i]!)) / 2 + 1.5,
     );
     onSelect(hit);
   };
@@ -314,6 +327,17 @@ const CATEGORIES: { id: string; label: string; kinds: PartDef['kind'][] }[] = [
   { id: 'technik', label: 'Technik', kinds: ['decoupler', 'legs', 'wheel', 'rcs'] },
 ];
 
+/** Gespeicherte Raketen prüfen: unbekannte Teile oder kaputte Einträge fallen weg. */
+function loadHangar(): Record<string, string[]> {
+  const raw: unknown = progressStore.load().rocketHangar;
+  if (typeof raw !== 'object' || raw === null) return {};
+  const out: Record<string, string[]> = {};
+  for (const [n, d] of Object.entries(raw as Record<string, unknown>))
+    if (Array.isArray(d) && d.length > 0 && d.every((id) => typeof id === 'string' && isPart(id)))
+      out[n] = d as string[];
+  return out;
+}
+
 function spec(p: PartDef): string {
   if (p.thrust > 0) return `${fmt(p.thrust / 1000)} kN · ${p.isp} s`;
   if (p.fuel > 0) return `${fmt(p.fuel / 1000, 1)} t Treibstoff`;
@@ -338,6 +362,7 @@ export function Builder({
   sandboxSettings,
   onSandboxSettings,
   onClose,
+  onResetCareer,
 }: {
   tab: Tab;
   onTab: (t: Tab) => void;
@@ -356,12 +381,13 @@ export function Builder({
   sandboxSettings: SandboxSettings;
   onSandboxSettings: (s: SandboxSettings) => void;
   onClose: () => void;
+  onResetCareer: () => void;
 }) {
   setPaint(paint);
   const points = careerPoints(goals, stars);
   const starSum = Object.values(stars).reduce((a, b) => a + b, 0);
   const rank = rankFor(points);
-  const problems = checkDesign(design);
+  const problems = checkDesign(design, sandbox ? buildRules(sandboxSettings) : undefined);
   const lockedParts = design.filter((id) => !unlocked(id, points, sandbox));
   const canLaunch = !problems.some((p) => p.level === 'error') && lockedParts.length === 0;
   const TABS: { id: Tab; label: string; icon: IconName; meta?: string }[] = [
@@ -443,6 +469,7 @@ export function Builder({
                 satellites={satellites}
                 onSatellites={onSatellites}
                 sandbox={sandbox}
+                onReset={onResetCareer}
               />
             )}
           </div>
@@ -476,16 +503,35 @@ function Werft({
   const [selected, setSelected] = useState(-1);
   const [cat, setCat] = useState(CATEGORIES[0]!.id);
   const [statsOpen, setStatsOpen] = useState(false);
-  const [hangar, setHangar] = useState<Record<string, string[]>>(
-    () => progressStore.load().rocketHangar ?? {},
-  );
+  const [hangar, setHangar] = useState<Record<string, string[]>>(loadHangar);
   const [name, setName] = useState('');
-  const saveHangar = (next: Record<string, string[]>): void => {
+  /** Name, der auf ein zweites Tippen wartet (Überschreiben bzw. Löschen). */
+  const [confirmSave, setConfirmSave] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState('');
+  const saveHangar = (next: Record<string, string[]>): boolean => {
     setHangar(next);
     progressStore.update((p) => ({ ...p, rocketHangar: next }));
+    return progressStore.lastSaveOk;
   };
-  const stats = stageStats(design.length ? design : ['kapsel']);
-  const dv = design.length ? totalDeltaV(design) : 0;
+  // Rückgängig: die letzten Baustände (Strg+Z oder Knopf).
+  const history = useRef<Design[]>([]);
+  const commit = (next: Design): void => {
+    history.current = [...history.current.slice(-39), design];
+    onChange(next);
+  };
+  const undo = (): void => {
+    const prev = history.current.pop();
+    if (!prev) return;
+    onChange(prev);
+    setSelected(-1);
+    setLockHint('Rückgängig gemacht.');
+  };
+  // Im Sandkasten gelten Schubfaktor, Treibstoff-Schalter und Startort auch für die Werte hier.
+  const rules = sandbox ? buildRules(settings) : undefined;
+  const home = rules?.body ?? bodyById('earth');
+  const stats = stageStats(design.length ? design : ['kapsel'], rules);
+  const dv = design.length ? totalDeltaV(design, rules) : 0;
+  const earthStart = !sandbox || settings.start === 'rampe';
   const mass = totalMass(design);
   const first = design.length ? stats[0] : undefined;
 
@@ -504,7 +550,7 @@ function Werft({
     setLockHint('');
     const at = selected >= 0 ? selected + 1 : design.length;
     const next = [...design.slice(0, at), id, ...design.slice(at)];
-    onChange(next);
+    commit(next);
     setSelected(at);
   };
   const move = (dir: -1 | 1): void => {
@@ -512,21 +558,27 @@ function Werft({
     if (selected < 0 || j < 0 || j >= design.length) return;
     const next = [...design];
     [next[selected], next[j]] = [next[j]!, next[selected]!];
-    onChange(next);
+    commit(next);
     setSelected(j);
   };
   const remove = (): void => {
     if (selected < 0) return;
-    onChange(design.filter((_, i) => i !== selected));
+    commit(design.filter((_, i) => i !== selected));
     setSelected(Math.min(selected, design.length - 2));
   };
   const load = (d: readonly string[]): void => {
-    onChange([...d]);
+    commit([...d]);
     setSelected(-1);
   };
 
   useEffect(() => {
     const key = (e: KeyboardEvent): void => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && tag !== 'INPUT') {
+        e.preventDefault();
+        undo();
+        return;
+      }
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       // Nur, wenn nichts Bestimmtes den Fokus hat (oder die Bauansicht selbst).
@@ -586,7 +638,7 @@ function Werft({
               ? 'Sandkasten: alle Teile, Vorlagen und Lackierungen frei – dafür keine Punkte.'
               : selected >= 0
                 ? 'Neue Teile kommen unter das markierte Teil.'
-                : 'Tippen fügt unten an.')}
+                : 'Ein Teil antippen oder anklicken – es kommt unten an die Rakete.')}
         </p>
       </aside>
 
@@ -595,7 +647,10 @@ function Werft({
           <Menu icon="stack" label="Vorlagen">
             {(close) =>
               TEMPLATES.map((t) => {
-                const locked = t.parts.some((id) => !unlocked(id, points, sandbox));
+                const lockedIds = [
+                  ...new Set(t.parts.filter((id) => !unlocked(id, points, sandbox))),
+                ];
+                const stages = segments(t.parts).length;
                 return (
                   <button
                     key={t.id}
@@ -607,10 +662,19 @@ function Werft({
                     }}
                   >
                     <strong>
-                      {locked ? '🔒 ' : ''}
+                      {lockedIds.length ? '🔒 ' : ''}
                       {t.name}
                     </strong>
                     <span>{t.info}</span>
+                    <span class="gmenu-meta">
+                      Δv {fmt(totalDeltaV(t.parts))} m/s · {stages}{' '}
+                      {stages === 1 ? 'Stufe' : 'Stufen'} · {t.parts.length} Teile
+                    </span>
+                    {lockedIds.length > 0 && (
+                      <span class="gmenu-meta locked">
+                        Gesperrt: {lockedIds.map((id) => part(id).name).join(', ')}
+                      </span>
+                    )}
                   </button>
                 );
               })
@@ -638,15 +702,25 @@ function Werft({
                     </button>
                     <button
                       type="button"
-                      class="gbtn icon small"
-                      aria-label={`${n} löschen`}
+                      class={`gbtn small ${confirmDelete === n ? 'danger' : 'icon'}`}
+                      aria-label={confirmDelete === n ? `${n} wirklich löschen` : `${n} löschen`}
                       onClick={() => {
+                        if (confirmDelete !== n) {
+                          setConfirmDelete(n);
+                          return;
+                        }
                         const next = { ...hangar };
                         delete next[n];
-                        saveHangar(next);
+                        setConfirmDelete('');
+                        setLockHint(
+                          saveHangar(next)
+                            ? `„${n}“ aus dem Hangar gelöscht.`
+                            : 'Löschen nicht möglich – der Browser erlaubt keinen Speicher.',
+                        );
                       }}
                     >
                       <Icon name="trash" />
+                      {confirmDelete === n && ' Löschen?'}
                     </button>
                   </div>
                 ))}
@@ -654,9 +728,20 @@ function Werft({
                   class="gmenu-save"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (!name.trim() || design.length === 0) return;
-                    saveHangar({ ...hangar, [name.trim()]: [...design] });
-                    setLockHint(`„${name.trim()}“ im Hangar gespeichert.`);
+                    const n = name.trim();
+                    if (!n || design.length === 0) return;
+                    if (hangar[n] && confirmSave !== n) {
+                      // Gleicher Name: erst beim zweiten Mal überschreiben.
+                      setConfirmSave(n);
+                      setLockHint(`„${n}“ gibt es schon – noch einmal tippen überschreibt sie.`);
+                      return;
+                    }
+                    setConfirmSave('');
+                    setLockHint(
+                      saveHangar({ ...hangar, [n]: [...design] })
+                        ? `„${n}“ im Hangar gespeichert.`
+                        : 'Speichern nicht möglich – der Browser erlaubt keinen Speicher.',
+                    );
                   }}
                 >
                   <input
@@ -665,14 +750,18 @@ function Werft({
                     placeholder="Name der Rakete"
                     aria-label="Name der Rakete"
                     value={name}
-                    onInput={(e) => setName((e.target as HTMLInputElement).value)}
+                    onInput={(e) => {
+                      setName((e.target as HTMLInputElement).value);
+                      setConfirmSave('');
+                    }}
                   />
                   <button
                     type="submit"
                     class="gbtn primary small"
                     disabled={!name.trim() || design.length === 0}
                   >
-                    <Icon name="save" /> Speichern
+                    <Icon name="save" />{' '}
+                    {confirmSave && confirmSave === name.trim() ? 'Überschreiben' : 'Speichern'}
                   </button>
                 </form>
               </>
@@ -681,16 +770,31 @@ function Werft({
           <button
             type="button"
             class="gbtn"
-            disabled={design.length === 0}
-            onClick={() => load([])}
-            title="Alle Teile entfernen"
+            disabled={history.current.length === 0}
+            onClick={undo}
+            aria-label="Rückgängig"
+            title="Rückgängig (Strg+Z)"
           >
-            <Icon name="trash" />
+            <Icon name="rotl" />
+            <span class="gbtn-label">Zurück</span>
+          </button>
+          <button
+            type="button"
+            class="gbtn"
+            disabled={design.length === 0}
+            onClick={() => {
+              load([]);
+              setLockHint('Rakete abgebaut – „Zurück“ (Strg+Z) holt sie wieder.');
+            }}
+            aria-label="Ganze Rakete abbauen"
+            title="Alle Teile entfernen (mit „Zurück“ rückgängig)"
+          >
+            <Icon name="close" />
             <span class="gbtn-label">Abbauen</span>
           </button>
           <label
             class={`gtoggle ${sandbox ? 'on' : ''}`}
-            title="Unendlich Treibstoff, alle Teile – dafür keine Punkte"
+            title="Sandkasten: alle Teile frei und eigene Regeln (Treibstoff, Schub, Startort) – dafür keine Punkte"
           >
             <input
               type="checkbox"
@@ -707,7 +811,7 @@ function Werft({
           )}
         </div>
 
-        <Preview design={design} selected={selected} onSelect={setSelected} />
+        <Preview design={design} selected={selected} onSelect={setSelected} rules={rules} />
 
         {sel && (
           <div class="part-toolbar" role="toolbar" aria-label={`Bauteil ${sel.name}`}>
@@ -759,7 +863,7 @@ function Werft({
             Δv <strong>{fmt(dv)} m/s</strong>
           </span>
           <span>
-            TWR <strong>{first && first.thrust > 0 ? fmt(first.twrEarth, 2) : '–'}</strong>
+            TWR <strong>{first && first.thrust > 0 ? fmt(first.twrStart, 2) : '–'}</strong>
           </span>
           <span>
             <strong>{fmt(mass / 1000, 1)} t</strong>
@@ -776,31 +880,40 @@ function Werft({
           </div>
           <div class="dv-bar" aria-hidden="true">
             <div class="dv-fill" style={{ width: `${Math.min(100, (dv / maxBar) * 100)}%` }} />
-            {MILESTONES.map((m) => (
-              <span
-                key={m.label}
-                class={`dv-mark ${dv >= m.dv ? 'ok' : ''}`}
-                style={{ left: `${(m.dv / maxBar) * 100}%` }}
-              />
-            ))}
+            {earthStart &&
+              MILESTONES.map((m) => (
+                <span
+                  key={m.label}
+                  class={`dv-mark ${dv >= m.dv ? 'ok' : ''}`}
+                  style={{ left: `${(m.dv / maxBar) * 100}%` }}
+                />
+              ))}
           </div>
-          <ul class="dv-list">
-            {MILESTONES.map((m) => (
-              <li key={m.label} class={dv >= m.dv ? 'ok' : ''}>
-                <span aria-hidden="true">{dv >= m.dv ? '✓' : '·'}</span> {m.label}
-                <span class="dv-need">{fmt(m.dv)}</span>
-              </li>
-            ))}
-          </ul>
+          {rules?.infiniteFuel ? (
+            <p class="small muted">Sandkasten: Der Treibstoff geht nie aus – Δv ohne Grenze.</p>
+          ) : earthStart ? (
+            <ul class="dv-list">
+              {MILESTONES.map((m) => (
+                <li key={m.label} class={dv >= m.dv ? 'ok' : ''}>
+                  <span aria-hidden="true">{dv >= m.dv ? '✓' : '·'}</span> {m.label}
+                  <span class="dv-need">{fmt(m.dv)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="small muted">
+              Die Richtwerte (Umlaufbahn, Mond …) gelten für einen Start von der Erde.
+            </p>
+          )}
           <dl class="stat-grid">
             <div>
               <dt>Masse</dt>
               <dd>{fmt(mass / 1000, 1)} t</dd>
             </div>
             <div>
-              <dt title="Schub-Gewichts-Verhältnis beim Start auf der Erde">TWR</dt>
-              <dd class={first && first.thrust > 0 && first.twrEarth < 1 ? 'weak' : ''}>
-                {first && first.thrust > 0 ? fmt(first.twrEarth, 2) : '–'}
+              <dt title={`Schub-Gewichts-Verhältnis beim Start (${home.name})`}>TWR</dt>
+              <dd class={first && first.thrust > 0 && first.twrStart < 1 ? 'weak' : ''}>
+                {first && first.thrust > 0 ? fmt(first.twrStart, 2) : '–'}
               </dd>
             </div>
             <div>
@@ -820,8 +933,8 @@ function Werft({
                 <tr>
                   <th>Stufe</th>
                   <th>Δv</th>
-                  <th title="Schub-Gewichts-Verhältnis auf der Erde">TWR</th>
-                  <th>Brennt</th>
+                  <th title={`Schub-Gewichts-Verhältnis (${home.name})`}>TWR</th>
+                  <th>Brenndauer</th>
                 </tr>
               </thead>
               <tbody>
@@ -829,9 +942,11 @@ function Werft({
                   <tr key={s.number}>
                     <td>{s.number}</td>
                     <td>{fmt(s.deltaV)}</td>
-                    <td class={s.thrust > 0 && s.twrEarth < 1 ? 'weak' : ''}>
-                      {s.thrust > 0 ? fmt(s.twrEarth, 2) : '–'}
-                      {s.thrust > 0 && s.twrMoon >= 1 && s.twrEarth < 1 ? ' ☾' : ''}
+                    <td class={s.thrust > 0 && s.twrStart < 1 ? 'weak' : ''}>
+                      {s.thrust > 0 ? fmt(s.twrStart, 2) : '–'}
+                      {home.id === 'earth' && s.thrust > 0 && s.twrMoon >= 1 && s.twrEarth < 1
+                        ? ' ☾'
+                        : ''}
                     </td>
                     <td>{s.burnTime > 0 ? `${fmt(s.burnTime)} s` : '–'}</td>
                   </tr>
@@ -839,6 +954,15 @@ function Werft({
               </tbody>
             </table>
           )}
+          {design.length > 0 &&
+            stats.length > 1 &&
+            home.id === 'earth' &&
+            stats.some((s) => s.thrust > 0 && s.twrMoon >= 1 && s.twrEarth < 1) && (
+              <p class="small muted">
+                ☾ = zu schwach für die Erde, reicht aber für den Mond (TWR über 1 bei
+                Mondschwerkraft).
+              </p>
+            )}
           {problems.length > 0 && (
             <ul class="build-problems">
               {problems.map((p) => (
@@ -989,6 +1113,7 @@ function ChallengeList({
   onStart: (c: Challenge) => void;
 }) {
   const groups: ChallengeGroup[] = ['Flugschule', 'Profi', 'Meister'];
+  const records = progressStore.load().rocketChallenges ?? {};
   return (
     <section class="challenge-list" aria-label="Herausforderungen">
       <p class="small muted">
@@ -1013,10 +1138,13 @@ function ChallengeList({
                     ))}
                   </div>
                   <h4>{c.title}</h4>
-                  <p class="small">{c.brief}</p>
+                  <p class="small challenge-brief">{c.brief}</p>
                   <p class="small muted">
                     {c.computer ? 'Bordcomputer erlaubt' : 'Ohne Bordcomputer'}
                   </p>
+                  {records[c.id]?.text && (
+                    <p class="challenge-best">Bestes Ergebnis: {records[c.id]!.text}</p>
+                  )}
                   <button type="button" class="btn primary small" onClick={() => onStart(c)}>
                     {n > 0 ? 'Nochmal' : 'Starten'} <Icon name="arrow" />
                   </button>
@@ -1039,6 +1167,7 @@ function MissionControl({
   satellites,
   onSatellites,
   sandbox,
+  onReset,
 }: {
   goals: readonly string[];
   stars: Record<string, number>;
@@ -1047,6 +1176,7 @@ function MissionControl({
   satellites: Satellite[];
   onSatellites: (s: Satellite[]) => void;
   sandbox: boolean;
+  onReset: () => void;
 }) {
   const points = careerPoints(goals, stars);
   const starSum = Object.values(stars).reduce((a, b) => a + b, 0);
@@ -1082,8 +1212,12 @@ function MissionControl({
             <h4>{g}</h4>
             <ul>
               {GOALS.filter((q) => q.group === g).map((q) => (
-                <li key={q.id} class={goals.includes(q.id) ? 'done' : ''} title={q.text}>
-                  <span aria-hidden="true">{goals.includes(q.id) ? '★' : '☆'}</span> {q.title}
+                <li key={q.id} class={goals.includes(q.id) ? 'done' : ''}>
+                  <span aria-hidden="true">{goals.includes(q.id) ? '★' : '☆'}</span>
+                  <span class="mc-goal">
+                    {q.title}
+                    <small>{q.text}</small>
+                  </span>
                   <span class="pts">{q.points}</span>
                 </li>
               ))}
@@ -1111,15 +1245,12 @@ function MissionControl({
                 return (
                   <li key={s.id}>
                     🛰 {s.name} · um {b.name} · {km(peri - b.radius)} – {km(apo - b.radius)}
-                    <button
-                      type="button"
+                    <ConfirmButton
                       class="btn small ghost"
-                      aria-label={`${s.name} abschalten`}
-                      title="Satellit abschalten (verschwindet aus allen Flügen)"
-                      onClick={() => onSatellites(satellites.filter((q) => q !== s))}
-                    >
-                      <Icon name="close" />
-                    </button>
+                      label="Abschalten"
+                      confirm="Wirklich?"
+                      onConfirm={() => onSatellites(satellites.filter((q) => q !== s))}
+                    />
                   </li>
                 );
               })}
@@ -1148,10 +1279,22 @@ function MissionControl({
                   background: `linear-gradient(90deg, ${p.metal[0]}, ${p.metal[1]} 45%, ${p.stripe} 46%, ${p.stripe} 60%, ${p.band} 61%)`,
                 }}
               />
-              {locked ? `🔒 ${p.name} · ${p.points}` : p.name}
+              {locked ? `🔒 ${p.name} · ab ${p.points} Punkten` : p.name}
             </button>
           );
         })}
+      </div>
+      <div class="mc-reset">
+        <p class="small muted">
+          Neu anfangen: Punkte, Sterne, Satelliten und Spielstände der Raketenwerft werden gelöscht.
+          Deine Raketen im Hangar bleiben.
+        </p>
+        <ConfirmButton
+          class="btn small"
+          label="Karriere zurücksetzen"
+          confirm="Wirklich alles löschen?"
+          onConfirm={onReset}
+        />
       </div>
     </section>
   );

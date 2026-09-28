@@ -1,13 +1,14 @@
-import { useMemo } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { MISSIONS } from '../missions/missions';
-import { progressStore } from '../missions/progress';
+import { progressStore, resetAllProgress } from '../missions/progress';
+import { ConfirmButton } from '../ui/ConfirmButton';
 import { Stars } from '../missions/Stars';
 import { PageHead } from '../ui/content';
 
 const DIFFICULTY = ['', 'leicht', 'mittel', 'schwer'];
 
 export function MissionsPage() {
-  const progress = useMemo(() => progressStore.load(), []);
+  const [progress, setProgress] = useState(() => progressStore.load());
   const total = MISSIONS.reduce((s, m) => s + (progress.stars[m.id] ?? 0), 0);
   return (
     <div class="stack" style={{ gap: '22px', maxWidth: '1100px' }}>
@@ -43,6 +44,18 @@ export function MissionsPage() {
           </a>
         ))}
       </div>
+      <section class="reset-box" aria-label="Fortschritt löschen">
+        <p class="small muted">
+          Neu anfangen? Das löscht die Sterne aller Missionen, den Quiz-Rekord, Lunas Sterne und die
+          ganze Raketenwerft (Punkte, Hangar, Satelliten) auf diesem Gerät.
+        </p>
+        <ConfirmButton
+          class="btn small"
+          label="Allen Fortschritt löschen"
+          confirm="Wirklich alles löschen?"
+          onConfirm={() => setProgress(resetAllProgress())}
+        />
+      </section>
     </div>
   );
 }

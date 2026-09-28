@@ -81,7 +81,8 @@ export function ChallengeBrief({
   onExit,
 }: {
   challenge: Challenge;
-  best: number;
+  /** Je Stern-Bedingung: schon einmal erfüllt? */
+  best: boolean[];
   onStart: () => void;
   onExit: () => void;
 }) {
@@ -92,8 +93,9 @@ export function ChallengeBrief({
       <p>{challenge.brief}</p>
       <ol class="star-goals">
         {challenge.stars.map((s, i) => (
-          <li key={s} class={i < best ? 'done' : ''}>
-            <span aria-hidden="true">{'★'.repeat(i + 1)}</span> {s}
+          <li key={s} class={best[i] ? 'done' : ''}>
+            <span aria-hidden="true">★</span> {s}
+            {best[i] && <span class="visually-hidden"> (schon geschafft)</span>}
           </li>
         ))}
       </ol>
@@ -121,6 +123,7 @@ export function ChallengeResultView({
   challenge,
   result,
   best,
+  bestMet,
   f,
   onRetry,
   onNext,
@@ -130,6 +133,7 @@ export function ChallengeResultView({
   challenge: Challenge;
   result: ChallengeResult;
   best: number;
+  bestMet: boolean[];
   f: Flight;
   onRetry: () => void;
   onNext: (() => void) | null;
@@ -144,11 +148,22 @@ export function ChallengeResultView({
       </h3>
       <Stars n={result.stars} animate />
       <p>{result.text}</p>
-      {result.success && result.stars < 3 && (
-        <p class="small muted">
-          Für den nächsten Stern: {challenge.stars[result.stars]}
-          {best > result.stars ? ` · Dein Rekord: ${best} Sterne` : ''}
-        </p>
+      {result.success && (
+        // Jede Bedingung einzeln: Die Sterne 2 und 3 hängen oft nicht voneinander ab.
+        <ol class="star-goals">
+          {challenge.stars.map((s, i) => {
+            const now = result.met?.[i] ?? i < result.stars;
+            return (
+              <li key={s} class={now ? 'done' : bestMet[i] ? 'earlier' : ''}>
+                <span aria-hidden="true">{now ? '★' : '☆'}</span> {s}
+                {!now && bestMet[i] && <span class="small muted"> – schon früher geschafft</span>}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      {result.success && best > result.stars && (
+        <p class="small muted">Dein Rekord: {best} Sterne.</p>
       )}
       <details class="report-more">
         <summary>Flugdaten</summary>

@@ -1,4 +1,4 @@
-import { EARTH, G0, MOON } from './world';
+import { EARTH, G0, MOON, type Body } from './world';
 
 export type PartKind =
   | 'capsule'
@@ -671,10 +671,26 @@ export interface StageStats {
   /** Schub-Gewichts-Verhältnis beim Zünden auf Erde und Mond. */
   twrEarth: number;
   twrMoon: number;
+  /** … und auf dem Startkörper (ohne Sandkasten: die Erde). */
+  twrStart: number;
   burnTime: number;
 }
 
-export function stageStats(design: Design): StageStats[] {
+/** Sandkasten-Regeln, die die Werte der Werft ändern. */
+export interface BuildRules {
+  /** Schubfaktor (Verbrauch wächst mit). */
+  thrust: number;
+  /** Treibstoff wird nicht verbraucht: Δv und Brenndauer unbegrenzt. */
+  infiniteFuel: boolean;
+  /** Wo der Flug beginnt (für das Schub-Gewichts-Verhältnis). */
+  body: Body;
+}
+
+export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
+  const k = rules?.thrust ?? 1;
+  const endless = rules?.infiniteFuel ?? false;
+  const home = rules?.body ?? EARTH;
+  const gStart = home.mu / home.radius ** 2;
   const segs = segments(design);
   const stats: StageStats[] = [];
   let above = 0;
@@ -682,8 +698,8 @@ export function stageStats(design: Design): StageStats[] {
     const defs = seg.map(part);
     const dry = defs.reduce((s, p) => s + p.dry, 0);
     const fuel = defs.reduce((s, p) => s + p.fuel, 0);
-    const thrust = defs.reduce((s, p) => s + p.thrust, 0);
-    const flow = defs.reduce((s, p) => s + (p.thrust > 0 ? p.thrust / (p.isp * G0) : 0), 0);
+    const thrust = k * defs.reduce((s, p) => s + p.thrust, 0);
+    const flow = k * defs.reduce((s, p) => s + (p.thrust > 0 ? p.thrust / (p.isp * G0) : 0), 0);
     const isp = flow > 0 ? thrust / (flow * G0) : 0;
     const startMass = above + dry + fuel;
     const endMass = startMass - fuel;
@@ -697,10 +713,16 @@ export function stageStats(design: Design): StageStats[] {
       thrust,
       isp,
       startMass,
-      deltaV: thrust > 0 && fuel > 0 ? isp * G0 * Math.log(startMass / endMass) : 0,
+      deltaV:
+        thrust > 0 && fuel > 0
+          ? endless
+            ? Infinity
+            : isp * G0 * Math.log(startMass / endMass)
+          : 0,
       twrEarth: thrust / (startMass * gEarth),
       twrMoon: thrust / (startMass * gMoon),
-      burnTime: flow > 0 ? fuel / flow : 0,
+      twrStart: thrust / (startMass * gStart),
+      burnTime: flow > 0 && fuel > 0 ? (endless ? Infinity : fuel / flow) : 0,
     });
     above += dry + fuel;
   }
@@ -710,8 +732,8 @@ export function stageStats(design: Design): StageStats[] {
   return stats;
 }
 
-export function totalDeltaV(design: Design): number {
-  return stageStats(design).reduce((s, st) => s + st.deltaV, 0);
+export function totalDeltaV(design: Design, rules?: BuildRules): number {
+  return stageStats(design, rules).reduce((s, st) => s + st.deltaV, 0);
 }
 
 export function totalMass(design: Design): number {
@@ -724,7 +746,7 @@ export function designHeight(design: Design): number {
 
 export type DesignProblem = { level: 'error' | 'warn'; text: string };
 
-export function checkDesign(design: Design): DesignProblem[] {
+export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[] {
   const problems: DesignProblem[] = [];
   if (design.length === 0) return [{ level: 'error', text: 'Die Rakete hat noch keine Teile.' }];
   if (!design.some(isControl))
@@ -732,16 +754,17 @@ export function checkDesign(design: Design): DesignProblem[] {
       level: 'error',
       text: 'Es fehlt eine Kapsel oder ein Sondenkern – wer soll die Rakete steuern?',
     });
-  const stats = stageStats(design);
+  const stats = stageStats(design, rules);
   const first = stats[0]!;
+  const home = rules?.body ?? EARTH;
   if (first.thrust === 0)
     problems.push({ level: 'error', text: 'Ganz unten muss ein Triebwerk sitzen.' });
   else if (first.fuel === 0)
     problems.push({ level: 'error', text: 'Die unterste Stufe hat keinen Tank.' });
-  else if (first.twrEarth < 1)
+  else if (first.twrStart < 1)
     problems.push({
       level: 'warn',
-      text: `Zu schwer: Der Schub der ersten Stufe trägt nur ${Math.round(first.twrEarth * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
+      text: `Zu schwer: Der Schub der ersten Stufe trägt ${home === EARTH ? '' : `am Startort (${home.name}) `}nur ${Math.round(first.twrStart * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
     });
   if (design.slice(1).some((id) => part(id).kind === 'nose'))
     problems.push({
@@ -750,18 +773,25 @@ export function checkDesign(design: Design): DesignProblem[] {
     });
   if (design[design.length - 1] && part(design[design.length - 1]!).kind === 'decoupler')
     problems.push({ level: 'warn', text: 'Ganz unten hängt ein Stufentrenner ohne Stufe.' });
-  if (design.includes('kapsel') && !design.includes('fallschirm'))
+  const has = (kind: PartKind): boolean => design.some((id) => part(id).kind === kind);
+  if (has('capsule') && !has('chute'))
     problems.push({
       level: 'warn',
       text: 'Ohne Fallschirm ist eine Landung auf der Erde nur mit Triebwerk möglich.',
     });
   if (design.length > MAX_PARTS)
     problems.push({ level: 'error', text: `Höchstens ${MAX_PARTS} Teile.` });
-  const shield = design.indexOf('hitzeschild');
-  if (shield >= 0 && shield < design.length - 1 && part(design[shield + 1]!).kind !== 'decoupler')
+  // Jeder Hitzeschild braucht einen Stufentrenner direkt darunter (oder sitzt ganz unten).
+  const buried = design.some(
+    (id, i) =>
+      part(id).kind === 'shield' &&
+      i < design.length - 1 &&
+      part(design[i + 1]!).kind !== 'decoupler',
+  );
+  if (buried)
     problems.push({
       level: 'warn',
-      text: 'Der Hitzeschild wirkt nur als unterstes Teil: Setze einen Stufentrenner direkt darunter, damit er beim Wiedereintritt vorn ist.',
+      text: 'Ein Hitzeschild wirkt nur als unterstes Teil: Setze einen Stufentrenner direkt darunter, damit er beim Wiedereintritt vorn ist.',
     });
   return problems;
 }
