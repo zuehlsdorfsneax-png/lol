@@ -7,6 +7,7 @@ import {
   MOON_HILL,
   MOON_PERIOD,
   SCALE,
+  angularRate,
   circularSpeed,
   orbitalPeriod,
 } from '../rocket/world';
@@ -15,29 +16,39 @@ import { Callout, PageHead } from '../ui/content';
 const fmt = (x: number, d = 0): string =>
   x.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 
+/** Längste Wartezeit auf ein Marsfenster: eine synodische Periode von Erde und Mars. */
+function transferWaitMax(): number {
+  return (2 * Math.PI) / Math.abs(angularRate(EARTH) - angularRate(MARS));
+}
+
 const CONTROLS: [string, string][] = [
-  ['W / ↑ und S / ↓', 'Schub stufenlos hoch und runter'],
+  ['W / ↑ und S / ↓', 'Schub stufenlos hoch und runter (auch Umschalt / Strg)'],
   ['Z / X', 'Vollgas / Triebwerk aus'],
-  ['A / ← und D / →', 'Rakete drehen'],
+  ['A / ← und D / →', 'Rakete drehen (F: Feinsteuerung)'],
+  ['1 – 7', 'SAS-Lageregelung: aus, prograd, retrograd, radial, Ziel, Manöver'],
+  ['Antippen', 'In der Flugansicht: Die Rakete dreht sich in diese Richtung'],
   ['Leertaste', 'Nächste Stufe zünden (unterste Stufe abwerfen)'],
-  ['P', 'Fallschirm scharf machen'],
+  ['P / N', 'Fallschirm scharf machen / Satellit aussetzen'],
   ['R, dann W / S / Q / E', 'RCS-Düsen: sanft verschieben (zum Andocken)'],
-  ['M', 'Karte mit Bahnvorhersage (ziehen, zoomen, Doppelklick)'],
-  [', und .', 'Zeitraffer langsamer / schneller'],
+  ['M', 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
+  ['B', 'Bordcomputer: Manöver planen und automatisch fliegen'],
+  ['L / T / C', 'Lande-Autopilot / Hilfe-Pilot / Countdown mit Sprachausgabe'],
+  [', und . oder ⏩', 'Zeitraffer / Zeitsprung (bremst von selbst am Ziel)'],
   ['+ / − oder Mausrad', 'Zoomen'],
-  ['T', 'Hilfe-Pilot bis in die Umlaufbahn'],
-  ['F5 / F9', 'Spielstand speichern / laden'],
+  ['F5 / F9 / O', 'Spielstand speichern / laden / Foto'],
   ['Esc / H', 'Pause / Hilfe'],
+  ['Gamepad', 'Stick drehen, Trigger Schub, A Stufe, B Fallschirm, X RCS, Y Karte'],
 ];
 
 export function RocketPage() {
   return (
     <div class="stack rocket-page" style={{ gap: '18px' }}>
       <PageHead eyebrow="Spielen · Raumfahrt" title="Raketenwerft">
-        Baue deine eigene Rakete, starte von der Erde, docke an der Raumstation an, lande auf dem
-        Mond oder fliege zum Mars. Schwerkraft von Sonne, Planeten und Monden, Treibstoff,
-        Luftwiderstand und Hitze werden echt berechnet – wie im Simulator, nur in einem
-        verkleinerten Sonnensystem.
+        Baue deine eigene Rakete, starte von der Erde, setze Satelliten aus, docke an der
+        Raumstation an, lande auf dem Mond, dem Mars oder dem Eismond Europa. Schwerkraft von Sonne,
+        Planeten und Monden, Treibstoff, Luftwiderstand und Hitze werden echt berechnet – wie im
+        Simulator, nur in einem verkleinerten Sonnensystem. Ein Bordcomputer plant Manöver wie bei
+        echten Raumflügen, neun Herausforderungen warten auf deine Sterne.
       </PageHead>
 
       <RocketGame />
@@ -52,28 +63,32 @@ export function RocketPage() {
               reicht.
             </li>
             <li>
-              <strong>Umlaufbahn:</strong> Vollgas, senkrecht hoch, ab 3 km langsam nach rechts
-              neigen. Liegt der höchste Punkt (Ap) über 70 km, Schub aus und am Ap waagerecht Gas
-              geben, bis auch der tiefste Punkt (Pe) über 40 km liegt.
+              <strong>Umlaufbahn:</strong> Countdown (C) oder Vollgas, senkrecht hoch, ab 3 km
+              langsam nach rechts neigen. Liegt der höchste Punkt (Ap) über 70 km, Schub aus – der
+              Bordcomputer (B) plant mit „Kreisbahn am Ap“ den Rest.
             </li>
             <li>
-              <strong>Raumstation:</strong> Ziel „Raumstation Kepler“ wählen, Ap auf 150 km heben
-              und die nächste Annäherung auf der Karte verkleinern. Mit RCS (R) langsamer als 2 m/s
-              andocken – dort gibt es kostenlos Treibstoff.
+              <strong>Manöver:</strong> Auf der Karte (M) auf die Bahn klicken und die Anfasser
+              ziehen: grün in oder gegen die Flugrichtung, türkis radial. Die rosa Linie zeigt die
+              neue Bahn. „Automatisch ausführen“ zündet genau zur richtigen Zeit.
             </li>
             <li>
-              <strong>Mond:</strong> Wenn links „Mondfenster: jetzt!“ steht, in Flugrichtung Gas
-              geben, bis „Mond bei Ankunft“ erscheint. Dort am Pe bremsen und mit höchstens 8 m/s
-              (mit Beinen 14 m/s) aufsetzen.
+              <strong>Raumstation:</strong> Ziel „Raumstation Kepler“, Bordcomputer „Rendezvous“ und
+              „Geschwindigkeit angleichen“. Die letzten Meter mit RCS (R) langsamer als 2 m/s –
+              angedockt gibt es kostenlos Treibstoff.
             </li>
             <li>
-              <strong>Mars:</strong> Ziel „Mars“ wählen und auf das Startfenster warten. Auf der
-              sonnenabgewandten Seite der Erde Gas geben, bis die Karte „Mars bei Ankunft“ zeigt.
-              Die Reise dauert im Spiel etwa 80 Tage – Zeitraffer hoch!
+              <strong>Mond und Planeten:</strong> Ziel wählen, „Transfer“ planen (bei Planeten erst
+              per Zeitsprung ins Startfenster), unterwegs „Kurskorrektur“, dort „Einschwenken“ und
+              „Automatisch landen“ – oder alles selbst fliegen.
             </li>
             <li>
-              <strong>Heimkehr:</strong> Pe der Erde auf 15–30 km legen, Fallschirm scharf machen.
-              Zu steil und zu schnell? Dann wird es heiß – auf die Hitzeanzeige achten.
+              <strong>Satelliten:</strong> Mit N aussetzen – sie bleiben auf ihrer Bahn, auch in
+              späteren Flügen. Drei um die Erde ergeben ein Satellitennetz.
+            </li>
+            <li>
+              <strong>Heimkehr:</strong> Bordcomputer „Wiedereintritt“ legt den tiefsten Punkt auf
+              25 km. Triebwerksstufe abwerfen, Hitzeschild voran (SAS retrograd), Fallschirm scharf.
             </li>
           </ol>
         </div>
@@ -93,7 +108,9 @@ export function RocketPage() {
           </table>
           <p class="small muted">
             Auf dem Handy oder Tablet gibt es dafür Knöpfe auf dem Spielfeld; die Karte verschiebt
-            und zoomt man mit den Fingern.
+            und zoomt man mit den Fingern. Die runde Lageanzeige zeigt, wohin die Nase zeigt: grün
+            ist die Flugrichtung, türkis radial, violett das Ziel, blau das Manöver – antippen
+            stellt das SAS darauf ein.
           </p>
         </div>
       </section>
@@ -116,6 +133,13 @@ export function RocketPage() {
             Die Bahnvorhersage auf der Karte rechnet Erde, Mond und Rakete gemeinsam – ein
             eingeschränktes Drei-Körper-Problem wie in Kapitel 4 und 8. Deshalb biegt der Mond die
             vorhergesagte Bahn, sobald sie in seine Nähe kommt.
+          </Callout>
+          <Callout kind="merke" title="Hohmann-Transfer: der sparsamste Weg">
+            Der Bordcomputer plant Transfers wie echte Missionen: ein Schub in Flugrichtung macht
+            die Bahn zur Ellipse, deren höchster Punkt das Ziel berührt. Damit das Ziel dann auch
+            dort ist, muss man im richtigen Startfenster zünden – beim Mars wartet man im Spiel bis
+            zu
+            {` ${fmt(transferWaitMax() / 86_400)} `}Tage darauf.
           </Callout>
           <Callout kind="fakt" title="Warum der Mond immer dieselbe Seite zeigt">
             Im Spiel dreht sich der Mond einmal pro Umlauf um sich selbst – wie in Wirklichkeit. Das
@@ -180,6 +204,13 @@ export function RocketPage() {
                   <td>Ein Erdjahr</td>
                   <td>{fmt(orbitalPeriod(EARTH) / 86_400)} Tage</td>
                   <td>365 Tage</td>
+                </tr>
+                <tr>
+                  <td>Körper im Spiel</td>
+                  <td colSpan={2}>
+                    Sonne, Merkur, Venus, Erde mit Mond und Raumstation, Mars mit Phobos, Jupiter
+                    mit Europa
+                  </td>
                 </tr>
                 <tr>
                   <td>Kreisbahn in niedriger Höhe</td>

@@ -3,8 +3,11 @@ import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { Icon } from '../ui/Icon';
+import { CHALLENGES, type Challenge, type ChallengeGroup } from './challenges';
 import { PAINTS, drawPart, drawRocket, setPaint } from './draw';
-import { GOALS, RANKS, goalPoints, rankFor } from './flight';
+import { apsides, type Satellite } from './flight';
+import { km } from './format';
+import { GOALS, GOAL_GROUPS, RANKS, STAR_POINTS, careerPoints, rankFor } from './goals';
 import {
   MAX_PARTS,
   PARTS,
@@ -15,11 +18,14 @@ import {
   stageStats,
   totalDeltaV,
   totalMass,
+  unlocked,
   type Design,
   type PartDef,
 } from './parts';
+import type { Tab } from './RocketGame';
+import { bodyById } from './world';
 
-/** Grobe Δv-Bedarfe im Spiel (aus Testflügen mit dem Hilfe-Piloten). */
+/** Grobe Δv-Bedarfe im Spiel (aus Testflügen mit Hilfe-Pilot und Bordcomputer). */
 const MILESTONES = [
   { dv: 2500, label: 'Weltraum' },
   { dv: 3900, label: 'Umlaufbahn' },
@@ -27,6 +33,7 @@ const MILESTONES = [
   { dv: 5700, label: 'Mondlandung' },
   { dv: 6900, label: 'Mond hin & zurück' },
   { dv: 7800, label: 'Marslandung' },
+  { dv: 9500, label: 'Europa-Landung' },
 ];
 
 const fmt = (x: number, d = 0): string =>
@@ -41,7 +48,8 @@ function PartIcon({ def }: { def: PartDef }) {
     if (!ctx) return;
     ctx.clearRect(0, 0, 44, 44);
     // Landebeine und Booster ragen nach unten über ihr Bauteil hinaus.
-    const below = def.kind === 'legs' ? 1.6 : def.kind === 'booster' ? 5.5 : 0;
+    const below =
+      def.kind === 'legs' ? 1.6 : def.kind === 'booster' ? 5.5 : def.kind === 'shield' ? 0.35 : 0;
     const extra = def.kind === 'booster' ? 1.8 : 0;
     const h = def.height + below + extra;
     const wide = def.width + (def.kind === 'legs' ? 3 : def.kind === 'booster' ? 2.6 : 0);
@@ -162,8 +170,105 @@ function Preview({
 }
 
 export function Builder({
+  tab,
+  onTab,
   design,
   goals,
+  stars,
+  satellites,
+  onSatellites,
+  paint,
+  onPaint,
+  onChange,
+  onLaunch,
+  onChallenge,
+  sandbox,
+  onSandbox,
+}: {
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  design: Design;
+  goals: readonly string[];
+  stars: Record<string, number>;
+  satellites: Satellite[];
+  onSatellites: (s: Satellite[]) => void;
+  paint: string;
+  onPaint: (id: string) => void;
+  onChange: (d: Design) => void;
+  onLaunch: () => void;
+  onChallenge: (c: Challenge) => void;
+  sandbox: boolean;
+  onSandbox: (on: boolean) => void;
+}) {
+  setPaint(paint);
+  const points = careerPoints(goals, stars);
+  const tabs = (
+    <div class="rocket-tabs" role="tablist" aria-label="Bereiche der Raketenwerft">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={tab === 'werft'}
+        class={tab === 'werft' ? 'on' : ''}
+        onClick={() => onTab('werft')}
+      >
+        🔧 Werft &amp; Freier Flug
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={tab === 'herausforderungen'}
+        class={tab === 'herausforderungen' ? 'on' : ''}
+        onClick={() => onTab('herausforderungen')}
+      >
+        ★ Herausforderungen{' '}
+        <span class="tab-count">
+          {Object.values(stars).reduce((a, b) => a + b, 0)} / {CHALLENGES.length * 3}
+        </span>
+      </button>
+    </div>
+  );
+  if (tab === 'herausforderungen')
+    return (
+      <div class="build">
+        {tabs}
+        <ChallengeList stars={stars} onStart={onChallenge} />
+        <MissionControl
+          goals={goals}
+          stars={stars}
+          paint={paint}
+          onPaint={onPaint}
+          satellites={satellites}
+          onSatellites={onSatellites}
+        />
+      </div>
+    );
+  return (
+    <Werft
+      tabs={tabs}
+      design={design}
+      goals={goals}
+      stars={stars}
+      points={points}
+      satellites={satellites}
+      onSatellites={onSatellites}
+      paint={paint}
+      onPaint={onPaint}
+      onChange={onChange}
+      onLaunch={onLaunch}
+      sandbox={sandbox}
+      onSandbox={onSandbox}
+    />
+  );
+}
+
+function Werft({
+  tabs,
+  design,
+  goals,
+  stars,
+  points,
+  satellites,
+  onSatellites,
   paint,
   onPaint,
   onChange,
@@ -171,8 +276,13 @@ export function Builder({
   sandbox,
   onSandbox,
 }: {
+  tabs: preact.ComponentChildren;
   design: Design;
   goals: readonly string[];
+  stars: Record<string, number>;
+  points: number;
+  satellites: Satellite[];
+  onSatellites: (s: Satellite[]) => void;
   paint: string;
   onPaint: (id: string) => void;
   onChange: (d: Design) => void;
@@ -180,7 +290,6 @@ export function Builder({
   sandbox: boolean;
   onSandbox: (on: boolean) => void;
 }) {
-  setPaint(paint);
   const [selected, setSelected] = useState(-1);
   const [hangar, setHangar] = useState<Record<string, string[]>>(
     () => progressStore.load().rocketHangar ?? {},
@@ -196,7 +305,15 @@ export function Builder({
   const dv = design.length ? totalDeltaV(design) : 0;
   const mass = totalMass(design);
 
+  const [lockHint, setLockHint] = useState('');
   const add = (id: string): void => {
+    if (!unlocked(id, points, sandbox)) {
+      setLockHint(
+        `${part(id).name} gibt es ab ${part(id).unlock} Punkten (du hast ${points}). Oder im Sandkasten ausprobieren.`,
+      );
+      return;
+    }
+    setLockHint('');
     if (design.length >= MAX_PARTS) return;
     const at = selected >= 0 ? selected + 1 : design.length;
     const next = [...design.slice(0, at), id, ...design.slice(at)];
@@ -227,25 +344,31 @@ export function Builder({
     return () => window.removeEventListener('keydown', key);
   });
 
-  const maxBar = 9000;
+  const maxBar = 12_000;
+  const lockedParts = design.filter((id) => !unlocked(id, points, sandbox));
   return (
     <div class="build">
+      {tabs}
       <div class="build-templates">
         <span class="small muted">Vorlagen:</span>
-        {TEMPLATES.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            class="btn small"
-            title={t.info}
-            onClick={() => {
-              onChange([...t.parts]);
-              setSelected(-1);
-            }}
-          >
-            {t.name}
-          </button>
-        ))}
+        {TEMPLATES.map((t) => {
+          const locked = t.parts.some((id) => !unlocked(id, points, sandbox));
+          return (
+            <button
+              key={t.id}
+              type="button"
+              class={`btn small ${locked ? 'locked' : ''}`}
+              title={locked ? `${t.info} (Einige Teile sind noch gesperrt.)` : t.info}
+              onClick={() => {
+                onChange([...t.parts]);
+                setSelected(-1);
+              }}
+            >
+              {locked ? '🔒 ' : ''}
+              {t.name}
+            </button>
+          );
+        })}
         <button
           type="button"
           class="btn small ghost"
@@ -314,28 +437,37 @@ export function Builder({
             Klick fügt das Teil {selected >= 0 ? 'unter dem markierten Teil' : 'unten'} an.
           </p>
           <div class="palette-list">
-            {PARTS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                class="palette-item"
-                onClick={() => add(p.id)}
-                title={p.info}
-              >
-                <PartIcon def={p} />
-                <span>
-                  <strong>{p.name}</strong>
-                  <span class="small muted">
-                    {p.thrust > 0
-                      ? `${fmt(p.thrust / 1000)} kN · ${p.isp} s`
-                      : p.fuel > 0
-                        ? `${fmt(p.fuel / 1000, 1)} t Treibstoff`
-                        : `${fmt(p.dry / 1000, 1)} t`}
+            {PARTS.map((p) => {
+              const open = unlocked(p.id, points, sandbox);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  class={`palette-item ${open ? '' : 'locked'}`}
+                  onClick={() => add(p.id)}
+                  title={open ? p.info : `Ab ${p.unlock} Punkten: ${p.info}`}
+                >
+                  <PartIcon def={p} />
+                  <span>
+                    <strong>
+                      {open ? '' : '🔒 '}
+                      {p.name}
+                    </strong>
+                    <span class="small muted">
+                      {!open
+                        ? `ab ${p.unlock} Punkten`
+                        : p.thrust > 0
+                          ? `${fmt(p.thrust / 1000)} kN · ${p.isp} s`
+                          : p.fuel > 0
+                            ? `${fmt(p.fuel / 1000, 1)} t Treibstoff`
+                            : `${fmt(p.dry / 1000, 1)} t`}
+                    </span>
                   </span>
-                </span>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
+          {lockHint && <p class="small lock-hint">{lockHint}</p>}
         </section>
 
         <section class="build-center" aria-label="Rakete">
@@ -449,10 +581,16 @@ export function Builder({
               keine Punkte.
             </span>
           </label>
+          {lockedParts.length > 0 && (
+            <p class="small lock-hint">
+              🔒 Noch gesperrt: {[...new Set(lockedParts)].map((id) => part(id).name).join(', ')}.
+              Mehr Punkte sammeln – oder im Sandkasten fliegen.
+            </p>
+          )}
           <button
             type="button"
             class="btn primary launch-btn"
-            disabled={blocked}
+            disabled={blocked || lockedParts.length > 0}
             onClick={onLaunch}
           >
             Zur Startrampe <Icon name="arrow" />
@@ -475,40 +613,111 @@ export function Builder({
           </details>
         </section>
       </div>
-      <MissionControl goals={goals} paint={paint} onPaint={onPaint} />
+      <MissionControl
+        goals={goals}
+        stars={stars}
+        paint={paint}
+        onPaint={onPaint}
+        satellites={satellites}
+        onSatellites={onSatellites}
+      />
     </div>
   );
 }
 
-/** Rang, Punkte, alle Ziele und die freigeschalteten Lackierungen. */
+const GROUP_INFO: Record<ChallengeGroup, string> = {
+  Flugschule: 'Die Grundlagen: abheben, Umlaufbahn, Manöver planen.',
+  Profi: 'Andocken, Satelliten, Präzisionslandungen.',
+  Meister: 'Für echte Raketenprofis.',
+};
+
+/** Übersicht der Herausforderungen mit den besten Sternen. */
+function ChallengeList({
+  stars,
+  onStart,
+}: {
+  stars: Record<string, number>;
+  onStart: (c: Challenge) => void;
+}) {
+  const groups: ChallengeGroup[] = ['Flugschule', 'Profi', 'Meister'];
+  return (
+    <section class="challenge-list" aria-label="Herausforderungen">
+      <p class="small muted">
+        Feste Rakete, feste Startsituation, ein Ziel: Jede Herausforderung bringt bis zu drei
+        Sterne, jeder Stern zählt {STAR_POINTS} Punkte für deinen Rang.
+      </p>
+      {groups.map((g) => (
+        <div key={g} class="challenge-group">
+          <h3>
+            {g} <span class="small muted">{GROUP_INFO[g]}</span>
+          </h3>
+          <div class="challenge-cards">
+            {CHALLENGES.filter((c) => c.group === g).map((c) => {
+              const n = stars[c.id] ?? 0;
+              return (
+                <article key={c.id} class={`challenge-card ${n > 0 ? 'done' : ''}`}>
+                  <div class="challenge-stars" aria-label={`${n} von 3 Sternen`}>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} class={i < n ? 'on' : ''}>
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <h4>{c.title}</h4>
+                  <p class="small">{c.brief}</p>
+                  <p class="small muted">
+                    {c.computer ? 'Bordcomputer erlaubt' : 'Ohne Bordcomputer'}
+                  </p>
+                  <button type="button" class="btn primary small" onClick={() => onStart(c)}>
+                    {n > 0 ? 'Nochmal' : 'Starten'} <Icon name="arrow" />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** Rang, Punkte, alle Ziele, Satelliten und die freigeschalteten Lackierungen. */
 function MissionControl({
   goals,
+  stars,
   paint,
   onPaint,
+  satellites,
+  onSatellites,
 }: {
   goals: readonly string[];
+  stars: Record<string, number>;
   paint: string;
   onPaint: (id: string) => void;
+  satellites: Satellite[];
+  onSatellites: (s: Satellite[]) => void;
 }) {
-  const points = goalPoints(goals);
+  const points = careerPoints(goals, stars);
+  const starSum = Object.values(stars).reduce((a, b) => a + b, 0);
   const rank = rankFor(points);
   const prev = RANKS[rank.index]!.points;
   const progress = rank.next === null ? 1 : (points - prev) / (rank.next - prev);
-  const groups = ['Erde', 'Station', 'Mond', 'Planeten', 'Können'] as const;
   return (
     <section class="mission-control" aria-labelledby="missionskontrolle">
       <div class="mc-head">
         <div>
           <h3 id="missionskontrolle">Missionskontrolle</h3>
           <p class="small muted">
-            Jedes erreichte Ziel bringt Punkte. Mit Punkten steigst du im Rang auf – bis zur{' '}
-            {RANKS[RANKS.length - 1]!.title} – und schaltest neue Lackierungen frei.
+            Jedes erreichte Ziel und jeder Stern bringt Punkte. Mit Punkten steigst du im Rang auf –
+            bis zum „{RANKS[RANKS.length - 1]!.title}“ – und schaltest neue Bauteile und
+            Lackierungen frei.
           </p>
         </div>
         <div class="mc-rank">
           <strong>{rank.title}</strong>
           <span>
             {points} Punkte
+            {starSum > 0 ? ` (davon ${starSum * STAR_POINTS} aus ${starSum} Sternen)` : ''}
             {rank.next !== null ? ` · nächster Rang ab ${rank.next}` : ' · höchster Rang!'}
           </span>
           <div class="dv-bar" aria-hidden="true">
@@ -517,7 +726,7 @@ function MissionControl({
         </div>
       </div>
       <div class="mc-goals">
-        {groups.map((g) => (
+        {GOAL_GROUPS.map((g) => (
           <div key={g} class="mc-group">
             <h4>{g}</h4>
             <ul>
@@ -531,6 +740,31 @@ function MissionControl({
           </div>
         ))}
       </div>
+      {satellites.length > 0 && (
+        <div class="mc-sats">
+          <h4>Deine Satelliten ({satellites.length})</h4>
+          <ul>
+            {satellites.map((s) => {
+              const b = bodyById(s.body);
+              const { peri, apo } = apsides(s.el);
+              return (
+                <li key={s.id}>
+                  🛰 {s.name} · um {b.name} · {km(peri - b.radius)} – {km(apo - b.radius)}
+                  <button
+                    type="button"
+                    class="btn small ghost"
+                    aria-label={`${s.name} abschalten`}
+                    title="Satellit abschalten (verschwindet aus allen Flügen)"
+                    onClick={() => onSatellites(satellites.filter((q) => q !== s))}
+                  >
+                    <Icon name="close" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       <div class="mc-paints" role="radiogroup" aria-label="Lackierung">
         <span class="small muted">Lackierung:</span>
         {PAINTS.map((p) => {

@@ -117,6 +117,8 @@ export interface FlightStats {
   /** Zeitpunkt des Abhebens (null = noch nicht gestartet). */
   liftoff: number | null;
   landings: number;
+  /** Letzte Landung: Körper, Tempo beim Aufsetzen, Zeit. */
+  lastLanding: { body: BodyId; speed: number; t: number } | null;
 }
 
 /** Gespeicherter Spielstand eines Flugs (Schnellspeichern). */
@@ -426,6 +428,7 @@ export class Flight {
     burnSeconds: 0,
     liftoff: null,
     landings: 0,
+    lastLanding: null,
   };
   /** Momentane Belastung in g (ohne Schwerkraft: Schub, Luftwiderstand). */
   gForce = 0;
@@ -1287,6 +1290,7 @@ export class Flight {
     this.shake = Math.max(0, this.shake - realDt * 1.4);
     this.flash = Math.max(0, this.flash - realDt * 1.8);
     if (this.status !== 'crashed' && this.thrusting && this.warp <= 10) this.exhaust();
+    if (this.status === 'flying' && this.warp <= 10) this.reentrySparks();
     this.checkGoals();
   }
 
@@ -1547,6 +1551,7 @@ export class Flight {
       this.warpTarget = null;
       this.heat = 0;
       this.stats.landings++;
+      this.stats.lastLanding = { body: body.id, speed, t: this.t };
       this.puff(this.x, this.y, 20, 'dust');
       // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht.
       if (this.chute === 'open') {
@@ -1774,6 +1779,34 @@ export class Flight {
     if (this.particles.length > 900) this.particles.splice(0, this.particles.length - 900);
   }
 
+  /** Glühende Funken beim Wiedereintritt, die nach hinten wegfliegen. */
+  private reentrySparks(): void {
+    const air = this.air();
+    if (air.rho <= 0.001) return;
+    const c = this.state(air.body);
+    const rvx = this.vx - c.vx;
+    const rvy = this.vy - c.vy;
+    const rv = Math.hypot(rvx, rvy);
+    const k = Math.min(1, (rv - 1300) / 1500) * Math.min(1, air.rho / 0.01);
+    if (k <= 0.05) return;
+    const n = this.random() < k * 3 - Math.floor(k * 3) ? Math.ceil(k * 3) : Math.floor(k * 3);
+    const [cx, cy] = this.center();
+    for (let i = 0; i < n; i++) {
+      const s = 0.2 + this.random() * 0.4;
+      const side = (this.random() - 0.5) * 30;
+      this.particles.push({
+        x: cx + (rvx / rv) * 3,
+        y: cy + (rvy / rv) * 3,
+        vx: c.vx + rvx * s - (rvy / rv) * side,
+        vy: c.vy + rvy * s + (rvx / rv) * side,
+        life: 0,
+        max: 0.3 + this.random() * 0.5,
+        size: 0.6 + this.random() * 1.2,
+        kind: 'spark',
+      });
+    }
+  }
+
   /** Kleine Wolke (Stufentrennung, Landung). */
   private puff(x: number, y: number, n: number, kind: Particle['kind'] = 'spark'): void {
     for (let i = 0; i < n; i++) {
@@ -1793,6 +1826,8 @@ export class Flight {
   }
 
   explode(x: number, y: number, vx: number, vy: number, n: number): void {
+    // Ohne Luft gibt es keinen Rauch – nur Feuerball und Funken (und Staub vom Boden).
+    const airless = this.air().rho <= 0;
     for (let i = 0; i < n; i++) {
       const a = this.random() * Math.PI * 2;
       const s = 5 + this.random() * 45;
@@ -1804,7 +1839,7 @@ export class Flight {
         life: 0,
         max: 0.8 + this.random() * 2.2,
         size: 2 + this.random() * 6,
-        kind: i % 3 === 0 ? 'smoke' : i % 7 === 0 ? 'spark' : 'fire',
+        kind: i % 3 === 0 ? (airless ? 'dust' : 'smoke') : i % 7 === 0 ? 'spark' : 'fire',
       });
     }
   }

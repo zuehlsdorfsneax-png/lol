@@ -46,3 +46,13 @@ export function duration(t: number): string {
   const d = Math.floor(s / 86_400);
   return `${d} ${d === 1 ? 'Tag' : 'Tage'} ${Math.floor((s % 86_400) / 3600)} h`;
 }
+
+/** Sehr kurze Zeitangabe für enge Anzeigen („12:30“, „5 h“, „3 T“). */
+export function shortTime(t: number): string {
+  if (!Number.isFinite(t)) return '–';
+  const s = Math.max(0, Math.round(t));
+  const two = (n: number): string => String(n).padStart(2, '0');
+  if (s < 3600) return `${two(Math.floor(s / 60))}:${two(s % 60)}`;
+  if (s < 86_400) return `${Math.floor(s / 3600)} h`;
+  return `${Math.floor(s / 86_400)} T`;
+}

@@ -245,26 +245,32 @@ export class LandingPilot {
       f.throttle = 0;
       return (this.phase = 'failed');
     }
-    if (
-      horizontal > 3 &&
-      (this.phase === 'brake' || this.phase === 'aero' || this.phase === 'chute')
-    ) {
+    // Große Bahngeschwindigkeit zuerst waagerecht abbauen.
+    if (horizontal > 30 || (horizontal > 3 && this.phase === 'brake')) {
       this.phase = 'brake';
       f.throttle = steerTo(f, Math.atan2(-hy, -hx)) < 0.15 ? Math.min(1, horizontal / amax) : 0;
       if (f.warpIndex) f.setWarp(0);
       return this.phase;
     }
-    const upright = steerTo(f, Math.atan2(uy, ux)) < 0.1;
     // Nötige Bremsbeschleunigung, um bei 2 m/s knapp über dem Boden anzukommen.
     const need = (radial * radial - 4) / (2 * Math.max(r.altitude, 1)) + g;
     const falling = radial < 0;
-    if (falling && (need > 0.72 * amax || r.altitude < 60)) {
+    // Gewünschte Richtung: nach oben bremsen und dabei die Restgeschwindigkeit zur Seite
+    // wegregeln; kurz vor dem Boden fast senkrecht (sonst kippt die Rakete beim Aufsetzen).
+    const tiltMax = r.altitude < 60 ? 0.12 : 0.35;
+    const side = Math.min(tiltMax, horizontal * 0.08);
+    const ax = horizontal > 1e-6 ? -hx / horizontal : 0;
+    const ay = horizontal > 1e-6 ? -hy / horizontal : 0;
+    const upright =
+      steerTo(f, Math.atan2(uy + ay * Math.tan(side), ux + ax * Math.tan(side))) < 0.1;
+    const start = this.phase === 'suicide' ? 0.5 : 0.72;
+    if (falling && (need > start * amax || r.altitude < 60)) {
       this.phase = 'suicide';
       if (f.warpIndex) f.setWarp(0);
-      f.throttle = Math.min(1, Math.max(0, need / amax));
+      f.throttle = Math.min(1, Math.max(0, need / (amax * Math.cos(side))));
       if (r.altitude < 60 && -radial < 3) f.throttle = Math.min(1, (g * 0.95) / amax);
     } else {
-      this.phase = horizontal > 3 ? 'brake' : 'fall';
+      this.phase = 'fall';
       f.throttle = 0;
       // Im freien Fall darf die Zeit schneller laufen (der Zeitraffer bremst selbst vor dem Boden).
       if (r.altitude > 5_000 && upright && f.warpIndex < 3)

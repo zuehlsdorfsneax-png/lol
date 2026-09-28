@@ -2042,6 +2042,7 @@ details.section .section-body {
 /* Flug */
 .rocket-stage {
   position: relative;
+  container: stage / inline-size;
   scroll-margin-top: 70px;
   height: clamp(480px, 80vh, 860px);
   border-radius: var(--radius);
@@ -2458,177 +2459,6 @@ details.section .section-body {
   box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
 }
 
-@media (max-width: 900px) {
-  .menu-toggle {
-    display: inline-flex !important;
-    margin-left: auto;
-  }
-  .hud-extra {
-    display: none;
-    position: absolute;
-    top: 44px;
-    right: 0;
-    z-index: 5;
-    flex-direction: column;
-    background: rgb(6 10 22 / 95%);
-    border: 1px solid rgb(255 255 255 / 15%);
-    border-radius: 10px;
-    padding: 6px;
-  }
-  .hud-extra.open {
-    display: flex;
-  }
-  .hud-center {
-    flex-wrap: wrap;
-  }
-  .btn-label {
-    display: none;
-  }
-  .hud-right {
-    width: 172px;
-  }
-  .hud-target select {
-    width: 100%;
-    max-width: 100%;
-  }
-  .hud-right .goal-list {
-    display: none;
-  }
-  .hud-tip {
-    left: 222px;
-    right: 196px;
-    width: auto;
-    transform: none;
-    text-align: left;
-  }
-  .toasts {
-    top: 170px;
-    bottom: auto;
-    left: 222px;
-    right: 196px;
-    width: auto;
-    transform: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .rocket-stage {
-    height: calc(100svh - 70px);
-    min-height: 600px;
-    border-radius: 0;
-    margin: 0 -16px;
-  }
-  .rocket-stage kbd {
-    display: none;
-  }
-  .hud-bar {
-    flex-wrap: wrap;
-  }
-  .hud-center {
-    order: 3;
-    width: 100%;
-    justify-content: space-between;
-  }
-  .hud-center .hud-btn,
-  .hud-center .warp button {
-    min-height: 34px;
-    padding: 2px 8px;
-  }
-  .warp span {
-    min-width: 50px;
-  }
-  .hud {
-    top: 100px;
-    font-size: 0.72rem;
-    padding: 6px 8px;
-  }
-  .hud-left {
-    width: calc(50% - 18px);
-  }
-  .hud-right {
-    display: block;
-    width: calc(50% - 18px);
-  }
-  .hud-right .goal-list,
-  .hud-right .rank {
-    display: none;
-  }
-  .hud-window .small {
-    display: none;
-  }
-  .hud-tip,
-  .toasts {
-    top: 262px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-    transform: none;
-    font-size: 0.78rem;
-    padding: 6px 8px;
-    text-align: left;
-  }
-  .toasts {
-    padding: 0;
-  }
-  .rocket-toast span {
-    display: none;
-  }
-  .rocket-toast:not(:last-child) {
-    display: none;
-  }
-  .map-focus {
-    flex: 1 1 100%;
-  }
-  .zoom-group {
-    display: none !important;
-  }
-  .rocket-stage.is-map .hud,
-  .rocket-stage.is-map .hud-tip,
-  .rocket-stage.is-map .toasts {
-    margin-top: 44px;
-  }
-  .rocket-stage.has-toast .hud-tip {
-    display: none;
-  }
-  .landing-alert {
-    top: 320px;
-  }
-  .hud-bottom {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-  .action-pad {
-    grid-column: 1;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .turn-pad {
-    grid-column: 1;
-  }
-  .throttle-pad {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    width: 168px;
-  }
-  .pad-btn.wide {
-    min-height: 40px;
-    font-size: 0.85rem;
-    padding: 4px 10px;
-  }
-  .turn-pad .pad-btn {
-    width: 56px;
-  }
-  .rcs-pad {
-    grid-template-columns: repeat(3, 34px);
-    grid-template-rows: repeat(3, 30px);
-  }
-  .rcs-pad .pad-btn {
-    width: 34px;
-    height: 30px;
-  }
-}
-
 /* Download */
 .download-hero {
   display: grid;
@@ -3018,4 +2848,965 @@ details.section .section-body {
 .sandbox-toggle input {
   margin-top: 3px;
   accent-color: var(--accent);
+}
+
+/* ------------------------ Raketenwerft 2: Reiter und Herausforderungen -------------------- */
+.rocket-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rocket-tabs button {
+  font: 600 0.95rem var(--font-ui);
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.rocket-tabs button.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.tab-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.challenge-list {
+  display: grid;
+  gap: 14px;
+}
+
+.challenge-group h3 {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.challenge-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 12px;
+}
+
+.challenge-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.challenge-card.done {
+  border-color: var(--accent);
+}
+
+.challenge-card h4 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.challenge-card p {
+  margin: 0;
+}
+
+.challenge-card .btn {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.challenge-stars span,
+.stars span {
+  color: var(--line);
+  font-size: 1.3rem;
+  letter-spacing: 2px;
+}
+
+.challenge-stars span.on {
+  color: #f5b301;
+}
+
+.palette-item.locked,
+.btn.locked {
+  opacity: 0.6;
+}
+
+.lock-hint {
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin: 6px 0 0;
+}
+
+.mc-sats h4 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+
+.mc-sats ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+
+.mc-sats li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ------------------------ Flug: Lageanzeige und SAS ------------------------ */
+.navball {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.navball-dial {
+  position: relative;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px rgb(6 10 22 / 70%),
+    0 6px 18px rgb(0 0 0 / 45%);
+}
+
+.navball-dial canvas {
+  display: block;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.navball-pitch {
+  position: absolute;
+  bottom: -6px;
+  right: -12px;
+  font: 600 0.72rem var(--font-mono);
+  background: rgb(6 10 22 / 85%);
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 6px;
+  padding: 1px 5px;
+  color: #e6ecf8;
+}
+
+.navball-pitch:empty {
+  display: none;
+}
+
+.sas-row {
+  display: flex;
+  gap: 3px;
+  background: rgb(6 10 22 / 72%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.sas-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(14 20 40 / 90%);
+  color: #e6ecf8;
+  font: 600 0.95rem var(--font-ui);
+  cursor: pointer;
+  padding: 0;
+}
+
+.sas-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.sas-btn.on {
+  background: #fde047;
+  border-color: #fde047;
+  color: #1b1206;
+}
+
+.sas-prograde,
+.sas-retrograde {
+  color: #86efac;
+}
+
+.sas-radialOut,
+.sas-radialIn {
+  color: #67e8f9;
+}
+
+.sas-target {
+  color: #d8b4fe;
+}
+
+.sas-maneuver {
+  color: #93c5fd;
+}
+
+/* ------------------------ Flug: Bordcomputer ------------------------ */
+.computer-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.computer-panel {
+  position: absolute;
+  top: 58px;
+  right: 220px;
+  width: 340px;
+  max-height: calc(100% - 290px);
+  overflow: auto;
+  z-index: 4;
+  background: rgb(6 10 22 / 90%);
+  border: 1px solid rgb(147 197 253 / 35%);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  backdrop-filter: blur(6px);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.cp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #bfdbfe;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.cp-close {
+  background: none;
+  border: 0;
+  color: #e6ecf8;
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.cp-plans {
+  display: grid;
+  gap: 6px;
+}
+
+.cp-plan {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  background: rgb(18 26 50 / 95%);
+  color: #e6ecf8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cp-plan:hover:not(:disabled),
+.cp-plan:focus-visible {
+  border-color: #93c5fd;
+}
+
+.cp-plan span {
+  color: #a9b4d0;
+  font-size: 0.78rem;
+}
+
+.cp-result {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgb(22 101 52 / 35%);
+  border-left: 3px solid #4ade80;
+}
+
+.cp-result.bad {
+  background: rgb(127 29 29 / 35%);
+  border-left-color: #f87171;
+}
+
+.cp-node {
+  display: grid;
+  gap: 6px;
+}
+
+.cp-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cp-row span {
+  color: #a9b4d0;
+}
+
+.cp-row strong {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.cp-row strong.soon {
+  color: #fde047;
+}
+
+.cp-edit {
+  display: grid;
+  gap: 3px;
+}
+
+.cp-edit > span {
+  color: #a9b4d0;
+  font-size: 0.78rem;
+}
+
+.cp-steps {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.cp-steps output {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  min-width: 56px;
+}
+
+.step-btn {
+  min-width: 34px;
+  height: 30px;
+  padding: 0 5px;
+  border-radius: 7px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  background: rgb(18 26 50 / 95%);
+  color: #e6ecf8;
+  font: 600 0.78rem var(--font-mono);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.step-btn:active {
+  background: #2563eb;
+}
+
+.cp-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cp-action {
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  background: rgb(18 26 50 / 95%);
+  color: #e6ecf8;
+  font: 600 0.82rem var(--font-ui);
+  cursor: pointer;
+}
+
+.cp-action.go {
+  background: #1d4ed8;
+  border-color: #60a5fa;
+}
+
+.cp-action.on,
+.cp-action.land.on {
+  background: #d9822b;
+  border-color: #f0a860;
+  color: #1b1206;
+}
+
+.cp-progress {
+  display: grid;
+  gap: 4px;
+}
+
+.cp-progress .bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 12%);
+  overflow: hidden;
+}
+
+.cp-progress .fill {
+  height: 100%;
+  background: #60a5fa;
+}
+
+.hud-window.node {
+  color: #bfdbfe;
+}
+
+.hud-left dd small {
+  color: #a9b4d0;
+  font-size: 0.72rem;
+}
+
+.challenge-box p {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.challenge-box ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: #c3cbe2;
+}
+
+.challenge-box ol span {
+  color: #fcd34d;
+}
+
+/* ------------------------ Flug: Zeitsprung, Countdown ------------------------ */
+.warp-menu-wrap {
+  position: relative;
+}
+
+.warp-menu {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  min-width: 250px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  background: rgb(6 10 22 / 96%);
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.warp-menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #e6ecf8;
+  font: 500 0.85rem var(--font-ui);
+  cursor: pointer;
+}
+
+.warp-menu button:hover,
+.warp-menu button:focus-visible {
+  background: rgb(37 99 235 / 45%);
+}
+
+.warp-menu button span {
+  font-family: var(--font-mono);
+  color: #a9b4d0;
+  font-size: 0.78rem;
+}
+
+.countdown {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  transform: translate(-50%, -50%);
+  font: 700 clamp(4rem, 14vw, 9rem) var(--font-display);
+  color: #fff;
+  text-shadow: 0 0 30px rgb(255 160 60 / 80%);
+  pointer-events: none;
+  animation: count-pop 1s ease-out infinite;
+}
+
+@keyframes count-pop {
+  from {
+    transform: translate(-50%, -50%) scale(1.25);
+    opacity: 0.4;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+/* ------------------------ Flug: Berichte und Sterne ------------------------ */
+.rocket-overlay.report,
+.rocket-overlay.result,
+.rocket-overlay.brief {
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  z-index: 8;
+}
+
+.rocket-overlay .eyebrow {
+  margin: 0;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 6px;
+  margin: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.report-grid div {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 9px;
+}
+
+.report-grid dt {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+
+.report-grid dd {
+  margin: 0;
+  font: 600 0.95rem var(--font-mono);
+}
+
+.report-goals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+}
+
+.report-goals li {
+  display: flex;
+  gap: 6px;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.report-more {
+  width: 100%;
+  text-align: left;
+}
+
+.report-more summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+.stars {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.stars span {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.stars span.on {
+  color: #f5b301;
+  text-shadow: 0 0 12px rgb(245 179 1 / 55%);
+}
+
+.stars.animate span.on {
+  animation: star-in 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes star-in {
+  from {
+    transform: scale(0.2) rotate(-40deg);
+    opacity: 0;
+  }
+}
+
+.star-goals,
+.brief-tips {
+  margin: 0;
+  text-align: left;
+  width: 100%;
+  display: grid;
+  gap: 3px;
+}
+
+.star-goals {
+  list-style: none;
+  padding: 0;
+}
+
+.star-goals span {
+  color: #f5b301;
+}
+
+.star-goals li.done {
+  color: var(--ok);
+}
+
+.brief-tips {
+  padding-left: 1.2em;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+/* ------------------------ Flug: Anordnung unten ------------------------ */
+.hud-bottom .navball {
+  align-self: flex-end;
+}
+
+.rocket-stage.has-computer .hud-tip {
+  left: 222px;
+  right: 580px;
+  width: auto;
+  transform: none;
+  text-align: left;
+}
+
+/* ------------------------ Flug: Anordnung je nach Breite des Spielfelds ------------------------ */
+.hud-left {
+  width: 214px;
+}
+
+.hud-left dd {
+  white-space: nowrap;
+}
+
+.menu-toggle {
+  display: inline-flex !important;
+}
+
+.hud-extra {
+  display: none;
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 6;
+  flex-direction: column;
+  background: rgb(6 10 22 / 95%);
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.hud-extra.open {
+  display: flex;
+}
+
+.hud-extra .btn-label {
+  display: inline !important;
+}
+
+.hud-group:first-child {
+  flex-wrap: nowrap;
+}
+
+.sas-btn.sas-off.on {
+  background: rgb(14 20 40 / 90%);
+  border-color: rgb(255 255 255 / 40%);
+  color: #e6ecf8;
+}
+
+/* Bordcomputer ersetzt die rechte Anzeige, Tipp und Meldungen rücken zur Seite. */
+.rocket-stage.has-computer .hud-right {
+  display: none;
+}
+
+.computer-panel {
+  top: 58px;
+  right: 12px;
+  width: 340px;
+  max-height: calc(100% - 260px);
+}
+
+.rocket-stage.has-computer .hud-tip,
+.rocket-stage.has-computer .toasts {
+  left: 240px;
+  right: 364px;
+  width: auto;
+  transform: none;
+  text-align: left;
+}
+
+.cp-target {
+  display: grid;
+  gap: 3px;
+}
+
+.cp-target select {
+  font: inherit;
+  background: rgb(14 20 40 / 95%);
+  color: #e6ecf8;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+@container stage (max-width: 900px) {
+  .btn-label {
+    display: none;
+  }
+  .hud-center {
+    flex-wrap: wrap;
+  }
+  .hud-left {
+    width: 196px;
+  }
+  .hud-right {
+    width: 172px;
+  }
+  .hud-target select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .hud-right .goal-list {
+    display: none;
+  }
+  .hud-tip {
+    left: 222px;
+    right: 196px;
+    width: auto;
+    transform: none;
+    text-align: left;
+  }
+  .toasts {
+    top: 170px;
+    bottom: auto;
+    left: 222px;
+    right: 196px;
+    width: auto;
+    transform: none;
+  }
+  .computer-panel {
+    width: 300px;
+    max-height: calc(100% - 270px);
+    padding: 8px 10px;
+  }
+  .rocket-stage.has-computer .hud-tip {
+    display: none;
+  }
+  .rocket-stage.has-computer .toasts {
+    left: 222px;
+    right: 324px;
+  }
+  .sas-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+  .warp-menu {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+}
+
+@container stage (max-width: 640px) {
+  .rocket-stage kbd,
+  kbd {
+    display: none;
+  }
+  .hud-bar {
+    flex-wrap: wrap;
+  }
+  .hud-center {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .hud-center .hud-btn,
+  .hud-center .warp button {
+    min-height: 34px;
+    padding: 2px 8px;
+  }
+  .warp span {
+    min-width: 50px;
+  }
+  .hud {
+    top: 100px;
+    font-size: 0.72rem;
+    padding: 6px 8px;
+  }
+  .hud-left {
+    width: calc(50% - 18px);
+  }
+  .hud-left dd small {
+    display: none;
+  }
+  .hud-right {
+    display: block;
+    width: calc(50% - 18px);
+  }
+  .hud-right .goal-list,
+  .hud-right .rank,
+  .challenge-box ol {
+    display: none;
+  }
+  .computer-btn {
+    margin-top: 4px;
+    min-height: 30px;
+  }
+  .hud-window .small {
+    display: none;
+  }
+  .hud-tip,
+  .toasts,
+  .rocket-stage.has-computer .hud-tip,
+  .rocket-stage.has-computer .toasts {
+    top: 262px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    transform: none;
+    font-size: 0.78rem;
+    padding: 6px 8px;
+    text-align: left;
+  }
+  .toasts {
+    padding: 0;
+  }
+  .rocket-toast span {
+    display: none;
+  }
+  .rocket-toast:not(:last-child) {
+    display: none;
+  }
+  .map-focus {
+    flex: 1 1 100%;
+  }
+  .zoom-group {
+    display: none !important;
+  }
+  .rocket-stage.is-map .hud,
+  .rocket-stage.is-map .hud-tip,
+  .rocket-stage.is-map .toasts {
+    margin-top: 44px;
+  }
+  .rocket-stage.has-toast .hud-tip {
+    display: none;
+  }
+  .landing-alert {
+    top: 320px;
+  }
+  .hud-bottom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: end;
+    gap: 6px;
+    left: 8px;
+    right: 8px;
+  }
+  .action-pad {
+    grid-column: 1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .turn-pad {
+    grid-column: 1;
+  }
+  .hud-bottom .navball {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .throttle-pad {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    width: 132px;
+    padding: 6px 8px;
+  }
+  .throttle-buttons .pad-btn {
+    min-height: 38px;
+    padding: 2px 6px;
+  }
+  .pad-btn.wide {
+    min-height: 36px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
+  .turn-pad .pad-btn {
+    width: 52px;
+    min-height: 48px;
+  }
+  .rcs-pad {
+    grid-template-columns: repeat(3, 30px);
+    grid-template-rows: repeat(3, 28px);
+  }
+  .rcs-pad .pad-btn {
+    width: 30px;
+    height: 28px;
+  }
+  .sas-row {
+    display: grid;
+    grid-template-columns: repeat(4, 22px);
+    gap: 2px;
+    padding: 2px;
+  }
+  .sas-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+    border-radius: 5px;
+  }
+  .computer-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    max-height: 62%;
+    border-radius: 14px 14px 0 0;
+    z-index: 7;
+  }
+  .rocket-stage.has-computer .hud-right {
+    display: block;
+  }
+  .countdown {
+    top: 30%;
+  }
+  .warp-menu {
+    position: fixed;
+    top: auto;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    min-width: 0;
+    z-index: 9;
+  }
+}
+
+@media (max-width: 640px) {
+  .rocket-stage {
+    height: calc(100svh - 70px);
+    min-height: 600px;
+    border-radius: 0;
+    margin: 0 -16px;
+  }
 }

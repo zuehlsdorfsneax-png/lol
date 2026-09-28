@@ -15,6 +15,12 @@ export interface Progress {
   rocketHangar: Record<string, string[]>;
   /** Gewählte Lackierung der Raketen. */
   rocketPaint: string;
+  /** Beste Sterne und Ergebnis je Herausforderung der Raketenwerft. */
+  rocketChallenges: Record<string, { stars: number; text: string }>;
+  /** Ausgesetzte Satelliten (bleiben für spätere Flüge auf ihrer Bahn). */
+  rocketSats: unknown[];
+  /** Hinweise der Raketenwerft, die schon gezeigt wurden. */
+  rocketSeen: string[];
 }
 
 export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
@@ -26,6 +32,9 @@ export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
   rocketGoals: [],
   rocketHangar: {},
   rocketPaint: 'klassisch',
+  rocketChallenges: {},
+  rocketSats: [],
+  rocketSeen: [],
 });
 
 export function recordStars(id: string, stars: number, best: string): Progress {
