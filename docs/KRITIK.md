@@ -8,6 +8,14 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Sandkasten und neue Bauteile
+
+| #   | Befund                                                                                                    | Status | Lösung                                                                                                                                                                                                                                                                    |
+| --- | --------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 79  | Im Sandkasten blieben Lackierungen gesperrt, und außer „unendlich Treibstoff“ ließ sich nichts einstellen | ✅     | Alles frei (Teile, Vorlagen, Lackierungen); Einstellungen: Startort (12 Orte von der Rampe bis Europa), Schub 1×/2×/5×/10×, unendlich Treibstoff, unzerstörbar, Hitze und Luftwiderstand an/aus – gespeichert                                                             |
+| 80  | Nur 18 Bauteile, keine für Aerodynamik oder Lageregelung                                                  | ✅     | 12 neue Teile mit echter Wirkung: Nasenkegel (halber Luftwiderstand), Luftbremse (U), Großer Fallschirm, Reaktionsrad, RCS-Block, Vakuumtriebwerk Nova (verliert in dichter Luft Schub), Spatz, Tank XS, Sondentank, Tank XXL, Großbooster, Kapsel Aurora mit Hitzeschutz |
+| 81  | Neue Inhalte                                                                                              | ✅     | Vorlagen Pfeil, Aurora (Mars) und Spatz-Sonde; Herausforderung „Mars-Gleiter“; Warnung bei Nasenkegel nicht ganz oben                                                                                                                                                     |
+
 ## Oberfläche 3.0 – aufgeräumt, Raketenwerft als Vollbild-Spiel
 
 Die ganze App wurde auf Übersicht geprüft; die Raketenwerft orientiert sich jetzt an der
@@ -149,7 +157,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **173 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **183 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,

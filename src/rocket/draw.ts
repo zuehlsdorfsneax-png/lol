@@ -78,6 +78,8 @@ let lightSide = 1;
 let lightLevel = 1;
 /** Glühen durch Hitze (0…1). */
 let glow = 0;
+/** Wie weit die Luftbremsen ausgefahren sind (0…1). */
+let brakeOpen = 0;
 
 /** Lackierung für alle folgenden Zeichnungen wählen. */
 export function setPaint(id: string): void {
@@ -191,6 +193,17 @@ export function drawPart(
       ctx.arc(-w * 0.04 * lightSide, y0 + h * 0.48, w * 0.04, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(160,210,255,0.8)';
       ctx.fill();
+      if (w > 3) {
+        // Große Kapsel: zwei weitere Fenster und ein Hitzeschutzring
+        for (const sgn of [-1, 1]) {
+          ctx.beginPath();
+          ctx.arc(sgn * w * 0.2, y0 + h * 0.3, w * 0.07, 0, Math.PI * 2);
+          ctx.fillStyle = '#1b2a4a';
+          ctx.fill();
+        }
+        ctx.fillStyle = shade('#5b3a24');
+        ctx.fillRect(-w / 2, y0, w, 0.12);
+      }
       break;
     }
     case 'probe': {
@@ -279,6 +292,11 @@ export function drawPart(
         }
       } else {
         nozzle(ctx, 0, w, y0, h);
+        if (def.id === 'nova') {
+          // Vakuumdüse: goldener Kühlring am Hals
+          ctx.fillStyle = shade('#b45309');
+          ctx.fillRect(-w * 0.26, y0 + h * 0.62, w * 0.52, h * 0.06);
+        }
         if (def.id === 'atom') {
           // Kühlrippen und Strahlenzeichen
           ctx.fillStyle = shade('#6b7280');
@@ -323,10 +341,11 @@ export function drawPart(
       ctx.fillStyle = shade('#59616e');
       ctx.fillRect(-w / 2 - 0.3, y0, w + 0.6, h);
       const foot = Math.min(footY, y0);
-      const top = y0 + h + 1.4;
+      const pod = boosterPod(def);
+      const top = y0 + h + pod.rise;
       for (const sgn of [-1, 1]) {
-        const cx = sgn * (w / 2 + 0.62);
-        const bw = 1.1;
+        const cx = sgn * (w / 2 + pod.offset);
+        const bw = pod.width;
         ctx.save();
         ctx.translate(cx, 0);
         ctx.fillStyle = hGrad(ctx, bw, METAL);
@@ -370,7 +389,94 @@ export function drawPart(
       }
       break;
     }
+    case 'nose': {
+      // Spitze Verkleidung (Ogive)
+      ctx.beginPath();
+      ctx.moveTo(-w / 2, y0);
+      ctx.bezierCurveTo(-w / 2, y0 + h * 0.55, -w * 0.14, y0 + h * 0.96, 0, y0 + h);
+      ctx.bezierCurveTo(w * 0.14, y0 + h * 0.96, w / 2, y0 + h * 0.55, w / 2, y0);
+      ctx.closePath();
+      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = shade(paint.stripe);
+      ctx.fillRect(-w / 2, y0, w, 0.22);
+      ctx.beginPath();
+      ctx.arc(0, y0 + h - 0.12, 0.12, 0, Math.PI * 2);
+      ctx.fillStyle = shade(paint.band);
+      ctx.fill();
+      break;
+    }
+    case 'airbrake': {
+      ctx.fillStyle = hGrad(ctx, w, ['#4b5563', '#9ca3af', '#374151']);
+      ctx.fillRect(-w / 2, y0, w, h);
+      ctx.strokeRect(-w / 2, y0, w, h);
+      // Klappen hängen am oberen Rand und klappen nach außen
+      for (const sgn of [-1, 1]) {
+        ctx.save();
+        ctx.translate((sgn * w) / 2, y0 + h);
+        ctx.rotate(sgn * brakeOpen * 1.1);
+        ctx.fillStyle = shade('#d1d5db');
+        ctx.fillRect(sgn > 0 ? 0 : -0.16, -1.3, 0.16, 1.3);
+        ctx.strokeRect(sgn > 0 ? 0 : -0.16, -1.3, 0.16, 1.3);
+        ctx.fillStyle = shade(paint.stripe);
+        ctx.fillRect(sgn > 0 ? 0 : -0.16, -1.3, 0.16, 0.25);
+        ctx.restore();
+      }
+      break;
+    }
+    case 'wheel': {
+      ctx.fillStyle = hGrad(ctx, w, ['#374151', '#6b7280', '#1f2937']);
+      ctx.fillRect(-w / 2, y0, w, h);
+      ctx.strokeRect(-w / 2, y0, w, h);
+      ctx.fillStyle = shade('#f59e0b');
+      ctx.fillRect(-w / 2, y0 + h * 0.4, w, h * 0.2);
+      ctx.beginPath();
+      ctx.arc(0, y0 + h / 2, h * 0.34, 0, Math.PI * 2);
+      ctx.fillStyle = '#111827';
+      ctx.fill();
+      ctx.strokeStyle = shade('#9ca3af');
+      ctx.lineWidth = 0.05;
+      ctx.stroke();
+      break;
+    }
+    case 'rcs': {
+      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fillRect(-w / 2, y0, w, h);
+      ctx.strokeRect(-w / 2, y0, w, h);
+      ctx.fillStyle = shade(paint.band);
+      ctx.fillRect(-w / 2, y0 + h * 0.4, w, h * 0.2);
+      // Düsenblöcke links und rechts mit je zwei kleinen Düsen
+      for (const sgn of [-1, 1]) {
+        const x0 = sgn > 0 ? w / 2 : -w / 2 - 0.28;
+        ctx.fillStyle = shade('#4b5563');
+        ctx.fillRect(x0, y0 + h * 0.15, 0.28, h * 0.7);
+        ctx.strokeRect(x0, y0 + h * 0.15, 0.28, h * 0.7);
+        ctx.fillStyle = '#1f2937';
+        ctx.fillRect(x0 + 0.06, y0 + h * 0.85, 0.16, 0.08);
+        ctx.fillRect(x0 + 0.06, y0 + h * 0.07, 0.16, 0.08);
+      }
+      break;
+    }
   }
+}
+
+/** Seitenbooster: Breite, Überstand nach oben und Abstand der Röhren. */
+export function boosterPod(def: PartDef): { width: number; rise: number; offset: number } {
+  return def.id === 'booster-xl'
+    ? { width: 1.5, rise: 3.4, offset: 0.82 }
+    : { width: 1.1, rise: 1.4, offset: 0.62 };
+}
+
+/** Sichtbare Breite eines Teils samt Boostern und Landebeinen (m). */
+export function visualWidth(def: PartDef): number {
+  if (def.kind === 'booster') {
+    const pod = boosterPod(def);
+    return def.width + 2 * (pod.offset + pod.width / 2);
+  }
+  if (def.kind === 'legs') return def.width + 3;
+  if (def.kind === 'airbrake' || def.kind === 'rcs') return def.width + 1;
+  return def.width;
 }
 
 /** Satellit: Goldfolie, Antenne, Solarflügel (eingeklappt oder ausgefahren). */
@@ -443,6 +549,10 @@ export interface RocketLook {
   air: number;
   chuteOpen: number;
   time: number;
+  /** Luftbremsen ausgefahren (0…1). */
+  brakes?: number;
+  /** Bremsfläche der Fallschirme (1 = normaler Schirm). */
+  chuteArea?: number;
 }
 
 /** Zeichnet eine Rakete (Teile von oben nach unten); Ursprung = Unterkante, y nach oben. */
@@ -467,17 +577,20 @@ export function drawRocket(
   }
   const top = y;
 
+  brakeOpen = look?.brakes ?? 0;
   if (look && look.throttle > 0) {
     const engineId = [...parts].reverse().find((id) => part(id).kind === 'engine');
     const kind: FlameKind = engineId ? (part(engineId).flame ?? 'chemisch') : 'chemisch';
     drawFlame(ctx, parts, look, kind);
     // Seitenbooster der untersten Stufe brennen mit.
     const bottom = segs[segs.length - 1] ?? [];
-    if (bottom.includes('booster')) {
+    const booster = bottom.map(part).find((d) => d.kind === 'booster');
+    if (booster) {
+      const pod = boosterPod(booster);
       for (const sgn of [-1, 1]) {
         ctx.save();
-        ctx.translate(sgn * 1.82, 0);
-        drawFlame(ctx, parts, look, 'chemisch', 0.95);
+        ctx.translate(sgn * (booster.width / 2 + pod.offset), 0);
+        drawFlame(ctx, parts, look, 'chemisch', pod.width * 0.86);
         ctx.restore();
       }
     }
@@ -494,7 +607,8 @@ export function drawRocket(
     y += def.height;
   }
 
-  if (look && look.chuteOpen > 0) drawChute(ctx, top, look.chuteOpen);
+  if (look && look.chuteOpen > 0) drawChute(ctx, top, look.chuteOpen, look.chuteArea ?? 1);
+  brakeOpen = 0;
 }
 
 function drawFlame(
@@ -564,10 +678,12 @@ function drawFlame(
   }
 }
 
-function drawChute(ctx: CanvasRenderingContext2D, top: number, open: number): void {
-  const w = 3 + 15 * open;
-  const hgt = 2 + 5 * open;
-  const y = top + 6 + 12 * open;
+function drawChute(ctx: CanvasRenderingContext2D, top: number, open: number, area = 1): void {
+  // Größere Schirme sind breiter (Fläche wächst mit dem Quadrat).
+  const k = Math.sqrt(Math.max(1, area));
+  const w = (3 + 15 * open) * k;
+  const hgt = (2 + 5 * open) * k;
+  const y = top + (6 + 12 * open) * Math.sqrt(k);
   ctx.strokeStyle = 'rgba(240,240,240,0.8)';
   ctx.lineWidth = 0.08;
   for (const x of [-w / 2, -w / 4, 0, w / 4, w / 2]) {

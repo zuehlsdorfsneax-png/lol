@@ -5,7 +5,8 @@ import { Tex } from '../ui/content';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { Icon, type IconName } from '../ui/Icon';
 import { CHALLENGES, type Challenge, type ChallengeGroup } from './challenges';
-import { PAINTS, drawPart, drawRocket, setPaint } from './draw';
+import { PAINTS, drawPart, drawRocket, setPaint, visualWidth } from './draw';
+import { START_OPTIONS, THRUST_FACTORS, type SandboxSettings, type StartId } from './sandbox';
 import { apsides, type Satellite } from './flight';
 import { km } from './format';
 import { GOALS, GOAL_GROUPS, RANKS, STAR_POINTS, careerPoints, rankFor } from './goals';
@@ -52,9 +53,9 @@ function PartIcon({ def }: { def: PartDef }) {
     // Landebeine und Booster ragen nach unten über ihr Bauteil hinaus.
     const below =
       def.kind === 'legs' ? 1.6 : def.kind === 'booster' ? 5.5 : def.kind === 'shield' ? 0.35 : 0;
-    const extra = def.kind === 'booster' ? 1.8 : 0;
+    const extra = def.kind === 'booster' ? (def.id === 'booster-xl' ? 3.8 : 1.8) : 0;
     const h = def.height + below + extra;
-    const wide = def.width + (def.kind === 'legs' ? 3 : def.kind === 'booster' ? 2.6 : 0);
+    const wide = visualWidth(def);
     const s = Math.min(36 / Math.max(wide, 0.5), 36 / h);
     ctx.save();
     ctx.translate(22, 22 + (h * s) / 2 - below * s);
@@ -162,9 +163,7 @@ function Preview({
     const segs = segments(design);
     if (segs.length > 1) {
       const st = stageStats(design);
-      const maxW = Math.max(
-        ...design.map((id) => part(id).width + (part(id).kind === 'booster' ? 2.6 : 0)),
-      );
+      const maxW = Math.max(...design.map((id) => visualWidth(part(id))));
       const bx = Math.round(cx - (maxW / 2) * scale - 20) + 0.5;
       let idx = 0;
       ctx.font = '600 11px Jost, system-ui, sans-serif';
@@ -311,7 +310,8 @@ const CATEGORIES: { id: string; label: string; kinds: PartDef['kind'][] }[] = [
   { id: 'kopf', label: 'Kapseln', kinds: ['capsule', 'probe', 'payload'] },
   { id: 'tank', label: 'Tanks', kinds: ['tank'] },
   { id: 'antrieb', label: 'Antrieb', kinds: ['engine', 'booster'] },
-  { id: 'technik', label: 'Technik', kinds: ['decoupler', 'chute', 'legs', 'shield'] },
+  { id: 'aero', label: 'Aero', kinds: ['nose', 'chute', 'airbrake', 'shield'] },
+  { id: 'technik', label: 'Technik', kinds: ['decoupler', 'legs', 'wheel', 'rcs'] },
 ];
 
 function spec(p: PartDef): string {
@@ -335,6 +335,8 @@ export function Builder({
   onChallenge,
   sandbox,
   onSandbox,
+  sandboxSettings,
+  onSandboxSettings,
   onClose,
 }: {
   tab: Tab;
@@ -351,6 +353,8 @@ export function Builder({
   onChallenge: (c: Challenge) => void;
   sandbox: boolean;
   onSandbox: (on: boolean) => void;
+  sandboxSettings: SandboxSettings;
+  onSandboxSettings: (s: SandboxSettings) => void;
   onClose: () => void;
 }) {
   setPaint(paint);
@@ -422,6 +426,8 @@ export function Builder({
           onChange={onChange}
           sandbox={sandbox}
           onSandbox={onSandbox}
+          settings={sandboxSettings}
+          onSettings={onSandboxSettings}
         />
       ) : (
         <div class="game-page">
@@ -436,6 +442,7 @@ export function Builder({
                 onPaint={onPaint}
                 satellites={satellites}
                 onSatellites={onSatellites}
+                sandbox={sandbox}
               />
             )}
           </div>
@@ -453,6 +460,8 @@ function Werft({
   onChange,
   sandbox,
   onSandbox,
+  settings,
+  onSettings,
 }: {
   design: Design;
   points: number;
@@ -461,6 +470,8 @@ function Werft({
   onChange: (d: Design) => void;
   sandbox: boolean;
   onSandbox: (on: boolean) => void;
+  settings: SandboxSettings;
+  onSettings: (s: SandboxSettings) => void;
 }) {
   const [selected, setSelected] = useState(-1);
   const [cat, setCat] = useState(CATEGORIES[0]!.id);
@@ -562,9 +573,11 @@ function Werft({
         </div>
         <p class="parts-hint">
           {lockHint ||
-            (selected >= 0
-              ? 'Neue Teile kommen unter das markierte Teil.'
-              : 'Tippen fügt unten an.')}
+            (sandbox
+              ? 'Sandkasten: alle Teile, Vorlagen und Lackierungen frei – dafür keine Punkte.'
+              : selected >= 0
+                ? 'Neue Teile kommen unter das markierte Teil.'
+                : 'Tippen fügt unten an.')}
         </p>
       </aside>
 
@@ -677,6 +690,11 @@ function Werft({
             <span class="gtoggle-knob" aria-hidden="true" />
             Sandkasten
           </label>
+          {sandbox && (
+            <Menu icon="sliders" label="Einstellungen">
+              {() => <SandboxPanel settings={settings} onChange={onSettings} />}
+            </Menu>
+          )}
         </div>
 
         <Preview design={design} selected={selected} onSelect={setSelected} />
@@ -846,6 +864,106 @@ function Werft({
   );
 }
 
+function Switch({
+  label,
+  hint,
+  on,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  on: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <label class={`gswitch ${on ? 'on' : ''}`}>
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) => onChange((e.target as HTMLInputElement).checked)}
+      />
+      <span class="gswitch-text">
+        <strong>{label}</strong>
+        <span>{hint}</span>
+      </span>
+      <span class="gtoggle-knob" aria-hidden="true" />
+    </label>
+  );
+}
+
+/** Regeln und Startort des Sandkastens. */
+function SandboxPanel({
+  settings,
+  onChange,
+}: {
+  settings: SandboxSettings;
+  onChange: (s: SandboxSettings) => void;
+}) {
+  const set = (patch: Partial<SandboxSettings>): void => onChange({ ...settings, ...patch });
+  return (
+    <div class="sandbox-panel">
+      <label class="sb-field">
+        <span>Startort</span>
+        <select
+          value={settings.start}
+          onChange={(e) => set({ start: (e.target as HTMLSelectElement).value as StartId })}
+        >
+          {(['Erde', 'Mond', 'Planeten'] as const).map((g) => (
+            <optgroup key={g} label={g}>
+              {START_OPTIONS.filter((o) => o.group === g).map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+      <div class="sb-field">
+        <span>Schub der Triebwerke</span>
+        <div class="sb-seg" role="radiogroup" aria-label="Schubfaktor">
+          {THRUST_FACTORS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={settings.thrust === k}
+              class={settings.thrust === k ? 'on' : ''}
+              onClick={() => set({ thrust: k })}
+            >
+              {k}×
+            </button>
+          ))}
+        </div>
+      </div>
+      <Switch
+        label="Unendlich Treibstoff"
+        hint="Die Tanks werden nie leer."
+        on={settings.fuel}
+        onChange={(fuel) => set({ fuel })}
+      />
+      <Switch
+        label="Unzerstörbar"
+        hint="Kein Absturz, kein Verglühen – jede Berührung ist eine Landung."
+        on={settings.indestructible}
+        onChange={(indestructible) => set({ indestructible })}
+      />
+      <Switch
+        label="Hitze beim Wiedereintritt"
+        hint="Aus: Die Rakete wird in der Luft nicht heiß."
+        on={settings.heat}
+        onChange={(heat) => set({ heat })}
+      />
+      <Switch
+        label="Luftwiderstand"
+        hint="Aus: Die Luft bremst die Rakete nicht (Fallschirme wirken weiter)."
+        on={settings.drag}
+        onChange={(drag) => set({ drag })}
+      />
+    </div>
+  );
+}
+
 const GROUP_INFO: Record<ChallengeGroup, string> = {
   Flugschule: 'Die Grundlagen: abheben, Umlaufbahn, Manöver planen.',
   Profi: 'Andocken, Satelliten, Präzisionslandungen.',
@@ -910,6 +1028,7 @@ function MissionControl({
   onPaint,
   satellites,
   onSatellites,
+  sandbox,
 }: {
   goals: readonly string[];
   stars: Record<string, number>;
@@ -917,6 +1036,7 @@ function MissionControl({
   onPaint: (id: string) => void;
   satellites: Satellite[];
   onSatellites: (s: Satellite[]) => void;
+  sandbox: boolean;
 }) {
   const points = careerPoints(goals, stars);
   const starSum = Object.values(stars).reduce((a, b) => a + b, 0);
@@ -989,7 +1109,7 @@ function MissionControl({
       <div class="mc-paints" role="radiogroup" aria-label="Lackierung">
         <span class="small muted">Lackierung:</span>
         {PAINTS.map((p) => {
-          const locked = points < p.points;
+          const locked = !sandbox && points < p.points;
           return (
             <button
               key={p.id}

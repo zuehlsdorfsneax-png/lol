@@ -21,6 +21,8 @@ export interface Progress {
   rocketSats: unknown[];
   /** Hinweise der Raketenwerft, die schon gezeigt wurden. */
   rocketSeen: string[];
+  /** Einstellungen des Sandkastens (werden in der Raketenwerft geprüft). */
+  rocketSandbox: unknown;
 }
 
 export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
@@ -35,6 +37,7 @@ export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
   rocketChallenges: {},
   rocketSats: [],
   rocketSeen: [],
+  rocketSandbox: null,
 });
 
 export function recordStars(id: string, stars: number, best: string): Progress {

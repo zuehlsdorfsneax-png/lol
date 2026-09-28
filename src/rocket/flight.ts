@@ -1,6 +1,6 @@
 import { goalById, type GoalId } from './goals';
 import { elements, stateAt, timeToPeriapsis, timeToRadius, type Elements } from './kepler';
-import { part, segments, type Design } from './parts';
+import { part, segments, type Design, type PartDef } from './parts';
 import {
   BODIES,
   EARTH,
@@ -241,6 +241,12 @@ const LAND_TILT = 0.4;
 const LAND_TILT_LEGS = 0.65;
 /** Beschleunigung der Lagekontrolldüsen (RCS) in m/s². */
 const RCS_ACCEL = 0.6;
+/** Zusätzliche Bremsfläche (m²) je ausgefahrener Luftbremse. */
+const AIRBRAKE_CDA = 30;
+/** Schubverlust eines Vakuumtriebwerks auf Meereshöhe der Erde. */
+const VACUUM_LOSS = 0.55;
+/** Luftdichte, ab der ein Vakuumtriebwerk den vollen Verlust hat (kg/m³). */
+const SEA_RHO = 1.2;
 const DOCK_DISTANCE = 20;
 /**
  * Hitze nach Sutton-Graves (∝ √ρ·v³). Kalibriert: Rückkehr vom Mond mit Pe um 20 km erreicht
@@ -406,8 +412,22 @@ export class Flight {
   target: TargetId | null = null;
   /** Landeplatz einer Herausforderung (wird auf Karte und Boden markiert). */
   site: LandingSite | null = null;
-  /** Sandkasten: unendlich Treibstoff (dafür keine Punkte). */
+  /** Sandkasten: es gibt keine Punkte; die Regeln darunter lassen sich einzeln schalten. */
   sandbox = false;
+  /** Treibstoff wird nicht verbraucht. */
+  infiniteFuel = false;
+  /** Keine Abstürze und kein Verglühen: jede Berührung ist eine Landung. */
+  indestructible = false;
+  /** Hitze beim Wiedereintritt. */
+  heatOn = true;
+  /** Luftwiderstand der Rakete (Fallschirme wirken immer). */
+  dragOn = true;
+  /** Schub aller Triebwerke mal diesem Faktor (der Verbrauch wächst mit). */
+  thrustScale = 1;
+  /** Luftbremsen ausgefahren? */
+  airbrakes = false;
+  /** Luftdichte beim letzten Schritt im Verhältnis zur Erde auf Meereshöhe (0…1). */
+  private pressure = 0;
   segs: Segment[];
   status: FlightStatus = 'landed';
   landedOn: Body | null = EARTH;
@@ -456,7 +476,7 @@ export class Flight {
       parts,
       fuel: parts.reduce((s, id) => s + part(id).fuel, 0),
     }));
-    this.chute = design.includes('fallschirm') ? 'stowed' : 'none';
+    this.chute = design.some((id) => part(id).kind === 'chute') ? 'stowed' : 'none';
   }
 
   // ---------------------------------------------------------------- Spielstand
@@ -576,18 +596,71 @@ export class Flight {
     return this.segs.reduce((s, seg) => s + seg.parts.reduce((a, id) => a + part(id).height, 0), 0);
   }
 
-  /** Schub (N) und Massenstrom (kg/s) der aktiven Stufe bei Vollgas. */
+  /** Schub (N) und Massenstrom (kg/s) einer Stufe bei Vollgas im Vakuum. */
+  private stageEngine(parts: readonly string[]): { thrust: number; flow: number } {
+    let thrust = 0;
+    let flow = 0;
+    for (const id of parts) {
+      const p = part(id);
+      if (p.thrust > 0) {
+        thrust += p.thrust * this.thrustScale;
+        flow += (p.thrust * this.thrustScale) / (p.isp * G0);
+      }
+    }
+    return { thrust, flow };
+  }
+
+  /**
+   * Schub (N) und Massenstrom (kg/s) der aktiven Stufe bei Vollgas. Vakuumtriebwerke verlieren
+   * in dichter Luft Schub (der Verbrauch bleibt).
+   */
   engine(): { thrust: number; flow: number } {
     let thrust = 0;
     let flow = 0;
     for (const id of this.active.parts) {
       const p = part(id);
       if (p.thrust > 0) {
-        thrust += p.thrust;
-        flow += p.thrust / (p.isp * G0);
+        const t = p.thrust * this.thrustScale;
+        thrust += p.vacuum ? t * (1 - VACUUM_LOSS * this.pressure) : t;
+        flow += t / (p.isp * G0);
       }
     }
     return { thrust, flow };
+  }
+
+  /** Alle Teile, die noch an der Rakete sind. */
+  private allParts(): string[] {
+    return this.segs.flatMap((s) => s.parts);
+  }
+
+  /** Bremsfläche der Fallschirme im Vergleich zu einem normalen Schirm. */
+  get chuteArea(): number {
+    return this.allParts().reduce(
+      (s, id) => s + (part(id).kind === 'chute' ? (part(id).chuteArea ?? 1) : 0),
+      0,
+    );
+  }
+
+  /** Anzahl eines Bauteiltyps an der Rakete. */
+  private count(kind: PartDef['kind']): number {
+    return this.allParts().filter((id) => part(id).kind === kind).length;
+  }
+
+  get hasAirbrakes(): boolean {
+    return this.count('airbrake') > 0;
+  }
+
+  /** Sitzt ein Nasenkegel ganz oben? */
+  get streamlined(): boolean {
+    const top = this.segs[0]?.parts[0];
+    return top !== undefined && part(top).kind === 'nose';
+  }
+
+  /** Luftbremsen aus- oder einfahren. */
+  toggleAirbrakes(): void {
+    if (!this.hasAirbrakes) return;
+    this.airbrakes = !this.airbrakes;
+    this.emit('info', this.airbrakes ? 'Luftbremsen ausgefahren.' : 'Luftbremsen eingefahren.');
   }
 
   get fuelCapacity(): number {
@@ -619,15 +692,7 @@ export class Flight {
     for (const seg of this.segs) {
       const dry = seg.parts.reduce((s, id) => s + part(id).dry, 0);
       const start = above + dry + seg.fuel;
-      let thrust = 0;
-      let flow = 0;
-      for (const id of seg.parts) {
-        const p = part(id);
-        if (p.thrust > 0) {
-          thrust += p.thrust;
-          flow += p.thrust / (p.isp * G0);
-        }
-      }
+      const { thrust, flow } = this.stageEngine(seg.parts);
       if (thrust > 0 && seg.fuel > 0) dv += (thrust / flow) * Math.log(start / (start - seg.fuel));
       above = start;
     }
@@ -642,18 +707,10 @@ export class Flight {
     for (let i = this.segs.length - 1; i >= 0 && left > 1e-6; i--) {
       const seg = this.segs[i]!;
       const dry = seg.parts.reduce((s, id) => s + part(id).dry, 0);
-      let thrust = 0;
-      let flow = 0;
-      for (const id of seg.parts) {
-        const p = part(id);
-        if (p.thrust > 0) {
-          thrust += p.thrust;
-          flow += p.thrust / (p.isp * G0);
-        }
-      }
-      if (thrust > 0 && (seg.fuel > 0 || this.sandbox)) {
+      const { thrust, flow } = this.stageEngine(seg.parts);
+      if (thrust > 0 && (seg.fuel > 0 || this.infiniteFuel)) {
         const ve = thrust / flow;
-        const stageDv = this.sandbox ? Infinity : ve * Math.log(mass / (mass - seg.fuel));
+        const stageDv = this.infiniteFuel ? Infinity : ve * Math.log(mass / (mass - seg.fuel));
         if (left <= stageDv) {
           time += (mass * (1 - Math.exp(-left / ve))) / flow;
           left = 0;
@@ -1332,9 +1389,11 @@ export class Flight {
       }
     }
     if (this.turn !== 0 && this.sas === 'point') this.sas = 'off';
-    const target = rotates ? cmd * TURN_RATE : 0;
+    // Reaktionsräder: schneller drehen und schneller abbremsen (höchstens zwei zählen).
+    const wheels = Math.min(2, this.count('wheel'));
+    const target = rotates ? cmd * TURN_RATE * (1 + 0.45 * wheels) : 0;
     const dv = target - this.angVel;
-    const maxStep = TURN_ACCEL * realDt;
+    const maxStep = TURN_ACCEL * (1 + 0.75 * wheels) * realDt;
     this.angVel += clamp(dv, -maxStep, maxStep);
     if (rotates) this.angle = wrap(this.angle - this.angVel * realDt * this.warp);
   }
@@ -1396,8 +1455,10 @@ export class Flight {
     let ty = ta * ay;
     if (rcsOn) {
       // Vorwärts entlang der Achse, seitlich rechtwinklig dazu (rechts = im Uhrzeigersinn).
-      tx += RCS_ACCEL * (this.translate.y * ax + this.translate.x * ay);
-      ty += RCS_ACCEL * (this.translate.y * ay - this.translate.x * ax);
+      // Jeder RCS-Block bringt dreimal die Kraft der eingebauten Düsen dazu.
+      const rcs = RCS_ACCEL * (1 + 3 * Math.min(2, this.count('rcs')));
+      tx += rcs * (this.translate.y * ax + this.translate.x * ay);
+      ty += rcs * (this.translate.y * ay - this.translate.x * ax);
     }
     this.rk4(dt, tx, ty);
     const push = Math.hypot(tx, ty);
@@ -1449,11 +1510,15 @@ export class Flight {
     // Mit dem Hitzeschild voran kommt nur ein Viertel an.
     this.shielded =
       this.shieldAtBottom && rv > 1 && -(ax * rvx + ay * rvy) / rv > 0.5 && air.rho > 0;
+    const protect = this.allParts().reduce((m, id) => Math.min(m, part(id).heatProtect ?? 1), 1);
     const heating =
-      air.rho > 0
-        ? ((Math.sqrt(air.rho) * rv ** 3) / HEAT_SCALE) * (this.shielded ? SHIELD_FACTOR : 1)
+      air.rho > 0 && this.heatOn
+        ? ((Math.sqrt(air.rho) * rv ** 3) / HEAT_SCALE) *
+          (this.shielded ? SHIELD_FACTOR : 1) *
+          protect
         : 0;
     this.heat = Math.max(0, this.heat + (heating - this.heat * HEAT_COOLING) * dt);
+    if (this.indestructible) this.heat = Math.min(this.heat, 0.99);
     this.maxHeat = Math.max(this.maxHeat, this.heat);
     if (this.heat >= 1) {
       this.fail(
@@ -1464,9 +1529,15 @@ export class Flight {
       );
       return dt;
     }
+    this.pressure = Math.min(1, air.rho / SEA_RHO);
     let drag = 0;
     if (air.rho > 0) {
-      const cda = ROCKET_CDA + (this.chute === 'open' ? CHUTE_CDA * this.chuteOpen : 0);
+      // Nasenkegel halbiert den Widerstand, Luftbremsen und Fallschirme vergrößern ihn.
+      const body = this.dragOn
+        ? ROCKET_CDA * (this.streamlined ? 0.5 : 1) +
+          (this.airbrakes ? AIRBRAKE_CDA * this.count('airbrake') : 0)
+        : 0;
+      const cda = body + (this.chute === 'open' ? CHUTE_CDA * this.chuteArea * this.chuteOpen : 0);
       const k = (0.5 * air.rho * cda) / mass;
       const f = 1 / (1 + k * rv * dt);
       this.vx = bodyV.vx + rvx * f;
@@ -1506,7 +1577,7 @@ export class Flight {
 
   private burn(amount: number): void {
     const seg = this.active;
-    if (this.sandbox) return;
+    if (this.infiniteFuel) return;
     seg.fuel = Math.max(0, seg.fuel - amount);
     if (seg.fuel === 0 && !this.emptyWarned) {
       this.emptyWarned = true;
@@ -1539,7 +1610,7 @@ export class Flight {
     // Auf die Oberfläche setzen.
     this.x = c.x + body.radius * Math.cos(up);
     this.y = c.y + body.radius * Math.sin(up);
-    if (body.solid && speed <= speedLimit && tilt <= tiltLimit) {
+    if ((body.solid && speed <= speedLimit && tilt <= tiltLimit) || this.indestructible) {
       this.status = 'landed';
       this.landedOn = body;
       this.landAngle = up - bodySpin(body, this.t);

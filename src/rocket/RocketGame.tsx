@@ -6,6 +6,7 @@ import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
 import { FlightScreen } from './FlightScreen';
 import { MAX_SATELLITES, type GoalId, type Satellite } from './flight';
 import { TEMPLATES, isPart, type Design } from './parts';
+import { readSandbox, type SandboxSettings } from './sandbox';
 
 function loadDesign(): Design {
   const saved = progressStore.load().rocketDesign;
@@ -66,6 +67,13 @@ export function RocketGame({
   const [stars, setStars] = useState<Record<string, number>>(loadStars);
   const [sats, setSats] = useState<Satellite[]>(loadSats);
   const [sandbox, setSandbox] = useState(false);
+  const [sandboxSettings, setSandboxSettings] = useState<SandboxSettings>(() =>
+    readSandbox(progressStore.load().rocketSandbox),
+  );
+  const changeSandbox = (s: SandboxSettings): void => {
+    setSandboxSettings(s);
+    progressStore.update((p) => ({ ...p, rocketSandbox: s }));
+  };
   const [flightId, setFlightId] = useState(0);
 
   const change = (d: Design): void => {
@@ -121,6 +129,7 @@ export function RocketGame({
           design={design}
           paint={paint}
           sandbox={sandbox}
+          sandboxSettings={sandboxSettings}
           knownGoals={goals}
           stars={stars}
           satellites={sats}
@@ -156,6 +165,8 @@ export function RocketGame({
           onChallenge={startChallenge}
           sandbox={sandbox}
           onSandbox={setSandbox}
+          sandboxSettings={sandboxSettings}
+          onSandboxSettings={changeSandbox}
           onClose={onClose}
         />
       )}

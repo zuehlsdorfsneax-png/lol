@@ -293,7 +293,7 @@ html.game-open body {
 
 .part-cats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 3px;
   margin: 10px;
   padding: 3px;
@@ -307,7 +307,8 @@ html.game-open body {
   border-radius: 8px;
   background: transparent;
   color: var(--g-ink-2);
-  font: 600 0.76rem var(--font-ui);
+  font: 600 0.7rem var(--font-ui);
+  padding: 0;
   cursor: pointer;
 }
 
@@ -2802,4 +2803,102 @@ html.game-open body {
     top: 44%;
     width: calc(100% - 24px);
   }
+}
+
+/* Sandkasten-Einstellungen */
+.sandbox-panel {
+  display: grid;
+  gap: 10px;
+  padding: 6px 4px 4px;
+}
+
+.sb-field {
+  display: grid;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--g-ink-2);
+}
+
+.sb-field select {
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 1px solid var(--g-line-2);
+  background: rgb(255 255 255 / 6%);
+  color: var(--g-ink);
+  font: 600 0.88rem var(--font-ui);
+}
+
+.sb-field option,
+.sb-field optgroup {
+  background: var(--g-panel-solid);
+}
+
+.sb-seg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.sb-seg button {
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--g-ink-2);
+  font: 600 0.85rem var(--font-mono);
+  cursor: pointer;
+}
+
+.sb-seg button.on {
+  background: var(--g-accent);
+  color: var(--g-accent-ink);
+}
+
+.gswitch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 4%);
+  cursor: pointer;
+}
+
+.gswitch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.gswitch-text {
+  flex: 1;
+  display: grid;
+  gap: 1px;
+}
+
+.gswitch-text strong {
+  font-size: 0.88rem;
+}
+
+.gswitch-text span {
+  font-size: 0.74rem;
+  color: var(--g-ink-2);
+}
+
+.gswitch.on .gtoggle-knob {
+  background: var(--g-go);
+}
+
+.gswitch.on .gtoggle-knob::after {
+  transform: translateX(12px);
+}
+
+.gswitch:focus-within {
+  outline: 2px solid var(--g-blue);
 }

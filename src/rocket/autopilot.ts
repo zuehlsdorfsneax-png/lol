@@ -151,7 +151,7 @@ export class NodeExecutor {
       if (aligned && f.warpTarget === null && start - f.t > 25) f.warpTo(start - 12);
       return (this.phase = aligned ? 'wait' : 'align');
     }
-    if (f.deltaV() <= 0.01 && !f.sandbox) {
+    if (f.deltaV() <= 0.01 && !f.infiniteFuel) {
       if (f.segs.length > 1) f.stage();
       else {
         f.throttle = 0;
@@ -213,7 +213,7 @@ export class LandingPilot {
     const hy = r.vy - radial * uy;
     const speed = Math.hypot(r.vx, r.vy);
     const g = body.mu / r.r ** 2;
-    const amax = f.active.fuel > 0 || f.sandbox ? f.engine().thrust / f.mass : 0;
+    const amax = f.active.fuel > 0 || f.infiniteFuel ? f.engine().thrust / f.mass : 0;
     const horizontal = Math.hypot(hx, hy);
 
     // Mit Luft: Fallschirm scharf, bis zum Eintauchen treiben lassen. In dichter Luft (Erde,

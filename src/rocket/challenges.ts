@@ -336,6 +336,44 @@ export const CHALLENGES: readonly Challenge[] = [
     progress: (f) => `Treibstoff: ${pct(f.active.fuel / Math.max(1, f.fuelCapacity))}`,
   },
   {
+    id: 'glider',
+    group: 'Profi',
+    title: 'Mars-Gleiter',
+    brief:
+      'Flacher Einflug in die dünne Marsluft mit 700 m/s. Luftbremsen und großer Fallschirm sparen Treibstoff – lande mit möglichst vollem Tank.',
+    tips: [
+      'Sofort die Luftbremsen ausfahren (U) und den Fallschirm scharf machen (P).',
+      'SAS „retrograd“ hält die Rakete stabil.',
+      'Erst kurz vor dem Boden mit dem Triebwerk abfangen.',
+    ],
+    stars: [
+      'sicher gelandet',
+      'noch mindestens 40 % Treibstoff',
+      'noch mindestens 75 % Treibstoff',
+    ],
+    design: ['fallschirm-xl', 'kapsel', 'luftbremse', 'tank-s', 'beine', 'kolibri'],
+    computer: false,
+    setup: (f) => {
+      // Flach von der Seite in die dünne Marsluft: 700 m/s vorwärts, 60 m/s nach unten.
+      placeFalling(f, MARS, Math.PI / 2, 25_000, 60);
+      f.vx -= 700;
+      f.angle = 0;
+    },
+    judge(f) {
+      const c = crashed(f);
+      if (c) return c;
+      if (f.status !== 'landed') return null;
+      const left = f.active.fuel / f.fuelCapacity;
+      return {
+        success: true,
+        stars: stars(true, left >= 0.4, left >= 0.75),
+        text: `Gelandet mit ${pct(left)} Treibstoff.`,
+      };
+    },
+    progress: (f) =>
+      `Treibstoff: ${pct(f.active.fuel / Math.max(1, f.fuelCapacity))}${f.airbrakes ? ' · Luftbremsen draußen' : ''}`,
+  },
+  {
     id: 'reentry',
     group: 'Meister',
     title: 'Heimkehr durchs Feuer',

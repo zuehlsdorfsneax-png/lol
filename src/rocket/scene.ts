@@ -975,6 +975,8 @@ export function drawFlight(
       throttle: f.thrusting ? f.throttle : 0,
       air: air.rho,
       chuteOpen: f.chute === 'open' ? f.chuteOpen : 0,
+      chuteArea: f.chuteArea,
+      brakes: f.airbrakes ? 1 : 0,
       time,
     });
     if (f.rcs && (f.translate.x || f.translate.y) && f.status === 'flying')

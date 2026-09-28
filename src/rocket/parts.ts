@@ -10,7 +10,11 @@ export type PartKind =
   | 'engine'
   | 'decoupler'
   | 'legs'
-  | 'booster';
+  | 'booster'
+  | 'nose'
+  | 'airbrake'
+  | 'wheel'
+  | 'rcs';
 
 /** Aussehen der Triebwerksflamme. */
 export type FlameKind = 'chemisch' | 'atom' | 'ionen';
@@ -32,6 +36,12 @@ export interface PartDef {
   /** Ab so vielen Punkten freigeschaltet (im Sandkasten immer). */
   unlock?: number;
   flame?: FlameKind;
+  /** Vakuumtriebwerk: in dichter Luft sinkt der Schub. */
+  vacuum?: boolean;
+  /** Fallschirm: Bremsfläche im Vergleich zum normalen Schirm. */
+  chuteArea?: number;
+  /** Eingebauter Hitzeschutz: Anteil der Hitze, der noch ankommt. */
+  heatProtect?: number;
 }
 
 export const PARTS: readonly PartDef[] = [
@@ -46,6 +56,20 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Hier sitzt die Crew. Jede Rakete braucht eine Kapsel oder einen Sondenkern.',
+  },
+  {
+    id: 'kapsel-xl',
+    name: 'Kapsel Aurora',
+    kind: 'capsule',
+    width: 3.2,
+    height: 2.8,
+    dry: 3200,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    heatProtect: 0.5,
+    info: 'Große Kapsel für drei Personen mit eingebautem Hitzeschutz: Beim Wiedereintritt kommt nur die Hälfte der Hitze an.',
   },
   {
     id: 'sonde',
@@ -84,6 +108,43 @@ export const PARTS: readonly PartDef[] = [
     info: 'Bremst in der Erdatmosphäre auf Landegeschwindigkeit. Auf dem Mond wirkungslos – dort gibt es keine Luft.',
   },
   {
+    id: 'fallschirm-xl',
+    name: 'Großer Fallschirm',
+    kind: 'chute',
+    width: 1.8,
+    height: 0.9,
+    dry: 260,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    chuteArea: 2.5,
+    info: 'Zweieinhalbmal so viel Bremsfläche wie der normale Schirm – für schwere Kapseln und die dünne Marsluft.',
+  },
+  {
+    id: 'nase',
+    name: 'Nasenkegel',
+    kind: 'nose',
+    width: 2.4,
+    height: 1.8,
+    dry: 80,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Spitze Verkleidung für ganz oben (z. B. auf Satelliten oder Sonden): halbiert den Luftwiderstand beim Aufstieg.',
+  },
+  {
+    id: 'luftbremse',
+    name: 'Luftbremse',
+    kind: 'airbrake',
+    width: 2.4,
+    height: 0.5,
+    dry: 150,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Klappen, die sich mit U ausfahren lassen: bremsen in der Luft stark ab – ideal vor der Landung auf dem Mars.',
+  },
+  {
     id: 'hitzeschild',
     name: 'Hitzeschild',
     kind: 'shield',
@@ -106,6 +167,30 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Kleiner Treibstofftank (2,4 t).',
+  },
+  {
+    id: 'tank-xs',
+    name: 'Tank XS',
+    kind: 'tank',
+    width: 2.4,
+    height: 1.2,
+    dry: 160,
+    fuel: 1100,
+    thrust: 0,
+    isp: 0,
+    info: 'Winziger Tank (1,1 t) zum Feinabstimmen.',
+  },
+  {
+    id: 'tank-sonde',
+    name: 'Sondentank',
+    kind: 'tank',
+    width: 1.4,
+    height: 2.2,
+    dry: 110,
+    fuel: 800,
+    thrust: 0,
+    isp: 0,
+    info: 'Schmaler Tank (0,8 t) passend zum Sondenkern – für leichte Sonden mit Spatz- oder Ionentriebwerk.',
   },
   {
     id: 'tank-m',
@@ -145,6 +230,31 @@ export const PARTS: readonly PartDef[] = [
     info: 'Riesentank (21 t) mit 3,2 m Durchmesser – für schwere Erststufen.',
   },
   {
+    id: 'tank-xxl',
+    name: 'Tank XXL',
+    kind: 'tank',
+    width: 3.2,
+    height: 16,
+    dry: 2900,
+    fuel: 32_000,
+    thrust: 0,
+    isp: 0,
+    unlock: 300,
+    info: 'Der größte Tank (32 t) – zusammen mit dem Mammut eine Schwerlast-Erststufe.',
+  },
+  {
+    id: 'spatz',
+    name: 'Triebwerk Spatz',
+    kind: 'engine',
+    width: 1.2,
+    height: 0.8,
+    dry: 120,
+    fuel: 0,
+    thrust: 16_000,
+    isp: 325,
+    info: 'Das kleinste Triebwerk: leicht und sparsam für Sonden und Mini-Lander auf Mond, Phobos oder Europa.',
+  },
+  {
     id: 'kolibri',
     name: 'Triebwerk Kolibri',
     kind: 'engine',
@@ -167,6 +277,20 @@ export const PARTS: readonly PartDef[] = [
     thrust: 180_000,
     isp: 310,
     info: 'Das Allround-Triebwerk für Oberstufen.',
+  },
+  {
+    id: 'nova',
+    name: 'Vakuumtriebwerk Nova',
+    kind: 'engine',
+    width: 2.2,
+    height: 3,
+    dry: 1100,
+    fuel: 0,
+    thrust: 220_000,
+    isp: 365,
+    vacuum: true,
+    unlock: 150,
+    info: 'Riesige Düse für den Weltraum: sehr sparsam im Vakuum, aber in dichter Luft verliert es über die Hälfte seines Schubs. Für Oberstufen.',
   },
   {
     id: 'titan',
@@ -246,6 +370,19 @@ export const PARTS: readonly PartDef[] = [
     info: 'Zwei Feststoff-Booster links und rechts. Sie zünden mit ihrer Stufe und fallen mit ihr ab – ideal als Starthilfe unten an der ersten Stufe.',
   },
   {
+    id: 'booster-xl',
+    name: 'Großbooster (Paar)',
+    kind: 'booster',
+    width: 2.4,
+    height: 0.5,
+    dry: 3000,
+    fuel: 18_000,
+    thrust: 720_000,
+    isp: 280,
+    unlock: 150,
+    info: 'Doppelt so große Feststoff-Booster: 720 kN extra für schwere Raketen. Fallen mit ihrer Stufe ab.',
+  },
+  {
     id: 'beine',
     name: 'Landebeine',
     kind: 'legs',
@@ -256,6 +393,30 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Federn die Landung ab: erlauben bis 14 m/s statt 8 m/s und mehr Schräglage. Gehören in die unterste Stufe, direkt über das Triebwerk.',
+  },
+  {
+    id: 'rad',
+    name: 'Reaktionsrad',
+    kind: 'wheel',
+    width: 2.0,
+    height: 0.5,
+    dry: 150,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Ein schnell drehendes Schwungrad: Die Rakete dreht sich fast doppelt so schnell – auch ohne Luft und ohne Treibstoff.',
+  },
+  {
+    id: 'rcs-block',
+    name: 'RCS-Block',
+    kind: 'rcs',
+    width: 2.4,
+    height: 0.6,
+    dry: 120,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Vier zusätzliche Lagekontrolldüsen: RCS schiebt viermal so kräftig – praktisch zum Andocken schwerer Raketen.',
   },
 ];
 
@@ -285,7 +446,7 @@ export function isControl(id: string): boolean {
 /** Eine Rakete: Bauteile von oben nach unten. */
 export type Design = string[];
 
-export const MAX_PARTS = 24;
+export const MAX_PARTS = 32;
 
 export interface Template {
   id: string;
@@ -436,6 +597,53 @@ export const TEMPLATES: readonly Template[] = [
       'mammut',
     ],
   },
+  {
+    id: 'pfeil',
+    name: 'Pfeil',
+    info: 'Schlanker Satellitenträger mit Nasenkegel (halber Luftwiderstand) und Vakuum-Oberstufe Nova.',
+    parts: ['nase', 'satellit', 'sonde', 'tank-m', 'nova', 'trenner', 'tank-l', 'tank-m', 'titan'],
+  },
+  {
+    id: 'aurora',
+    name: 'Aurora (Mars)',
+    info: 'Drei Personen zum Mars: großer Fallschirm, Luftbremsen, Reaktionsrad und Schwerlast-Erststufe mit Großboostern.',
+    parts: [
+      'fallschirm-xl',
+      'kapsel-xl',
+      'rad',
+      'rcs-block',
+      'tank-m',
+      'luftbremse',
+      'beine',
+      'falke',
+      'trenner',
+      'tank-l',
+      'tank-m',
+      'nova',
+      'trenner',
+      'tank-xl',
+      'mammut',
+      'booster-xl',
+    ],
+  },
+  {
+    id: 'spatzsonde',
+    name: 'Spatz-Sonde',
+    info: 'Winzige Sonde mit Sondentank und Spatz-Triebwerk auf einer kleinen Trägerrakete – landet auf Phobos oder Europa.',
+    parts: [
+      'nase',
+      'sonde',
+      'tank-sonde',
+      'beine',
+      'spatz',
+      'trenner',
+      'tank-m',
+      'falke',
+      'trenner',
+      'tank-l',
+      'titan',
+    ],
+  },
 ];
 
 /** Aufteilung in Stufen: Segment 0 ist die Spitze, das letzte Segment brennt zuerst. */
@@ -534,6 +742,11 @@ export function checkDesign(design: Design): DesignProblem[] {
     problems.push({
       level: 'warn',
       text: `Zu schwer: Der Schub der ersten Stufe trägt nur ${Math.round(first.twrEarth * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
+    });
+  if (design.slice(1).some((id) => part(id).kind === 'nose'))
+    problems.push({
+      level: 'warn',
+      text: 'Ein Nasenkegel wirkt nur ganz oben – weiter unten ist er nur Ballast.',
     });
   if (design[design.length - 1] && part(design[design.length - 1]!).kind === 'decoupler')
     problems.push({ level: 'warn', text: 'Ganz unten hängt ein Stufentrenner ohne Stufe.' });

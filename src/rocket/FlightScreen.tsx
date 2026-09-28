@@ -29,6 +29,7 @@ import {
   type MapFocus,
   type MapHits,
 } from './mapdraw';
+import { applyRules, applySandbox, type SandboxSettings } from './sandbox';
 import { Navball, SAS_MODES } from './Navball';
 import { ChallengeBrief, ChallengeResultView, FlightReport, FlightStatsTable } from './Overlays';
 import type { Design } from './parts';
@@ -221,6 +222,7 @@ interface Props {
   design: Design;
   paint: string;
   sandbox: boolean;
+  sandboxSettings: SandboxSettings;
   knownGoals: readonly string[];
   stars: Record<string, number>;
   satellites: Satellite[];
@@ -235,14 +237,14 @@ interface Props {
 
 function makeFlight(
   design: Design,
-  sandbox: boolean,
+  sandbox: SandboxSettings | null,
   challenge: Challenge | null,
   sats: Satellite[],
 ): Flight {
   const f = new Flight(challenge ? challenge.design : design);
   if (challenge) challenge.setup(f);
   else {
-    f.sandbox = sandbox;
+    if (sandbox) applySandbox(f, sandbox);
     f.satellites = sats.map((s) => ({ ...s, el: { ...s.el } }));
   }
   return f;
@@ -265,6 +267,7 @@ export function FlightScreen({
   design,
   paint,
   sandbox,
+  sandboxSettings,
   knownGoals,
   stars,
   satellites,
@@ -277,7 +280,9 @@ export function FlightScreen({
   onExit,
 }: Props) {
   const [run, setRun] = useState(0);
-  const flight = useRef<Flight>(makeFlight(design, sandbox, challenge, satellites));
+  const flight = useRef<Flight>(
+    makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites),
+  );
   const [, setTick] = useState(0);
   const [map, setMap] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -357,7 +362,8 @@ export function FlightScreen({
   };
 
   const restart = (next?: Flight): void => {
-    flight.current = next ?? makeFlight(design, sandbox, challenge, satellites);
+    flight.current =
+      next ?? makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites);
     stopPilots();
     pred.current = null;
     memo.current = {};
@@ -394,7 +400,7 @@ export function FlightScreen({
       return;
     }
     const restored = Flight.restore(snap);
-    restored.sandbox = sandbox;
+    if (sandbox) applyRules(restored, sandboxSettings);
     restart(restored);
     toast('Spielstand geladen.');
   };
@@ -605,6 +611,7 @@ export function FlightScreen({
       else if (k === 'x') fl.throttle = 0;
       else if (k === 'm') openMap(!mapOpen.current);
       else if (k === 'p') fl.deployChute();
+      else if (k === 'u') fl.toggleAirbrakes();
       else if (k === 'n') deploySatellite();
       else if (k === 'b') setComputer((c) => !c);
       else if (k === 'l') toggleLanding(pilot.current !== 'land');
@@ -1619,6 +1626,16 @@ export function FlightScreen({
                   Satellit ({f.satellitesOnBoard}) <kbd>N</kbd>
                 </button>
               )}
+              {f.hasAirbrakes && f.status === 'flying' && (
+                <button
+                  type="button"
+                  class={`abtn ${f.airbrakes ? 'on' : ''}`}
+                  onClick={() => f.toggleAirbrakes()}
+                  aria-pressed={f.airbrakes}
+                >
+                  Luftbremse <kbd>U</kbd>
+                </button>
+              )}
               <button
                 type="button"
                 class={`abtn ${f.rcs ? 'on' : ''}`}
@@ -1696,7 +1713,7 @@ export function FlightScreen({
           </div>
         </div>
         <div class="dv-readout">
-          Δv <strong>{sandbox && !challenge ? '∞' : `${fmt(f.deltaV())} m/s`}</strong>
+          Δv <strong>{f.infiniteFuel ? '∞' : `${fmt(f.deltaV())} m/s`}</strong>
         </div>
       </div>
 
@@ -1779,7 +1796,7 @@ export function FlightScreen({
                 ['Antippen', 'In der Flugansicht: Rakete zeigt in diese Richtung'],
                 ['R, dann Q / E', 'RCS-Düsen: seitwärts schieben (zum Andocken)'],
                 ['Leertaste', 'Nächste Stufe'],
-                ['P / N', 'Fallschirm scharf machen / Satellit aussetzen'],
+                ['P / N / U', 'Fallschirm scharf / Satellit aussetzen / Luftbremsen'],
                 ['M', 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
                 ['B', 'Bordcomputer: Pläne, Manöver, Autopilot'],
                 ['L / T / C', 'Lande-Autopilot / Hilfe-Pilot / Countdown'],
