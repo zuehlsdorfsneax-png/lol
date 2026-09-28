@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { prepareCanvas } from '../ui/hooks';
 import type { Flight, SasMode } from './flight';
-import { drawNavball, pitch, type NavMarker } from './navball';
+import { drawNavball, pitch, type NavMarker } from './navballdraw';
 
 export const SAS_MODES: readonly { mode: SasMode; icon: string; label: string; key: string }[] = [
   { mode: 'off', icon: '○', label: 'SAS aus: Lage frei (die Rakete hört nur auf dich)', key: '1' },

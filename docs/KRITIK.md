@@ -43,6 +43,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 | 61  | Zeit bis Ap/Pe ließ die Werte über den Rand der Anzeige laufen                                              | ✅     | Kurzform („12:30“, „5 h“, „3 T“)                                                                   |
 | 62  | Mondfenster wurde in Herausforderungen ohne Mond angezeigt                                                  | ✅     | Nur mit passendem Ziel                                                                             |
 | 63  | Gebäude und Tanks leuchteten nachts hell wie am Tag                                                         | ✅     | Nachts abgedunkelt                                                                                 |
+| 64  | Die Windows-EXE ließ sich nicht bauen: `Navball.tsx` und `navball.ts` sind für Windows derselbe Name        | ✅     | Zeichenmodul heißt `navballdraw.ts`; ein Test prüft alle Dateinamen auf diesen Fall                |
 
 ## Raketenwerft – Spielumfang (Vergleich mit Spaceflight Simulator)
 
@@ -125,7 +126,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **169 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **170 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,
