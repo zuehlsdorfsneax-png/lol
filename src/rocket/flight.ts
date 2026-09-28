@@ -148,6 +148,9 @@ export interface FlightSnapshot {
   stats?: FlightStats;
   maxHeat?: number;
   site?: LandingSite | null;
+  /** Aus dem Sandkasten: bringt auch nach dem Laden keine Punkte. */
+  sandbox?: boolean;
+  airbrakes?: boolean;
 }
 
 export interface FlightEvent {
@@ -509,6 +512,8 @@ export class Flight {
       stats: { ...this.stats },
       maxHeat: this.maxHeat,
       site: this.site,
+      sandbox: this.sandbox,
+      airbrakes: this.airbrakes,
     };
   }
 
@@ -539,6 +544,8 @@ export class Flight {
     f.landedOn = s.landedOn ? bodyById(s.landedOn) : null;
     f.landAngle = s.landAngle;
     for (const g of s.goals) f.goals.add(g);
+    f.sandbox = s.sandbox === true;
+    f.airbrakes = s.airbrakes === true && f.hasAirbrakes;
     return f;
   }
 
@@ -1059,6 +1066,12 @@ export class Flight {
     }
     const dropped = this.segs.pop()!;
     const height = dropped.parts.reduce((s, id) => s + part(id).height, 0);
+    // Was mit der Stufe abfällt, ist weg: Fallschirm und Luftbremsen dort gelten nicht mehr.
+    if (!this.allParts().some((id) => part(id).kind === 'chute')) {
+      this.chute = 'none';
+      this.chuteOpen = 0;
+    }
+    if (!this.hasAirbrakes) this.airbrakes = false;
     const ax = Math.cos(this.angle);
     const ay = Math.sin(this.angle);
     this.debris.push({
@@ -1093,6 +1106,46 @@ export class Flight {
         'Fallschirm scharf – er öffnet sich in der unteren Atmosphäre, sobald die Rakete langsamer als 300 m/s ist.',
       );
     }
+  }
+
+  /** Taste P: verpackt → scharf → wieder entschärft; ein offener Schirm wird abgeworfen. */
+  toggleChute(): void {
+    if (this.chute === 'stowed') this.deployChute();
+    else if (this.chute === 'armed') {
+      this.chute = 'stowed';
+      this.emit('info', 'Fallschirm entschärft – er bleibt verpackt.');
+    } else if (this.chute === 'open') this.cutChute();
+  }
+
+  /** Offenen (oder scharfen) Fallschirm abwerfen – er ist danach weg. */
+  cutChute(): void {
+    if (this.chute !== 'open' && this.chute !== 'armed') return;
+    const wasOpen = this.chute === 'open';
+    this.dropChutes();
+    if (wasOpen) {
+      // Der Schirm fliegt als Trümmerteil davon.
+      this.debris.push({
+        x: this.x + Math.cos(this.angle) * this.length,
+        y: this.y + Math.sin(this.angle) * this.length,
+        vx: this.vx,
+        vy: this.vy,
+        angle: this.angle,
+        spin: (this.random() - 0.5) * 2,
+        parts: ['fallschirm'],
+        age: 0,
+      });
+    }
+    this.emit('info', 'Fallschirm abgeworfen.');
+  }
+
+  /** Alle Fallschirme sind verbraucht: aus der Rakete entfernen. */
+  private dropChutes(): void {
+    for (const seg of this.segs) {
+      const rest = seg.parts.filter((id) => part(id).kind !== 'chute');
+      if (rest.length > 0) seg.parts = rest;
+    }
+    this.chute = 'none';
+    this.chuteOpen = 0;
   }
 
   /** An der Station alle Tanks füllen. */
@@ -1501,8 +1554,7 @@ export class Flight {
     if (this.chute === 'open') {
       this.chuteOpen = Math.min(1, this.chuteOpen + dt / 2.5);
       if (air.rho > 0 && rv > 2 * CHUTE_MAX_SPEED) {
-        this.chute = 'none';
-        this.chuteOpen = 0;
+        this.dropChutes();
         this.emit('warn', 'Der Fallschirm ist bei zu hohem Tempo gerissen!');
       }
     }
@@ -1625,10 +1677,7 @@ export class Flight {
       this.stats.lastLanding = { body: body.id, speed, t: this.t };
       this.puff(this.x, this.y, 20, 'dust');
       // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht.
-      if (this.chute === 'open') {
-        this.chute = 'none';
-        this.chuteOpen = 0;
-      }
+      if (this.chute === 'open') this.dropChutes();
       if (speed < 2) this.goal('soft');
       if (this.maxHeat > 0.7) this.goal('fire');
       if (body === MOON) this.goal('moonland');

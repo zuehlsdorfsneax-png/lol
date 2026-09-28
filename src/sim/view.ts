@@ -537,7 +537,11 @@ export function renderSpace(
     ctx.font = '12px Jost, system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
+    // Liegen zwei Körper fast übereinander (weit herausgezoomt), nur den ersten beschriften.
+    const placed: [number, number][] = [];
     for (const d of drawn) {
+      if (placed.some(([x, y]) => Math.hypot(x - d.px, y - d.py) < 18)) continue;
+      placed.push([d.px, d.py]);
       ctx.fillStyle = SPACE.label;
       ctx.fillText(BODY_LABELS[d.body], d.px + d.r + 5, d.py - d.r - 4);
     }

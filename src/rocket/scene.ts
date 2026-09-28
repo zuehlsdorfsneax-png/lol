@@ -4,7 +4,6 @@
  */
 import { drawRocket, drawSatellite, setLighting } from './draw';
 import { bodySpin, satelliteState, type Flight, type LandingSite } from './flight';
-import { part } from './parts';
 import {
   BODIES,
   EARTH,
@@ -31,6 +30,7 @@ import {
   local,
   mix,
   mixHex,
+  screenAngle,
   sectorPath,
   toScreen,
   type View,
@@ -844,6 +844,11 @@ export interface FlightDrawOptions {
   time: number;
   /** Bildschirmfarbe der Explosion (Blitz). */
   flash?: number;
+  /**
+   * Mindestlänge der Rakete in Pixeln (damit sie bei automatischem Herauszoomen sichtbar
+   * bleibt). Zoomt man selbst heraus, wird sie mit kleiner.
+   */
+  minRocket?: number;
 }
 
 export function drawFlight(
@@ -963,7 +968,7 @@ export function drawFlight(
   if (f.status !== 'crashed') {
     const parts = f.segs.flatMap((s) => s.parts);
     const heightM = f.length;
-    const minPx = 34;
+    const minPx = opts.minRocket ?? 34;
     const scale = Math.max(v.scale, minPx / Math.max(heightM, 1));
     // Licht von der Seite der Sonne
     const side = Math.sin(light.dir - f.angle) >= 0 ? 1 : -1;
@@ -988,12 +993,38 @@ export function drawFlight(
     drawTargetMarker(ctx, f, v, heightM * scale);
     drawManeuverMarker(ctx, f, v, heightM * scale);
     drawSiteArrow(ctx, f, v);
+    // Weit herausgezoomt: Markierung, damit man die winzige Rakete wiederfindet.
+    if (heightM * scale < 10) drawRocketMarker(ctx, v, f, heightM * scale);
   }
   const flash = opts.flash ?? 0;
   if (flash > 0.01) {
     ctx.fillStyle = `rgba(255,240,210,${flash * 0.65})`;
     ctx.fillRect(0, 0, W, H);
   }
+}
+
+/** Ring und Pfeil um eine winzige Rakete (Spitze zeigt, wohin die Nase zeigt). */
+function drawRocketMarker(ctx: CanvasRenderingContext2D, v: View, f: Flight, px: number): void {
+  const [sx, sy] = toScreen(v, f.x, f.y);
+  const a = screenAngle(v, f.angle);
+  const alpha = Math.min(1, (10 - px) / 6);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = '#fde68a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.translate(sx, sy);
+  ctx.rotate(a);
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath();
+  ctx.moveTo(15, 0);
+  ctx.lineTo(10, -4);
+  ctx.lineTo(10, 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 /** Kleine Gaswolken der Lagekontrolldüsen. */
@@ -1241,10 +1272,4 @@ function drawSiteArrow(ctx: CanvasRenderingContext2D, f: Flight, v: View): void 
       '#fde68a',
       11,
     );
-}
-
-/** Länge der Rakete in Pixeln, damit andere Teile (Kamera, Karte) sie nicht verdecken. */
-export function rocketPixels(f: Flight, scale: number): number {
-  const h = f.segs.reduce((s, seg) => s + seg.parts.reduce((a, id) => a + part(id).height, 0), 0);
-  return Math.max(scale, 34 / Math.max(h, 1)) * h;
 }

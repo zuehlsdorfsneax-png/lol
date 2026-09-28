@@ -4,7 +4,9 @@ import { progressStore } from '../missions/progress';
 import { Builder } from './Builder';
 import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
 import { FlightScreen } from './FlightScreen';
+import { PAINTS } from './draw';
 import { MAX_SATELLITES, type GoalId, type Satellite } from './flight';
+import { careerPoints } from './goals';
 import { TEMPLATES, isPart, type Design } from './parts';
 import { readSandbox, type SandboxSettings } from './sandbox';
 
@@ -120,6 +122,9 @@ export function RocketGame({
   };
 
   const next = challenge ? CHALLENGES[CHALLENGES.indexOf(challenge) + 1] : undefined;
+  // Im Sandkasten gewählte, noch gesperrte Lackierungen gelten draußen nicht.
+  const paintPoints = PAINTS.find((q) => q.id === paint)?.points ?? 0;
+  const shownPaint = sandbox || paintPoints <= careerPoints(goals, stars) ? paint : 'klassisch';
 
   return (
     <div class="game" ref={root} tabIndex={-1} role="region" aria-label="Raketenwerft – Spiel">
@@ -127,7 +132,7 @@ export function RocketGame({
         <FlightScreen
           key={flightId}
           design={design}
-          paint={paint}
+          paint={shownPaint}
           sandbox={sandbox}
           sandboxSettings={sandboxSettings}
           knownGoals={goals}
@@ -154,7 +159,7 @@ export function RocketGame({
           stars={stars}
           satellites={sats}
           onSatellites={saveSats}
-          paint={paint}
+          paint={shownPaint}
           onPaint={choosePaint}
           onChange={change}
           onLaunch={() => {

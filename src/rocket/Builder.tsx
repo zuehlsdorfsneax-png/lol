@@ -497,8 +497,11 @@ function Werft({
       );
       return;
     }
+    if (design.length >= MAX_PARTS) {
+      setLockHint(`Mehr als ${MAX_PARTS} Teile passen nicht auf die Startrampe.`);
+      return;
+    }
     setLockHint('');
-    if (design.length >= MAX_PARTS) return;
     const at = selected >= 0 ? selected + 1 : design.length;
     const next = [...design.slice(0, at), id, ...design.slice(at)];
     onChange(next);
@@ -571,7 +574,7 @@ function Werft({
             },
           )}
         </div>
-        <p class="parts-hint">
+        <p class={`parts-hint ${lockHint ? 'msg' : ''}`} aria-live="polite">
           {lockHint ||
             (sandbox
               ? 'Sandkasten: alle Teile, Vorlagen und Lackierungen frei – dafür keine Punkte.'
@@ -647,6 +650,7 @@ function Werft({
                     e.preventDefault();
                     if (!name.trim() || design.length === 0) return;
                     saveHangar({ ...hangar, [name.trim()]: [...design] });
+                    setLockHint(`„${name.trim()}“ im Hangar gespeichert.`);
                   }}
                 >
                   <input

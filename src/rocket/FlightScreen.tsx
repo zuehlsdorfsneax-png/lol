@@ -24,6 +24,7 @@ import { timeToApoapsis, timeToPeriapsis } from './kepler';
 import {
   drawMap,
   fitMapScale,
+  mapArea,
   mapView,
   type HandleKind,
   type MapFocus,
@@ -158,6 +159,10 @@ function tipFor(f: Flight, pilot: string | null): string {
       return 'Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C) drücken. Der Hilfe-Pilot (T) fliegt bis in die Umlaufbahn.';
     return 'Sicher gelandet! In der Werft kannst du eine größere Rakete bauen.';
   }
+  if (f.chute === 'open')
+    return 'Am Fallschirm – gleich sanft aufsetzen. Mit P wirfst du den Schirm ab (dann fällt die Rakete wieder).';
+  if (f.chute === 'armed' && rel.altitude < Math.max(ref.atmosphere, 1))
+    return 'Fallschirm scharf: Er öffnet sich von selbst in der unteren Luft, sobald die Rakete langsamer als 300 m/s ist. P entschärft ihn wieder.';
   if (f.sas === 'point') return 'SAS hält die angetippte Richtung. Eine Drehtaste schaltet es aus.';
   if (ref === SUN)
     return 'Du kreist um die Sonne! Bordcomputer: „Kurskorrektur“ legt den tiefsten Punkt am Ziel fest. Dann Zeitraffer hoch.';
@@ -184,6 +189,11 @@ function tipFor(f: Flight, pilot: string | null): string {
   if (f.goals.has('moonland') || (f.goals.has('soi') && !o.bound))
     return 'Heimweg: Bordcomputer „Wiedereintritt“ (Pe 25 km), Stufe mit Triebwerk abwerfen, Fallschirm scharf (P), SAS retrograd.';
   if (!(o.bound && o.periapsis > EARTH.atmosphere)) {
+    const climb = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
+    if (climb < -20 && !f.thrusting && rel.altitude < 40_000)
+      return f.chute === 'stowed'
+        ? 'Die Rakete fällt! Fallschirm scharf machen (P) – oder aufrichten und mit dem Triebwerk bremsen.'
+        : 'Die Rakete fällt! Aufrichten (SAS retrograd, Taste 3) und kurz vor dem Boden Gas geben.';
     if (rel.altitude < 3_000 && f.goals.size <= 2)
       return 'Senkrecht steigen. Ab 3 km langsam nach rechts neigen (D / →).';
     if (o.apoapsis < 70_000)
@@ -402,7 +412,11 @@ export function FlightScreen({
     const restored = Flight.restore(snap);
     if (sandbox) applyRules(restored, sandboxSettings);
     restart(restored);
-    toast('Spielstand geladen.');
+    toast(
+      restored.sandbox && !sandbox
+        ? 'Spielstand aus dem Sandkasten geladen – dieser Flug bringt keine Punkte.'
+        : 'Spielstand geladen.',
+    );
   };
 
   const openMap = (open: boolean): void => {
@@ -610,7 +624,7 @@ export function FlightScreen({
       else if (k === 'z') fl.throttle = 1;
       else if (k === 'x') fl.throttle = 0;
       else if (k === 'm') openMap(!mapOpen.current);
-      else if (k === 'p') fl.deployChute();
+      else if (k === 'p') fl.toggleChute();
       else if (k === 'u') fl.toggleAirbrakes();
       else if (k === 'n') deploySatellite();
       else if (k === 'b') setComputer((c) => !c);
@@ -658,9 +672,11 @@ export function FlightScreen({
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
+    /** Abstand zum Ursprung der Karte (dort bleibt beim Zoomen alles stehen). */
     const rel = (e: { clientX: number; clientY: number }): [number, number] => {
       const r = c.getBoundingClientRect();
-      return [e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2];
+      const { ox, oy } = mapArea(r.width, r.height);
+      return [e.clientX - r.left - ox, e.clientY - r.top - oy];
     };
     const local = (e: { clientX: number; clientY: number }): [number, number] => {
       const r = c.getBoundingClientRect();
@@ -1009,21 +1025,13 @@ export function FlightScreen({
             audio.current.engine(0, 0);
           }
           if (e.text === 'Fallschirm offen!') audio.current.chute();
-          if (e.goal && career) goalCallback.current(e.goal);
+          // Punkte nur für echte Flüge – nicht im Sandkasten, auch nicht nach dem Laden eines
+          // Sandkasten-Spielstands.
+          if (e.goal && career && !fl.sandbox) goalCallback.current(e.goal);
         }
         // In Herausforderungen zählen die Ziele nicht – dort stören ihre Meldungen nur.
-        const shown = challenge
-          ? fresh.filter((e) => e.kind !== 'goal')
-          : sandbox
-            ? fresh.map((e) =>
-                e.kind === 'goal' && e.goal
-                  ? {
-                      ...e,
-                      title: `★ ${e.title?.replace(/ · \+\d+ Punkte$/, '').replace('★ ', '') ?? ''} (Sandkasten)`,
-                    }
-                  : e,
-              )
-            : fresh;
+        // In Herausforderungen und im Sandkasten zählen Ziele nicht – ihre Meldungen stören dort nur.
+        const shown = challenge || fl.sandbox ? fresh.filter((e) => e.kind !== 'goal') : fresh;
         if (shown.length) setToasts((t) => [...t, ...shown].slice(-3));
       }
 
@@ -1097,7 +1105,12 @@ export function FlightScreen({
             const sy = amp ? (Math.random() - 0.5) * 2 * amp : 0;
             const view = flightView(fl, W, H, scale, sx, sy);
             lastView.current = view;
-            drawFlight(ctx, fl, view, { time: now / 1000, flash: calm ? 0 : fl.flash });
+            drawFlight(ctx, fl, view, {
+              time: now / 1000,
+              flash: calm ? 0 : fl.flash,
+              // Selbst herauszoomen macht auch die Rakete kleiner.
+              minRocket: 34 * Math.min(1, zoom.current),
+            });
           }
         }
       }
@@ -1220,6 +1233,16 @@ export function FlightScreen({
     <div
       class={`rocket-stage ${map ? 'is-map' : ''} ${toasts.length ? 'has-toast' : ''} ${computer ? 'has-computer' : ''}`}
       ref={box}
+      onPointerUp={(e) => {
+        // Nach einem Klick behält ein Knopf sonst den Fokus – dann löst die Leertaste
+        // (Stufe) ihn ein zweites Mal aus. Wer mit der Tastatur navigiert, behält den Fokus.
+        const t = (e.target as HTMLElement).closest('button');
+        if (t && e.pointerType !== '') t.blur();
+      }}
+      onPointerDown={(e) => {
+        // Klick neben das Zeitsprung-Menü schließt es.
+        if (warpMenu && !(e.target as HTMLElement).closest('.warp-menu-wrap')) setWarpMenu(false);
+      }}
     >
       <div class="rocket-canvas" ref={stage}>
         <canvas
@@ -1481,9 +1504,9 @@ export function FlightScreen({
         ) : (
           <div class="hud-card goals">
             <div class="hud-card-title">
-              {sandbox ? 'Sandkasten · keine Punkte' : `${rank.title} · ${points} P.`}
+              {f.sandbox ? 'Sandkasten · keine Punkte' : `${rank.title} · ${points} P.`}
             </div>
-            <ul class="goal-list">
+            <ul class="goal-list" hidden={f.sandbox}>
               {open.slice(0, 3).map((g) => (
                 <li key={g.id} title={g.text}>
                   <span aria-hidden="true">☆</span> {g.title} <span class="pts">+{g.points}</span>
@@ -1616,11 +1639,25 @@ export function FlightScreen({
                 </button>
               )}
               {f.chute === 'stowed' && f.segs.length > 1 && (
-                <button type="button" class="abtn" onClick={() => f.deployChute()}>
+                <button type="button" class="abtn" onClick={() => f.toggleChute()}>
                   Fallschirm <kbd>P</kbd>
                 </button>
               )}
-              {f.chute === 'armed' && <span class="abtn-note">Fallschirm scharf</span>}
+              {f.chute === 'armed' && (
+                <button
+                  type="button"
+                  class="abtn on"
+                  onClick={() => f.toggleChute()}
+                  title="Der Schirm öffnet sich von selbst in der unteren Atmosphäre. Klick entschärft ihn wieder."
+                >
+                  Schirm scharf · aus <kbd>P</kbd>
+                </button>
+              )}
+              {f.chute === 'open' && (
+                <button type="button" class="abtn" onClick={() => f.cutChute()}>
+                  Schirm abwerfen <kbd>P</kbd>
+                </button>
+              )}
               {f.satellitesOnBoard > 0 && f.status === 'flying' && (
                 <button type="button" class="abtn" onClick={deploySatellite}>
                   Satellit ({f.satellitesOnBoard}) <kbd>N</kbd>
@@ -1686,8 +1723,14 @@ export function FlightScreen({
               disabled={f.status === 'docked' || (f.segs.length <= 1 && f.chute !== 'stowed')}
               title="Nächste Stufe zünden (Leertaste)"
             >
-              <strong>{f.segs.length > 1 ? 'Stufe' : 'Schirm'}</strong>
-              <span>{f.segs.length > 1 ? `${f.segs.length - 1} übrig` : 'öffnen'}</span>
+              <strong>{f.segs.length > 1 || f.chute !== 'stowed' ? 'Stufe' : 'Schirm'}</strong>
+              <span>
+                {f.segs.length > 1
+                  ? `${f.segs.length - 1} übrig`
+                  : f.chute === 'stowed'
+                    ? 'scharf machen'
+                    : 'keine mehr'}
+              </span>
             </button>
             <button
               type="button"
@@ -1796,7 +1839,10 @@ export function FlightScreen({
                 ['Antippen', 'In der Flugansicht: Rakete zeigt in diese Richtung'],
                 ['R, dann Q / E', 'RCS-Düsen: seitwärts schieben (zum Andocken)'],
                 ['Leertaste', 'Nächste Stufe'],
-                ['P / N / U', 'Fallschirm scharf / Satellit aussetzen / Luftbremsen'],
+                [
+                  'P / N / U',
+                  'Fallschirm scharf, entschärfen oder abwerfen / Satellit aussetzen / Luftbremsen',
+                ],
                 ['M', 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
                 ['B', 'Bordcomputer: Pläne, Manöver, Autopilot'],
                 ['L / T / C', 'Lande-Autopilot / Hilfe-Pilot / Countdown'],

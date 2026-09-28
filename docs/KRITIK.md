@@ -8,6 +8,29 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Fehlersuche: Fallschirm, Zoom und mehr
+
+Gemeldet wurden zwei Fehler; eine anschließende Suche durch die ganze App (Klick-Durchlauf aller
+Seiten auf PC und Handy, Spieltests, Durchsicht des Codes) fand weitere. Alle sind behoben:
+
+| #   | Befund                                                                                                                                   | Status | Lösung                                                                                                                                                                             |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 82  | Ein scharfer oder offener Fallschirm ließ sich nicht mehr zurücknehmen                                                                   | ✅     | P bzw. der Knopf entschärft einen scharfen Schirm und wirft einen offenen ab (er fliegt als Trümmerteil davon); gerissene und verbrauchte Schirme verschwinden auch aus der Rakete |
+| 83  | Beim Herauszoomen wurde die Rakete nicht kleiner (feste Mindestgröße 34 px)                                                              | ✅     | Die Mindestgröße gilt nur für den automatischen Zoom; selbst herauszoomen verkleinert die Rakete, weit draußen zeigt ein Ring mit Pfeil, wo sie ist                                |
+| 84  | Nach einem Mausklick behielt ein Knopf den Fokus – die Leertaste (Stufe) löste ihn ein zweites Mal aus, z. B. brach sie den Countdown ab | ✅     | Knöpfe im Cockpit geben den Fokus nach dem Klick ab; Tastaturnutzer behalten ihn                                                                                                   |
+| 85  | L1-Mission: Enter und Leertaste waren auf der ganzen Seite blockiert – Knöpfe ließen sich nicht per Tastatur auslösen                    | ✅     | Spieltasten gelten nicht mehr in Feldern und auf Knöpfen und Links (mit Test)                                                                                                      |
+| 86  | Karte: Lageanzeige und Schubregler verdeckten den unteren Teil der Bahn samt Rakete                                                      | ✅     | Kartenmitte liegt in der freien Fläche zwischen den Bedienleisten; Zoom mit Mausrad und zwei Fingern rechnet mit derselben Mitte                                                   |
+| 87  | Handy: Meldungen ohne Überschrift erschienen als leere Balken                                                                            | ✅     | Text bleibt stehen, nur bei Meldungen mit Überschrift wird er gekürzt                                                                                                              |
+| 88  | Handy/Tablet: das Menü „Einstellungen“ ragte über den Rand oder wurde abgeschnitten                                                      | ✅     | Menüs der Werft passen sich der Breite an                                                                                                                                          |
+| 89  | Am Fallschirm oder im freien Fall zeigte der Tipp noch „Senkrecht steigen …“                                                             | ✅     | Eigene Tipps für fallen, scharfen und offenen Fallschirm                                                                                                                           |
+| 90  | Große Taste zeigte „Schirm öffnen“, auch wenn kein Schirm mehr da war                                                                    | ✅     | Zeigt „Stufe · keine mehr“ bzw. „Schirm scharf machen“                                                                                                                             |
+| 91  | Zeitsprung-Menü schloss sich nur über den eigenen Knopf                                                                                  | ✅     | Klick daneben schließt es                                                                                                                                                          |
+| 92  | Spielstand aus dem Sandkasten brachte nach dem Laden im normalen Spiel Punkte                                                            | ✅     | Spielstände merken sich den Sandkasten; solche Flüge zählen nicht                                                                                                                  |
+| 93  | Im Sandkasten gewählte, noch gesperrte Lackierung blieb auch außerhalb aktiv                                                             | ✅     | Außerhalb gilt wieder eine freigeschaltete Lackierung                                                                                                                              |
+| 94  | Im Sandkasten stapelten sich Punkt-Meldungen „(Sandkasten)“ über der Karte                                                               | ✅     | Im Sandkasten keine Ziel-Meldungen und keine Zielliste                                                                                                                             |
+| 95  | Werft: Bei 32 Teilen tat ein Klick auf ein Teil nichts; Speichern im Hangar ohne Rückmeldung; Hinweise auf dem Handy unsichtbar          | ✅     | Hinweise „Mehr als 32 Teile …“ und „… gespeichert“, auch auf dem Handy                                                                                                             |
+| 96  | Simulator: Herauszoomen bis 67 AE (alles ein Punkt, Beschriftungen übereinander), Hineinzoomen bis 20 km                                 | ✅     | Zoom zwischen „3 AE im Bild“ und „Erde füllt das halbe Bild“; übereinanderliegende Beschriftungen werden ausgelassen                                                               |
+
 ## Sandkasten und neue Bauteile
 
 | #   | Befund                                                                                                    | Status | Lösung                                                                                                                                                                                                                                                                    |
@@ -157,7 +180,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **183 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **186 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,

@@ -48,6 +48,23 @@ describe('Input', () => {
     expect(input.wasPressed('jump')).toBe(false);
   });
 
+  it('lässt Enter und Leertaste auf Knöpfen und Tippen in Feldern der Seite', () => {
+    const input = new Input(bindings);
+    const detach = input.attach(document.createElement('div'), () => ({ x: 0, y: 0 }));
+    const button = document.createElement('button');
+    const field = document.createElement('input');
+    document.body.append(button, field);
+    button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+    expect(input.wasPressed('jump')).toBe(false);
+    field.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', bubbles: true }));
+    expect(input.isDown('left')).toBe(false);
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+    expect(input.wasPressed('jump')).toBe(true);
+    detach();
+    button.remove();
+    field.remove();
+  });
+
   it('liefert Achsenwerte', () => {
     const input = new Input(bindings);
     expect(input.axis('left', 'right')).toBe(0);

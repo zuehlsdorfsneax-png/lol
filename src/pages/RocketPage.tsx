@@ -34,7 +34,7 @@ const CONTROLS: [string, string][] = [
   ['1 – 7', 'SAS-Lageregelung: aus, prograd, retrograd, radial, Ziel, Manöver'],
   ['Antippen', 'In der Flugansicht: Die Rakete dreht sich in diese Richtung'],
   ['Leertaste', 'Nächste Stufe zünden (unterste Stufe abwerfen)'],
-  ['P / N / U', 'Fallschirm scharf / Satellit aussetzen / Luftbremsen'],
+  ['P / N / U', 'Fallschirm scharf, entschärfen oder abwerfen / Satellit aussetzen / Luftbremsen'],
   ['R, dann W / S / Q / E', 'RCS-Düsen: sanft verschieben (zum Andocken)'],
   ['M', 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
   ['B', 'Bordcomputer: Manöver planen und automatisch fliegen'],

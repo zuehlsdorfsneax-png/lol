@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'preact/hooks';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import type { Simulation } from './Simulation';
 import { cameraFor, renderSpace, screenToFrame, type Camera, type ViewOptions } from './view';
+import { AU, EARTH } from '../physics/constants';
 
 interface Props {
   sim: { current: Simulation | null };
@@ -86,7 +87,13 @@ export function SpaceCanvas(props: Props) {
     const c = cam.current;
     const { width, height } = sizeRef.current;
     const [wx, wy] = screenToFrame(c, width, height, px, py);
-    const scale = Math.min(Math.max(c.scale * factor, 1e-13), 1e-2);
+    // Grenzen: höchstens so weit heraus, dass 3 AE ins Bild passen (weiter sieht man nur
+    // einen Punkt), höchstens so weit hinein, dass die Erde das halbe Bild füllt.
+    const half = Math.min(width, height) / 2;
+    const home = cameraFor(propsRef.current.radius, width, height).scale;
+    const lo = Math.min(home / 10, half / (3 * AU));
+    const hi = Math.max(home * 10, half / (2 * EARTH.radius));
+    const scale = Math.min(Math.max(c.scale * factor, lo), hi);
     cam.current = {
       scale,
       cx: wx - (px - width / 2) / scale,

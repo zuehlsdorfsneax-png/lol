@@ -106,6 +106,15 @@ export class Input<A extends string = string> {
     toLogical: (clientX: number, clientY: number) => { x: number; y: number },
   ): () => void {
     const onKeyDown = (event: KeyboardEvent): void => {
+      // Tippen in Feldern und Enter/Leertaste auf Knöpfen und Links gehören der Seite,
+      // nicht dem Spiel – sonst ließen sich Knöpfe nicht mehr per Tastatur auslösen.
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      if (
+        (event.code === 'Space' || event.code === 'Enter' || event.code === 'NumpadEnter') &&
+        target?.closest?.('button, a[href], summary')
+      )
+        return;
       const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
       // Belegte Tasten sollen nicht scrollen o. Ä. – Browser-Kürzel wie Strg+R bleiben aber erhalten.
       if (!hasModifier && this.boundCodes.has(event.code)) event.preventDefault();

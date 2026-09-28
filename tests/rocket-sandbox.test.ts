@@ -120,3 +120,31 @@ describe('Neue Bauteile', () => {
     expect(r?.success, r?.text).toBe(true);
   });
 });
+
+describe('Fallschirm', () => {
+  it('P macht scharf und entschärft wieder; offen wird er abgeworfen', () => {
+    const f = new Flight(['fallschirm', 'kapsel', 'tank-m', 'falke']);
+    f.throttle = 1;
+    run(f, 20);
+    f.throttle = 0;
+    f.toggleChute();
+    expect(f.chute).toBe('armed');
+    f.toggleChute();
+    expect(f.chute).toBe('stowed');
+    // Hochfliegen lassen, scharf machen, warten bis er offen ist, dann abwerfen.
+    f.toggleChute();
+    for (let i = 0; i < 60 * 400 && f.chute !== 'open'; i++) f.update(1 / 60);
+    expect(f.chute).toBe('open');
+    f.toggleChute();
+    expect(f.chute).toBe('none');
+    expect(f.segs[0]!.parts).not.toContain('fallschirm');
+    expect(f.chuteArea).toBe(0);
+  });
+
+  it('Spielstand aus dem Sandkasten bleibt ohne Punkte', () => {
+    const f = new Flight(['kapsel', 'tank-m', 'falke']);
+    applySandbox(f, DEFAULT_SANDBOX);
+    const back = Flight.restore(f.snapshot()!);
+    expect(back.sandbox).toBe(true);
+  });
+});

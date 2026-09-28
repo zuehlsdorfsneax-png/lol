@@ -41,6 +41,17 @@ export function mapCenter(f: Flight, focus: MapFocus): [number, number] {
   return bodyState(b, f.t).slice(0, 2) as [number, number];
 }
 
+/**
+ * Freie Fläche der Karte: oben liegen die Knöpfe, unten Lageanzeige und Schubregler.
+ * Die Kartenmitte liegt deshalb etwas über der Bildmitte.
+ */
+export function mapArea(width: number, height: number): { ox: number; oy: number; h: number } {
+  const top = 60;
+  const bottom = Math.min(200, height * 0.26);
+  const h = Math.max(height * 0.4, height - top - bottom);
+  return { ox: width / 2, oy: Math.min(height / 2, top + h / 2), h };
+}
+
 export function mapView(
   f: Flight,
   width: number,
@@ -51,6 +62,7 @@ export function mapView(
   panY = 0,
 ): View {
   const [cx, cy] = mapCenter(f, focus);
+  const { ox, oy } = mapArea(width, height);
   return {
     width,
     height,
@@ -58,14 +70,14 @@ export function mapView(
     cx: cx + panX,
     cy: cy + panY,
     up: Math.PI / 2,
-    ox: width / 2,
-    oy: height / 2,
+    ox,
+    oy,
   };
 }
 
 /** Passender Maßstab, damit die Bahn bzw. der gewählte Körper ins Bild passt. */
 export function fitMapScale(f: Flight, width: number, height: number, focus: MapFocus): number {
-  const half = 0.42 * Math.min(width, height);
+  const half = 0.44 * Math.min(width, mapArea(width, height).h);
   const ref = f.refBody();
   const b = focus === 'ref' || focus === 'rocket' ? ref : bodyById(focus);
   let r: number;
