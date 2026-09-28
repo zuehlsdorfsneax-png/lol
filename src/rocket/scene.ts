@@ -744,6 +744,7 @@ export function drawStation(
     ctx.fillStyle = '#3b82f6';
     ctx.fillRect(-2, -7, 4, 14);
     ctx.restore();
+    label(ctx, STATION.name, sx + 10, sy - 10, '#bfdbfe', 11, true);
     return;
   }
   ctx.save();

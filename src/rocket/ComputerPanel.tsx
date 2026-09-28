@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { Icon } from '../ui/Icon';
 import type { Flight, Prediction, TargetId } from './flight';
-import { clock, duration, fmt } from './format';
+import { clock, clockIn, duration, fmt } from './format';
 import { period } from './kepler';
 import { makePlan, planOptions, type Plan, type PlanId } from './planner';
 
@@ -112,8 +113,11 @@ export function ComputerPanel({
   const start = f.nodeBurnStart();
   const refOrbit = node ? f.orbit() : null;
   const P = node && refOrbit?.bound ? period(f.elements()) : Infinity;
-  const solidRef = f.status === 'flying' && f.refBody().solid;
   const ref = f.refBody();
+  const rel = f.relative(ref);
+  const climbing = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r > 5;
+  // Landen nur anbieten, wenn es passt – nicht im Steigflug unter Schub.
+  const solidRef = f.status === 'flying' && ref.solid && !(climbing && f.thrusting);
 
   return (
     <div class="computer-panel" role="dialog" aria-label="Bordcomputer">
@@ -186,7 +190,7 @@ export function ComputerPanel({
                 onChanged();
               }}
             >
-              ⏩ Zeitsprung bis kurz vor das Fenster
+              <Icon name="forward" /> Zeitsprung bis kurz vor das Fenster
             </button>
           )}
         </>
@@ -198,7 +202,7 @@ export function ComputerPanel({
             <span>Manöver</span>
             <strong>
               {fmt(total, total < 10 ? 1 : 0)} m/s ·{' '}
-              {node.t > f.t ? `in ${clock(node.t - f.t)}` : 'jetzt'}
+              {node.t > f.t ? `in ${clockIn(node.t - f.t)}` : 'jetzt'}
             </strong>
           </div>
           <div class="cp-row">
@@ -344,7 +348,15 @@ export function ComputerPanel({
               class={`cp-action go ${executing ? 'on' : ''}`}
               onClick={() => onExecute(!executing)}
             >
-              {executing ? '■ Autopilot stoppen' : '▶ Automatisch ausführen'}
+              {executing ? (
+                <>
+                  <Icon name="stop" /> Autopilot stoppen
+                </>
+              ) : (
+                <>
+                  <Icon name="play" /> Automatisch ausführen
+                </>
+              )}
             </button>
             {!node.frozen && start - f.t > 20 && (
               <button
@@ -355,7 +367,7 @@ export function ComputerPanel({
                   onChanged();
                 }}
               >
-                ⏩ Bis kurz davor
+                <Icon name="forward" /> Bis kurz davor
               </button>
             )}
             <button
@@ -382,7 +394,15 @@ export function ComputerPanel({
           onClick={() => onLand(!landing)}
           title="Lande-Autopilot: bremst, fällt und bremst im letzten Moment (Taste L)"
         >
-          {landing ? '■ Lande-Autopilot aus' : `⬇ Automatisch landen auf ${f.refBody().name}`}
+          {landing ? (
+            <>
+              <Icon name="stop" /> Lande-Autopilot aus
+            </>
+          ) : (
+            <>
+              <Icon name="down" /> Automatisch landen auf {f.refBody().name}
+            </>
+          )}
         </button>
       )}
     </div>

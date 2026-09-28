@@ -64,7 +64,7 @@ export function FlightReport({
 
 function Stars({ n, animate = false }: { n: number; animate?: boolean }) {
   return (
-    <div class={`stars ${animate ? 'animate' : ''}`} aria-label={`${n} von 3 Sternen`}>
+    <div class={`stars ${animate ? 'animate' : ''}`} role="img" aria-label={`${n} von 3 Sternen`}>
       {[0, 1, 2].map((i) => (
         <span key={i} class={i < n ? 'on' : ''} style={{ animationDelay: `${0.25 + i * 0.35}s` }}>
           ★

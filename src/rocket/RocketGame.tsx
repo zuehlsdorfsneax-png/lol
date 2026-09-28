@@ -69,11 +69,43 @@ export function RocketGame({
   const [flying, setFlying] = useState(false);
   const [tab, setTab] = useState<Tab>(startTab);
   const root = useRef<HTMLDivElement>(null);
+  const [backPressed, setBackPressed] = useState(0);
+  const flyingRef = useRef(false);
+  flyingRef.current = flying;
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     const html = document.documentElement;
     html.classList.add('game-open');
     root.current?.focus({ preventScroll: true });
-    return () => html.classList.remove('game-open');
+    // Eigener Verlaufseintrag: Die Zurück-Taste schließt das Spiel statt die Seite zu wechseln.
+    let own = false;
+    try {
+      history.pushState({ ...(history.state as object | null), orbitGame: true }, '');
+      own = true;
+    } catch {
+      // Ohne Verlauf (z. B. in manchen eingebetteten Ansichten) bleibt nur der Schließen-Knopf.
+    }
+    const onPop = (): void => {
+      if (flyingRef.current) {
+        // Im Flug: Eintrag wiederherstellen und das Pausenmenü öffnen.
+        try {
+          history.pushState({ ...(history.state as object | null), orbitGame: true }, '');
+        } catch {
+          // egal
+        }
+        setBackPressed((n) => n + 1);
+      } else {
+        own = false;
+        closeRef.current();
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      html.classList.remove('game-open');
+      window.removeEventListener('popstate', onPop);
+      if (own && (history.state as { orbitGame?: boolean } | null)?.orbitGame) history.back();
+    };
   }, []);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [goals, setGoals] = useState<string[]>(() => progressStore.load().rocketGoals);
@@ -164,6 +196,7 @@ export function RocketGame({
           onSatellites={saveFlightSats}
           onChallenge={finishChallenge}
           onNextChallenge={next ? () => startChallenge(next) : null}
+          backPressed={backPressed}
           onExit={() => {
             setFlying(false);
             if (challenge) setTab('herausforderungen');

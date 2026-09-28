@@ -1,6 +1,7 @@
 const PATHS: Record<string, string> = {
   play: 'M7 4.5v15l12-7.5z',
   pause: 'M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z',
+  stop: 'M6.5 6.5h11v11h-11z',
   reset: 'M12 5a7 7 0 1 1-6.6 4.7M5 4v5h5',
   step: 'M6 5v14l9-7zM17 5h2v14h-2z',
   download: 'M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14',

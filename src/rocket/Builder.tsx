@@ -527,9 +527,15 @@ function Werft({
 
   useEffect(() => {
     const key = (e: KeyboardEvent): void => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      if (e.key === 'Delete' || e.key === 'Backspace') remove();
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Nur, wenn nichts Bestimmtes den Fokus hat (oder die Bauansicht selbst).
+      const el = e.target as HTMLElement | null;
+      const free = !el || el === document.body || el.classList.contains('game');
+      if (!free && !el.closest('.blueprint')) return;
+      if (el?.closest('button, a, input, select, textarea, [role="menu"], .gmenu')) return;
+      e.preventDefault();
+      remove();
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
@@ -999,7 +1005,7 @@ function ChallengeList({
               const n = stars[c.id] ?? 0;
               return (
                 <article key={c.id} class={`challenge-card ${n > 0 ? 'done' : ''}`}>
-                  <div class="challenge-stars" aria-label={`${n} von 3 Sternen`}>
+                  <div class="challenge-stars" role="img" aria-label={`${n} von 3 Sternen`}>
                     {[0, 1, 2].map((i) => (
                       <span key={i} class={i < n ? 'on' : ''}>
                         ★

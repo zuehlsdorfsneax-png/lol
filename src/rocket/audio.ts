@@ -145,8 +145,9 @@ export class RocketAudio {
   }
 
   explosion(): void {
-    this.burst(1.8, 500, 1.8);
-    this.burst(0.5, 2000, 0.6);
+    // Lautstärken unter 1, sonst übersteuert der Knall.
+    this.burst(1.8, 500, 0.95);
+    this.burst(0.5, 2000, 0.45);
   }
 
   clunk(): void {

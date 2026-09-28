@@ -245,7 +245,40 @@ export function blob(
   ctx.closePath();
 }
 
-/** Beschriftung mit dunklem Rand; weicht am rechten Rand nach links aus. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Belegte Flächen der Beschriftungen im aktuellen Bild (null = keine Prüfung). */
+let placed: Rect[] | null = null;
+
+/**
+ * Ab jetzt weichen Beschriftungen einander und den freigehaltenen Flächen (z. B. Tipps über der
+ * Karte) aus. Mit `endLabels()` wieder abschalten.
+ */
+export function beginLabels(reserved: Rect[] = []): void {
+  placed = [...reserved];
+}
+
+export function endLabels(): void {
+  placed = null;
+}
+
+/** Fläche freihalten (z. B. das Raketensymbol), ohne etwas zu zeichnen. */
+export function reserveLabel(r: Rect): void {
+  placed?.push(r);
+}
+
+const overlaps = (a: Rect, b: Rect): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * Beschriftung mit dunklem Rand; weicht am rechten Rand nach links aus. Überdeckt sie eine andere,
+ * rückt sie nach unten oder oben; `weak` = lieber weglassen als überdecken.
+ */
 export function label(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -253,11 +286,36 @@ export function label(
   y: number,
   color: string,
   size = 12,
+  weak = false,
 ): void {
   ctx.font = `600 ${size}px Jost, system-ui, sans-serif`;
   const width = ctx.measureText(text).width;
   const room = ctx.canvas.width / (ctx.getTransform().a || 1);
-  if (x + width > room - 8) x = Math.max(8, x - width - 20);
+  const left = Math.max(8, x - width - 20);
+  if (x + width > room - 8) x = left;
+  if (placed) {
+    // Freien Platz suchen: rechts vom Punkt, etwas darunter oder darüber, sonst links davon.
+    const line = size * 1.35;
+    const box = (bx: number, dy: number): Rect => ({
+      x: bx - 2,
+      y: y + dy - line / 2,
+      w: width + 4,
+      h: line,
+    });
+    let spot: [number, number] | null = null;
+    for (const bx of x === left ? [x] : [x, left]) {
+      const dy = [0, line, -line, 2 * line, -2 * line, 3 * line, -3 * line].find(
+        (d) => !placed!.some((r) => overlaps(r, box(bx, d))),
+      );
+      if (dy !== undefined) {
+        spot = [bx, dy];
+        break;
+      }
+    }
+    if (!spot && weak) return;
+    [x, y] = spot ? [spot[0], y + spot[1]] : [x, y];
+    placed.push(box(x, 0));
+  }
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.lineWidth = 3;

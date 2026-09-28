@@ -28,11 +28,11 @@ function transferWaitMax(): number {
 }
 
 const CONTROLS: [string, string][] = [
-  ['W / ↑ und S / ↓', 'Schub stufenlos hoch und runter (auch Umschalt / Strg)'],
+  ['W / ↑ und S / ↓', 'Schub stufenlos hoch und runter (Umschalt: hoch)'],
   ['Z / X', 'Vollgas / Triebwerk aus'],
   ['A / ← und D / →', 'Rakete drehen (F: Feinsteuerung)'],
   ['1 – 7', 'SAS-Lageregelung: aus, prograd, retrograd, radial, Ziel, Manöver'],
-  ['Antippen', 'In der Flugansicht: Die Rakete dreht sich in diese Richtung'],
+  ['Gedrückt halten', 'In der Flugansicht: Die Rakete dreht sich in diese Richtung'],
   ['Leertaste', 'Nächste Stufe zünden (unterste Stufe abwerfen)'],
   ['P / N / U', 'Fallschirm scharf, entschärfen oder abwerfen / Satellit aussetzen / Luftbremsen'],
   ['R, dann W / S / Q / E', 'RCS-Düsen: sanft verschieben (zum Andocken)'],

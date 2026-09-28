@@ -19,7 +19,7 @@ import {
   type SasMode,
   type TargetId,
 } from './flight';
-import { clock, distance, fmt, km, shortTime } from './format';
+import { clock, clockIn, distance, fmt, km, missionClock, shortTime } from './format';
 import { CIRCULAR_E, timeToApoapsis, timeToPeriapsis } from './kepler';
 import {
   drawMap,
@@ -156,14 +156,16 @@ function tipFor(f: Flight, pilot: string | null): string {
       return 'Auf dem Merkur: tagsüber über 400 °C, nachts −170 °C. Keine Luft, viele Krater.';
     if (on === EUROPA) return 'Auf Europa! Unter deinen Füßen liegt ein Ozean unter dem Eis.';
     if (!f.goals.has('lift'))
-      return 'Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C) drücken. Der Hilfe-Pilot (T) fliegt bis in die Umlaufbahn.';
+      return !f.infiniteFuel && f.deltaV() < 3_700
+        ? `Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C). Mit ${fmt(f.deltaV())} m/s Δv reicht es ins All, für eine Umlaufbahn braucht es rund 3.900 m/s.`
+        : 'Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C) drücken. Der Hilfe-Pilot (T) fliegt bis in die Umlaufbahn.';
     return 'Sicher gelandet! In der Werft kannst du eine größere Rakete bauen.';
   }
   if (f.chute === 'open')
     return 'Am Fallschirm – gleich sanft aufsetzen. Mit P wirfst du den Schirm ab (dann fällt die Rakete wieder).';
   if (f.chute === 'armed' && rel.altitude < Math.max(ref.atmosphere, 1))
     return 'Fallschirm scharf: Er öffnet sich von selbst in der unteren Luft, sobald die Rakete langsamer als 300 m/s ist. P entschärft ihn wieder.';
-  if (f.sas === 'point') return 'SAS hält die angetippte Richtung. Eine Drehtaste schaltet es aus.';
+  if (f.sas === 'point') return 'SAS hält die gezeigte Richtung. Eine Drehtaste schaltet es aus.';
   if (ref === SUN)
     return 'Du kreist um die Sonne! Bordcomputer: „Kurskorrektur“ legt den tiefsten Punkt am Ziel fest. Dann Zeitraffer hoch.';
   if (ref === JUPITER)
@@ -195,7 +197,11 @@ function tipFor(f: Flight, pilot: string | null): string {
         ? 'Die Rakete fällt! Fallschirm scharf machen (P) – oder aufrichten und mit dem Triebwerk bremsen.'
         : 'Die Rakete fällt! Aufrichten (SAS retrograd, Taste 3) und kurz vor dem Boden Gas geben.';
     if (rel.altitude < 3_000 && f.goals.size <= 2)
-      return 'Senkrecht steigen. Ab 3 km langsam nach rechts neigen (D / →).';
+      return f.thrusting
+        ? 'Senkrecht steigen. Ab 3 km langsam nach rechts neigen (D / →).'
+        : f.chute === 'stowed'
+          ? 'Triebwerk aus – die Rakete steigt noch ein Stück. Für die Landung den Fallschirm scharf machen (P).'
+          : 'Triebwerk aus – die Rakete steigt noch ein Stück und fällt dann zurück.';
     if (o.apoapsis < 70_000)
       return f.thrusting
         ? 'Weiter nach rechts neigen: bei 20 km etwa halb, ab 40 km fast waagerecht. Ziel: höchster Bahnpunkt (Ap) über 70 km.'
@@ -216,6 +222,30 @@ function tipFor(f: Flight, pilot: string | null): string {
     return 'Unterwegs! Zeitraffer hoch (.) oder „Zeitsprung“ – er bremst vor dem Ziel von selbst ab.';
   return 'Umlaufbahn geschafft! Wähle rechts ein Ziel: Station, Mond oder einen Planeten. Der Bordcomputer (B) plant den Weg.';
 }
+
+const MUTE_KEY = 'orbitlabor/rakete-ton-aus';
+
+/** Ton aus? Die Wahl gilt für alle Flüge. */
+function readMuted(): boolean {
+  try {
+    return localStorage.getItem(MUTE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeMuted(muted: boolean): void {
+  try {
+    if (muted) localStorage.setItem(MUTE_KEY, '1');
+    else localStorage.removeItem(MUTE_KEY);
+  } catch {
+    // Ohne Speicher gilt die Wahl nur für diesen Flug.
+  }
+}
+
+/** Höchstens so viele Meldungen gleichzeitig, jede so lange sichtbar. */
+const MAX_TOASTS = 2;
+const TOAST_MS = 5000;
 
 /** Karriere und Sandkasten haben je einen eigenen Spielstand. */
 function saveKey(sandbox: boolean): string {
@@ -257,6 +287,8 @@ interface Props {
   onChallenge: (id: string, result: ChallengeResult) => void;
   onNextChallenge: (() => void) | null;
   onExit: () => void;
+  /** Zählt hoch, wenn die Zurück-Taste gedrückt wurde (öffnet das Pausenmenü). */
+  backPressed?: number;
 }
 
 function makeFlight(
@@ -307,6 +339,7 @@ export function FlightScreen({
   onChallenge,
   onNextChallenge,
   onExit,
+  backPressed = 0,
 }: Props) {
   const [run, setRun] = useState(0);
   const flight = useRef<Flight>(
@@ -314,7 +347,7 @@ export function FlightScreen({
   );
   const [, setTick] = useState(0);
   const [map, setMap] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(readMuted);
   const [paused, setPaused] = useState(false);
   const [help, setHelp] = useState(false);
   const [computer, setComputer] = useState(false);
@@ -322,6 +355,8 @@ export function FlightScreen({
   const [briefing, setBriefing] = useState(challenge !== null);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [report, setReport] = useState(false);
+  /** Welche Menü-Aktion auf ein zweites Tippen wartet („Wirklich …?“). */
+  const [confirm, setConfirm] = useState<'restart' | 'exit' | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [saved, setSaved] = useState<FlightSnapshot | null>(() => loadSnapshot(sandbox));
   const [toasts, setToasts] = useState<FlightEvent[]>([]);
@@ -335,7 +370,13 @@ export function FlightScreen({
   const orbitPilot = useRef<OrbitPilot | null>(null);
   const executor = useRef<NodeExecutor | null>(null);
   const lander = useRef<LandingPilot | null>(null);
-  const audio = useRef<RocketAudio>(new RocketAudio());
+  const audioRef = useRef<RocketAudio | null>(null);
+  if (!audioRef.current) {
+    // Einmal pro Flug anlegen, mit der gespeicherten Ton-Einstellung.
+    audioRef.current = new RocketAudio();
+    audioRef.current.setMuted(readMuted());
+  }
+  const audio = audioRef as { current: RocketAudio };
   /** Zoomfaktor des Spielers; der Grundmaßstab folgt automatisch der Flughöhe. */
   const zoom = useRef(1);
   const mapCam = useRef<{ scale: number; focus: MapFocus; panX: number; panY: number }>({
@@ -353,7 +394,8 @@ export function FlightScreen({
   const mapOpen = useRef(map);
   mapOpen.current = map;
   const pausedRef = useRef(paused);
-  pausedRef.current = paused || briefing || report;
+  // Jeder offene Dialog hält das Spiel an – auch die Hilfe und das Ergebnis.
+  pausedRef.current = paused || briefing || report || help || result !== null;
   const helpRef = useRef(help);
   helpRef.current = help;
   const countdownRef = useRef(countdown);
@@ -361,6 +403,8 @@ export function FlightScreen({
   const memo = useRef<Memo>({});
   const judged = useRef(false);
   const startGoals = useRef(new Set<string>(knownGoals));
+  /** Flugzeit beim Start dieses Flugs (für die Missionsuhr, falls nie abgehoben wurde). */
+  const startT = useRef(flight.current.t);
   const goalCallback = useRef(onGoal);
   goalCallback.current = onGoal;
   const satCallback = useRef(onSatellites);
@@ -376,7 +420,7 @@ export function FlightScreen({
   if (import.meta.env.DEV) Object.assign(window, { __rocket: flight });
 
   const toast = (text: string, kind: FlightEvent['kind'] = 'info'): void =>
-    setToasts((t) => [...t, { id: -Math.random(), kind, text }].slice(-3));
+    setToasts((t) => [...t, { id: -Math.random(), kind, text }].slice(-MAX_TOASTS));
 
   const refresh = (): void => {
     predDirty.current = true;
@@ -393,6 +437,7 @@ export function FlightScreen({
   const restart = (next?: Flight): void => {
     flight.current =
       next ?? makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites);
+    startT.current = flight.current.t;
     stopPilots();
     pred.current = null;
     memo.current = {};
@@ -627,6 +672,32 @@ export function FlightScreen({
     refresh();
   };
 
+  // Nachfragen gelten nur, solange das Menü offen ist.
+  useEffect(() => {
+    if (!paused) setConfirm(null);
+  }, [paused]);
+
+  // Zurück-Taste (Browser, Handy): nicht einfach verlassen, sondern das Menü öffnen.
+  const backStart = useRef(backPressed);
+  useEffect(() => {
+    if (backPressed === backStart.current) return;
+    setHelp(false);
+    setPaused(true);
+    toast('Zum Verlassen im Menü „Zur Werft“ wählen.');
+  }, [backPressed]);
+
+  // Neu laden oder Tab schließen während eines Flugs: der Browser fragt nach.
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent): void => {
+      const fl = flight.current;
+      if (fl.stats.liftoff === null || fl.status === 'crashed') return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
+
   // Tastatur
   useEffect(() => {
     const control = new Set([
@@ -646,8 +717,8 @@ export function FlightScreen({
       'f5',
       'f9',
       'shift',
-      'control',
     ]);
+    // Umschalt fehlt absichtlich: „?“ (Umschalt + ß) soll keinen Autopiloten abschalten.
     const steer = new Set([
       'arrowleft',
       'arrowright',
@@ -659,22 +730,37 @@ export function FlightScreen({
       'arrowdown',
       'w',
       's',
-      'shift',
-      'control',
     ]);
     const down = (e: KeyboardEvent): void => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' && (e.target as HTMLInputElement).type !== 'range') return;
       if (tag === 'SELECT' || tag === 'TEXTAREA') return;
+      // Strg/Cmd/Alt gehören dem Browser (Neu laden, Drucken, Suchen, Tab schließen …).
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.toLowerCase();
       const fl = flight.current;
       audio.current.unlock();
+      if (pausedRef.current || fl.status === 'crashed') {
+        // Bei offenem Dialog nur Esc, Hilfe und (nach dem Absturz) Laden.
+        if (k === 'escape') {
+          e.preventDefault();
+          if (helpRef.current) setHelp(false);
+          else if (paused) setPaused(false);
+        } else if ((k === 'h' || k === '?') && !briefing && !report && result === null) {
+          setHelp((h) => !h);
+        } else if (k === 'f9' && fl.status === 'crashed' && !pausedRef.current) {
+          e.preventDefault();
+          quickload();
+        } else if (k === 'f5' || k === 'f9' || k === ' ') e.preventDefault();
+        return;
+      }
+      if (k === '?') keys.current.delete('shift');
       if (control.has(k) || /^[1-7]$/.test(k)) e.preventDefault();
       if (steer.has(k) && pilot.current) {
         stopPilots();
         toast('Autopilot aus – du steuerst.');
       }
-      if (e.repeat && !['arrowup', 'arrowdown', 'w', 's', 'shift', 'control'].includes(k)) return;
+      if (e.repeat && !['arrowup', 'arrowdown', 'w', 's', 'shift'].includes(k)) return;
       keys.current.add(k);
       if (k === ' ') fl.stage();
       else if (k === 'z') fl.throttle = 1;
@@ -831,8 +917,12 @@ export function FlightScreen({
       const d = drag.current;
       if (!d || d.id !== e.pointerId) return;
       drag.current = null;
-      const tap = d.moved < 7 && performance.now() - d.time < 450;
-      if (!tap || d.kind !== 'pan') {
+      const held = performance.now() - d.time;
+      const tap = d.moved < 7 && held < 450;
+      // In der Flugansicht dreht erst längeres Drücken die Rakete – ein knapp verfehlter
+      // Knopf soll sie nicht herumreißen.
+      const hold = d.moved < 7 && held >= 350 && held < 2500;
+      if (d.kind !== 'pan' || (mapOpen.current ? !tap : !hold)) {
         refresh();
         return;
       }
@@ -852,7 +942,7 @@ export function FlightScreen({
           refresh();
         }
       } else if (fl.status === 'flying' && lastView.current) {
-        // Antippen in der Flugansicht: Rakete zeigt in diese Richtung (SAS „Zeigen“).
+        // Gedrückt halten in der Flugansicht: Rakete zeigt in diese Richtung (SAS „Zeigen“).
         const [wx, wy] = toWorld(lastView.current, d.x, d.y);
         const [cx, cy] = fl.center();
         if (Math.hypot(wx - cx, wy - cy) * lastView.current.scale > 30) {
@@ -930,20 +1020,29 @@ export function FlightScreen({
         padThrottle = (pad.buttons[7]?.value ?? 0) - (pad.buttons[6]?.value ?? 0);
         const pressed = pad.buttons.map((b) => b.pressed);
         const edge = (i: number): boolean => !!pressed[i] && !gamepadPrev.current[i];
-        if (edge(0)) fl.stage();
-        if (edge(1)) fl.deployChute();
-        if (edge(2)) fl.rcs = !fl.rcs;
-        if (edge(3)) openMap(!mapOpen.current);
-        if (edge(4)) warpBy(-1);
-        if (edge(5)) warpBy(1);
-        if (edge(9)) setPaused((p) => !p);
-        if (edge(12)) setSas('prograde');
-        if (edge(13)) setSas('retrograde');
-        if (edge(14) || edge(15)) setSas('off');
-        gamepadPrev.current = pressed;
-        if (padTurn || padThrottle) {
-          audio.current.unlock();
-          if (pilot.current) stopPilots();
+        if (pausedRef.current || fl.status === 'crashed') {
+          // Bei offenem Dialog nur die Start-Taste (Pause an/aus).
+          if (edge(9) && !briefing && !report && result === null) setPaused((p) => !p);
+          gamepadPrev.current = pressed;
+          padTurn = 0;
+          padThrottle = 0;
+          padMove = { x: 0, y: 0 };
+        } else {
+          if (edge(0)) fl.stage();
+          if (edge(1)) fl.deployChute();
+          if (edge(2)) fl.rcs = !fl.rcs;
+          if (edge(3)) openMap(!mapOpen.current);
+          if (edge(4)) warpBy(-1);
+          if (edge(5)) warpBy(1);
+          if (edge(9)) setPaused((p) => !p);
+          if (edge(12)) setSas('prograde');
+          if (edge(13)) setSas('retrograde');
+          if (edge(14) || edge(15)) setSas('off');
+          gamepadPrev.current = pressed;
+          if (padTurn || padThrottle) {
+            audio.current.unlock();
+            if (pilot.current) stopPilots();
+          }
         }
       }
 
@@ -955,8 +1054,10 @@ export function FlightScreen({
           if (Math.ceil(next) < Math.ceil(cd) && next > 0) {
             audio.current.beep();
             const n = Math.ceil(next);
-            if (n <= 5 || n === 10)
-              audio.current.say(['', 'Eins', 'Zwei', 'Drei', 'Vier', 'Fünf'][n] ?? String(n));
+            audio.current.say(
+              ['', 'Eins', 'Zwei', 'Drei', 'Vier', 'Fünf', 'Sechs', 'Sieben', 'Acht', 'Neun'][n] ??
+                String(n),
+            );
           }
           if (next <= 0) {
             fl.throttle = 1;
@@ -1013,8 +1114,7 @@ export function FlightScreen({
             fl.translate = { x: 0, y: 0 };
             if (k.has('arrowup') || k.has('w') || k.has('shift'))
               fl.throttle = Math.min(1, fl.throttle + 0.8 * dt);
-            if (k.has('arrowdown') || k.has('s') || k.has('control'))
-              fl.throttle = Math.max(0, fl.throttle - 0.8 * dt);
+            if (k.has('arrowdown') || k.has('s')) fl.throttle = Math.max(0, fl.throttle - 0.8 * dt);
           }
           if (padThrottle) fl.throttle = Math.max(0, Math.min(1, fl.throttle + padThrottle * dt));
         }
@@ -1089,10 +1189,9 @@ export function FlightScreen({
           // Sandkasten-Spielstands.
           if (e.goal && career && !fl.sandbox) goalCallback.current(e.goal);
         }
-        // In Herausforderungen zählen die Ziele nicht – dort stören ihre Meldungen nur.
         // In Herausforderungen und im Sandkasten zählen Ziele nicht – ihre Meldungen stören dort nur.
         const shown = challenge || fl.sandbox ? fresh.filter((e) => e.kind !== 'goal') : fresh;
-        if (shown.length) setToasts((t) => [...t, ...shown].slice(-3));
+        if (shown.length) setToasts((t) => [...t, ...shown].slice(-MAX_TOASTS));
       }
 
       predTimer += dt;
@@ -1147,7 +1246,12 @@ export function FlightScreen({
           } else {
             // Automatischer Zoom: Mit der Höhe wird herausgezoomt, damit der Boden im Bild bleibt.
             const altitude = Math.max(1, fl.nearest().altitude);
-            const near = 5 / Math.pow(1 + altitude / 300, 0.7);
+            // Am Boden näher heran, damit die eigene Rakete gut zu sehen ist (etwa 16 % der
+            // Bildhöhe); schon nach wenigen hundert Metern gilt wieder der normale Zoom.
+            const close = Math.max(1, (0.16 * H) / Math.max(fl.length, 1) / 5);
+            const near =
+              (5 * (1 + (close - 1) * Math.exp(-altitude / 150))) /
+              Math.pow(1 + altitude / 300, 0.7);
             let base = Math.min(near, (H * 0.3) / altitude);
             // Beim Anflug auf die Station so zoomen, dass beide ins Bild passen.
             const ti = fl.target === 'station' ? fl.targetInfo() : null;
@@ -1189,10 +1293,23 @@ export function FlightScreen({
     };
   }, [run]);
 
-  // Meldungen nach einigen Sekunden ausblenden.
+  // Meldungen nach einigen Sekunden ausblenden – gleichzeitig eingetroffene gemeinsam.
+  const toastBorn = useRef(new Map<number, number>());
   useEffect(() => {
-    if (!toasts.length) return;
-    const timer = setTimeout(() => setToasts((t) => t.slice(1)), 4500);
+    if (!toasts.length) {
+      toastBorn.current.clear();
+      return;
+    }
+    const now = performance.now();
+    for (const t of toasts) if (!toastBorn.current.has(t.id)) toastBorn.current.set(t.id, now);
+    const first = Math.min(...toasts.map((t) => toastBorn.current.get(t.id)!));
+    const timer = setTimeout(
+      () => {
+        const cut = performance.now() - TOAST_MS + 600;
+        setToasts((list) => list.filter((t) => (toastBorn.current.get(t.id) ?? 0) > cut));
+      },
+      Math.max(50, first + TOAST_MS - now),
+    );
     return () => clearTimeout(timer);
   }, [toasts]);
 
@@ -1255,8 +1372,10 @@ export function FlightScreen({
       : pilot.current === 'node'
         ? `Autopilot führt das Manöver aus (${executor.current?.phase === 'burn' ? 'brennt' : executor.current?.phase === 'wait' ? 'wartet auf den Zündzeitpunkt' : 'richtet aus'}).`
         : pilot.current === 'land'
-          ? `Lande-Autopilot: ${{ aero: 'die Luft bremst', chute: 'am Fallschirm', brake: 'Bahngeschwindigkeit abbauen', fall: 'freier Fall', suicide: 'Bremsen!', done: 'gelandet', failed: 'abgebrochen' }[lander.current?.phase ?? 'brake']}.`
+          ? `Lande-Autopilot: ${{ aero: 'die Luft bremst.', chute: 'am Fallschirm.', brake: 'Bahngeschwindigkeit abbauen.', fall: 'freier Fall.', suicide: 'Bremsen!', done: 'gelandet.', failed: 'abgebrochen.' }[lander.current?.phase ?? 'brake']}`
           : null;
+  // Ein laufender Flug, den ein Fehlklick nicht beenden soll.
+  const inProgress = f.stats.liftoff !== null && f.status !== 'crashed' && result === null;
   const orbitPilotAvailable =
     pilot.current !== 'orbit' &&
     (f.status === 'landed' || f.status === 'flying') &&
@@ -1266,6 +1385,23 @@ export function FlightScreen({
     (!challenge || challenge.computer);
   const newGoals = [...f.goals].filter((g) => !startGoals.current.has(g));
   const navSize = size.width < 640 ? 88 : size.width < 1000 ? 112 : 128;
+  // Auf dem Handy stehen Meldungen unter dem Tipp, sonst links unter den Flugdaten.
+  const phoneLayout = size.width > 0 && size.width < 760;
+  const toastList = (
+    <div class="toasts" aria-live="polite">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          class={`rocket-toast ${t.kind}`}
+          onClick={() => setToasts([])}
+          title="Antippen blendet die Meldungen aus"
+        >
+          {t.title && <strong>{t.title}</strong>}
+          <span>{t.text}</span>
+        </div>
+      ))}
+    </div>
+  );
   const jumps: { label: string; t: number; what: string }[] = [];
   if (f.status === 'flying') {
     if (f.node && !f.node.frozen)
@@ -1288,8 +1424,15 @@ export function FlightScreen({
     if (win && win.wait > 60)
       jumps.push({ label: win.title, t: f.t + win.wait - 60, what: 'bis zum Startfenster' });
   }
-  for (const h of [1, 6, 24])
-    jumps.push({ label: `+ ${h} h`, t: f.t + h * 3600, what: `um ${h} h` });
+  // Stundensprünge nur, wenn nichts passieren kann: am Boden, angedockt oder antriebslos auf einer
+  // Bahn, die nicht in Luft oder Boden führt (im Steigflug würde der Sprung die Rakete abstürzen lassen).
+  const safeCoast =
+    f.status === 'flying' &&
+    f.throttle === 0 &&
+    (!o.bound || o.periapsis > Math.max(ref.atmosphere, 2_000) + 1_000);
+  if (f.status === 'landed' || f.status === 'docked' || safeCoast)
+    for (const h of [1, 6, 24])
+      jumps.push({ label: `+ ${h} h`, t: f.t + h * 3600, what: `um ${h} h` });
 
   return (
     <div
@@ -1313,7 +1456,7 @@ export function FlightScreen({
           aria-label={
             map
               ? 'Karte des Sonnensystems mit vorhergesagter Bahn – Klick auf die Bahn plant ein Manöver'
-              : 'Flugansicht der Rakete – Antippen richtet die Rakete aus'
+              : 'Flugansicht der Rakete – gedrückt halten richtet die Rakete aus'
           }
         />
       </div>
@@ -1387,7 +1530,13 @@ export function FlightScreen({
             <dd>{fmt(vertical)} m/s</dd>
           </dl>
           <div class="tele-foot">
-            <span>T+ {clock(f.t)}</span>
+            <span title="Missionszeit seit dem Start">
+              {f.stats.liftoff === null && f.status === 'landed'
+                ? countdown !== null
+                  ? `T− 00:${String(Math.ceil(countdown)).padStart(2, '0')}`
+                  : 'T− 00:00'
+                : `T+ ${missionClock(f.t - (f.stats.liftoff ?? startT.current))}`}
+            </span>
             <span class={f.gForce > 6 ? 'bad' : ''}>{fmt(f.gForce, 1)} g</span>
           </div>
         </div>
@@ -1466,7 +1615,7 @@ export function FlightScreen({
           {win && (
             <div class={`hud-pill ${win.wait < 30 ? 'now' : ''}`} title={win.hint}>
               <strong>{win.title}</strong>
-              <span>{win.wait < 30 ? 'jetzt!' : `in ${clock(win.wait)}`}</span>
+              <span>{win.wait < 30 ? 'jetzt!' : `in ${clockIn(win.wait)}`}</span>
             </div>
           )}
           {f.node && (
@@ -1475,7 +1624,7 @@ export function FlightScreen({
                 Manöver {fmt(f.nodeRemaining().mag, f.nodeRemaining().mag < 10 ? 1 : 0)} m/s
               </strong>
               <span>
-                {f.node.frozen ? 'jetzt brennen!' : `zünden in ${clock(f.nodeBurnStart() - f.t)}`}
+                {f.node.frozen ? 'jetzt brennen!' : `zünden in ${clockIn(f.nodeBurnStart() - f.t)}`}
               </span>
             </div>
           )}
@@ -1488,15 +1637,10 @@ export function FlightScreen({
               : tipFor(f, pilotLabel)}
           </div>
         )}
-        <div class="toasts" aria-live="polite">
-          {toasts.map((t) => (
-            <div key={t.id} class={`rocket-toast ${t.kind}`}>
-              {t.title && <strong>{t.title}</strong>}
-              <span>{t.text}</span>
-            </div>
-          ))}
-        </div>
+        {phoneLayout && toastList}
       </div>
+      {/* Meldungen am Rand statt mitten über Rakete und Bahn */}
+      {!phoneLayout && <div class="hud-toasts">{toastList}</div>}
 
       {/* Oben rechts: Ziel, Bordcomputer, Aufgabe */}
       <div class="hud-tr">
@@ -1776,25 +1920,42 @@ export function FlightScreen({
             }}
           />
           <div class="engine-btns">
-            <button
-              type="button"
-              class="stage-btn"
-              onClick={() => {
-                audio.current.unlock();
-                f.stage();
-              }}
-              disabled={f.status === 'docked' || (f.segs.length <= 1 && f.chute !== 'stowed')}
-              title="Nächste Stufe zünden (Leertaste)"
-            >
-              <strong>{f.segs.length > 1 || f.chute !== 'stowed' ? 'Stufe' : 'Schirm'}</strong>
-              <span>
-                {f.segs.length > 1
-                  ? `${f.segs.length - 1} übrig`
-                  : f.chute === 'stowed'
-                    ? 'scharf machen'
-                    : 'keine mehr'}
-              </span>
-            </button>
+            {f.status === 'landed' && f.throttle === 0 ? (
+              // Vor dem Start ist Abheben die wichtigste Aktion – nicht der Fallschirm.
+              <button
+                type="button"
+                class="stage-btn"
+                onClick={() => {
+                  if (pilot.current) stopPilots();
+                  audio.current.unlock();
+                  f.throttle = 1;
+                }}
+                title="Vollgas geben und abheben (Z)"
+              >
+                <strong>Start</strong>
+                <span>Vollgas</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                class="stage-btn"
+                onClick={() => {
+                  audio.current.unlock();
+                  f.stage();
+                }}
+                disabled={f.status === 'docked' || (f.segs.length <= 1 && f.chute !== 'stowed')}
+                title="Nächste Stufe zünden (Leertaste)"
+              >
+                <strong>{f.segs.length > 1 || f.chute !== 'stowed' ? 'Stufe' : 'Schirm'}</strong>
+                <span>
+                  {f.segs.length > 1
+                    ? `${f.segs.length - 1} übrig`
+                    : f.chute === 'stowed'
+                      ? 'scharf machen'
+                      : 'keine mehr'}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               class="abtn go"
@@ -1834,11 +1995,16 @@ export function FlightScreen({
               type="button"
               class="mbtn"
               onClick={() => {
+                if (inProgress && confirm !== 'restart') {
+                  setConfirm('restart');
+                  return;
+                }
                 setPaused(false);
                 restart();
               }}
             >
-              <Icon name="reset" /> Neustart
+              <Icon name="reset" /> {confirm === 'restart' ? 'Wirklich neu starten?' : 'Neustart'}
+              {confirm === 'restart' && <small class="mbtn-note">Der Flug geht verloren</small>}
             </button>
             {!challenge && (
               <>
@@ -1874,16 +2040,39 @@ export function FlightScreen({
                 onClick={() => {
                   setMuted(!muted);
                   audio.current.setMuted(!muted);
+                  writeMuted(!muted);
                 }}
+                aria-pressed={muted}
               >
-                <Icon name={muted ? 'mute' : 'sound'} /> {muted ? 'Ton aus' : 'Ton an'}
+                <Icon name={muted ? 'mute' : 'sound'} />{' '}
+                {muted ? 'Ton einschalten' : 'Ton ausschalten'}
               </button>
               <button type="button" class="mbtn" onClick={fullscreen}>
                 <Icon name="expand" /> Vollbild
               </button>
             </div>
-            <button type="button" class="mbtn" onClick={onExit}>
-              <Icon name="wrench" /> {challenge ? 'Zur Übersicht' : 'Zur Werft'}
+            <button
+              type="button"
+              class={`mbtn ${confirm === 'exit' ? 'warn' : ''}`}
+              onClick={() => {
+                if (inProgress && confirm !== 'exit') {
+                  setConfirm('exit');
+                  return;
+                }
+                onExit();
+              }}
+            >
+              <Icon name="wrench" />{' '}
+              {confirm === 'exit'
+                ? 'Wirklich verlassen?'
+                : challenge
+                  ? 'Zur Übersicht'
+                  : 'Zur Werft'}
+              {confirm === 'exit' && (
+                <small class="mbtn-note">
+                  {challenge ? 'Der Versuch endet' : 'Nicht gespeicherter Flug geht verloren'}
+                </small>
+              )}
             </button>
           </div>
         </div>
@@ -1894,34 +2083,12 @@ export function FlightScreen({
           <h3>Steuerung</h3>
           <table class="table">
             <tbody>
-              {[
-                [
-                  'W / S oder ↑ / ↓ (auch Umschalt / Strg)',
-                  'Schub stufenlos (mit RCS: vor / zurück)',
-                ],
-                ['Z / X', 'Vollgas / Triebwerk aus'],
-                ['A / D oder ← / →', 'Drehen (F: Feinsteuerung)'],
-                ['1 – 7', 'SAS: aus, prograd, retrograd, radial außen/innen, Ziel, Manöver'],
-                ['Antippen', 'In der Flugansicht: Rakete zeigt in diese Richtung'],
-                ['R, dann Q / E', 'RCS-Düsen: seitwärts schieben (zum Andocken)'],
-                ['Leertaste', 'Nächste Stufe'],
-                [
-                  'P / N / U',
-                  'Fallschirm scharf, entschärfen oder abwerfen / Satellit aussetzen / Luftbremsen',
-                ],
-                ['M', 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
-                ['B', 'Bordcomputer: Pläne, Manöver, Autopilot'],
-                ['L / T / C', 'Lande-Autopilot / Hilfe-Pilot / Countdown'],
-                [', und .', 'Zeitraffer (⏩ Zeitsprung: automatisch vorspulen)'],
-                ['F5 / F9 / O', 'Spielstand speichern / laden / Foto'],
-                ['Esc / H', 'Menü (Pause, Speichern, Foto, Ton, Vollbild) / diese Hilfe'],
-                ['Gamepad', 'Stick drehen, Trigger Schub, A Stufe, B Fallschirm, X RCS, Y Karte'],
-              ].map(([k, v]) => (
-                <tr key={k}>
-                  <td>
-                    <kbd>{k}</kbd>
+              {HELP_ROWS.map(([keys, text]) => (
+                <tr key={text}>
+                  <td class="keys">
+                    <KeyCaps keys={keys} />
                   </td>
-                  <td>{v}</td>
+                  <td>{text}</td>
                 </tr>
               ))}
             </tbody>
@@ -2008,6 +2175,49 @@ export function FlightScreen({
   );
 }
 
+/** Tasten der Hilfe: Wörter wie „oder“ und „/“ stehen zwischen den Tastenkappen. */
+const HELP_ROWS: [string[] | string, string][] = [
+  [
+    ['W', '/', 'S', 'oder', '↑', '/', '↓'],
+    'Schub stufenlos (Umschalt: hoch; mit RCS: vor / zurück)',
+  ],
+  [['Z', '/', 'X'], 'Vollgas / Triebwerk aus'],
+  [['A', '/', 'D', 'oder', '←', '/', '→'], 'Drehen (F: Feinsteuerung)'],
+  [['1', 'bis', '7'], 'SAS: aus, prograd, retrograd, radial außen/innen, Ziel, Manöver'],
+  ['Gedrückt halten', 'In der Flugansicht: Rakete zeigt in diese Richtung'],
+  [['R', 'dann', 'Q', '/', 'E'], 'RCS-Düsen: seitwärts schieben (zum Andocken)'],
+  [['Leertaste'], 'Nächste Stufe'],
+  [['P'], 'Fallschirm scharf machen, entschärfen oder abwerfen'],
+  [['N', '/', 'U'], 'Satellit aussetzen / Luftbremsen'],
+  [['M'], 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
+  [['B'], 'Bordcomputer: Pläne, Manöver, Autopilot'],
+  [['L', '/', 'T', '/', 'C'], 'Lande-Autopilot / Hilfe-Pilot / Countdown'],
+  [[',', 'und', '.'], 'Zeitraffer langsamer / schneller (Zeitsprung: automatisch vorspulen)'],
+  [['F5', '/', 'F9'], 'Spielstand speichern / laden'],
+  [['O'], 'Foto speichern (Buchstabe O)'],
+  [['Esc', '/', 'H'], 'Menü (Pause, Speichern, Ton, Vollbild) / diese Hilfe'],
+  ['Gamepad', 'Stick drehen, Trigger Schub, A Stufe, B Fallschirm, X RCS, Y Karte'],
+];
+
+const KEY_JOINERS = new Set(['/', 'oder', 'und', 'dann', 'bis']);
+
+function KeyCaps({ keys }: { keys: string[] | string }) {
+  if (typeof keys === 'string') return <span class="key-word">{keys}</span>;
+  return (
+    <>
+      {keys.map((k, i) =>
+        KEY_JOINERS.has(k) ? (
+          <span key={i} class="key-join">
+            {k}
+          </span>
+        ) : (
+          <kbd key={i}>{k}</kbd>
+        ),
+      )}
+    </>
+  );
+}
+
 /**
  * Senkrechter Schubregler wie in Spaceflight Simulator: ziehen oder tippen.
  * Die Tasten W/S und die Pfeiltasten steuern ihn über die Tastatursteuerung des Spiels.
@@ -2040,6 +2250,26 @@ function Throttle({
       aria-valuemax={100}
       aria-valuenow={pct}
       aria-valuetext={`${pct} %`}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        // Bedienbar mit der Tastatur, wenn der Regler den Fokus hat (Tab).
+        const step: Record<string, number> = {
+          ArrowUp: 0.05,
+          ArrowRight: 0.05,
+          ArrowDown: -0.05,
+          ArrowLeft: -0.05,
+          PageUp: 0.25,
+          PageDown: -0.25,
+        };
+        let v: number | null = null;
+        if (e.key in step) v = value + step[e.key]!;
+        else if (e.key === 'Home') v = 0;
+        else if (e.key === 'End') v = 1;
+        if (v === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onChange(Math.min(1, Math.max(0, Math.round(v * 100) / 100)));
+      }}
       onPointerDown={(e) => {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         set(e.clientY);
@@ -2069,7 +2299,8 @@ function landingState(f: Flight): { impact: number; urgent: boolean; weak: boole
   const stopping = brake > 0 ? (descent * descent) / (2 * brake) : Infinity;
   if (!near.body.solid || descent <= 4 || near.altitude > 30_000 || f.chute === 'open') return null;
   return {
-    impact: near.altitude / descent,
+    // Fallzeit mit Schwerkraft: h = v·t + g·t²/2.
+    impact: (-descent + Math.sqrt(descent * descent + 2 * gLocal * near.altitude)) / gLocal,
     urgent: stopping > 0.75 * near.altitude,
     weak: brake <= 0 || f.active.fuel <= 0,
   };

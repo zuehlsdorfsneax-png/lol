@@ -5,10 +5,20 @@
 import { smoothPath } from '../sim/view';
 import { drawSatellite } from './draw';
 import { bodySpin, satelliteState, type Flight, type Prediction } from './flight';
-import { clock, km } from './format';
+import { clockIn, km } from './format';
 import { CIRCULAR_E, period, stateAt } from './kepler';
 import { drawBody, drawStation } from './scene';
-import { circle, drawStars, label, local, toScreen, type View } from './view';
+import {
+  beginLabels,
+  circle,
+  drawStars,
+  endLabels,
+  label,
+  local,
+  reserveLabel,
+  toScreen,
+  type View,
+} from './view';
 import {
   BODIES,
   EARTH,
@@ -112,6 +122,29 @@ export function drawMap(
   drawStars(ctx, v, 0.6, 0, opts.time);
   const t = f.t;
   const hits: MapHits = { path: null, node: null, handles: [] };
+  // Beschriftungen weichen einander aus und lassen den Tipp oben in der Mitte frei.
+  // Breite der Tipp-Spalte wie im CSS (.hud-msg), etwas Rand dazu.
+  const tipW = (W > 1000 ? Math.min(460, W - 520) : W - 440) + 24;
+  beginLabels(
+    W >= 760
+      ? [
+          // Tipp oben, Flugdaten links, Ziel rechts, Schub und Lageanzeige unten
+          { x: W / 2 - tipW / 2, y: 48, w: tipW, h: 124 },
+          { x: 0, y: 0, w: 250, h: 310 },
+          { x: W - 320, y: 0, w: 320, h: 260 },
+          { x: W - 250, y: H - 270, w: 250, h: 270 },
+          { x: W / 2 - 140, y: H - 200, w: 280, h: 200 },
+        ]
+      : [
+          // Handy: oben Flugdaten und Ziel, unten Lageanzeige und Schub
+          { x: 0, y: 0, w: W, h: 232 },
+          { x: 0, y: H - 250, w: W, h: 250 },
+        ],
+  );
+  if (f.status !== 'crashed') {
+    const [rx, ry] = toScreen(v, f.x, f.y);
+    reserveLabel({ x: rx - 14, y: ry - 14, w: 28, h: 28 });
+  }
 
   // Bahnen der Körper um ihren Mutterkörper
   ctx.lineWidth = 1;
@@ -142,6 +175,8 @@ export function drawMap(
         sx + hill * 0.72,
         sy - hill * 0.72,
         '#c4b5fd',
+        12,
+        true,
       );
   }
   ctx.setLineDash([]);
@@ -236,8 +271,9 @@ export function drawMap(
     const hint = f.node
       ? 'Anfasser am Manöver ziehen · Bahn anklicken verschiebt es'
       : 'Bahn anklicken: Manöver planen · Ziehen: verschieben · Mausrad: zoomen';
-    label(ctx, hint, x0, by - 34, 'rgba(255,255,255,0.5)');
+    label(ctx, hint, x0, by - 34, 'rgba(255,255,255,0.5)', 12, true);
   }
+  endLabels();
   return hits;
 }
 
@@ -272,7 +308,7 @@ function drawSatellites(ctx: CanvasRenderingContext2D, f: Flight, v: View): void
     local(ctx, v, x, y, 0, 3.4);
     drawSatellite(ctx);
     ctx.restore();
-    if (size > 40) label(ctx, s.name, sx + 12, sy + 10, '#a5f3fc', 11);
+    if (size > 40) label(ctx, s.name, sx + 12, sy + 10, '#a5f3fc', 11, true);
   }
 }
 
@@ -389,7 +425,7 @@ function drawPrediction(
     const [cx, cy] = bodyState(body, pred.ts[i]!);
     return Math.hypot(pred.xs[i]! - cx, pred.ys[i]! - cy) - body.radius;
   };
-  const when = (i: number): string => ` · in ${clock(pred.ts[i]! - t)}`;
+  const when = (i: number): string => ` · in ${clockIn(pred.ts[i]! - t)}`;
   // Ap/Pe nur beschriften, wenn sie sich auf dem Bildschirm vom Körper abheben.
   const [rsx, rsy] = toScreen(v, rx0, ry0);
   const apart = (i: number): boolean =>
@@ -433,7 +469,7 @@ function drawPrediction(
     ctx.setLineDash([]);
     label(
       ctx,
-      `${enc.body.name} bei Ankunft · ${km(enc.distance - enc.body.radius)} über dem Boden · in ${clock(enc.t - t)}`,
+      `${enc.body.name} bei Ankunft · ${km(enc.distance - enc.body.radius)} über dem Boden · in ${clockIn(enc.t - t)}`,
       sx + 10,
       sy + 16,
       '#fed7aa',
@@ -453,7 +489,7 @@ function drawPrediction(
     ctx.stroke();
     label(
       ctx,
-      `Nächste Annäherung ${km(pred.closest.distance)} · in ${clock(pred.closest.t - t)}`,
+      `Nächste Annäherung ${km(pred.closest.distance)} · in ${clockIn(pred.closest.t - t)}`,
       sx + 10,
       sy - 12,
       '#e9d5ff',
@@ -537,7 +573,7 @@ function drawPrediction(
     const n = f.node!;
     label(
       ctx,
-      `Manöver ${Math.round(Math.hypot(n.prograde, n.radial))} m/s · in ${clock(n.t - t)}`,
+      `Manöver ${Math.round(Math.hypot(n.prograde, n.radial))} m/s · in ${clockIn(n.t - t)}`,
       nx + 14,
       ny + 22,
       '#bfdbfe',

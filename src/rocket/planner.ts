@@ -5,7 +5,7 @@
  * Computer mit der echten Mehrkörper-Vorhersage die beste Zündzeit und Stärke.
  */
 import { Flight, nodeFrame, type Prediction } from './flight';
-import { clock, fmt, km } from './format';
+import { clockIn, fmt, km } from './format';
 import { period, stateAt, timeToApoapsis, timeToPeriapsis } from './kepler';
 import {
   EARTH,
@@ -160,13 +160,15 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
   const ref = f.refBody();
   const o = f.orbit(ref);
   const out: PlanOption[] = [];
-  if (o.bound && o.apoapsis > Math.max(ref.atmosphere, 1_000))
+  // Eine schon runde Bahn braucht keine Kreisbahn-Manöver.
+  const round = o.bound && o.eccentricity < 0.01;
+  if (o.bound && !round && o.apoapsis > Math.max(ref.atmosphere, 1_000))
     out.push({
       id: 'circ-ap',
       label: 'Kreisbahn am Ap',
       hint: 'Am höchsten Punkt so beschleunigen, dass die Bahn rund wird.',
     });
-  if (o.periapsis > Math.max(ref.atmosphere, 1_000))
+  if (!round && o.periapsis > Math.max(ref.atmosphere, 1_000))
     out.push({
       id: 'circ-pe',
       label: o.bound ? 'Kreisbahn am Pe' : `Einschwenken bei ${ref.name}`,
@@ -298,7 +300,7 @@ export function planCircularize(f: Flight, where: 'ap' | 'pe'): Plan {
       return {
         ok: true,
         title: el.e >= 1 ? `Einschwenken bei ${ref.name}` : title,
-        text: `${fmt(Math.abs(vc - v))} m/s gegen die Flugrichtung in ${clock(p.ts[best]! - f.t)}, auf ${km(bestD - ref.radius)} Höhe.`,
+        text: `${fmt(Math.abs(vc - v))} m/s gegen die Flugrichtung in ${clockIn(p.ts[best]! - f.t)}, auf ${km(bestD - ref.radius)} Höhe.`,
       };
     }
   }
@@ -324,7 +326,7 @@ export function planCircularize(f: Flight, where: 'ap' | 'pe'): Plan {
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(dv))} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clock(dt)}, auf ${km(r - ref.radius)} Höhe.`,
+    text: `${fmt(Math.abs(dv))} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(dt)}, auf ${km(r - ref.radius)} Höhe.`,
   };
 }
 
@@ -374,7 +376,7 @@ export function planTransfer(f: Flight): Plan {
       : {
           ok: true,
           title,
-          text: `${fmt(best.dv)} m/s in ${clock(best.t - f.t)}. Ankunft ${km(pe)} über ${target.name}.`,
+          text: `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Ankunft ${km(pe)} über ${target.name}.`,
         };
   }
 
@@ -390,7 +392,7 @@ export function planTransfer(f: Flight): Plan {
     if (wait > 2.5 * P && wait > 3 * 86_400)
       return fail(
         title,
-        `Das Startfenster zu ${target.name} öffnet sich in ${clock(wait)}. Spule mit dem Zeitsprung bis kurz davor und plane dann noch einmal.`,
+        `Das Startfenster zu ${target.name} öffnet sich in ${clockIn(wait)}. Spule mit dem Zeitsprung bis kurz davor und plane dann noch einmal.`,
         wait,
       );
     const vinf = Math.abs(requiredExcess(ref, target));
@@ -418,8 +420,8 @@ export function planTransfer(f: Flight): Plan {
       title,
       text:
         pe === null
-          ? `Das Fenster passt, aber noch kein Treffer: ${fmt(best.dv)} m/s in ${clock(best.t - f.t)}. Nach dem Brennen mit kleinen Korrekturen nachbessern.`
-          : `${fmt(best.dv)} m/s in ${clock(best.t - f.t)}. Flugzeit etwa ${Math.round(flight / 86_400)} Tage, Ankunft ${km(pe)} über ${target.name}.`,
+          ? `Das Fenster passt, aber noch kein Treffer: ${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Nach dem Brennen mit kleinen Korrekturen nachbessern.`
+          : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Flugzeit etwa ${Math.round(flight / 86_400)} Tage, Ankunft ${km(pe)} über ${target.name}.`,
     };
   }
   return fail(title, `Von ${ref.name} aus ist ${target.name} kein direktes Ziel.`);
@@ -516,7 +518,7 @@ export function planCorrection(f: Flight): Plan {
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clock(t - f.t)}. Ankunft dann ${km(Math.abs(end ?? want) - target.radius)} über ${target.name}.`,
+    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end ?? want) - target.radius)} über ${target.name}.`,
   };
 }
 
@@ -557,7 +559,7 @@ export function planRendezvous(f: Flight): Plan {
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clock(best.t - f.t)}. Nächste Annäherung etwa ${km(best.score)}. Danach „Geschwindigkeit angleichen“.`,
+    text: `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)}. Nächste Annäherung etwa ${km(best.score)}. Danach „Geschwindigkeit angleichen“.`,
   };
 }
 
@@ -591,7 +593,7 @@ export function planMatch(f: Flight): Plan {
   return {
     ok: true,
     title,
-    text: `${fmt(Math.hypot(dx, dy))} m/s in ${clock(c.t - f.t)}, dann ${km(c.distance)} vor der Station. Den Rest mit RCS (R).`,
+    text: `${fmt(Math.hypot(dx, dy))} m/s in ${clockIn(c.t - f.t)}, dann ${km(c.distance)} vor der Station. Den Rest mit RCS (R).`,
   };
 }
 
@@ -634,8 +636,8 @@ export function planReturn(f: Flight): Plan {
     title: `Rückflug zu: ${home.name}`,
     text:
       pe === null
-        ? `${fmt(best.dv)} m/s in ${clock(best.t - f.t)} – noch nicht perfekt, bitte nachbessern.`
-        : `${fmt(best.dv)} m/s in ${clock(best.t - f.t)}. Tiefster Punkt über ${home.name}: ${km(pe)}.${home.atmosphere > 0 ? ' Fallschirm nicht vergessen!' : ''}`,
+        ? `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)} – noch nicht perfekt, bitte nachbessern.`
+        : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Tiefster Punkt über ${home.name}: ${km(pe)}.${home.atmosphere > 0 ? ' Fallschirm nicht vergessen!' : ''}`,
   };
 }
 
@@ -701,6 +703,6 @@ export function planDeorbit(f: Flight): Plan {
   return {
     ok: true,
     title: `${title}: ${where}`,
-    text: `${fmt(Math.abs(dv), Math.abs(dv) < 10 ? 1 : 0)} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clock(dt)}. Tiefster Punkt danach ${km(reached)}.${ref.atmosphere > 0 ? ' Dann Fallschirm scharf machen (P) und mit dem Hitzeschild voran eintauchen.' : ' Den Rest erledigt der Lande-Autopilot.'}`,
+    text: `${fmt(Math.abs(dv), Math.abs(dv) < 10 ? 1 : 0)} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(dt)}. Tiefster Punkt danach ${km(reached)}.${ref.atmosphere > 0 ? ' Dann Fallschirm scharf machen (P) und mit dem Hitzeschild voran eintauchen.' : ' Den Rest erledigt der Lande-Autopilot.'}`,
   };
 }

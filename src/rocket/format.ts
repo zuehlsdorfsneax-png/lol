@@ -21,19 +21,41 @@ export function distance(m: number): string {
   return `${fmt(m / 1000, Math.abs(m) < 100_000 ? 1 : 0)} km`;
 }
 
+function clockParts(t: number): { d: number; h: number; m: number; sec: number } {
+  const s = Math.max(0, Math.floor(t));
+  return {
+    d: Math.floor(s / 86_400),
+    h: Math.floor((s % 86_400) / 3600),
+    m: Math.floor((s % 3600) / 60),
+    sec: s % 60,
+  };
+}
+
+const two = (n: number): string => String(n).padStart(2, '0');
+
+/** Uhrzeit-Dauer („04:12“, „1:04:12“, „3 Tage 01:04:12“). */
 export function clock(t: number): string {
   if (!Number.isFinite(t)) return '–';
-  const s = Math.max(0, Math.floor(t));
-  const d = Math.floor(s / 86_400);
-  const h = Math.floor((s % 86_400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const two = (n: number): string => String(n).padStart(2, '0');
+  const { d, h, m, sec } = clockParts(t);
   return d > 0
     ? `${d} ${d === 1 ? 'Tag' : 'Tage'} ${two(h)}:${two(m)}:${two(sec)}`
     : h > 0
       ? `${h}:${two(m)}:${two(sec)}`
       : `${two(m)}:${two(sec)}`;
+}
+
+/** Wie `clock`, aber nach „in“ (Dativ): „in 3 Tagen 01:04:12“. */
+export function clockIn(t: number): string {
+  if (!Number.isFinite(t)) return '–';
+  const { d } = clockParts(t);
+  return d > 1 ? clock(t).replace(' Tage ', ' Tagen ') : clock(t);
+}
+
+/** Missionsuhr für enge Anzeigen: ab einem Tag ohne Sekunden („110 Tg. 01:22“). */
+export function missionClock(t: number): string {
+  if (!Number.isFinite(t)) return '–';
+  const { d, h, m } = clockParts(t);
+  return d > 0 ? `${d} Tg. ${two(h)}:${two(m)}` : clock(t);
 }
 
 /** Kurze Dauer in Worten („3 min 20 s“, „2 Tage 4 h“). */
@@ -47,12 +69,11 @@ export function duration(t: number): string {
   return `${d} ${d === 1 ? 'Tag' : 'Tage'} ${Math.floor((s % 86_400) / 3600)} h`;
 }
 
-/** Sehr kurze Zeitangabe für enge Anzeigen („12:30“, „5 h“, „3 T“). */
+/** Sehr kurze Zeitangabe für enge Anzeigen („12:30“, „5 h“, „3 Tg.“). */
 export function shortTime(t: number): string {
   if (!Number.isFinite(t)) return '–';
   const s = Math.max(0, Math.round(t));
-  const two = (n: number): string => String(n).padStart(2, '0');
   if (s < 3600) return `${two(Math.floor(s / 60))}:${two(s % 60)}`;
   if (s < 86_400) return `${Math.floor(s / 3600)} h`;
-  return `${Math.floor(s / 86_400)} T`;
+  return `${Math.floor(s / 86_400)} Tg.`;
 }
