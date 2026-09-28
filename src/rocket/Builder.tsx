@@ -1085,31 +1085,42 @@ function MissionControl({
           </div>
         ))}
       </div>
-      {satellites.length > 0 && (
-        <div class="mc-sats">
-          <h4>Deine Satelliten ({satellites.length})</h4>
-          <ul>
-            {satellites.map((s) => {
-              const b = bodyById(s.body);
-              const { peri, apo } = apsides(s.el);
-              return (
-                <li key={s.id}>
-                  🛰 {s.name} · um {b.name} · {km(peri - b.radius)} – {km(apo - b.radius)}
-                  <button
-                    type="button"
-                    class="btn small ghost"
-                    aria-label={`${s.name} abschalten`}
-                    title="Satellit abschalten (verschwindet aus allen Flügen)"
-                    onClick={() => onSatellites(satellites.filter((q) => q !== s))}
-                  >
-                    <Icon name="close" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      {[false, true].map((sb) => {
+        const list = satellites.filter((q) => !!q.sandbox === sb);
+        if (list.length === 0) return null;
+        return (
+          <div key={String(sb)} class="mc-sats">
+            <h4>
+              {sb ? 'Satelliten aus dem Sandkasten' : 'Deine Satelliten'} ({list.length})
+            </h4>
+            {sb && (
+              <p class="small muted">
+                Sie kreisen nur in Sandkasten-Flügen und bringen keine Punkte.
+              </p>
+            )}
+            <ul>
+              {list.map((s) => {
+                const b = bodyById(s.body);
+                const { peri, apo } = apsides(s.el);
+                return (
+                  <li key={s.id}>
+                    🛰 {s.name} · um {b.name} · {km(peri - b.radius)} – {km(apo - b.radius)}
+                    <button
+                      type="button"
+                      class="btn small ghost"
+                      aria-label={`${s.name} abschalten`}
+                      title="Satellit abschalten (verschwindet aus allen Flügen)"
+                      onClick={() => onSatellites(satellites.filter((q) => q !== s))}
+                    >
+                      <Icon name="close" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
       <div class="mc-paints" role="radiogroup" aria-label="Lackierung">
         <span class="small muted">Lackierung:</span>
         {PAINTS.map((p) => {

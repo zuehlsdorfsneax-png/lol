@@ -99,6 +99,8 @@ export interface Satellite {
   name: string;
   body: BodyId;
   el: Elements;
+  /** Im Sandkasten ausgesetzt: zählt nicht für Ziele und erscheint nur im Sandkasten. */
+  sandbox?: boolean;
 }
 
 /** Landeplatz auf einem Körper (Winkel mitdrehend wie die Oberfläche). */
@@ -123,7 +125,7 @@ export interface FlightStats {
 
 /** Gespeicherter Spielstand eines Flugs (Schnellspeichern). */
 export interface FlightSnapshot {
-  v: 1 | 2;
+  v: 1 | 2 | 3;
   design: string[];
   t: number;
   x: number;
@@ -150,7 +152,23 @@ export interface FlightSnapshot {
   site?: LandingSite | null;
   /** Aus dem Sandkasten: bringt auch nach dem Laden keine Punkte. */
   sandbox?: boolean;
+  /** Wann gespeichert wurde (ms seit 1970). */
+  savedAt?: number;
   airbrakes?: boolean;
+  // Ab Version 3: alles, was sonst beim Laden verloren ginge.
+  heat?: number;
+  angVel?: number;
+  rcs?: boolean;
+  fine?: boolean;
+  visited?: BodyId[];
+  hopHeight?: number;
+  rules?: {
+    infiniteFuel: boolean;
+    indestructible: boolean;
+    heatOn: boolean;
+    dragOn: boolean;
+    thrustScale: number;
+  };
 }
 
 export interface FlightEvent {
@@ -380,7 +398,26 @@ export function nodeFrame(
 }
 
 let eventId = 1;
-let satId = 1;
+let satSeq = 0;
+
+/** Eindeutige Nummer für einen neuen Satelliten (auch über mehrere Sitzungen hinweg). */
+function newSatId(): number {
+  satSeq = (satSeq + 1) % 1000;
+  return Date.now() * 1000 + satSeq;
+}
+
+/** Schubvektor eines Manövers für einen Zustand zur Manöverzeit (verändert nichts). */
+function nodeDelta(
+  n: ManeuverNode,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+): { dx: number; dy: number; body: Body } {
+  const body = dominantBody(x, y, n.t);
+  const [px, py, qx, qy] = nodeFrame(body, x, y, vx, vy, n.t);
+  return { dx: n.prograde * px + n.radial * qx, dy: n.prograde * py + n.radial * qy, body };
+}
 
 /**
  * Ein Raketenflug. Die Rakete ist ein Massenpunkt mit Ausrichtung; ihr Ort ist die Unterkante
@@ -431,6 +468,10 @@ export class Flight {
   airbrakes = false;
   /** Luftdichte beim letzten Schritt im Verhältnis zur Erde auf Meereshöhe (0…1). */
   private pressure = 0;
+  /** Größte Höhe über dem nächsten Körper seit dem letzten Abheben (für „Butterweich“). */
+  private hopHeight = 0;
+  /** Zuletzt gemeldet, dass die Rakete an einer Gashülle abgeprallt ist (Sandkasten). */
+  private bounceNote = -Infinity;
   segs: Segment[];
   status: FlightStatus = 'landed';
   landedOn: Body | null = EARTH;
@@ -487,7 +528,7 @@ export class Flight {
   snapshot(): FlightSnapshot | null {
     if (this.status === 'crashed') return null;
     return {
-      v: 2,
+      v: 3,
       design: [...this.design],
       t: this.t,
       x: this.x,
@@ -514,6 +555,19 @@ export class Flight {
       site: this.site,
       sandbox: this.sandbox,
       airbrakes: this.airbrakes,
+      heat: this.heat,
+      angVel: this.angVel,
+      rcs: this.rcs,
+      fine: this.fine,
+      visited: [...this.visited],
+      hopHeight: this.hopHeight,
+      rules: {
+        infiniteFuel: this.infiniteFuel,
+        indestructible: this.indestructible,
+        heatOn: this.heatOn,
+        dragOn: this.dragOn,
+        thrustScale: this.thrustScale,
+      },
     };
   }
 
@@ -546,6 +600,19 @@ export class Flight {
     for (const g of s.goals) f.goals.add(g);
     f.sandbox = s.sandbox === true;
     f.airbrakes = s.airbrakes === true && f.hasAirbrakes;
+    f.heat = Math.min(0.99, Math.max(0, s.heat ?? 0));
+    f.angVel = Number.isFinite(s.angVel) ? s.angVel! : 0;
+    f.rcs = s.rcs === true;
+    f.fine = s.fine === true;
+    for (const id of s.visited ?? []) f.visited.add(id);
+    f.hopHeight = s.hopHeight ?? 0;
+    if (s.rules && f.sandbox) {
+      f.infiniteFuel = s.rules.infiniteFuel;
+      f.indestructible = s.rules.indestructible;
+      f.heatOn = s.rules.heatOn;
+      f.dragOn = s.rules.dragOn;
+      f.thrustScale = s.rules.thrustScale;
+    }
     return f;
   }
 
@@ -708,6 +775,14 @@ export class Flight {
 
   /** Brenndauer bei Vollgas für ein Δv, über die Stufen hinweg (∞ = reicht nicht). */
   burnTime(dv: number): number {
+    if (this.infiniteFuel) {
+      // Ohne Verbrauch bleibt die Masse gleich: Beschleunigung konstant.
+      for (let i = this.segs.length - 1; i >= 0; i--) {
+        const { thrust } = this.stageEngine(this.segs[i]!.parts);
+        if (thrust > 0) return (dv * this.mass) / thrust;
+      }
+      return Infinity;
+    }
     let time = 0;
     let left = dv;
     let mass = this.mass;
@@ -1074,11 +1149,18 @@ export class Flight {
     if (!this.hasAirbrakes) this.airbrakes = false;
     const ax = Math.cos(this.angle);
     const ay = Math.sin(this.angle);
+    // Die Federn der Trennung drücken beide Teile mit 2 m/s auseinander – aufgeteilt nach Masse,
+    // damit der Impuls erhalten bleibt (kein geschenktes Δv).
+    const mDrop = dropped.fuel + dropped.parts.reduce((m, id) => m + part(id).dry, 0);
+    const mRest = this.mass;
+    const push = 2;
+    const dvRest = (push * mDrop) / (mDrop + mRest);
+    const dvDrop = push - dvRest;
     this.debris.push({
       x: this.x,
       y: this.y,
-      vx: this.vx - ax * 2,
-      vy: this.vy - ay * 2,
+      vx: this.vx - ax * dvDrop,
+      vy: this.vy - ay * dvDrop,
       angle: this.angle,
       spin: (this.random() - 0.5) * 0.6,
       parts: dropped.parts,
@@ -1086,8 +1168,8 @@ export class Flight {
     });
     this.x += ax * height;
     this.y += ay * height;
-    this.vx += ax * 2;
-    this.vy += ay * 2;
+    this.vx += ax * dvRest;
+    this.vy += ay * dvRest;
     this.emptyWarned = false;
     this.shake = Math.max(this.shake, 0.35);
     this.puff(this.x, this.y, 14);
@@ -1121,6 +1203,7 @@ export class Flight {
   cutChute(): void {
     if (this.chute !== 'open' && this.chute !== 'armed') return;
     const wasOpen = this.chute === 'open';
+    const chuteId = this.allParts().find((id) => part(id).kind === 'chute') ?? 'fallschirm';
     this.dropChutes();
     if (wasOpen) {
       // Der Schirm fliegt als Trümmerteil davon.
@@ -1131,7 +1214,7 @@ export class Flight {
         vy: this.vy,
         angle: this.angle,
         spin: (this.random() - 0.5) * 2,
-        parts: ['fallschirm'],
+        parts: [chuteId],
         age: 0,
       });
     }
@@ -1219,8 +1302,16 @@ export class Flight {
       );
       return true;
     }
-    const n = this.satellites.length + 1;
-    this.satellites.push({ id: satId++, name: `Satellit ${n}`, body: ref.id, el });
+    // Nächste freie Nummer – auch wenn früher ein Satellit abgeschaltet wurde.
+    const n =
+      Math.max(0, ...this.satellites.map((q) => Number(/(\d+)$/.exec(q.name)?.[1] ?? 0))) + 1;
+    this.satellites.push({
+      id: newSatId(),
+      name: `Satellit ${n}`,
+      body: ref.id,
+      el,
+      ...(this.sandbox ? { sandbox: true } : {}),
+    });
     if (this.satellites.length > MAX_SATELLITES) this.satellites.shift();
     const km = (m: number): string =>
       `${Math.round((m - ref.radius) / 1000).toLocaleString('de-DE')} km`;
@@ -1233,14 +1324,15 @@ export class Flight {
   }
 
   private satelliteGoals(): void {
-    const around = (b: BodyId): Satellite[] => this.satellites.filter((s) => s.body === b);
+    // Nur echte Satelliten zählen – Sandkasten-Satelliten bringen keine Punkte.
+    const real = this.satellites.filter((s) => !s.sandbox);
+    const around = (b: BodyId): Satellite[] => real.filter((s) => s.body === b);
     const earth = around('earth');
     if (earth.length) this.goal('satellite');
     if (earth.some((s) => apsides(s.el).peri - EARTH.radius > 2_000_000)) this.goal('highsat');
     if (earth.length >= 3) this.goal('network');
     if (around('moon').length) this.goal('moonsat');
-    if (this.satellites.some((s) => !['earth', 'moon', 'sun'].includes(s.body)))
-      this.goal('planetsat');
+    if (real.some((s) => !['earth', 'moon', 'sun'].includes(s.body))) this.goal('planetsat');
   }
 
   // ---------------------------------------------------------------- Manöver
@@ -1291,11 +1383,10 @@ export class Flight {
       n.at = [s.x, s.y, s.vx, s.vy];
     }
     const [x, y, vx, vy] = n.at;
-    const b = dominantBody(x, y, n.t);
-    const [px, py, qx, qy] = nodeFrame(b, x, y, vx, vy, n.t);
-    n.dx = n.prograde * px + n.radial * qx;
-    n.dy = n.prograde * py + n.radial * qy;
-    n.ref = b.id;
+    const d = nodeDelta(n, x, y, vx, vy);
+    n.dx = d.dx;
+    n.dy = d.dy;
+    n.ref = d.body.id;
   }
 
   /** Noch zu brennendes Δv des Manövers, als Richtung im jetzigen Bezugssystem (Welt). */
@@ -1469,6 +1560,7 @@ export class Flight {
       if (accel > g * 1.02) {
         this.status = 'flying';
         this.landedOn = null;
+        this.hopHeight = 0;
         if (this.stats.liftoff === null) this.stats.liftoff = this.t;
       } else {
         const dt = Math.min(maxDt, burning ? 0.02 : maxDt);
@@ -1582,6 +1674,7 @@ export class Flight {
       return dt;
     }
     this.pressure = Math.min(1, air.rho / SEA_RHO);
+    this.hopHeight = Math.max(this.hopHeight, air.altitude);
     let drag = 0;
     if (air.rho > 0) {
       // Nasenkegel halbiert den Widerstand, Luftbremsen und Fallschirme vergrößern ihn.
@@ -1662,6 +1755,28 @@ export class Flight {
     // Auf die Oberfläche setzen.
     this.x = c.x + body.radius * Math.cos(up);
     this.y = c.y + body.radius * Math.sin(up);
+    if (this.indestructible && !body.solid) {
+      // Unzerstörbar (Sandkasten): an Gashüllen und der Sonne abprallen statt „landen“.
+      const rx = Math.cos(up);
+      const ry = Math.sin(up);
+      const rvx = this.vx - c.vx;
+      const rvy = this.vy - c.vy;
+      const inward = rvx * rx + rvy * ry;
+      if (inward < 0) {
+        this.vx -= inward * rx * 1.2;
+        this.vy -= inward * ry * 1.2;
+      }
+      this.x = c.x + (body.radius + 1) * rx;
+      this.y = c.y + (body.radius + 1) * ry;
+      if (this.t - this.bounceNote > 30) {
+        this.bounceNote = this.t;
+        this.emit(
+          'warn',
+          `${body.name} hat keine feste Oberfläche – im Sandkasten prallt die Rakete an der Gashülle ab.`,
+        );
+      }
+      return;
+    }
     if ((body.solid && speed <= speedLimit && tilt <= tiltLimit) || this.indestructible) {
       this.status = 'landed';
       this.landedOn = body;
@@ -1678,7 +1793,8 @@ export class Flight {
       this.puff(this.x, this.y, 20, 'dust');
       // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht.
       if (this.chute === 'open') this.dropChutes();
-      if (speed < 2) this.goal('soft');
+      // „Butterweich“ zählt nur nach einem echten Flug, nicht nach einem Hüpfer auf der Rampe.
+      if (speed < 2 && this.hopHeight > 100) this.goal('soft');
       if (this.maxHeat > 0.7) this.goal('fire');
       if (body === MOON) this.goal('moonland');
       else if (body === MARS) this.goal('marsland');
@@ -1687,8 +1803,10 @@ export class Flight {
       else if (body === MERCURY) this.goal('mercuryland');
       else if (body === EUROPA) this.goal('europaland');
       else if (body === EARTH) {
-        if (this.goals.has('moonland')) this.goal('return');
-        if (this.goals.has('marsland')) this.goal('marsreturn');
+        // Heimkehr zählt nur mit Crew an Bord (Kapsel), nicht für unbemannte Sonden.
+        const crew = this.allParts().some((id) => part(id).kind === 'capsule');
+        if (crew && this.goals.has('moonland')) this.goal('return');
+        if (crew && this.goals.has('marsland')) this.goal('marsreturn');
         if (this.goals.has('orbit') && EARTH.radius * Math.abs(wrap(up - Math.PI / 2)) < 5_000)
           this.goal('pinpoint');
       }
@@ -1752,11 +1870,14 @@ export class Flight {
     // Grobe Vorprüfung, damit nicht in jedem Schritt die genaue Rechnung nötig ist.
     const [sx, sy] = stationState(this.t);
     if (Math.abs(this.x - sx) > 200 || Math.abs(this.y - sy) > 200) return;
+    // Kurz auf die Station umschalten, um Abstand und Tempo zu messen – das Ziel bleibt.
     const target = this.target;
     this.target = 'station';
     const ti = this.targetInfo();
-    this.target = target ?? 'station';
+    this.target = target;
     if (!ti || ti.distance > DOCK_DISTANCE || ti.speed > DOCK_SPEED) return;
+    // Angedockt ist die Station das Ziel (für Anzeige und Abdocken).
+    this.target = 'station';
     this.status = 'docked';
     this.throttle = 0;
     this.warpIndex = 0;
@@ -1999,11 +2120,18 @@ export class Flight {
         const [ax, ay] = gravity(d.x, d.y, t);
         d.vx += ax * dt;
         d.vy += ay * dt;
-        const rho = densityAt(EARTH, Math.hypot(d.x, d.y) - EARTH.radius);
-        if (rho > 0) {
-          const f = 1 / (1 + ((0.5 * rho * 3) / 2000) * Math.hypot(d.vx, d.vy) * dt);
-          d.vx *= f;
-          d.vy *= f;
+        // Luftwiderstand in der Lufthülle des nächsten Körpers (relativ zu dessen Luft).
+        for (const b of BODIES) {
+          if (b.atmosphere <= 0) continue;
+          const [bx, by, bvx, bvy] = bodyState(b, t);
+          const rho = densityAt(b, Math.hypot(d.x - bx, d.y - by) - b.radius);
+          if (rho <= 0) continue;
+          const rvx = d.vx - bvx;
+          const rvy = d.vy - bvy;
+          const f = 1 / (1 + ((0.5 * rho * 3) / 2000) * Math.hypot(rvx, rvy) * dt);
+          d.vx = bvx + rvx * f;
+          d.vy = bvy + rvy * f;
+          break;
         }
         d.x += d.vx * dt;
         d.y += d.vy * dt;
@@ -2085,10 +2213,10 @@ export class Flight {
         dx = r.x;
         dy = r.y;
       } else {
-        nd.at = [s.x, s.y, s.vx, s.vy];
-        this.refreshNode();
-        dx = nd.dx;
-        dy = nd.dy;
+        // Aus dem vorhergesagten Zustand rechnen, ohne das echte Manöver zu verändern.
+        const d = nodeDelta(nd, s.x, s.y, s.vx, s.vy);
+        dx = d.dx;
+        dy = d.dy;
       }
       s.vx += dx;
       s.vy += dy;

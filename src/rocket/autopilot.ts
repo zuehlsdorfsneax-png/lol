@@ -1,8 +1,7 @@
-import { part } from './parts';
 import type { Flight } from './flight';
-import { EARTH, G0, type Body } from './world';
+import { EARTH, type Body } from './world';
 
-export type PilotPhase = 'ascent' | 'coast' | 'circularize' | 'done';
+export type PilotPhase = 'ascent' | 'coast' | 'circularize' | 'done' | 'failed';
 
 function wrap(a: number): number {
   return Math.atan2(Math.sin(a), Math.cos(a));
@@ -29,6 +28,8 @@ export class OrbitPilot {
   readonly apoapsis: number;
   private readonly turnStart: number;
   private readonly turnEnd: number;
+  /** Warum der Pilot aufgegeben hat (nur bei 'failed'). */
+  message = '';
 
   constructor(body: Body = EARTH) {
     this.body = body;
@@ -47,8 +48,20 @@ export class OrbitPilot {
     }
   }
 
+  /**
+   * Grober Δv-Bedarf bis in die Bahn des Piloten. Auf der Erde der Wert aus Testflügen (wie in
+   * der Werft), sonst Bahngeschwindigkeit plus Verluste durch Schwerkraft und Luft.
+   */
+  get needed(): number {
+    const b = this.body;
+    if (b === EARTH) return 3_900;
+    const v = Math.sqrt(b.mu / (b.radius + this.apoapsis));
+    return v * (b.atmosphere > 0 ? 1.5 : 1.15);
+  }
+
   update(f: Flight): PilotPhase {
     if (f.status === 'crashed') return (this.phase = 'done');
+    if (this.phase === 'done' || this.phase === 'failed') return this.phase;
     f.sas = 'off';
     const b = this.body;
     const rel = f.relative(b);
@@ -58,6 +71,17 @@ export class OrbitPilot {
     const safe = b === EARTH ? b.atmosphere : Math.max(b.atmosphere, this.apoapsis * 0.6);
     // Leere Stufe abwerfen, solange noch eine übrig ist.
     if (f.status === 'flying' && f.active.fuel <= 0 && f.segs.length > 1) f.stage();
+    if (f.status === 'flying' && !f.infiniteFuel && f.deltaV() < 1) {
+      // Kein Treibstoff mehr, die Bahn ist nicht erreicht: aufgeben und den Schirm scharf machen.
+      f.throttle = 0;
+      f.turn = 0;
+      if (f.chute === 'stowed') f.deployChute();
+      this.message =
+        f.chute === 'armed'
+          ? 'Hilfe-Pilot: Treibstoff leer, das Δv hat nicht für eine Umlaufbahn gereicht. Der Fallschirm ist scharf.'
+          : 'Hilfe-Pilot: Treibstoff leer, das Δv hat nicht für eine Umlaufbahn gereicht.';
+      return (this.phase = 'failed');
+    }
 
     if (this.phase === 'ascent') {
       const pitch = Math.min(
@@ -101,20 +125,6 @@ export class OrbitPilot {
     }
     return this.phase;
   }
-}
-
-/** Mittlerer spezifischer Impuls der aktiven Stufe (für Brenndauern). */
-export function activeIsp(f: Flight): number {
-  let thrust = 0;
-  let flow = 0;
-  for (const id of f.active.parts) {
-    const p = part(id);
-    if (p.thrust > 0) {
-      thrust += p.thrust;
-      flow += p.thrust / (p.isp * G0);
-    }
-  }
-  return flow > 0 ? thrust / (flow * G0) : 0;
 }
 
 export type ExecPhase = 'align' | 'wait' | 'burn' | 'done' | 'failed';

@@ -6,7 +6,7 @@ import { smoothPath } from '../sim/view';
 import { drawSatellite } from './draw';
 import { bodySpin, satelliteState, type Flight, type Prediction } from './flight';
 import { clock, km } from './format';
-import { period, stateAt } from './kepler';
+import { CIRCULAR_E, period, stateAt } from './kepler';
 import { drawBody, drawStation } from './scene';
 import { circle, drawStars, label, local, toScreen, type View } from './view';
 import {
@@ -394,9 +394,16 @@ function drawPrediction(
   const [rsx, rsy] = toScreen(v, rx0, ry0);
   const apart = (i: number): boolean =>
     Math.hypot(xs[i]! - rsx, ys[i]! - rsy) > pred.ref.radius * v.scale + 14;
+  // Wie im Cockpit: auf einer fast runden Bahn keine Zeiten (Ap und Pe sind kaum bestimmt).
+  const round =
+    pred.high >= 0 &&
+    pred.low >= 0 &&
+    (alt(pred.high) - alt(pred.low)) / (alt(pred.high) + alt(pred.low) + 2 * pred.ref.radius) <
+      CIRCULAR_E;
+  const timeAt = (i: number): string => (round ? ' · Kreisbahn' : when(i));
   if (pred.high >= 0 && apart(pred.high))
-    mark(pred.high, `Ap ${km(alt(pred.high))}${when(pred.high)}`, '#fcd34d');
-  if (pred.low >= 0 && apart(pred.low))
+    mark(pred.high, `Ap ${km(alt(pred.high))}${timeAt(pred.high)}`, '#fcd34d');
+  if (pred.low >= 0 && apart(pred.low) && !round)
     mark(pred.low, `Pe ${km(alt(pred.low))}${when(pred.low)}`, '#fcd34d');
   if (planned && pred.nodeRef) {
     const nr = pred.nodeRef;

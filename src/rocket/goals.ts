@@ -175,7 +175,7 @@ export const GOALS: readonly GoalDef[] = [
     group: 'Mond',
     points: 50,
     title: 'Heimkehr',
-    text: 'Vom Mond zurück und sicher auf der Erde gelandet.',
+    text: 'Vom Mond zurück und mit der Crew (Kapsel) sicher auf der Erde gelandet.',
   },
   {
     id: 'escape',
@@ -245,7 +245,7 @@ export const GOALS: readonly GoalDef[] = [
     group: 'Planeten',
     points: 150,
     title: 'Marsheimkehr',
-    text: 'Auf dem Mars gelandet und sicher zur Erde zurückgekehrt – das hat noch kein Mensch geschafft.',
+    text: 'Auf dem Mars gelandet und mit der Crew (Kapsel) sicher zur Erde zurückgekehrt – das hat noch kein Mensch geschafft.',
   },
   {
     id: 'jupiter',
@@ -287,7 +287,7 @@ export const GOALS: readonly GoalDef[] = [
     group: 'Können',
     points: 10,
     title: 'Butterweich',
-    text: 'Eine Landung mit weniger als 2 m/s.',
+    text: 'Nach einem Flug über 100 m mit weniger als 2 m/s aufgesetzt.',
   },
   {
     id: 'node',

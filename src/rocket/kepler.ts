@@ -103,6 +103,9 @@ export function stateAt(el: Elements, t: number): [number, number, number, numbe
 }
 
 /** Zeit bis zum nächsten tiefsten Punkt (bei Hyperbeln nur, solange er noch vor uns liegt). */
+/** Unterhalb dieser Exzentrizität gilt eine Bahn als Kreisbahn (Ap/Pe ohne Zeiten). */
+export const CIRCULAR_E = 0.003;
+
 export function timeToPeriapsis(el: Elements, t: number): number {
   const M = el.m0 + el.n * (t - el.t0);
   if (el.e < 1) return mod2pi(-M) / el.n;

@@ -27,7 +27,7 @@ function loadStars(): Record<string, number> {
 function loadSats(): Satellite[] {
   const raw = progressStore.load().rocketSats;
   if (!Array.isArray(raw)) return [];
-  return raw.filter((s): s is Satellite => {
+  const valid = raw.filter((s): s is Satellite => {
     const q = s as Partial<Satellite>;
     return (
       typeof q?.name === 'string' &&
@@ -37,6 +37,18 @@ function loadSats(): Satellite[] {
       Number.isFinite(q.el.a) &&
       Number.isFinite(q.el.n)
     );
+  });
+  // Ältere Versionen haben Nummern doppelt vergeben: doppelte bekommen eine neue.
+  const seen = new Set<number>();
+  let next = Math.max(0, ...valid.map((s) => (Number.isFinite(s.id) ? s.id : 0))) + 1;
+  return valid.map((s) => {
+    if (Number.isFinite(s.id) && !seen.has(s.id)) {
+      seen.add(s.id);
+      return s;
+    }
+    const id = next++;
+    seen.add(id);
+    return { ...s, id };
   });
 }
 
@@ -96,10 +108,18 @@ export function RocketGame({
     );
   };
 
+  /** Liste aus der Missionskontrolle (Karriere und Sandkasten zusammen). */
   const saveSats = (list: Satellite[]): void => {
-    const next = list.slice(-MAX_SATELLITES);
-    setSats(next);
-    progressStore.update((p) => ({ ...p, rocketSats: next }));
+    setSats(list);
+    progressStore.update((p) => ({ ...p, rocketSats: list }));
+  };
+
+  /** Liste aus einem Flug: ersetzt nur die Satelliten dieses Modus. */
+  const saveFlightSats = (list: Satellite[]): void => {
+    const byId = new Map<number, Satellite>();
+    for (const s of sats.filter((q) => !!q.sandbox !== sandbox)) byId.set(s.id, s);
+    for (const s of list.slice(-MAX_SATELLITES)) byId.set(s.id, s);
+    saveSats([...byId.values()]);
   };
 
   const finishChallenge = (id: string, r: ChallengeResult): void => {
@@ -141,7 +161,7 @@ export function RocketGame({
           challenge={challenge}
           bestStars={challenge ? (stars[challenge.id] ?? 0) : 0}
           onGoal={reachGoal}
-          onSatellites={saveSats}
+          onSatellites={saveFlightSats}
           onChallenge={finishChallenge}
           onNextChallenge={next ? () => startChallenge(next) : null}
           onExit={() => {

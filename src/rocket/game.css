@@ -2311,6 +2311,20 @@ html.game-open body {
   margin-left: auto;
 }
 
+.mbtn-note {
+  color: var(--g-ink-2);
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.mbtn-note + kbd {
+  margin-left: 8px;
+}
+
+.mbtn:has(.mbtn-note) .mbtn-note {
+  margin-left: auto;
+}
+
 .mbtn:hover:not(:disabled) {
   background: rgb(255 255 255 / 10%);
 }

@@ -20,7 +20,7 @@ import {
   type TargetId,
 } from './flight';
 import { clock, distance, fmt, km, shortTime } from './format';
-import { timeToApoapsis, timeToPeriapsis } from './kepler';
+import { CIRCULAR_E, timeToApoapsis, timeToPeriapsis } from './kepler';
 import {
   drawMap,
   fitMapScale,
@@ -217,15 +217,29 @@ function tipFor(f: Flight, pilot: string | null): string {
   return 'Umlaufbahn geschafft! Wähle rechts ein Ziel: Station, Mond oder einen Planeten. Der Bordcomputer (B) plant den Weg.';
 }
 
-const SAVE_KEY = 'orbitlabor/rakete-spielstand';
+/** Karriere und Sandkasten haben je einen eigenen Spielstand. */
+function saveKey(sandbox: boolean): string {
+  return sandbox ? 'orbitlabor/rakete-spielstand-sandkasten' : 'orbitlabor/rakete-spielstand';
+}
 
-function loadSnapshot(): FlightSnapshot | null {
+function loadSnapshot(sandbox: boolean): FlightSnapshot | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? (JSON.parse(raw) as FlightSnapshot) : null;
+    const raw = localStorage.getItem(saveKey(sandbox));
+    const snap = raw ? (JSON.parse(raw) as FlightSnapshot) : null;
+    return snap && typeof snap === 'object' && Array.isArray(snap.segs) ? snap : null;
   } catch {
     return null;
   }
+}
+
+/** „heute 14:32“ oder „3. Okt., 14:32“. */
+function savedLabel(snap: FlightSnapshot | null): string {
+  if (!snap?.savedAt) return '';
+  const d = new Date(snap.savedAt);
+  const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return d.toDateString() === new Date().toDateString()
+    ? `heute ${time}`
+    : `${d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}, ${time}`;
 }
 
 interface Props {
@@ -255,9 +269,14 @@ function makeFlight(
   if (challenge) challenge.setup(f);
   else {
     if (sandbox) applySandbox(f, sandbox);
-    f.satellites = sats.map((s) => ({ ...s, el: { ...s.el } }));
+    f.satellites = modeSats(sats, !!sandbox);
   }
   return f;
+}
+
+/** Karriere und Sandkasten sehen nur ihre eigenen Satelliten. */
+function modeSats(sats: readonly Satellite[], sandbox: boolean): Satellite[] {
+  return sats.filter((s) => !!s.sandbox === sandbox).map((s) => ({ ...s, el: { ...s.el } }));
 }
 
 type Pilot = 'orbit' | 'node' | 'land' | null;
@@ -304,7 +323,7 @@ export function FlightScreen({
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [report, setReport] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [saved, setSaved] = useState<FlightSnapshot | null>(loadSnapshot);
+  const [saved, setSaved] = useState<FlightSnapshot | null>(() => loadSnapshot(sandbox));
   const [toasts, setToasts] = useState<FlightEvent[]>([]);
   const [box, size] = useElementSize<HTMLDivElement>();
   const stage = useRef<HTMLDivElement>(null);
@@ -388,30 +407,49 @@ export function FlightScreen({
   };
 
   const quicksave = (): void => {
+    if (challenge) {
+      toast('In Herausforderungen gibt es keine Spielstände.', 'warn');
+      return;
+    }
     const snap = flight.current.snapshot();
-    if (!snap) return;
+    if (!snap) {
+      toast('Nach einem Absturz lässt sich nichts speichern.', 'warn');
+      return;
+    }
+    snap.savedAt = Date.now();
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(snap));
+      localStorage.setItem(saveKey(sandbox), JSON.stringify(snap));
       setSaved(snap);
-      toast('Spielstand gespeichert (F5). Laden mit F9.');
+      toast(
+        sandbox
+          ? 'Sandkasten-Spielstand gespeichert (F5). Laden mit F9.'
+          : 'Spielstand gespeichert (F5). Laden mit F9.',
+      );
     } catch {
       toast('Speichern nicht möglich – der Browser erlaubt keinen Speicher.', 'warn');
     }
   };
 
   const quickload = (): void => {
-    const snap = loadSnapshot();
-    if (!snap) {
-      toast('Noch kein Spielstand gespeichert.', 'warn');
-      return;
-    }
     if (challenge) {
       toast('In Herausforderungen gibt es keine Spielstände.', 'warn');
       return;
     }
+    const snap = loadSnapshot(sandbox);
+    if (!snap) {
+      toast('Noch kein Spielstand gespeichert.', 'warn');
+      return;
+    }
     const restored = Flight.restore(snap);
-    if (sandbox) applyRules(restored, sandboxSettings);
+    if (sandbox) {
+      applyRules(restored, sandboxSettings);
+      for (const s of restored.satellites) s.sandbox = true;
+    } else if (restored.sandbox) {
+      // Alter Spielstand aus dem Sandkasten: seine Satelliten bleiben draußen.
+      restored.satellites = modeSats(satellites, false);
+    }
     restart(restored);
+    satCallback.current(restored.satellites);
     toast(
       restored.sandbox && !sandbox
         ? 'Spielstand aus dem Sandkasten geladen – dieser Flug bringt keine Punkte.'
@@ -490,6 +528,12 @@ export function FlightScreen({
     refresh();
   };
 
+  const noComputer = (): boolean => {
+    if (!challenge || challenge.computer) return false;
+    toast('Ohne Bordcomputer – in dieser Herausforderung fliegst du selbst.', 'warn');
+    return true;
+  };
+
   const togglePilot = (): void => {
     const fl = flight.current;
     audio.current.unlock();
@@ -499,6 +543,7 @@ export function FlightScreen({
       fl.turn = 0;
       return;
     }
+    if (noComputer()) return;
     const ref = fl.refBody();
     const o = fl.orbit(ref);
     if (
@@ -508,14 +553,24 @@ export function FlightScreen({
       ref === SUN
     )
       return;
+    const next = new OrbitPilot(ref);
+    const dv = fl.deltaV();
+    if (fl.status === 'landed' && !fl.infiniteFuel && dv < next.needed * 0.95) {
+      toast(
+        `Zu wenig Treibstoff für eine Umlaufbahn: ${fmt(dv)} m/s Δv, nötig sind etwa ${fmt(next.needed)} m/s. Mehr Tanks oder eine zweite Stufe anbauen.`,
+        'warn',
+      );
+      return;
+    }
     stopPilots();
-    orbitPilot.current = new OrbitPilot(ref);
+    orbitPilot.current = next;
     pilot.current = 'orbit';
     setTick((t) => t + 1);
   };
 
   const toggleExecute = (on: boolean): void => {
     audio.current.unlock();
+    if (on && noComputer()) return;
     stopPilots();
     if (on && flight.current.node) {
       executor.current = new NodeExecutor();
@@ -526,6 +581,7 @@ export function FlightScreen({
 
   const toggleLanding = (on: boolean): void => {
     audio.current.unlock();
+    if (on && noComputer()) return;
     stopPilots();
     if (on) {
       lander.current = new LandingPilot();
@@ -915,7 +971,11 @@ export function FlightScreen({
         }
         // Autopiloten
         if (pilot.current === 'orbit' && orbitPilot.current) {
-          if (orbitPilot.current.update(fl) === 'done') {
+          const phase = orbitPilot.current.update(fl);
+          if (phase === 'failed') {
+            toast(orbitPilot.current.message, 'warn');
+            stopPilots();
+          } else if (phase === 'done') {
             stopPilots();
             if (fl.status !== 'crashed')
               toast('Hilfe-Pilot: Umlaufbahn erreicht. Jetzt übernimmst du!');
@@ -1180,8 +1240,10 @@ export function FlightScreen({
   const site = f.siteInfo();
   const landing = landingState(f);
   const el = f.status === 'flying' && ref !== SUN ? f.elements(ref) : null;
-  const tAp = el ? timeToApoapsis(el, f.t) : Infinity;
-  const tPe = el ? timeToPeriapsis(el, f.t) : Infinity;
+  // Auf einer fast runden Bahn sind Ap und Pe kaum bestimmt: dann keine Zeiten.
+  const round = !!el && el.e < CIRCULAR_E;
+  const tAp = el && !round ? timeToApoapsis(el, f.t) : Infinity;
+  const tPe = el && !round ? timeToPeriapsis(el, f.t) : Infinity;
   const goals = new Set<string>([...knownGoals, ...f.goals]);
   const points = careerPoints(goals, stars);
   const rank = rankFor(points);
@@ -1312,9 +1374,10 @@ export function FlightScreen({
             <dd>
               {o.bound ? distance(o.apoapsis) : 'Flucht'}
               {Number.isFinite(tAp) && f.status === 'flying' && <small>{shortTime(tAp)}</small>}
+              {round && <small>Kreisbahn</small>}
             </dd>
             <dt>Pe</dt>
-            <dd class={o.periapsis < 0 ? 'bad' : ''}>
+            <dd class={o.periapsis < 0 && f.status === 'flying' ? 'bad' : ''}>
               {o.periapsis < 0 ? (ref.solid ? 'im Boden' : 'im Inneren') : distance(o.periapsis)}
               {Number.isFinite(tPe) && f.status === 'flying' && o.periapsis >= 0 && (
                 <small>{shortTime(tPe)}</small>
@@ -1477,7 +1540,7 @@ export function FlightScreen({
                 <dd>{distance(ti.distance)}</dd>
                 <dt>Relativ</dt>
                 <dd>{fmt(ti.speed, ti.speed < 10 ? 1 : 0)} m/s</dd>
-                <dt>{ti.closing > 0 ? 'Entfernt sich' : 'Kommt näher'}</dt>
+                <dt>{ti.closing > 0 ? 'Kommt näher' : 'Entfernt sich'}</dt>
                 <dd>{fmt(Math.abs(ti.closing), Math.abs(ti.closing) < 10 ? 1 : 0)} m/s</dd>
               </>
             )}
@@ -1790,8 +1853,11 @@ export function FlightScreen({
                     setPaused(false);
                   }}
                   disabled={!saved}
+                  title={saved ? `Gespeichert ${savedLabel(saved)}` : 'Noch kein Spielstand'}
                 >
-                  <Icon name="folder" /> Spielstand laden <kbd>F9</kbd>
+                  <Icon name="folder" /> Spielstand laden
+                  {saved?.savedAt ? <small class="mbtn-note">{savedLabel(saved)}</small> : null}
+                  <kbd>F9</kbd>
                 </button>
               </>
             )}

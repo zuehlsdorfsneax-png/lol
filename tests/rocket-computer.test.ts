@@ -115,6 +115,9 @@ describe('Bordcomputer: Mondmission ohne Handsteuerung', () => {
     const transfer = makePlan(f, 'transfer');
     expect(transfer.ok).toBe(true);
     expect(execute(f)).toBe('done');
+    // Wie im Spiel: eine kleine Kurskorrektur, falls die Ankunftshöhe nicht passt.
+    const course = makePlan(f, 'correct');
+    if (course.ok) expect(execute(f)).toBe('done');
     const p = f.predict();
     expect(p.encounter?.body).toBe(MOON);
 

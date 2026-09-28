@@ -197,14 +197,18 @@ describe('Flug', () => {
     expect(f.goals.has('escape')).toBe(true);
   });
 
-  it('eine sanfte Landung zählt als butterweich', () => {
+  it('eine sanfte Landung nach einem echten Flug zählt als butterweich', () => {
     const f = new Flight(['kapsel', 'tank-s', 'falke']);
     f.status = 'flying';
     f.landedOn = null;
-    f.y = EARTH.radius + 0.05;
-    f.vy = -0.5;
-    f.throttle = 0;
-    fly(f, 2);
+    f.y = EARTH.radius + 150;
+    // Mit dem Triebwerk langsam (1 m/s) herunterschweben.
+    fly(f, 200, 1, () => {
+      const rel = f.relative(EARTH);
+      const v = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
+      const hover = (f.mass * 9.81) / f.engine().thrust;
+      f.throttle = f.status === 'flying' ? Math.max(0, Math.min(1, hover + 0.3 * (-1 - v))) : 0;
+    });
     expect(f.status).toBe('landed');
     expect(f.goals.has('soft')).toBe(true);
   });
