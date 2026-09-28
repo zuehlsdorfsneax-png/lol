@@ -1,3 +1,4 @@
+import { fmt } from './format';
 import { goalById, type GoalId } from './goals';
 import { elements, stateAt, timeToPeriapsis, timeToRadius, type Elements } from './kepler';
 import { part, segments, type Design, type PartDef } from './parts';
@@ -16,6 +17,7 @@ import {
   VENUS,
   bodyById,
   bodyState,
+  forms,
   densityAt,
   dominantBody,
   gravity,
@@ -1281,7 +1283,7 @@ export class Flight {
     if (el.e >= 1) {
       this.emit(
         'warn',
-        `Satellit ausgesetzt – aber auf einer Fluchtbahn. Er verlässt ${ref.name} für immer.`,
+        `Satellit ausgesetzt – aber auf einer Fluchtbahn. Er verlässt ${forms(ref).acc} für immer.`,
       );
       return true;
     }
@@ -1317,7 +1319,7 @@ export class Flight {
       `${Math.round((m - ref.radius) / 1000).toLocaleString('de-DE')} km`;
     this.emit(
       'info',
-      `Satellit ${n} kreist jetzt um ${ref.name}: ${km(peri)} bis ${km(apo)} hoch.`,
+      `Satellit ${n} kreist jetzt um ${forms(ref).acc}: ${km(peri)} bis ${km(apo)} hoch.`,
     );
     this.satelliteGoals();
     return true;
@@ -1811,7 +1813,7 @@ export class Flight {
           this.goal('pinpoint');
       }
       if (!this.events.length || this.events[this.events.length - 1]!.kind !== 'goal')
-        this.emit('info', `Gelandet auf: ${body.name}, mit ${speed.toFixed(1)} m/s. Gut gemacht!`);
+        this.emit('info', `Gelandet auf ${forms(body).dat} mit ${fmt(speed, 1)} m/s. Gut gemacht!`);
       return;
     }
     let reason: string;

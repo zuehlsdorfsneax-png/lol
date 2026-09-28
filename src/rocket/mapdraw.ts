@@ -29,6 +29,7 @@ import {
   SUN,
   bodyById,
   bodyState,
+  forms,
   stationState,
 } from './world';
 
@@ -171,7 +172,7 @@ export function drawMap(
     if (hill > 50)
       label(
         ctx,
-        `Hill-Sphäre ${b.id === 'moon' ? 'des Mondes' : b.id === 'earth' ? 'der Erde' : `von ${b.name}`}`,
+        `Hill-Sphäre ${forms(b).gen}`,
         sx + hill * 0.72,
         sy - hill * 0.72,
         '#c4b5fd',

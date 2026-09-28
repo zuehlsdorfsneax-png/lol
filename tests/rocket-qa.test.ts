@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { OrbitPilot } from '../src/rocket/autopilot';
+import { CHALLENGES } from '../src/rocket/challenges';
+import { CHALLENGE_COUNT, GOAL_COUNT } from '../src/rocket/counts';
+import { GOALS } from '../src/rocket/goals';
 import { Flight, type Satellite } from '../src/rocket/flight';
 import { TEMPLATES, checkDesign, stageStats } from '../src/rocket/parts';
 import { DEFAULT_SANDBOX, applySandbox } from '../src/rocket/sandbox';
 import { forTouch } from '../src/rocket/touch';
-import { EARTH, JUPITER, MARS, MOON, circularSpeed, stationState } from '../src/rocket/world';
+import { clock, clockIn } from '../src/rocket/format';
+import {
+  EARTH,
+  JUPITER,
+  MARS,
+  MOON,
+  circularSpeed,
+  forms,
+  stationState,
+} from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 
@@ -236,5 +248,28 @@ describe('Touchscreen-Tipps (QA)', () => {
     expect(forTouch('Schub hochziehen (W / ↑, Z = Vollgas) – los!')).toBe(
       'Schub hochziehen – los!',
     );
+  });
+});
+
+describe('Texte (QA)', () => {
+  it('Zahlen auf der Startseite passen zu den Listen', () => {
+    expect(CHALLENGE_COUNT).toBe(CHALLENGES.length);
+    expect(GOAL_COUNT).toBe(GOALS.length);
+  });
+});
+
+describe('Namen mit Artikel (QA)', () => {
+  it('bildet die Fälle für Planeten und Monde', () => {
+    expect(forms(MARS).to).toBe('zum Mars');
+    expect(forms(EARTH).dat).toBe('der Erde');
+    expect(forms(MOON).acc).toBe('den Mond');
+    expect(forms(JUPITER).at).toBe('beim Jupiter');
+  });
+
+  it('„in 181 Tagen“ nach „in“, sonst „Tage“', () => {
+    const t = 181 * 86_400 + 3_600;
+    expect(clockIn(t)).toBe('181 Tagen 01:00:00');
+    expect(clock(t)).toBe('181 Tage 01:00:00');
+    expect(clockIn(86_400 + 60)).toBe('1 Tag 00:01:00');
   });
 });

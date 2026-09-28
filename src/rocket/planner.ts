@@ -15,6 +15,7 @@ import {
   bodyById,
   bodyState,
   dominantBody,
+  forms,
   orbitAround,
   phaseLead,
   requiredExcess,
@@ -171,7 +172,7 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
   if (!round && o.periapsis > Math.max(ref.atmosphere, 1_000))
     out.push({
       id: 'circ-pe',
-      label: o.bound ? 'Kreisbahn am Pe' : `Einschwenken bei ${ref.name}`,
+      label: o.bound ? 'Kreisbahn am Pe' : `Einschwenken ${forms(ref).at}`,
       hint: o.bound
         ? 'Am tiefsten Punkt bremsen, bis die Bahn rund ist.'
         : 'Am tiefsten Punkt bremsen – dann fängt dich der Körper ein.',
@@ -200,14 +201,14 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
       out.push({
         id: 'return',
         label: `Rückflug zu: ${tb.name}`,
-        hint: `Aus der Bahn um ${ref.name} zurück, tiefster Punkt ${km(arrivalAltitude(tb))} über ${tb.name}.`,
+        hint: `Aus der Bahn um ${forms(ref).acc} zurück, tiefster Punkt ${km(arrivalAltitude(tb))} über ${forms(tb).dat}.`,
       });
   }
   if (target === ref.id && !o.bound)
     out.push({
       id: 'correct',
       label: `Anflug korrigieren`,
-      hint: `Tiefsten Punkt auf ${km(arrivalAltitude(ref))} über ${ref.name} legen – dann einschwenken.`,
+      hint: `Tiefsten Punkt auf ${km(arrivalAltitude(ref))} über ${forms(ref).dat} legen – dann einschwenken.`,
     });
   if (target && target !== 'station' && target !== ref.id) {
     const tb = bodyById(target);
@@ -221,7 +222,7 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
       out.push({
         id: 'correct',
         label: `Kurskorrektur zu: ${tb.name}`,
-        hint: `Kleiner Schub, damit du ${km(arrivalAltitude(tb))} über ${tb.name} ankommst.`,
+        hint: `Kleiner Schub, damit du ${km(arrivalAltitude(tb))} über ${forms(tb).dat} ankommst.`,
       });
   }
   if (!target && ref.parent && ref.parent !== 'sun' && o.bound) {
@@ -229,7 +230,7 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
     out.push({
       id: 'return',
       label: `Rückflug zu: ${parent.name}`,
-      hint: `Aus der Bahn um ${ref.name} zurück zu ${parent.name}.`,
+      hint: `Aus der Bahn um ${forms(ref).acc} zurück ${forms(parent).to}.`,
     });
   }
   if (o.bound && ref.solid && o.periapsis > 0)
@@ -299,7 +300,7 @@ export function planCircularize(f: Flight, where: 'ap' | 'pe'): Plan {
       f.setNode(p.ts[best]!, vc - v, 0);
       return {
         ok: true,
-        title: el.e >= 1 ? `Einschwenken bei ${ref.name}` : title,
+        title: el.e >= 1 ? `Einschwenken ${forms(ref).at}` : title,
         text: `${fmt(Math.abs(vc - v))} m/s gegen die Flugrichtung in ${clockIn(p.ts[best]! - f.t)}, auf ${km(bestD - ref.radius)} Höhe.`,
       };
     }
@@ -353,7 +354,7 @@ export function planTransfer(f: Flight): Plan {
     const rate = angularRate(target);
     const ideal = Math.PI - rate * tt;
     const omega = TAU / P;
-    if (omega <= rate) return fail(title, `Deine Bahn liegt schon höher als ${target.name}.`);
+    if (omega <= rate) return fail(title, `Deine Bahn liegt schon höher als ${forms(target).nom}.`);
     const [bx, by] = bodyState(ref, f.t);
     const [tx, ty] = bodyState(target, f.t);
     const lead = Math.atan2(f.y - by, f.x - bx) - Math.atan2(ty - by, tx - bx);
@@ -376,7 +377,7 @@ export function planTransfer(f: Flight): Plan {
       : {
           ok: true,
           title,
-          text: `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Ankunft ${km(pe)} über ${target.name}.`,
+          text: `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Ankunft ${km(pe)} über ${forms(target).dat}.`,
         };
   }
 
@@ -392,7 +393,7 @@ export function planTransfer(f: Flight): Plan {
     if (wait > 2.5 * P && wait > 3 * 86_400)
       return fail(
         title,
-        `Das Startfenster zu ${target.name} öffnet sich in ${clockIn(wait)}. Spule mit dem Zeitsprung bis kurz davor und plane dann noch einmal.`,
+        `Das Startfenster ${forms(target).to} öffnet sich in ${clockIn(wait)}. Spule mit dem Zeitsprung bis kurz davor und plane dann noch einmal.`,
         wait,
       );
     const vinf = Math.abs(requiredExcess(ref, target));
@@ -421,10 +422,10 @@ export function planTransfer(f: Flight): Plan {
       text:
         pe === null
           ? `Das Fenster passt, aber noch kein Treffer: ${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Nach dem Brennen mit kleinen Korrekturen nachbessern.`
-          : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Flugzeit etwa ${Math.round(flight / 86_400)} Tage, Ankunft ${km(pe)} über ${target.name}.`,
+          : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Flugzeit etwa ${Math.round(flight / 86_400)} Tage, Ankunft ${km(pe)} über ${forms(target).dat}.`,
     };
   }
-  return fail(title, `Von ${ref.name} aus ist ${target.name} kein direktes Ziel.`);
+  return fail(title, `Von ${forms(ref).dat} aus ist ${forms(target).nom} kein direktes Ziel.`);
 }
 
 /**
@@ -435,7 +436,7 @@ export function planCorrection(f: Flight): Plan {
   const target = f.target && f.target !== 'station' ? bodyById(f.target) : null;
   if (!target) return fail('Kurskorrektur', 'Erst ein Ziel wählen.');
   const title =
-    f.refBody() === target ? `Anflug auf ${target.name}` : `Kurskorrektur zu: ${target.name}`;
+    f.refBody() === target ? `Anflug auf ${forms(target).acc}` : `Kurskorrektur zu: ${target.name}`;
   if (f.status !== 'flying') return fail(title, 'Erst abheben.');
   const t = f.t + Math.max(60, Math.min(f.burnTime(20), 600) / 2 + 30);
   const miss = (pro: number, rad: number): number | null => {
@@ -457,7 +458,7 @@ export function planCorrection(f: Flight): Plan {
     f.clearNode();
     return fail(
       title,
-      `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${target.name}.`,
+      `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${forms(target).dat}.`,
     );
   }
   // Wirksamste Richtung aus kleinen Probeschüben (in Flugrichtung und radial).
@@ -493,7 +494,7 @@ export function planCorrection(f: Flight): Plan {
     f.clearNode();
     return fail(
       title,
-      `Mit einem kleinen Schub ist ${target.name} nicht zu treffen – plane den Transfer neu.`,
+      `Mit einem kleinen Schub ist ${forms(target).nom} nicht zu treffen – plane den Transfer neu.`,
     );
   }
   for (let k = 0; k < 40 && Math.abs(hi - lo) > 0.002; k++) {
@@ -518,7 +519,7 @@ export function planCorrection(f: Flight): Plan {
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end ?? want) - target.radius)} über ${target.name}.`,
+    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end ?? want) - target.radius)} über ${forms(target).dat}.`,
   };
 }
 
@@ -604,7 +605,7 @@ export function planReturn(f: Flight): Plan {
   if (!ref.parent || ref.parent === 'sun') return fail(title, 'Du bist nicht bei einem Mond.');
   const home = bodyById(ref.parent);
   const el = f.elements(ref);
-  if (el.e >= 1) return fail(title, `Erst eine Umlaufbahn um ${ref.name} fliegen.`);
+  if (el.e >= 1) return fail(title, `Erst eine Umlaufbahn um ${forms(ref).acc} fliegen.`);
   const P = period(el);
   const want = arrivalAltitude(home);
   const rp = home.radius + want;
@@ -637,7 +638,7 @@ export function planReturn(f: Flight): Plan {
     text:
       pe === null
         ? `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)} – noch nicht perfekt, bitte nachbessern.`
-        : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Tiefster Punkt über ${home.name}: ${km(pe)}.${home.atmosphere > 0 ? ' Fallschirm nicht vergessen!' : ''}`,
+        : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Tiefster Punkt über ${forms(home).dat}: ${km(pe)}.${home.atmosphere > 0 ? ' Fallschirm nicht vergessen!' : ''}`,
   };
 }
 

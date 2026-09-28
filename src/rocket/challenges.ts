@@ -4,7 +4,7 @@
  * Mars.
  */
 import { apsides, bodySpin, satelliteState, type Flight } from './flight';
-import { km } from './format';
+import { fmt, km } from './format';
 import { EARTH, MARS, MOON, PHOBOS, bodyState, stationState } from './world';
 
 export type ChallengeGroup = 'Flugschule' | 'Profi' | 'Meister';
@@ -112,7 +112,7 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, f.maxAltitude > 40_000, land.speed < 4),
-        text: `${km(f.maxAltitude)} hoch, gelandet mit ${land.speed.toFixed(1)} m/s.`,
+        text: `${km(f.maxAltitude)} hoch, gelandet mit ${fmt(land.speed, 1)} m/s.`,
       };
     },
     progress: (f) => `Höchster Punkt: ${km(f.maxAltitude)}`,
@@ -220,7 +220,7 @@ export const CHALLENGES: readonly Challenge[] = [
     },
     progress: (f) => {
       const ti = f.targetInfo();
-      return ti ? `Abstand ${km(ti.distance)} · ${ti.speed.toFixed(1)} m/s` : '';
+      return ti ? `Abstand ${km(ti.distance)} · ${fmt(ti.speed, 1)} m/s` : '';
     },
   },
   {

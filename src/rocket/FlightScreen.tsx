@@ -52,6 +52,7 @@ import {
   angularRate,
   bodyById,
   densityAt,
+  forms,
   moonAngle,
   phaseLead,
   transferWindow,
@@ -175,7 +176,7 @@ function tipFor(f: Flight, pilot: string | null): string {
     return 'Phobos hat fast keine Schwerkraft: mit ganz wenig Schub (unter 5 %) langsam aufsetzen. Zu viel Gas – und du fliegst davon.';
   if (ref === MARS || ref === VENUS || ref === MERCURY || ref === EUROPA) {
     if (!o.bound)
-      return `Angekommen bei ${ref.name}! Bordcomputer: „Einschwenken“ – oder am tiefsten Punkt (Pe) gegen die Flugrichtung bremsen.`;
+      return `Angekommen ${forms(ref).at}! Bordcomputer: „Einschwenken“ – oder am tiefsten Punkt (Pe) gegen die Flugrichtung bremsen.`;
     if (ref.atmosphere > 0)
       return ref === VENUS
         ? 'Zur Landung: Bordcomputer „Wiedereintritt“, Fallschirm scharf (P). Die dichte Luft bremst stark.'
@@ -1432,7 +1433,7 @@ export function FlightScreen({
       jumps.push({
         label: `In die Hill-Sphäre: ${enc.body.name}`,
         t: pred.current!.ts[enc.enter]!,
-        what: `bis ${enc.body.name}`,
+        what: `bis ${forms(enc.body).to}`,
       });
     if (win && win.wait > 60)
       jumps.push({ label: win.title, t: f.t + win.wait - 60, what: 'bis zum Startfenster' });
@@ -2153,7 +2154,7 @@ export function FlightScreen({
       {report && !result && (
         <FlightReport
           f={f}
-          title={`Flugbericht: gelandet auf ${f.landedOn?.name ?? '–'}`}
+          title={`Flugbericht: gelandet auf ${f.landedOn ? forms(f.landedOn).dat : '–'}`}
           newGoals={newGoals}
         >
           <button type="button" class="btn primary" onClick={() => setReport(false)}>

@@ -404,7 +404,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 0,
     isp: 0,
-    info: 'Ein schnell drehendes Schwungrad: Die Rakete dreht sich fast doppelt so schnell – auch ohne Luft und ohne Treibstoff.',
+    info: 'Ein schnell drehendes Schwungrad: Die Rakete dreht sich knapp um die Hälfte schneller (mit zwei Rädern fast doppelt so schnell) – auch ohne Luft und ohne Treibstoff.',
   },
   {
     id: 'rcs-block',

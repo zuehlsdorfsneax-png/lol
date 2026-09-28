@@ -4,6 +4,7 @@ import type { Flight, Prediction, TargetId } from './flight';
 import { clock, clockIn, duration, fmt } from './format';
 import { period } from './kepler';
 import { makePlan, planOptions, type Plan, type PlanId } from './planner';
+import { forms } from './world';
 
 /** Knopf, der beim Festhalten immer schneller wiederholt. */
 function useRepeat(action: () => void) {
@@ -243,13 +244,13 @@ export function ComputerPanel({
                     action={() => edit({ prograde: (flight.current.node?.prograde ?? 0) - 1 })}
                   />
                   <Step
-                    label="−.1"
+                    label="−0,1"
                     title="0,1 m/s weniger"
                     action={() => edit({ prograde: (flight.current.node?.prograde ?? 0) - 0.1 })}
                   />
                   <output>{fmt(node.prograde, 1)}</output>
                   <Step
-                    label="+.1"
+                    label="+0,1"
                     title="0,1 m/s mehr"
                     action={() => edit({ prograde: (flight.current.node?.prograde ?? 0) + 0.1 })}
                   />
@@ -279,13 +280,13 @@ export function ComputerPanel({
                     action={() => edit({ radial: (flight.current.node?.radial ?? 0) - 1 })}
                   />
                   <Step
-                    label="−.1"
+                    label="−0,1"
                     title="0,1 m/s nach innen"
                     action={() => edit({ radial: (flight.current.node?.radial ?? 0) - 0.1 })}
                   />
                   <output>{fmt(node.radial, 1)}</output>
                   <Step
-                    label="+.1"
+                    label="+0,1"
                     title="0,1 m/s nach außen"
                     action={() => edit({ radial: (flight.current.node?.radial ?? 0) + 0.1 })}
                   />
@@ -400,7 +401,7 @@ export function ComputerPanel({
             </>
           ) : (
             <>
-              <Icon name="down" /> Automatisch landen auf {f.refBody().name}
+              <Icon name="down" /> Automatisch landen auf {forms(f.refBody()).dat}
             </>
           )}
         </button>

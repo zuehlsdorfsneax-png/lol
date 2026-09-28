@@ -40,6 +40,102 @@ export interface Body {
   info: string;
 }
 
+/** Deutsche Formen der Namen, mit Artikel wo nötig („auf dem Mars“, „zur Erde“, „bei Europa“). */
+export interface NameForms {
+  /** der Mars */
+  nom: string;
+  /** des Mars */
+  gen: string;
+  /** (auf/über) dem Mars */
+  dat: string;
+  /** (um) den Mars */
+  acc: string;
+  /** zum Mars */
+  to: string;
+  /** beim Mars */
+  at: string;
+}
+
+const FORMS: Record<BodyId, NameForms> = {
+  sun: {
+    nom: 'die Sonne',
+    gen: 'der Sonne',
+    dat: 'der Sonne',
+    acc: 'die Sonne',
+    to: 'zur Sonne',
+    at: 'bei der Sonne',
+  },
+  mercury: {
+    nom: 'der Merkur',
+    gen: 'des Merkur',
+    dat: 'dem Merkur',
+    acc: 'den Merkur',
+    to: 'zum Merkur',
+    at: 'beim Merkur',
+  },
+  venus: {
+    nom: 'die Venus',
+    gen: 'der Venus',
+    dat: 'der Venus',
+    acc: 'die Venus',
+    to: 'zur Venus',
+    at: 'bei der Venus',
+  },
+  earth: {
+    nom: 'die Erde',
+    gen: 'der Erde',
+    dat: 'der Erde',
+    acc: 'die Erde',
+    to: 'zur Erde',
+    at: 'bei der Erde',
+  },
+  moon: {
+    nom: 'der Mond',
+    gen: 'des Mondes',
+    dat: 'dem Mond',
+    acc: 'den Mond',
+    to: 'zum Mond',
+    at: 'beim Mond',
+  },
+  mars: {
+    nom: 'der Mars',
+    gen: 'des Mars',
+    dat: 'dem Mars',
+    acc: 'den Mars',
+    to: 'zum Mars',
+    at: 'beim Mars',
+  },
+  phobos: {
+    nom: 'Phobos',
+    gen: 'des Phobos',
+    dat: 'Phobos',
+    acc: 'Phobos',
+    to: 'zu Phobos',
+    at: 'bei Phobos',
+  },
+  jupiter: {
+    nom: 'der Jupiter',
+    gen: 'des Jupiter',
+    dat: 'dem Jupiter',
+    acc: 'den Jupiter',
+    to: 'zum Jupiter',
+    at: 'beim Jupiter',
+  },
+  europa: {
+    nom: 'Europa',
+    gen: 'Europas',
+    dat: 'Europa',
+    acc: 'Europa',
+    to: 'zu Europa',
+    at: 'bei Europa',
+  },
+};
+
+/** Grammatische Formen eines Körpers für Sätze wie „Ankunft 120 km über dem Mars“. */
+export function forms(b: { id: BodyId }): NameForms {
+  return FORMS[b.id];
+}
+
 function body(b: Omit<Body, 'mu' | 'hill'> & { parentMu?: number }): Body {
   const mu = b.g * b.radius ** 2;
   const hill = b.parentMu ? b.distance * Math.cbrt(mu / (3 * b.parentMu)) : Infinity;

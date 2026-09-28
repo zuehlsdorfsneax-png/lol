@@ -4,6 +4,10 @@ import { jacobiCheck } from './cr3bp';
 import { orbitalElements } from './orbit';
 import { buildScenario, type ScenarioParams } from './scenario';
 
+/** Zahl mit deutschem Komma für die Texte der Bewertung. */
+const de = (v: number, digits: number): string =>
+  v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
 export type CheckStatus = 'ok' | 'warn' | 'fail' | 'na';
 
 export interface StabilityCheck {
@@ -63,7 +67,7 @@ export function assessStability(params: ScenarioParams): Assessment {
     title: 'Unter der Fluchtgeschwindigkeit',
     status: el.bound ? 'ok' : 'fail',
     detail: el.bound
-      ? `Gebunden: v/v_Flucht = ${(el.v / Math.sqrt((2 * mu) / el.r)).toFixed(2)}.`
+      ? `Gebunden: v/v_Flucht = ${de(el.v / Math.sqrt((2 * mu) / el.r), 2)}.`
       : 'Die Bewegungsenergie reicht, um der Erde zu entkommen.',
   });
 
@@ -89,7 +93,7 @@ export function assessStability(params: ScenarioParams): Assessment {
       id: 'hill',
       title: 'Innerhalb der Stabilitätsgrenze',
       status: a > crit ? 'fail' : a > 0.85 * crit ? 'warn' : 'ok',
-      detail: `Halbachse ${Number.isFinite(a) ? (a / info.hillRadius).toFixed(2) : '∞'} Hill-Radien – Grenze ${(crit / info.hillRadius).toFixed(2)} Hill-Radien (${retrograde ? 'retrograd' : 'prograd'}, Domingos et al. 2006).`,
+      detail: `Halbachse ${Number.isFinite(a) ? de(a / info.hillRadius, 2) : '∞'} Hill-Radien – Grenze ${de(crit / info.hillRadius, 2)} Hill-Radien (${retrograde ? 'retrograd' : 'prograd'}, Domingos et al. 2006).`,
     });
     const sun = bodies[indices.sun]!;
     const j = jacobiCheck(
@@ -104,8 +108,8 @@ export function assessStability(params: ScenarioParams): Assessment {
       title: 'Jacobi-Kriterium (Hill-Stabilität)',
       status: j.trapped ? 'ok' : 'warn',
       detail: j.trapped
-        ? `C = ${j.C.toFixed(6)} > C(L1) = ${j.CL1.toFixed(6)}: Der Mond kann die Hill-Sphäre nie verlassen.`
-        : `C = ${j.C.toFixed(6)} ≤ C(L1) = ${j.CL1.toFixed(6)}: Das Tor bei L1 ist offen – Flucht möglich, aber nicht zwingend.`,
+        ? `C = ${de(j.C, 6)} > C(L1) = ${de(j.CL1, 6)}: Der Mond kann die Hill-Sphäre nie verlassen.`
+        : `C = ${de(j.C, 6)} ≤ C(L1) = ${de(j.CL1, 6)}: Das Tor bei L1 ist offen – Flucht möglich, aber nicht zwingend.`,
     });
   }
 

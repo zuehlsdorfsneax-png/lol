@@ -6,6 +6,7 @@ import { RocketArt } from '../rocket/RocketArt';
 import { RocketGame, type Tab } from '../rocket/RocketGame';
 import {
   EARTH,
+  EUROPA,
   MARS,
   MOON,
   MOON_DISTANCE,
@@ -14,14 +15,25 @@ import {
   SCALE,
   angularRate,
   circularSpeed,
+  VENUS,
   orbitalPeriod,
+  type Body,
 } from '../rocket/world';
 import { Callout, PageHead } from '../ui/content';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Icon } from '../ui/Icon';
 
+/** Kleine Zahlen als Wort („zehn“), größere als Ziffern. */
+function numberWord(n: number): string {
+  const words = ['null', 'eine', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
+  return words[n] ?? ['zehn', 'elf', 'zwölf'][n - 10] ?? String(n);
+}
+
 const fmt = (x: number, d = 0): string =>
   x.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+/** Schwerkraft an der Oberfläche aus μ und Radius des Spielkörpers. */
+const surfaceGravity = (b: Body): number => b.mu / b.radius ** 2;
 
 /** Längste Wartezeit auf ein Marsfenster: eine synodische Periode von Erde und Mars. */
 function transferWaitMax(): number {
@@ -32,7 +44,7 @@ const CONTROLS: [string, string][] = [
   ['W / ↑ und S / ↓', 'Schub stufenlos hoch und runter (Umschalt: hoch)'],
   ['Z / X', 'Vollgas / Triebwerk aus'],
   ['A / ← und D / →', 'Rakete drehen (F: Feinsteuerung)'],
-  ['1 – 7', 'SAS-Lageregelung: aus, prograd, retrograd, radial, Ziel, Manöver'],
+  ['1 – 7', 'SAS-Lageregelung: aus, prograd, retrograd, radial außen, radial innen, Ziel, Manöver'],
   ['Gedrückt halten', 'In der Flugansicht: Die Rakete dreht sich in diese Richtung'],
   ['Leertaste', 'Nächste Stufe zünden (unterste Stufe abwerfen)'],
   ['P / N / U', 'Fallschirm scharf, entschärfen oder abwerfen / Satellit aussetzen / Luftbremsen'],
@@ -114,7 +126,8 @@ export function RocketPage() {
     <div class="rocket-page">
       <PageHead eyebrow="Spielen" title="Raketenwerft">
         Bau deine Rakete und flieg durch ein verkleinertes Sonnensystem – mit echter Schwerkraft,
-        Luftwiderstand und Hitze, einem Bordcomputer und neun Herausforderungen.
+        Luftwiderstand und Hitze, einem Bordcomputer und {numberWord(CHALLENGES.length)}{' '}
+        Herausforderungen.
       </PageHead>
 
       <Launcher onPlay={play} />
@@ -243,9 +256,11 @@ function Physics() {
         die in Kapitel 5 über die Stabilität unseres Mondes entscheidet.
       </Callout>
       <Callout kind="merke" title="Drei Körper, keine perfekte Ellipse">
-        Die Bahnvorhersage auf der Karte rechnet Erde, Mond und Rakete gemeinsam – ein
-        eingeschränktes Drei-Körper-Problem wie in Kapitel 4 und 8. Deshalb biegt der Mond die
-        vorhergesagte Bahn, sobald sie in seine Nähe kommt.
+        Die Bahnvorhersage auf der Karte rechnet die Anziehung aller Körper gleichzeitig: Sonne,
+        Planeten und Monde ziehen an der Rakete, während sie selbst auf festen Bahnen laufen. Das
+        ist ein eingeschränktes Mehrkörperproblem – die Verallgemeinerung des Drei-Körper-Problems
+        aus Kapitel 4 und 8. Deshalb biegt der Mond die vorhergesagte Bahn, sobald sie in seine Nähe
+        kommt.
       </Callout>
       <Callout kind="merke" title="Hohmann-Transfer: der sparsamste Weg">
         Der Bordcomputer plant Transfers wie echte Missionen: ein Schub in Flugrichtung macht die
@@ -303,8 +318,18 @@ function World() {
             </tr>
             <tr>
               <td>Schwerkraft Erde / Mond</td>
+              <td>
+                {fmt(surfaceGravity(EARTH), 2)} / {fmt(surfaceGravity(MOON), 2)} m/s²
+              </td>
               <td>9,81 / 1,62 m/s²</td>
-              <td>9,81 / 1,62 m/s²</td>
+            </tr>
+            <tr>
+              <td>Schwerkraft Mars / Venus / Europa</td>
+              <td>
+                {fmt(surfaceGravity(MARS), 2)} / {fmt(surfaceGravity(VENUS), 2)} /{' '}
+                {fmt(surfaceGravity(EUROPA), 2)} m/s²
+              </td>
+              <td>3,72 / 8,87 / 1,31 m/s²</td>
             </tr>
             <tr>
               <td>Marsradius</td>

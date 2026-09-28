@@ -316,7 +316,7 @@ export class Simulation {
           this.raise(
             'crash',
             'Der Mond ist auf die Erde gestürzt',
-            `Aufprall mit ${speed.toFixed(1)} km/s nach ${formatDuration(this.time)}. Die Bahn führte näher an die Erde heran, als Erd- und Mondradius zusammen (${Math.round((info.earthRadius + info.moonRadius) / 1000).toLocaleString('de-DE')} km). In Wirklichkeit hätten die Gezeitenkräfte den Mond schon an der Roche-Grenze zerrissen.`,
+            `Aufprall mit ${speed.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km/s nach ${formatDuration(this.time)}. Die Bahn führte näher an die Erde heran, als Erd- und Mondradius zusammen (${Math.round((info.earthRadius + info.moonRadius) / 1000).toLocaleString('de-DE')} km). In Wirklichkeit hätten die Gezeitenkräfte den Mond schon an der Roche-Grenze zerrissen.`,
           );
         } else if (pair.has(sun)) {
           this.raise(
@@ -328,7 +328,7 @@ export class Simulation {
           this.raise(
             'collision',
             `Zusammenstoß: ${sys.meta[heavy]!.name} und ${sys.meta[light]!.name}`,
-            `Nach ${formatDuration(this.time)} mit ${speed.toFixed(1)} km/s. Die Körper wurden zu einem vereinigt (Impulserhaltung).`,
+            `Nach ${formatDuration(this.time)} mit ${speed.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km/s. Die Körper wurden zu einem vereinigt (Impulserhaltung).`,
           );
         }
         return;
@@ -360,7 +360,7 @@ export class Simulation {
           'escape',
           'Der Mond hat die Erde verlassen',
           Number.isFinite(hill)
-            ? `Nach ${formatDuration(this.time)} ist der Mond ${(d / hill).toFixed(1)} Hill-Radien entfernt. Dort überwiegt die Anziehung der Sonne – er umkreist jetzt die Sonne statt der Erde.`
+            ? `Nach ${formatDuration(this.time)} ist der Mond ${(d / hill).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Hill-Radien entfernt. Dort überwiegt die Anziehung der Sonne – er umkreist jetzt die Sonne statt der Erde.`
             : `Nach ${formatDuration(this.time)}: Der Mond ist schneller als die Fluchtgeschwindigkeit und entfernt sich für immer.`,
         );
       }

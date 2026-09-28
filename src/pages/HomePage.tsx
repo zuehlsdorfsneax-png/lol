@@ -10,6 +10,7 @@ import { SpaceCanvas } from '../sim/SpaceCanvas';
 import { DEFAULT_VIEW } from '../sim/view';
 import { LinkButton } from '../ui/LinkButton';
 import { Icon, type IconName } from '../ui/Icon';
+import { CHALLENGE_COUNT, GOAL_COUNT } from '../rocket/counts';
 
 const HERO_VIEW = { ...DEFAULT_VIEW, frame: 'rotating' as const, labels: true, trailSpan: 0 };
 
@@ -185,7 +186,8 @@ export function HomePage() {
             <h3>Bau dir deinen Weg durchs Sonnensystem</h3>
             <p>
               Rakete bauen, an der Raumstation andocken, auf Mond, Mars und Europa landen – mit
-              echter Schwerkraft, Bordcomputer, 9 Herausforderungen und 36 Zielen.
+              echter Schwerkraft, Bordcomputer, {CHALLENGE_COUNT} Herausforderungen und {GOAL_COUNT}{' '}
+              Zielen.
             </p>
             <span class="btn primary">
               Jetzt spielen <Icon name="arrow" />
