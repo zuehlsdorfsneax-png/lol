@@ -8,6 +8,28 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## QA-Bericht: 126 Befunde (geprüfter Stand bee92f2)
+
+Ein ausführlicher QA-Bericht hat die ganze App noch einmal durchgesehen. Alle 126 Befunde sind
+bearbeitet; hier nach Bereichen zusammengefasst.
+
+| #   | Bereich (Befunde)                                          | Status | Lösung                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ---------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 97  | Spiellogik (RW-L01–L13)                                    | ✅     | „Kommt näher“/„Entfernt sich“ richtig herum; Heimkehr nur mit Kapsel; Unzerstörbar prallt an Gashüllen ab; Spielstand v3 mit Hitze, Drehung, RCS, besuchten Körpern und Regeln; getrennte Spielstände mit Uhrzeit; Hilfe-Pilot gibt bei zu wenig Δv auf; eindeutige Satelliten-Nummern; Impulserhaltung beim Abtrennen; Kreisbahnen ohne widersprüchliche Ap/Pe-Zeiten |
+| 98  | Schlupflöcher (RW-X01–X04)                                 | ✅     | Sandkasten-Satelliten getrennt und ohne Punkte; kein Speichern in Herausforderungen; „Butterweich“ erst nach über 100 m Flughöhe; Autopiloten gesperrt, wo die Herausforderung sie verbietet                                                                                                                                                                           |
+| 99  | Eingabe (RW-I01–I10)                                       | ✅     | Tasten ruhen bei offenen Dialogen; Hilfe und Ergebnis pausieren; Strg/Cmd/Alt bleiben dem Browser; Zurück-Taste öffnet das Menü; Nachfragen vor Neustart und Verlassen; Schubregler per Tastatur; Ausrichten erst nach kurzem Halten                                                                                                                                   |
+| 100 | Cockpit und Karte (RW-H01–H20)                             | ✅     | Meldungen am Rand, Kartenbeschriftungen weichen einander aus, „Start“-Knopf vor dem Abheben, T−/T+-Uhr, Stundensprünge nur auf sicherer Bahn, sinnvolle Bordcomputer-Pläne, Fallzeit mit Schwerkraft, Ton-Einstellung gespeichert, Hilfe mit Tastenkappen, näherer Zoom auf der Rampe                                                                                  |
+| 101 | Werft (RW-B01–B12)                                         | ✅     | Warnungen nach Bauteilart; Werte mit Sandkasten-Regeln; Hangar geprüft, mit Nachfrage und echter Rückmeldung; Rückgängig (Strg+Z); Vorlagen mit Δv und Stufen; anklickbare Booster; lesbare Reiter                                                                                                                                                                     |
+| 102 | Herausforderungen und Karriere (RW-C01–C07)                | ✅     | Stern-Bedingungen einzeln gezählt; bestes Ergebnis auf der Karte; ausgewogene Reihen; „Bremsen in letzter Sekunde“; Zielbeschreibungen sichtbar; Fortschritt zurücksetzen; Satelliten abschalten mit Nachfrage                                                                                                                                                         |
+| 103 | Handy, Tablet, Querformat (RW-M01–M11)                     | ✅     | Eigenes Querformat-Layout; Tablet ohne Überdeckung; Touch-Hilfe; Ziel-Auswahl auf dem Handy; Tipps ohne Tasten; größere Knöpfe; Bordcomputer oben; beschriftete Werkzeuge                                                                                                                                                                                              |
+| 104 | Texte (RW-T01–T09)                                         | ✅     | „in 181 Tagen“; „zum Mars“, „über dem Mars“; deutsche Dezimalkommas; richtige Anzahlen (per Test gesichert); Schwerkraft-Tabelle berechnet                                                                                                                                                                                                                             |
+| 105 | Lunas Sternenreise (KID-01–06)                             | ✅     | Lesbare Schrift auf dem Handy, Tastatursteuerung, Hilfe kostet einen Stern, stabile Spielschleife                                                                                                                                                                                                                                                                      |
+| 106 | Missionen und Quiz (MIS-01–07, QZ-01–05)                   | ✅     | L5 sichtbar, Einheiten, fester L1-Start; 27 Fragen zu allen Kapiteln, gemischte Antworten, Kapitel-Reihenfolge                                                                                                                                                                                                                                                         |
+| 107 | Simulator und Inhalte (SIM-01–06, CON-01–05)               | ✅     | Einheitliche Zahlen, beschriftete Linien, Quellen mit Links und ohne Dubletten, Seite „nicht gefunden“, Missionsnamen im Titel                                                                                                                                                                                                                                         |
+| 108 | App (APP-01–06)                                            | ✅     | Spiel sperrt den Hintergrund, Handy-Menü mit Esc und Fokus, Fortschritt wird Feld für Feld geprüft, Fehlergrenzen, weniger Arbeit pro Bild                                                                                                                                                                                                                             |
+| 109 | Veröffentlichung (DEP-01, 02, 04, 05)                      | ✅     | Seite ohne doppeltes HTML-Gerüst und ohne 404; Foto nur, wo Downloads erlaubt sind; Rückmeldung, wenn Vollbild gesperrt ist                                                                                                                                                                                                                                            |
+| 110 | Doppelter Sicherheitsabstand auf Handys mit Kerbe (DEP-03) | 🔶     | Geprüft: Leiste und Menü sind fest bzw. klebend positioniert und richten sich nach dem Bildschirm, nicht nach dem Rand der Seite – der Abstand wirkt nur einmal. Eine Kontrolle auf einem echten iPhone steht noch aus.                                                                                                                                                |
+
 ## Fehlersuche: Fallschirm, Zoom und mehr
 
 Gemeldet wurden zwei Fehler; eine anschließende Suche durch die ganze App (Klick-Durchlauf aller
@@ -180,7 +202,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **186 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **209 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,
@@ -190,6 +212,9 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
   Start, Countdown, Umlaufbahn, Bordcomputer, Karte mit Manöver, Nacht, Satelliten, Europa,
   Jupiter, Wiedereintritt, Absturz und Herausforderungen; nach dem Umbau der Oberfläche erneut auf
   1.400, 1.000 und 390 px: Werft, Vorlagen-Menü, Stufenmarken, Start, Bordcomputer, Karte,
-  Pause-Menü, Herausforderung mit Einweisung und Rückkehr, Karriere, Hell/Dunkel-Umschalter.
+  Pause-Menü, Herausforderung mit Einweisung und Rückkehr, Karriere, Hell/Dunkel-Umschalter; nach
+  dem QA-Bericht zusätzlich im Querformat (844 × 390), auf dem Tablet hochkant (820 × 1.180) und
+  mit Touch-Bedienung: Pause, Hilfe, Tastensperre, Nachfragen, Karte, Bordcomputer, Hangar,
+  Rückgängig, Herausforderungen, Karriere, Luna, Quiz, Quellen und unbekannte Adressen.
 - **Leistung:** Auch bei 5.000.000-fachem Zeitraffer mit offener Karte bleiben es 60 Bilder pro
   Sekunde (gemessen im Browser ohne Bildschirmausgabe).
