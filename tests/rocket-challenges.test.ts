@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LandingPilot, NodeExecutor } from '../src/rocket/autopilot';
+import { LandingPilot, NodeExecutor, OrbitPilot } from '../src/rocket/autopilot';
 import { CHALLENGES, challengeById, type Memo } from '../src/rocket/challenges';
 import { Flight } from '../src/rocket/flight';
 import { checkDesign } from '../src/rocket/parts';
@@ -60,6 +60,17 @@ describe('Herausforderungen', () => {
     })!;
     expect(r.success).toBe(true);
     expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+
+  it('Ab in die Umlaufbahn: der Hilfe-Pilot schafft mindestens einen Stern', () => {
+    const { f, memo } = start('orbit');
+    const pilot = new OrbitPilot();
+    const r = play('orbit', f, memo, () => {
+      pilot.update(f);
+      if (f.warpIndex < 2) f.setWarp(2);
+    })!;
+    expect(r.success, r.text).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(1);
   });
 
   it('Der Bordcomputer: Bahn auf 500 km anheben und rund machen', () => {

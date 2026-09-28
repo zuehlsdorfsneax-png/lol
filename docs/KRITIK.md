@@ -8,6 +8,42 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Raketenwerft 2.0 – Ausbau als Spieleentwickler
+
+Was jetzt über Spaceflight Simulator hinausgeht (dort gibt es nichts davon oder nur einen Teil):
+
+| Bereich      | Neu                                                                                                                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Steuerung    | Lageanzeige (Navball in 2D) mit SAS: prograd, retrograd, radial, Ziel, Manöver; Antippen richtet die Rakete aus; Feinsteuerung; Gamepad; Countdown mit Sprachausgabe                                |
+| Manöver      | Manöverknoten auf der Karte setzen und mit Anfassern ziehen, geplante Bahn in Rosa, Brenndauer, Zündzeitpunkt, automatische Ausführung                                                              |
+| Bordcomputer | Kreisbahn am Ap/Pe, Hohmann-Transfer zu Monden und Planeten im Startfenster, Kurskorrektur, Rendezvous und Geschwindigkeit angleichen, Rückflug vom Mond, Wiedereintritt, Lande-Autopilot           |
+| Zeit         | Zeitsprung (zu Ap, Pe, Manöver, Hill-Sphäre, Startfenster); stabile Bahnen laufen „auf Schienen“ (Kepler) – 181 Tage Warten in 4 Sekunden                                                           |
+| Welt         | Merkur und der Jupitermond Europa; Tag, Nacht und Dämmerung (die Sonne steht beim Start über der Rampe)                                                                                             |
+| Bauteile     | Sondenkern, Satellit, Hitzeschild (wirkt nur mit dem Boden voran), Tank XL, Mammut, Atom- und Ionentriebwerk; Profi-Teile werden mit Punkten freigeschaltet                                         |
+| Satelliten   | Aussetzen mit N, sie bleiben auf ihrer Kepler-Bahn – auch in späteren Flügen; Liste in der Missionskontrolle                                                                                        |
+| Inhalte      | 9 Herausforderungen mit bis zu 3 Sternen (Flugschule, Profi, Meister), 36 Ziele, 7 Ränge, 7 Lackierungen, Flugbericht nach jeder Landung                                                            |
+| Grafik       | Wolken, Bäume, Felsen, Startanlage mit Halle und Tanks, Mondbasis, Rauchspur und Startwolke, Explosion mit fliegenden Teilen, Blitz und Wackeln, Plasmahülle, Sonnenlicht und Glühen auf der Rakete |
+| Ton          | Triebwerk, Fahrtwind, RCS-Zischen, Warnton beim Landen, Fallschirm, Andockklammern, Fanfare                                                                                                         |
+
+Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
+
+| #   | Befund                                                                                                      | Status | Lösung                                                                                             |
+| --- | ----------------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------- |
+| 50  | Warten auf ein Marsfenster in niedriger Bahn lief höchstens mit 500×: stundenlang echte Zeit                | ✅     | Stabile Bahnen „auf Schienen“ (Kepler); Aufprallwarnung rechnet mit der Bahn statt mit freiem Fall |
+| 51  | Im hohen Zeitraffer raste die Rakete in einem Bild durch die ganze Hill-Sphäre des Mars                     | ✅     | Zeitraffer bremst vor Hill-Sphären und vor dem tiefsten Punkt eines Vorbeiflugs                    |
+| 52  | Lange Brennphasen verfehlten das Ziel (fester Schubvektor verliert Energie)                                 | ✅     | Autopilot folgt der Flugrichtung und brennt bis zur geplanten Bahnenergie                          |
+| 53  | Kurskorrekturen von 0,7 m/s wurden auf 0,2 m/s genau ausgeführt – 1.000 km daneben                          | ✅     | Genauigkeit passt sich an (bis 0,004 m/s)                                                          |
+| 54  | Lande-Autopilot wollte auf Phobos statt auf dem Mars landen (Phobos war gerade „näher“)                     | ✅     | Gelandet wird auf dem Bezugskörper                                                                 |
+| 55  | Marsboden aus der Nähe weiß (Polkappe an der Bildschirmkante statt am Pol)                                  | ✅     | Polkappen sitzen an den Polen; aus der Nähe nur Bodenfarbe                                         |
+| 56  | Explosionsrauch füllte beim Absturz aus der Nähe den ganzen Bildschirm; auf dem Mond gab es Rauch ohne Luft | ✅     | Größe begrenzt, ohne Luft Staub und Funken statt Rauch                                             |
+| 57  | In Herausforderungen erschienen „+10 Punkte“-Meldungen, obwohl Ziele dort nicht zählen                      | ✅     | Dort ausgeblendet, im Sandkasten als „(Sandkasten)“ markiert                                       |
+| 58  | Explosionsblitz blieb in der Ergebnisanzeige stehen                                                         | ✅     | Blitz und Wackeln klingen auch in der Pause ab                                                     |
+| 59  | Obere Leiste brach bei 1.040 px Spielfeldbreite um und verdeckte die Flugdaten                              | ✅     | Anordnung nach Breite des Spielfelds (Container Queries), seltene Knöpfe im Menü „⋯“               |
+| 60  | Bordcomputer verdeckte auf dem Tablet fast die ganze Karte                                                  | ✅     | Eigene Spalte rechts, auf dem Handy als Leiste von unten                                           |
+| 61  | Zeit bis Ap/Pe ließ die Werte über den Rand der Anzeige laufen                                              | ✅     | Kurzform („12:30“, „5 h“, „3 T“)                                                                   |
+| 62  | Mondfenster wurde in Herausforderungen ohne Mond angezeigt                                                  | ✅     | Nur mit passendem Ziel                                                                             |
+| 63  | Gebäude und Tanks leuchteten nachts hell wie am Tag                                                         | ✅     | Nachts abgedunkelt                                                                                 |
+
 ## Raketenwerft – Spielumfang (Vergleich mit Spaceflight Simulator)
 
 | #   | Befund                                                                | Status | Lösung                                                                                                                             |
@@ -79,20 +115,24 @@ hier – mit dem, was daraus geworden ist.
 
 ## Bewusste Entscheidungen und Grenzen
 
-| #   | Befund                                                                                          | Status | Begründung                                                                                                                                                                             |
-| --- | ----------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 45  | Windows warnt beim ersten Start der EXE („unbekannter Herausgeber“)                             | ⛔     | Eine Signatur, der Windows vertraut, gibt es nur mit einem gekauften Zertifikat, das auf eine geprüfte Person oder Firma ausgestellt wird. Die Download-Seite erklärt die zwei Klicks. |
-| 46  | Die Welt ist verkleinert (1 : 10,6)                                                             | 🔶     | Sonst dauert ein Flug zum Mars Monate. Schwerkraft an der Oberfläche und alle Verhältnisse stimmen.                                                                                    |
-| 47  | Alles läuft in einer Ebene (2D), die Erde dreht sich nicht                                      | 🔶     | Wie in Spaceflight Simulator; übersichtlicher und für Jüngere verständlich.                                                                                                            |
-| 48  | Bauteile werden gestapelt statt frei positioniert; keine Verkleidungen, Solarpaneele oder Rover | 🔶     | Ein Stapel mit Stufen und Seitenboostern deckt die Physik ab und ist auf dem Handy bedienbar. Frei platzierbare Teile, Astronauten und Rover wären ein eigenes Projekt.                |
-| 49  | Spielfeld (Zeichenfläche) für Screenreader nur über die Textanzeigen erfassbar                  | 🔶     | Alle Werte (Höhe, Tempo, Bahn, Ziel, Tipps) stehen als Text daneben; die Grafik selbst lässt sich nicht sinnvoll vorlesen.                                                             |
+| #   | Befund                                                                                         | Status | Begründung                                                                                                                                                                             |
+| --- | ---------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 45  | Windows warnt beim ersten Start der EXE („unbekannter Herausgeber“)                            | ⛔     | Eine Signatur, der Windows vertraut, gibt es nur mit einem gekauften Zertifikat, das auf eine geprüfte Person oder Firma ausgestellt wird. Die Download-Seite erklärt die zwei Klicks. |
+| 46  | Die Welt ist verkleinert (1 : 10,6)                                                            | 🔶     | Sonst dauert ein Flug zum Mars Monate. Schwerkraft an der Oberfläche und alle Verhältnisse stimmen.                                                                                    |
+| 47  | Alles läuft in einer Ebene (2D), die Erde dreht sich nicht                                     | 🔶     | Wie in Spaceflight Simulator; übersichtlicher und für Jüngere verständlich.                                                                                                            |
+| 48  | Bauteile werden gestapelt statt frei positioniert; keine Verkleidungen, Rover oder Astronauten | 🔶     | Ein Stapel mit Stufen und Seitenboostern deckt die Physik ab und ist auf dem Handy bedienbar. Frei platzierbare Teile, Astronauten und Rover wären ein eigenes Projekt.                |
+| 49  | Spielfeld (Zeichenfläche) für Screenreader nur über die Textanzeigen erfassbar                 | 🔶     | Alle Werte (Höhe, Tempo, Bahn, Ziel, Tipps) stehen als Text daneben; die Grafik selbst lässt sich nicht sinnvoll vorlesen.                                                             |
 
 ## Wie geprüft wurde
 
-- **149 automatische Tests**, darunter komplette Flüge: Mondmission mit Landung und Heimkehr,
-  Marsmission mit Transfer, Einschwenken, Fallschirm und Landung, Andocken und Tanken, Hitze,
-  Fallschirm, Spielstand.
-- **Browser-Durchlauf** aller 21 Seiten auf PC und Handy (hell und dunkel) ohne Fehlermeldung und
-  ohne seitliches Scrollen.
-- **Leistung:** Auch bei 5.000.000-fachem Zeitraffer mit offener Sonnensystem-Karte bleiben es
-  60 Bilder pro Sekunde.
+- **169 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+  der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
+  Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
+  Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,
+  sieben davon mit Autopilot gelöst).
+- **Browser-Durchlauf** aller Seiten auf PC und Handy (hell und dunkel) ohne Fehlermeldung und
+  ohne seitliches Scrollen; die Raketenwerft zusätzlich auf 1.400, 820 und 390 px Breite mit
+  Start, Countdown, Umlaufbahn, Bordcomputer, Karte mit Manöver, Nacht, Satelliten, Europa,
+  Jupiter, Wiedereintritt, Absturz und Herausforderungen.
+- **Leistung:** Auch bei 5.000.000-fachem Zeitraffer mit offener Karte bleiben es 60 Bilder pro
+  Sekunde (gemessen im Browser ohne Bildschirmausgabe).

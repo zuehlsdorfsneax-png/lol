@@ -1154,7 +1154,8 @@ export function FlightScreen({
   const speed = Math.hypot(sf.vx, sf.vy);
   const vertical = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
   const fuel = f.fuelCapacity > 0 ? f.active.fuel / f.fuelCapacity : 0;
-  const win = transferInfo(f);
+  // In Herausforderungen nur, wenn ein Ziel gewählt ist – sonst lenkt das Fenster ab.
+  const win = challenge && !f.target ? null : transferInfo(f);
   const ti = f.targetInfo();
   const site = f.siteInfo();
   const landing = landingState(f);
@@ -1792,6 +1793,8 @@ export function FlightScreen({
           onStart={() => {
             audio.current.unlock();
             setBriefing(false);
+            // Falls die Seite inzwischen verrutscht ist: Spielfeld wieder ganz ins Bild.
+            box.current?.scrollIntoView({ block: 'start' });
           }}
           onExit={onExit}
         />
