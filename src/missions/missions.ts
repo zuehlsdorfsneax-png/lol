@@ -89,16 +89,16 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 2,
     difficulty: 1,
     briefing:
-      'Ein frisch eingefangener Mond steht 384 400 km von der Erde entfernt – die Sonne bleibt vorerst außen vor. Mit welcher Geschwindigkeit muss er starten, damit er die Erde ein Jahr lang umkreist, ohne abzustürzen oder davonzufliegen?',
+      'Ein frisch eingefangener Mond steht 384.400 km von der Erde entfernt – die Sonne bleibt vorerst außen vor. Mit welcher Geschwindigkeit muss er starten, damit er die Erde ein Jahr lang umkreist, ohne abzustürzen oder davonzufliegen?',
     goal: 'Ein Jahr in der Umlaufbahn bleiben – je kreisförmiger, desto besser.',
     control: {
       key: 'moonSpeed',
-      label: 'Startgeschwindigkeit (× v_Kreis)',
+      label: 'Startgeschwindigkeit (× vₖ, Kreisbahntempo)',
       min: 0.05,
       max: 1.6,
       step: 0.005,
       initial: 0.15,
-      format: (v) => `${de(v, 3)} × v_K`,
+      format: (v) => `${de(v, 3)} × vₖ`,
     },
     base: { ...BASE, sunMass: 0 },
     years: 1,
@@ -107,7 +107,7 @@ export const MISSIONS: readonly Mission[] = [
     starRules: ['Ein Jahr überstanden', 'Exzentrizität unter 0,1', 'Fast ein Kreis: e < 0,02'],
     hint: 'Auf einer Kreisbahn ist die Anziehung genau die nötige Zentripetalkraft: v = √(GM/r).',
     explanation:
-      'Bei v = 1 · v_K ist die Gravitation genau die Zentripetalkraft – die Bahn ist ein Kreis. Langsamer wird sie eine Ellipse mit dem Start als erdfernstem Punkt, schneller eine Ellipse mit dem Start als erdnächstem Punkt. Ab √2 · v_K ist der Mond ungebunden.',
+      'Bei v = 1 · vₖ ist die Gravitation genau die Zentripetalkraft – die Bahn ist ein Kreis. Langsamer wird sie eine Ellipse mit dem Start als erdfernstem Punkt, schneller eine Ellipse mit dem Start als erdnächstem Punkt. Ab √2 · vₖ ist der Mond ungebunden.',
     view: { frame: 'earth', radius: 7e8 },
   },
   {
@@ -121,20 +121,20 @@ export const MISSIONS: readonly Mission[] = [
     goal: 'Der Mond soll abstürzen – mit möglichst wenig Abbremsung.',
     control: {
       key: 'moonSpeed',
-      label: 'Startgeschwindigkeit (× v_Kreis)',
+      label: 'Startgeschwindigkeit (× vₖ, Kreisbahntempo)',
       min: 0,
       max: 1,
       step: 0.0025,
       initial: 0.5,
-      format: (v) => `${de(v, 4)} × v_K`,
+      format: (v) => `${de(v, 4)} × vₖ`,
     },
     base: BASE,
     years: 2,
     score: (r, v) => stars(r.outcome === 'crash', [v >= 0.18, v >= 0.2]),
-    starRules: ['Absturz', 'Absturz mit v ≥ 0,18 · v_K', 'Absturz mit v ≥ 0,20 · v_K'],
-    hint: 'Der erdnächste Punkt liegt bei r_P = r₀ · f² / (2 − f²). Er muss kleiner als Erd- plus Mondradius (8 108 km) sein.',
+    starRules: ['Absturz', 'Absturz mit v ≥ 0,18 · vₖ', 'Absturz mit v ≥ 0,20 · vₖ'],
+    hint: 'Der erdnächste Punkt liegt bei rₚ = r₀ · f² / (2 − f²). Er muss kleiner als Erd- plus Mondradius (8.108 km) sein.',
     explanation:
-      'Aus r_P = r₀ · f²/(2 − f²) < 8 108 km folgt f < 0,203. Der Mond müsste also rund 80 % seiner Geschwindigkeit verlieren. Unterhalb von f ≈ 0,30 würde er schon an der Roche-Grenze zerrissen.',
+      'Aus rₚ = r₀ · f²/(2 − f²) < 8.108 km folgt f < 0,203. Der Mond müsste also rund 80 % seiner Geschwindigkeit verlieren. Unterhalb von f ≈ 0,30 würde er schon an der Roche-Grenze zerrissen.',
     view: { frame: 'earth', radius: 5e8 },
   },
   {
@@ -148,20 +148,20 @@ export const MISSIONS: readonly Mission[] = [
     goal: 'Der Mond soll innerhalb von fünf Jahren entkommen – mit möglichst kleiner Geschwindigkeit.',
     control: {
       key: 'moonSpeed',
-      label: 'Startgeschwindigkeit (× v_Kreis)',
+      label: 'Startgeschwindigkeit (× vₖ, Kreisbahntempo)',
       min: 1,
       max: 1.8,
       step: 0.0025,
       initial: 1.1,
-      format: (v) => `${de(v, 4)} × v_K`,
+      format: (v) => `${de(v, 4)} × vₖ`,
     },
     base: BASE,
     years: 5,
     score: (r, v) => stars(r.outcome === 'escape' || r.outcome === 'sun', [v <= 1.3, v <= 1.22]),
-    starRules: ['Entkommen', 'Entkommen mit v ≤ 1,30 · v_K', 'Entkommen mit v ≤ 1,22 · v_K'],
+    starRules: ['Entkommen', 'Entkommen mit v ≤ 1,30 · vₖ', 'Entkommen mit v ≤ 1,22 · vₖ'],
     hint: 'Der Mond muss nicht unendlich weit fliegen – es genügt, wenn sein erdfernster Punkt jenseits der Stabilitätsgrenze (≈ 0,48 Hill-Radien) liegt.',
     explanation:
-      'Schon ab etwa 1,19 · v_K reicht die Ellipse bis 0,62 Hill-Radien. Dort öffnet sich das Tor bei L1 oder L2, und die Gezeitenkraft der Sonne zieht den Mond aus der Erdumgebung – 16 % weniger als die klassische Fluchtgeschwindigkeit.',
+      'Schon ab etwa 1,19 · vₖ reicht die Ellipse bis 0,62 Hill-Radien. Dort öffnet sich das Tor bei L1 oder L2, und die Gezeitenkraft der Sonne zieht den Mond aus der Erdumgebung – 16 % weniger als die klassische Fluchtgeschwindigkeit.',
     view: { frame: 'rotating', radius: 3.5e9 },
   },
   {
@@ -225,7 +225,7 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 8,
     difficulty: 3,
     briefing:
-      'Stell dir vor, die Erde wäre auf einer Kreisbahn näher an der Sonne entstanden. Wie nah darf sie der Sonne kommen, ohne ihren Mond (384 400 km) zu verlieren?',
+      'Stell dir vor, die Erde wäre auf einer Kreisbahn näher an der Sonne entstanden. Wie nah darf sie der Sonne kommen, ohne ihren Mond (384.400 km) zu verlieren?',
     goal: 'Kleinstmöglicher Abstand Erde–Sonne, Mond 30 Jahre stabil.',
     control: {
       key: 'earthOrbit',
@@ -242,7 +242,7 @@ export const MISSIONS: readonly Mission[] = [
     starRules: ['Stabil bei ≤ 0,80 AE', 'Stabil bei ≤ 0,62 AE', 'Stabil bei ≤ 0,54 AE'],
     hint: 'Der Hill-Radius wächst linear mit dem Abstand zur Sonne: Hill-Radius = a · ∛(m/3M).',
     explanation:
-      'Die Grenze liegt bei etwa 0,52 AE: Dort ist der Hill-Radius auf 790 000 km geschrumpft, und der Mond steht bei 0,48 Hill-Radien. Auf der Venusbahn (0,72 AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39 AE) nicht mehr.',
+      'Die Grenze liegt bei etwa 0,52 AE: Dort ist der Hill-Radius auf 790.000 km geschrumpft, und der Mond steht bei 0,48 Hill-Radien. Auf der Venusbahn (0,72 AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39 AE) nicht mehr.',
     view: { frame: 'rotating', radius: 1.6e9 },
   },
   {
@@ -297,12 +297,12 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 4,
     difficulty: 2,
     briefing:
-      'Über 10 000 Asteroiden begleiten Jupiter an den Punkten L4 und L5. Setze einen eigenen Trojaner ins System: Klicke nahe L4 und ziehe, um ihm eine Startgeschwindigkeit zu geben. Er muss 50 Jupiterumläufe (593 Jahre) überstehen, ohne Jupiter nahe zu kommen.',
+      'Über 10.000 Asteroiden begleiten Jupiter an den Punkten L4 und L5. Setze einen eigenen Trojaner ins System: Klicke nahe L4 und ziehe, um ihm eine Startgeschwindigkeit zu geben. Er muss 50 Jupiterumläufe (593 Jahre) überstehen, ohne Jupiter nahe zu kommen.',
     goal: 'Ein Asteroid, der 50 Umläufe lang stabil bleibt – je weiter von L4 gestartet, desto mehr Sterne.',
     starRules: [
       '50 Umläufe stabil',
-      'Start mehr als 0,05 von L4 entfernt',
-      'Start mehr als 0,12 von L4 entfernt',
+      'Start mehr als 0,05 Jupiter-Abstände (0,26 AE) von L4 entfernt',
+      'Start mehr als 0,12 Jupiter-Abstände (0,62 AE) von L4 entfernt',
     ],
     explanation:
       'L4 ist ein Maximum des effektiven Potentials, doch die Coriolis-Kraft lenkt wegrollende Körper auf „Kaulquappen“-Bahnen um den Punkt. Bei größerer Auslenkung entstehen Hufeisenbahnen, die L4, L3 und L5 umfassen. Stabil ist das nur, weil μ(Jupiter) = 0,00095 unter der Routh-Grenze 0,0385 liegt.',

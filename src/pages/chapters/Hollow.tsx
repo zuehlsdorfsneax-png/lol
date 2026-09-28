@@ -84,7 +84,7 @@ export function Hollow() {
           Marc Norman muss ein Gesteinskörper mindestens einen Radius von etwa 300 km besitzen,
           damit seine Gravitation ihn zu einer Kugel formt. Oberhalb dieser Grenze können große
           Abweichungen von der massiven Kugelform nicht dauerhaft bestehen. Der Mond liegt mit einem
-          Radius von etwa 1 737 km weit darüber. Ein Hohlraum von mehreren hundert oder tausend
+          Radius von etwa 1.737 km weit darüber. Ein Hohlraum von mehreren hundert oder tausend
           Kilometern müsste unter dem Gewicht der außenliegenden Gesteinsschicht zusammenstürzen.
           Aus natürlichem Gestein könnte ein solcher Mond also nicht bestehen; es bräuchte ein
           unbekanntes, extrem belastbares Material, für das es keinerlei Belege gibt (siehe auch die
@@ -95,7 +95,7 @@ export function Hollow() {
           die Anziehung einer kugelsymmetrischen Masse auf einen äußeren Körper genauso, als wäre
           die gesamte Masse im Mittelpunkt vereint. Die Masse des Mondes lässt sich deshalb
           unabhängig von seinem inneren Aufbau allein aus seiner Gravitationswirkung bestimmen. Ein
-          Weg führt über das Erde-Mond-Baryzentrum, das etwa 4 700 km vom Erdmittelpunkt entfernt
+          Weg führt über das Erde-Mond-Baryzentrum, das etwa 4.700 km vom Erdmittelpunkt entfernt
           noch im Erdinneren liegt. Ein zweiter Weg führt über die Umlaufzeit von Raumfahrzeugen,
           die den Mond umkreisen – etwa die Apollo-Kommandokapseln, die ihn in etwa 110 km Höhe in
           rund zwei Stunden umrundeten. Mit dem dritten Keplerschen Gesetz folgt:
@@ -131,7 +131,7 @@ export function Hollow() {
           Zunächst haben wir das reale Erde-Mond-System simuliert: Erdmasse{' '}
           <Tex>{String.raw`5{,}97\cdot10^{24}\ \text{kg}`}</Tex>, Mondmasse{' '}
           <Tex>{String.raw`7{,}35\cdot10^{22}\ \text{kg}`}</Tex>, Abstand 384 400 km. Es ergaben
-          sich ein Baryzentrum bei etwa 4 670 km vom Erdmittelpunkt und eine Umlaufzeit von 27,3
+          sich ein Baryzentrum bei etwa 4.670 km vom Erdmittelpunkt und eine Umlaufzeit von 27,3
           Tagen – beides stimmt mit den tatsächlichen Werten überein und zeigt, dass unser Programm
           richtig rechnet.
         </p>
@@ -150,8 +150,8 @@ export function Hollow() {
         </p>
         <p>
           Diese Massen haben wir in unser Programm eingesetzt. Da der Mond nun leichter ist, rückt
-          das Baryzentrum näher an den Erdmittelpunkt: bei 10 % Schalenstärke auf etwa 1 320 km, bei
-          20 % auf etwa 2 370 km. Gemessen sind aber 4 670 km – ein hohler Mond passt also nicht zu
+          das Baryzentrum näher an den Erdmittelpunkt: bei 10 % Schalenstärke auf etwa 1.320 km, bei
+          20 % auf etwa 2.370 km. Gemessen sind aber 4.670 km – ein hohler Mond passt also nicht zu
           den Beobachtungen. Die simulierte Umlaufzeit veränderte sich dagegen kaum: Bei 10 %
           Schalenstärke verlängerte sie sich nur um etwa 3 Stunden auf rund 27,4 Tage. Das liegt
           daran, dass die Erde etwa 81-mal so schwer ist wie der Mond und die Umlaufzeit fast nur
@@ -161,7 +161,7 @@ export function Hollow() {
 
       <Figure
         n="7.2"
-        caption="Unser Experiment zum Nachvollziehen: Masse, Baryzentrum und Umlaufzeit eines hohlen Mondes aus Mondgestein. Nur ein massiver Mond erreicht das gemessene Baryzentrum von 4 670 km."
+        caption="Unser Experiment zum Nachvollziehen: Masse, Baryzentrum und Umlaufzeit eines hohlen Mondes aus Mondgestein. Nur ein massiver Mond erreicht das gemessene Baryzentrum von 4.670 km."
       >
         <HollowBarycenter />
       </Figure>
@@ -178,7 +178,7 @@ export function Hollow() {
           Laut NASA hat der Mond eine durchschnittliche Dichte von 3,344 g/cm³, die Erde dagegen von
           5,514 g/cm³. Vertreter der Hohle-Mond-These führen das gern als Beweis an, es lässt sich
           aber durch den Aufbau der Körper leicht erklären: Im Inneren der Erde befindet sich ein
-          Eisenkern mit einem Radius von etwa 3 485 km, während der Mond nur einen sehr kleinen
+          Eisenkern mit einem Radius von etwa 3.485 km, während der Mond nur einen sehr kleinen
           Eisenkern mit etwa 250 km Radius besitzt. Nach der heute anerkannten Kollisionstheorie
           entstand der Mond vor 4,5 Milliarden Jahren vor allem aus eisenarmem Mantelgestein. Die
           Dichte des Mondgesteins liegt zwischen 3,27 und 3,46 g/cm³ – sie passt also genau zur
@@ -214,7 +214,7 @@ export function Hollow() {
         <SectionTitle n="7.4">Warum die Theorie mit den Beobachtungen unvereinbar ist</SectionTitle>
         <p>
           Auch das angebliche „Läuten“ des Mondes ist erklärt. Zwischen 1969 und 1977 zeichneten die
-          Apollo-Seismometer rund 12 000 Mondbeben und Einschläge auf. Die obersten Kilometer der
+          Apollo-Seismometer rund 12.000 Mondbeben und Einschläge auf. Die obersten Kilometer der
           Mondkruste sind durch Milliarden Jahre voller Einschläge zerrüttet und vollkommen trocken.
           Die Wellen werden an unzähligen Rissen gestreut, aber kaum gedämpft – auf der Erde
           schluckt das Wasser in den Gesteinsporen diese Energie. Eine Neuauswertung der Daten
@@ -349,7 +349,7 @@ function HollowBarycenter() {
         yLabel="Abstand Baryzentrum – Erdmitte (km)"
         xFormat={(v) => fmt(v)}
         yFormat={(v) => fmt(v)}
-        refLines={[{ y: REAL_BARY / KM, label: 'gemessen: 4 670 km' }]}
+        refLines={[{ y: REAL_BARY / KM, label: 'gemessen: 4.670 km' }]}
         yMin={0}
         height={210}
       />

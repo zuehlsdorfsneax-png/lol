@@ -473,6 +473,9 @@ svg {
 
 .scrim {
   display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 @media (max-width: 980px) {
@@ -2010,13 +2013,24 @@ details.section .section-body {
 }
 
 .kid-fact {
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   font-size: 0.98rem;
   line-height: 1.5;
   background: var(--accent-soft);
   border-radius: 12px;
   padding: 10px 12px;
   text-align: left;
+}
+
+/* Auf großen Bildschirmen dunkelt das Ergebnis das Spielfeld ab – Luna lugt nicht mehr hervor. */
+@media (min-width: 641px) {
+  .kid-stage {
+    overflow: hidden;
+    border-radius: 18px;
+  }
+  .kid-result {
+    box-shadow: 0 0 0 100vmax rgb(6 10 30 / 55%);
+  }
 }
 
 @media (max-width: 640px) {
@@ -2414,4 +2428,33 @@ kbd {
 
 .error-box p {
   margin: 0;
+}
+
+/* Quiz: Die Frage nutzt die ganze Kartenbreite. */
+.quiz-question {
+  max-width: none;
+  font-size: 1.3rem;
+}
+
+.total-star {
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--accent);
+}
+
+/* Kurzer Hinweis über einem Werkzeug (z. B. unbekannte Voreinstellung) */
+.notice {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  font-size: 0.92rem;
+}
+
+/* Kompakte Datentabelle: passt auch neben einer Seitenleiste ganz ins Bild. */
+table.data.compact th,
+table.data.compact td {
+  padding: 6px 8px;
+  font-size: 0.84rem;
 }

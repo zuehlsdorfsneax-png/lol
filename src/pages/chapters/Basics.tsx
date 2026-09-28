@@ -199,7 +199,7 @@ export function Basics() {
           Das Baryzentrum zweier Körper liegt auf ihrer Verbindungslinie im Abstand
         </p>
         <Equation tex={String.raw`d_B = r\cdot\frac{m_2}{m_1+m_2}`} n="2.5" />
-        <p>vom Mittelpunkt des schwereren Körpers. Für Erde und Mond sind das etwa 4 670 km.</p>
+        <p>vom Mittelpunkt des schwereren Körpers. Für Erde und Mond sind das etwa 4.670 km.</p>
       </div>
 
       <Figure

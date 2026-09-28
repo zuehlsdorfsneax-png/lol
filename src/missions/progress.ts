@@ -32,7 +32,7 @@ export interface Progress {
   rocketSandbox: unknown;
 }
 
-export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
+const DEFAULTS: Progress = {
   stars: {},
   best: {},
   quizBest: 0,
@@ -45,7 +45,51 @@ export const progressStore = new SaveStore<Progress>('orbitlabor/fortschritt', {
   rocketSats: [],
   rocketSeen: [],
   rocketSandbox: null,
-});
+};
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** Nur Einträge eines Objekts behalten, deren Wert den Test besteht. */
+function entries<V>(v: unknown, ok: (x: unknown) => x is V): Record<string, V> {
+  if (!isObject(v)) return {};
+  return Object.fromEntries(Object.entries(v).filter(([, x]) => ok(x))) as Record<string, V>;
+}
+
+const isNumber = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+const isString = (x: unknown): x is string => typeof x === 'string';
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isString) : []);
+
+/**
+ * Gespeicherten Fortschritt Feld für Feld prüfen: Ein kaputtes Feld (von Hand geändert, alte
+ * Version) fällt auf die Voreinstellung zurück, statt eine Seite abstürzen zu lassen.
+ */
+export function sanitizeProgress(p: Progress): Progress {
+  return {
+    stars: entries(p.stars, isNumber),
+    best: entries(p.best, isString),
+    quizBest: isNumber(p.quizBest) ? p.quizBest : 0,
+    kids: entries(p.kids, isNumber),
+    rocketDesign: Array.isArray(p.rocketDesign) ? strings(p.rocketDesign) : null,
+    rocketGoals: strings(p.rocketGoals),
+    rocketHangar: entries(p.rocketHangar, (x): x is string[] => Array.isArray(x)),
+    rocketPaint: isString(p.rocketPaint) ? p.rocketPaint : DEFAULTS.rocketPaint,
+    rocketChallenges: entries(
+      p.rocketChallenges,
+      (x): x is ChallengeRecord => isObject(x) && isNumber(x.stars) && isString(x.text),
+    ),
+    rocketSats: Array.isArray(p.rocketSats) ? p.rocketSats : [],
+    rocketSeen: strings(p.rocketSeen),
+    rocketSandbox: p.rocketSandbox ?? null,
+  };
+}
+
+export const progressStore = new SaveStore<Progress>(
+  'orbitlabor/fortschritt',
+  DEFAULTS,
+  undefined,
+  sanitizeProgress,
+);
 
 export function recordStars(id: string, stars: number, best: string): Progress {
   return progressStore.update((p) => {

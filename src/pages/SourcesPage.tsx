@@ -39,12 +39,12 @@ const FORMULAS: { title: string; tex: string; note: string }[] = [
   {
     title: 'Stabilitätsgrenze (Domingos et al. 2006)',
     tex: String.raw`a_\text{krit} = 0{,}4895\,(1-1{,}0305\,e_P-0{,}2738\,e_M)\,r_H`,
-    note: 'retrograd: 0,9309 (1 − 1,0764 e_P − 0,9812 e_M) Hill-Radien',
+    note: 'retrograd: 0,9309 (1 − 1,0764 eₚ − 0,9812 eₘ) Hill-Radien',
   },
   {
     title: 'Roche-Grenze (flüssig / starr)',
     tex: String.raw`d \approx 2{,}44\,R\,\sqrt[3]{\frac{\rho_P}{\rho_M}}\quad /\quad 1{,}26\,R\,\sqrt[3]{\frac{\rho_P}{\rho_M}}`,
-    note: 'Erde–Mond: 18 365 km / 9 483 km',
+    note: 'Erde–Mond: 18.365 km / 9.483 km',
   },
   {
     title: 'Effektives Potential (CR3BP)',
@@ -110,7 +110,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
       'Springer Nature Link: Aufbau und Stoffbestand des Mondes. https://link.springer.com/chapter/10.1007/978-3-642-87508-3_32(Zugriff: 27.08.2026)',
       'DLR: Der Mond / Die Entstehung des Mondes. https://solarsystem.dlr.de/mond/62-die-entstehung-des-mondes(Zugriff: 27.08.2026)',
       'der-mond.de: Der Mond – Basiswissen, Aufbau und Merkmale. https://www.der-mond.de/basiswissen/der-mond-basiswissen-aufbau-und-merkmale(Zugriff: 27.08.2026)',
-      'SpaceDaily: Erklärung des „Klingelns" des Mondes nach Apollo-12-Einschlag. https://spacedaily.com/?p=764637(Zugriff: 27.08.2026)',
+      'SpaceDaily: Erklärung des „Klingelns“ des Mondes nach Apollo-12-Einschlag. https://spacedaily.com/?p=764637(Zugriff: 27.08.2026)',
       'Popular Science: Does the Moon Sound Like a Bell? https://www.popsci.com/does-moon-sound-like-bell(Zugriff: 27.08.2026)',
       'Wikipedia (englisch): Hollow Moon. https://en.wikipedia.org/wiki/Hollow_Moon(Zugriff: 27.08.2026)',
       "Physics World: GRAIL mission peers beneath the Moon's fractured surface. https://physicsworld.com/a/grail-mission-peers-beneath-the-moons-fractured-surface/(Zugriff: 27.08.2026)",
@@ -123,13 +123,13 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     items: [
       'NASA: Moon Fact Sheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html',
       'NASA: Earth Fact Sheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html',
-      'Kiefer, W. S. et al. (2012): The density and porosity of lunar rocks. In: Geophysical Research Letters39. https://stars.library.ucf.edu/facultybib2010/2858',
+      'Kiefer, W. S. et al. (2012): The density and porosity of lunar rocks. In: Geophysical Research Letters, Bd. 39. https://stars.library.ucf.edu/facultybib2010/2858',
       'Williams, J. G. & Dickey, J. O.: Lunar Geophysics, Geodesy, and Dynamics (NASA ILRS). https://ilrs.gsfc.nasa.gov/docs/williams_lw13.pdf',
       'Weber, R. C.: Interior of the Moon (NASA NTRS). https://ntrs.nasa.gov/api/citations/20130013896/downloads/20130013896.pdf',
-      'Wieczorek, M. A. et al. (2013): The Crust of the Moon as Seen by GRAIL. In: Science339, S. 671–675. https://www.science.org/doi/10.1126/science.1231530',
+      'Wieczorek, M. A. et al. (2013): The Crust of the Moon as Seen by GRAIL. In: Science, Bd. 339, S. 671–675. https://www.science.org/doi/10.1126/science.1231530',
       'Weber, R. C. et al. (2011): Seismic Detection of the Lunar Core. In: Science. https://www.science.org/doi/10.1126/science.1199375',
       'Astronomy.com: NASA research team reveals the Moon has earthlike core. https://www.astronomy.com/science/nasa-research-team-reveals-the-moon-has-earthlike-core/',
-      "Phys.org: More evidence found showing the moon's inner core is solid, like Earth's (Briaud et al.,Nature2023). https://phys.org/news/2023-05-evidence-moon-core-solid-earth.html",
+      "Phys.org: More evidence found showing the moon's inner core is solid, like Earth's (Briaud et al., Nature 2023). https://phys.org/news/2023-05-evidence-moon-core-solid-earth.html",
     ],
   },
   {
@@ -139,7 +139,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
       'Latham, G. et al.: Seismology of the Moon and Implications on Internal Structure (Cambridge University Press). https://doi.org/10.1017/S1539299600000101',
       'University of Notre Dame: Rumblings on the moon could be problematic for lunar base. https://news.nd.edu/news/rumblings-on-the-moon-could-be-problematic-for-lunar-base/',
       'Universe Today (NASA-Artikel): Watch Out for Moonquakes. https://www.universetoday.com/articles/watch-out-for-moonquakes',
-      'SpaceDaily: Erklärung des „Klingelns" nach den Apollo-Einschlägen. https://spacedaily.com/?p=764637',
+      'SpaceDaily: Erklärung des „Klingelns“ nach den Apollo-Einschlägen. https://spacedaily.com/?p=764637',
       'NASA Science: Moonquakes. https://science.nasa.gov/moon/moonquakes/',
       'Museum of the Earth: Lunar seismometer. https://www.museumoftheearth.org/lunar-seismometer',
       'Wikipedia (englisch): Hollow Moon. https://en.wikipedia.org/wiki/Hollow_Moon',
@@ -190,10 +190,53 @@ const SOURCES: { group: string; items: string[] }[] = [
     items: [
       'NASA Goddard Space Flight Center: Moon Fact Sheet, Earth Fact Sheet, Sun Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet).',
       'CODATA 2018: Gravitationskonstante G = 6,67430 · 10⁻¹¹ m³ kg⁻¹ s⁻².',
-      'IAU 2012, Resolution B2: Astronomische Einheit 1 AE = 149 597 870 700 m.',
+      'IAU 2012, Resolution B2: Astronomische Einheit 1 AE = 149.597.870.700 m.',
     ],
   },
 ];
+
+/**
+ * Ein Quelleneintrag: Text, Adresse als Link und Zugriffsdatum mit Leerzeichen davor.
+ * Die Texte stammen aus der Arbeit; „…/(Zugriff: …)“ ohne Leerzeichen wird hier getrennt.
+ */
+function SourceItem({ text }: { text: string }) {
+  const m = /^(.*?)(https?:\/\/[^\s]+?)(\((?:Zugriff|zuletzt)[^)]*\))?\.?$/.exec(text);
+  if (!m) return <>{text}</>;
+  const [, before, url, access] = m;
+  return (
+    <>
+      {before}
+      <a href={url} target="_blank" rel="noreferrer">
+        {url}
+      </a>
+      {access ? ` ${access}` : ''}
+    </>
+  );
+}
+
+/** Jede Adresse nur einmal – spätere Nennungen derselben Quelle fallen weg. */
+function unique(
+  groups: { group: string; items: string[] }[],
+  before: { group: string; items: string[] }[] = [],
+): { group: string; items: string[] }[] {
+  // Gleiche Quelle = gleiche Autoren mit Jahr, sonst gleiche Adresse.
+  const keyOf = (i: string): string =>
+    /^([^:(]+\(\d{4}\))/.exec(i)?.[1]?.toLowerCase() ??
+    /https?:\/\/[^\s(]+/.exec(i)?.[0].replace(/[/.]+$/, '') ??
+    i;
+  const seen = new Set<string>(before.flatMap((g) => g.items.map(keyOf)));
+  return groups
+    .map((g) => ({
+      group: g.group,
+      items: g.items.filter((i) => {
+        const key = keyOf(i);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }),
+    }))
+    .filter((g) => g.items.length > 0);
+}
 
 export function SourcesPage() {
   return (
@@ -219,18 +262,22 @@ export function SourcesPage() {
             <h3>{g.group}</h3>
             <ul>
               {g.items.map((i) => (
-                <li key={i}>{i}</li>
+                <li key={i}>
+                  <SourceItem text={i} />
+                </li>
               ))}
             </ul>
           </section>
         ))}
         <SectionTitle n="B.3">Quellen der Seminararbeit</SectionTitle>
-        {OWN_SOURCES.map((g) => (
+        {unique(OWN_SOURCES, SOURCES).map((g) => (
           <section key={g.group} class="stack" style={{ gap: '8px' }}>
             <h3>{g.group}</h3>
             <ul class="source-list">
               {g.items.map((i) => (
-                <li key={i}>{i}</li>
+                <li key={i}>
+                  <SourceItem text={i} />
+                </li>
               ))}
             </ul>
           </section>

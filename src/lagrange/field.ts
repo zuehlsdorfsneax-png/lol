@@ -5,7 +5,13 @@ export interface LView {
   cx: number;
   cy: number;
   /** Halbe sichtbare Breite. */
+  /** Halbe Breite des sichtbaren Ausschnitts – bzw. halbe Höhe, falls die Fläche flacher ist. */
   half: number;
+}
+
+/** Pixel pro Einheit: Der Ausschnitt passt immer ganz hinein, auch in flache Flächen. */
+export function viewScale(view: LView, width: number, height: number): number {
+  return Math.min(width, height) / (2 * view.half);
 }
 
 /** 2Ω an einem Punkt (= Jacobi-Konstante eines ruhenden Teilchens). */
@@ -33,8 +39,8 @@ export function sampleGrid(
 ): Grid {
   const nx = Math.max(2, Math.ceil(width / cell) + 1);
   const ny = Math.max(2, Math.ceil(height / cell) + 1);
-  const scale = width / (2 * view.half);
-  const x0 = view.cx - view.half;
+  const scale = viewScale(view, width, height);
+  const x0 = view.cx - width / 2 / scale;
   const y0 = view.cy + height / 2 / scale;
   // Rasterabstand genau `cell` Pixel; das Raster reicht etwas über den Rand hinaus.
   const dx = cell / scale;

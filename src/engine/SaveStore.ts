@@ -12,6 +12,8 @@ export class SaveStore<T extends object> {
     private readonly key: string,
     private readonly defaults: T,
     storage?: Storage | null,
+    /** Prüft die geladenen Felder und ersetzt kaputte durch die Voreinstellung. */
+    private readonly sanitize?: (data: T) => T,
   ) {
     this.storage = storage === undefined ? getLocalStorage() : storage;
   }
@@ -24,7 +26,8 @@ export class SaveStore<T extends object> {
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
         return { ...this.defaults };
       }
-      return { ...this.defaults, ...(parsed as Partial<T>) };
+      const merged = { ...this.defaults, ...(parsed as Partial<T>) };
+      return this.sanitize ? this.sanitize(merged) : merged;
     } catch {
       return { ...this.defaults };
     }

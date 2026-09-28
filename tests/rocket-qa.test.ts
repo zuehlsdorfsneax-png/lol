@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { parseHash } from '../src/app/router';
+import { sanitizeProgress, type Progress } from '../src/missions/progress';
 import { OrbitPilot } from '../src/rocket/autopilot';
 import { CHALLENGES } from '../src/rocket/challenges';
 import { CHALLENGE_COUNT, GOAL_COUNT } from '../src/rocket/counts';
@@ -7,6 +9,7 @@ import { Flight, type Satellite } from '../src/rocket/flight';
 import { TEMPLATES, checkDesign, stageStats } from '../src/rocket/parts';
 import { DEFAULT_SANDBOX, applySandbox } from '../src/rocket/sandbox';
 import { forTouch } from '../src/rocket/touch';
+import { QUESTIONS, QUIZ, shuffledOrders } from '../src/quiz/questions';
 import { clock, clockIn } from '../src/rocket/format';
 import {
   EARTH,
@@ -271,5 +274,54 @@ describe('Namen mit Artikel (QA)', () => {
     expect(clockIn(t)).toBe('181 Tagen 01:00:00');
     expect(clock(t)).toBe('181 Tage 01:00:00');
     expect(clockIn(86_400 + 60)).toBe('1 Tag 00:01:00');
+  });
+});
+
+describe('Quiz (QA)', () => {
+  it('deckt alle neun Kapitel ab und mischt die Antworten', () => {
+    const chapters = new Set(QUESTIONS.map((q) => q.chapter));
+    for (let c = 1; c <= 9; c++) expect(chapters.has(c), `Kapitel ${c}`).toBe(true);
+    expect(QUIZ[0]!.chapter).toBe(1);
+    // Ein fester Zufall ergibt eine gültige Umordnung jeder Frage.
+    let seed = 7;
+    const orders = shuffledOrders(() => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646);
+    orders.forEach((o, i) => expect([...o].sort()).toEqual(QUIZ[i]!.options.map((_, k) => k)));
+    // Die richtige Antwort steht nicht immer an derselben Stelle.
+    expect(new Set(orders.map((o, i) => o.indexOf(QUIZ[i]!.answer))).size).toBeGreaterThan(2);
+  });
+});
+
+describe('App (QA)', () => {
+  it('kaputter Spielstand fällt Feld für Feld auf die Voreinstellung zurück', () => {
+    const broken = sanitizeProgress({
+      stars: { a: 3, b: 'x' },
+      best: 5,
+      quizBest: 'viel',
+      kids: null,
+      rocketDesign: 'kapsel',
+      rocketGoals: 'orbit',
+      rocketHangar: [],
+      rocketPaint: 3,
+      rocketChallenges: { hop: { stars: 2, text: 'ok' }, bad: 7 },
+      rocketSats: {},
+      rocketSeen: [1, 'x'],
+      rocketSandbox: undefined,
+    } as unknown as Progress);
+    expect(broken.stars).toEqual({ a: 3 });
+    expect(broken.quizBest).toBe(0);
+    expect(broken.rocketGoals).toEqual([]);
+    expect(broken.rocketDesign).toBe(null);
+    expect(broken.rocketChallenges).toEqual({ hop: { stars: 2, text: 'ok' } });
+    expect(broken.rocketSeen).toEqual(['x']);
+    expect(broken.rocketPaint).toBe('klassisch');
+  });
+
+  it('unbekannte Adressen und Kapitel landen auf „Seite nicht gefunden“', () => {
+    expect(parseHash('#kapitel-3').page).toBe('kapitel');
+    expect(parseHash('#kapitel-0').page).toBe('unbekannt');
+    expect(parseHash('#kapitel-abc').page).toBe('unbekannt');
+    expect(parseHash('#xyz').page).toBe('unbekannt');
+    expect(parseHash('#karte').page).toBe('karte');
+    expect(parseHash('').page).toBe('start');
   });
 });

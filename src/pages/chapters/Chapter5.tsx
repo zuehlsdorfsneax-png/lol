@@ -148,7 +148,7 @@ export function Chapter5() {
           Die Gezeitenreibung bremst die Erdrotation und schiebt den Mond nach außen – heute um 3,8
           cm pro Jahr (gemessen mit Laserreflektoren). Das endet, wenn ein Erdtag so lang ist wie
           ein Monat. Aus der Erhaltung des Drehimpulses von Erdrotation und Mondbahn folgt dafür ein
-          Abstand von etwa 555 000 km. Das sind rund{' '}
+          Abstand von etwa 555.000 km. Das sind rund{' '}
           <strong>
             0,37 r<sub>H</sub>
           </strong>{' '}
@@ -252,7 +252,7 @@ function HillCalculator() {
             Stabil retrograd bis ≈ 0,93 r<sub>H</sub>
           </dt>
           <dd>{distance(retro)}</dd>
-          <dt>Unser Mond (384 400 km) läge bei</dt>
+          <dt>Unser Mond (384.400 km) läge bei</dt>
           <dd>
             {fmt(MOON.semiMajorAxis / r, 2)} r<sub>H</sub>
           </dd>
@@ -341,7 +341,7 @@ function MoonJacobi() {
           />
           <Slider
             id="jac-speed"
-            label="Geschwindigkeit (× v_Kreis)"
+            label="Geschwindigkeit (× vₖ, Kreisbahntempo)"
             value={speed}
             min={0.5}
             max={1.5}

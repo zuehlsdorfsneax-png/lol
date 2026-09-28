@@ -1,7 +1,15 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { linearStability, lagrangePoints } from '../physics';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
-import { contour, lagrangeLevels, rampColor, sampleGrid, type Grid, type LView } from './field';
+import {
+  contour,
+  lagrangeLevels,
+  rampColor,
+  sampleGrid,
+  viewScale,
+  type Grid,
+  type LView,
+} from './field';
 
 export interface Overlay {
   (
@@ -54,7 +62,7 @@ export function LagrangeCanvas(props: Props) {
     const ctx = prepareCanvas(canvas, width, height);
     if (!ctx) return;
     const { view, mu } = p;
-    const scale = width / (2 * view.half);
+    const scale = viewScale(view, width, height);
     const toScreen = (x: number, y: number): [number, number] => [
       width / 2 + (x - view.cx) * scale,
       height / 2 - (y - view.cy) * scale,
@@ -116,9 +124,10 @@ export function LagrangeCanvas(props: Props) {
         }
         ctx.stroke();
         ctx.fillStyle = '#f5f7ff';
-        ctx.textAlign = 'left';
+        // L1 liegt zwischen den Körpern: Beschriftung links davon, sonst trifft sie den Namen.
+        ctx.textAlign = lp.name === 'L1' ? 'right' : 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(lp.name, sx + 8, sy - 8);
+        ctx.fillText(lp.name, lp.name === 'L1' ? sx - 8 : sx + 8, sy - 10);
       }
     }
 
@@ -139,7 +148,7 @@ export function LagrangeCanvas(props: Props) {
   const toWorld = (e: PointerEvent | WheelEvent): [number, number] => {
     const r = canvasRef.current!.getBoundingClientRect();
     const { view } = propsRef.current;
-    const scale = r.width / (2 * view.half);
+    const scale = viewScale(view, r.width, r.height);
     return [
       view.cx + (e.clientX - r.left - r.width / 2) / scale,
       view.cy - (e.clientY - r.top - r.height / 2) / scale,

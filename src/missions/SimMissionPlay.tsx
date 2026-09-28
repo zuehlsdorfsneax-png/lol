@@ -232,7 +232,7 @@ export function SimMissionPlay({ mission }: { mission: SimMission }) {
           </div>
         </section>
         <section class="panel panel-pad">
-          <button type="button" class="btn small ghost" onClick={() => setShowHint((h) => !h)}>
+          <button type="button" class="btn small" onClick={() => setShowHint((h) => !h)}>
             {showHint ? 'Tipp ausblenden' : 'Tipp anzeigen'}
           </button>
           {showHint && <p class="small">{mission.hint}</p>}

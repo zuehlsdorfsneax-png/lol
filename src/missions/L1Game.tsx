@@ -49,8 +49,12 @@ function step(s: State, dt: number, ax: number, ay: number): State {
   ) as State;
 }
 
+/**
+ * Immer derselbe kleine Versatz: So ist jeder Versuch gleich schwer und die Sterne sind
+ * vergleichbar.
+ */
 function startState(): State {
-  const a = Math.random() * Math.PI * 2;
+  const a = 0.7;
   return [L1X + 3e-5 * Math.cos(a), 3e-5 * Math.sin(a), 0, 0];
 }
 
@@ -176,12 +180,15 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
     ctx.lineTo(cx - 4, cy + 4 + 8);
     ctx.stroke();
     // Richtungen.
+    // Links und rechts auf halber Höhe: Dort verdeckt die Startkarte unten nichts.
     ctx.fillStyle = '#8f99b8';
-    ctx.textBaseline = 'bottom';
+    ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
-    ctx.fillText('← zur Sonne (148 Mio. km)', 12, h - 12);
+    ctx.fillText('← zur Sonne', 12, h / 2 - 10);
+    ctx.fillText('(148 Mio. km)', 12, h / 2 + 8);
     ctx.textAlign = 'right';
-    ctx.fillText('zur Erde (1,5 Mio. km) →', w - 12, h - 12);
+    ctx.fillText('zur Erde →', w - 12, h / 2 - 10);
+    ctx.fillText('(1,5 Mio. km)', w - 12, h / 2 + 8);
     ctx.textBaseline = 'top';
     ctx.fillText('↑ Bahnrichtung der Erde', w - 12, 12);
     ctx.textBaseline = 'alphabetic';
@@ -242,6 +249,7 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
       }}
       onPointerUp={() => (touch.current[dir] = false)}
       onPointerCancel={() => (touch.current[dir] = false)}
+      onLostPointerCapture={() => (touch.current[dir] = false)}
     >
       {symbol}
     </button>

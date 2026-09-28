@@ -91,7 +91,7 @@ export function TrojanMission({ mission }: { mission: SpecialMission }) {
         <div style={{ position: 'relative' }}>
           <LagrangeCanvas
             mu={MU}
-            view={{ cx: 0, cy: 0.1, half: 1.45 }}
+            view={{ cx: 0, cy: 0, half: 1.12 }}
             heat
             bodyLabels={SYSTEM.labels}
             animate
@@ -120,7 +120,8 @@ export function TrojanMission({ mission }: { mission: SpecialMission }) {
                 </StatusChip>
               </div>
               <p>
-                {result.reason} Startabstand zu L4: {fmt(result.d0, 3)}.
+                {result.reason} Startabstand zu L4: {fmt(result.d0, 3)} Jupiter-Abstände (
+                {fmt(result.d0 * 5.2, 2)} AE).
               </p>
               <div class="btn-row">
                 <button

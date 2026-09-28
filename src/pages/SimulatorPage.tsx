@@ -156,7 +156,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
 
   const exportPng = (): void => {
     const canvas = document.querySelector<HTMLCanvasElement>('.sim-main .space canvas');
-    if (canvas) downloadCanvas(canvas, `orbitlabor-${presetId}.png`);
+    if (canvas) void downloadCanvas(canvas, `orbitlabor-${presetId}.png`);
   };
 
   const event = sim?.pending ?? null;
@@ -170,6 +170,11 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
         Bewegungsgleichungen numerisch und meldet, wenn der Mond abstürzt, zerrissen wird oder
         entkommt.
       </PageHead>
+      {presetParam && !PRESETS.some((p) => p.id === presetParam) && (
+        <p class="notice" role="status">
+          Die Voreinstellung „{presetParam}“ gibt es nicht – gezeigt wird „{PRESETS[0]!.title}“.
+        </p>
+      )}
 
       <div class="sim-layout">
         <div class="sim-main">
@@ -249,7 +254,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                   <span>{stats.moonAlive ? km(stats.distance) : '–'}</span>
                 </div>
                 <div class="hud-row">
-                  <span>Exzentrizität</span>
+                  <span title="Momentaner (oskulierender) Wert – er schwankt, weil die Sonne an der Bahn zieht">
+                    Exzentrizität (osk.)
+                  </span>
                   <span>{stats.elements ? sig(stats.elements.e, 3) : '–'}</span>
                 </div>
                 <div class="hud-row">
@@ -470,8 +477,8 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 format={(v) => `${fmt(v)} km`}
                 hint={
                   Number.isFinite(moonRH)
-                    ? `= ${sig(moonRH, 3)} Hill-Radien · realer Mond: 384 400 km`
-                    : 'realer Mond: 384 400 km'
+                    ? `= ${sig(moonRH, 3)} Hill-Radien · realer Mond: 384.400 km`
+                    : 'realer Mond: 384.400 km'
                 }
                 onChange={(v) => update({ moonDistance: Math.round(v / 100) * 100 })}
               />
@@ -482,7 +489,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 min={0}
                 max={2}
                 step={0.005}
-                format={(v) => `${sig(v, 3)} × v_Kreis`}
+                format={(v) => `${sig(v, 3)} × vₖ`}
                 hint={`${speed(params.moonSpeed * circ)} · Kreisbahn = 1 · Flucht (ohne Sonne) = 1,414`}
                 onChange={(v) => update({ moonSpeed: v })}
               />
@@ -913,7 +920,7 @@ function csvHeader(p: ScenarioParams, s: SimSettings): string {
     '# Orbitlabor – Messreihe',
     `# Sonnenmasse ${p.sunMass} M☉; Erdmasse ${p.earthMass} M⊕; Mondmasse ${p.moonMass} M☾`,
     `# Erdbahn ${p.earthOrbit} AE, e = ${p.earthEccentricity}`,
-    `# Mond: Abstand ${p.moonDistance} km, v = ${p.moonSpeed} × v_Kreis, ${p.moonRetrograde ? 'retrograd' : 'prograd'}, Startwinkel ${p.moonAngle}°`,
+    `# Mond: Abstand ${p.moonDistance} km, v = ${p.moonSpeed} × vₖ, ${p.moonRetrograde ? 'retrograd' : 'prograd'}, Startwinkel ${p.moonAngle}°`,
     `# Verfahren: ${INTEGRATORS[s.integrator].name}, ${s.adaptive ? `adaptiv η = ${s.eta}` : `dt = ${s.fixedDt} s`}`,
   ].join('\n');
 }

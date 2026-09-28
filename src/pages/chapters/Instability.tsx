@@ -4,22 +4,22 @@ import { Callout, Equation, Figure, LinkButton, SectionTitle, Tex } from '../../
 const THRESHOLDS = [
   {
     cond: 'Startgeschwindigkeit zu klein',
-    theory: 'v < 0,203 · v_K',
-    sim: 'v < 0,205 · v_K',
+    theory: 'v < 0,203 · vₖ',
+    sim: 'v < 0,205 · vₖ',
     result: 'Absturz auf die Erde',
     link: 'sim-absturz',
   },
   {
     cond: '… schon vorher',
-    theory: 'v < 0,302 · v_K',
-    sim: 'v < 0,303 · v_K',
+    theory: 'v < 0,302 · vₖ',
+    sim: 'v < 0,303 · vₖ',
     result: 'Zerrissen an der Roche-Grenze (Ring)',
     link: 'sim-roche',
   },
   {
     cond: 'Startgeschwindigkeit zu groß',
-    theory: 'v ≥ 1,414 · v_K (ohne Sonne)',
-    sim: 'v > 1,19 · v_K',
+    theory: 'v ≥ 1,414 · vₖ (ohne Sonne)',
+    sim: 'v > 1,19 · vₖ',
     result: 'Flucht über L1/L2',
     link: 'sim-flucht',
   },
@@ -83,7 +83,7 @@ export function Instability() {
           Ein Aufprall erfolgt, wenn{' '}
           <Tex>{String.raw`r_P < R_\oplus + R_\text{Mond} = 8\,108\ \text{km}`}</Tex>, also für{' '}
           <Tex>{String.raw`f < 0{,}203`}</Tex>. Schon vorher, unterhalb der{' '}
-          <strong>Roche-Grenze</strong> von 18 365 km, übersteigen die Gezeitenkräfte der Erde den
+          <strong>Roche-Grenze</strong> von 18.365 km, übersteigen die Gezeitenkräfte der Erde den
           Zusammenhalt des Mondes: Er würde zu einem Ring zerrieben, wie ihn Saturn hat. Dazu genügt{' '}
           <Tex>{String.raw`f < 0{,}302`}</Tex>. Der Mond müsste also rund 70 % seiner
           Geschwindigkeit verlieren – ein Vorgang, für den es keinen natürlichen Mechanismus gibt.
@@ -104,7 +104,7 @@ export function Instability() {
         <p>
           Aus <Tex>{String.raw`r_H = a\,\sqrt[3]{m/3M}`}</Tex> folgt: Der Mond wird instabil, wenn
           die Erde der Sonne näher kommt oder die Sonne schwerer wird. Mit der Grenze 0,48 r
-          <sub>H</sub> gilt für unseren Mond (384 400 km)
+          <sub>H</sub> gilt für unseren Mond (384.400 km)
         </p>
         <Equation
           tex={String.raw`a_\text{Erde} > \frac{384\,400\ \text{km}}{0{,}48\cdot 1{,}5\ \text{Mio. km}}\ \text{AE} \approx 0{,}52\ \text{AE},\qquad M_\odot < \left(\frac{0{,}48\cdot r_H}{384\,400\ \text{km}}\right)^3 M_\odot \approx 6{,}6\,M_\odot.`}
@@ -143,7 +143,7 @@ export function Instability() {
         </table>
       </div>
       <p class="small muted">
-        v_K = Kreisbahngeschwindigkeit im Startabstand 384 400 km. Simulationswerte ermittelt mit{' '}
+        vₖ = Kreisbahngeschwindigkeit im Startabstand 384.400 km. Simulationswerte ermittelt mit{' '}
         <code>npm run calibrate</code> (Velocity-Verlet, adaptive Schrittweite, Schrittweite 0,25 %
         der Umlaufzeit). Theorie: Formeln (8.1), (8.2) und Domingos et al. (2006).
       </p>
@@ -178,7 +178,7 @@ export function Instability() {
         <ul>
           <li>
             <strong>Nahe Vorbeiflüge</strong>: Ein Stern oder Schurkenplanet, der nahe genug
-            vorbeizieht, stört das System von außen. Ein Körper mit Jupitermasse in 500 000 km
+            vorbeizieht, stört das System von außen. Ein Körper mit Jupitermasse in 500.000 km
             Abstand reißt den Mond fort (Voreinstellung „Vorbeiflug“). Für Sterne ist ein so naher
             Vorbeiflug in der Sonnenumgebung extrem unwahrscheinlich.
           </li>

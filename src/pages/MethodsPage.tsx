@@ -155,7 +155,7 @@ export function MethodsPage() {
           </li>
           <li>
             Die Roche-Grenze gilt für einen flüssigen Körper ohne Eigenfestigkeit; ein fester Mond
-            hielte bis etwa 9 500 km durch.
+            hielte bis etwa 9.500 km durch.
           </li>
         </ul>
       </div>

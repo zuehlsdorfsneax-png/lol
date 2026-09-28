@@ -11,6 +11,7 @@ import { DEFAULT_VIEW } from '../sim/view';
 import { LinkButton } from '../ui/LinkButton';
 import { Icon, type IconName } from '../ui/Icon';
 import { CHALLENGE_COUNT, GOAL_COUNT } from '../rocket/counts';
+import { QUESTIONS } from '../quiz/questions';
 
 const HERO_VIEW = { ...DEFAULT_VIEW, frame: 'rotating' as const, labels: true, trailSpan: 0 };
 
@@ -208,7 +209,7 @@ export function HomePage() {
             Neun Aufträge an den Grenzen der Stabilität, bis zu drei Sterne pro Auftrag.
           </Tile>
           <Tile to="quiz" icon="quiz" title="Quiz">
-            21 Fragen zu allen Kapiteln, jede mit Erklärung.
+            {QUESTIONS.length} Fragen zu allen Kapiteln, jede mit Erklärung.
           </Tile>
         </div>
       </section>

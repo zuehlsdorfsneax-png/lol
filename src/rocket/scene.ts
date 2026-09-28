@@ -903,12 +903,15 @@ export function drawFlight(
   }
   drawGroundShade(ctx, v, near.body, f.t);
   // Bäume, Felsen, Gebäude und Basen liegen nachts im Dunkeln.
-  const dim = near.body === SUN ? 1 : 0.3 + 0.7 * light.day;
-  if (dim < 0.99) ctx.filter = `brightness(${dim.toFixed(2)})`;
+  // In 5-%-Schritten (der Filter wird dann seltener neu gesetzt); ohne Filter-Unterstützung
+  // (ältere Safari) bleiben die Details einfach hell.
+  const dim = near.body === SUN ? 1 : Math.round((0.3 + 0.7 * light.day) * 20) / 20;
+  const canFilter = typeof ctx.filter === 'string';
+  if (dim < 0.99 && canFilter) ctx.filter = `brightness(${dim})`;
   drawSurfaceDetail(ctx, v, near.body, f.t);
   if (near.body === EARTH) drawLaunchPad(ctx, v, time);
   if (f.site) drawSite(ctx, v, f.site, f.t, time);
-  ctx.filter = 'none';
+  if (canFilter) ctx.filter = 'none';
   if (near.body === EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);
   drawStation(ctx, v, f.t, 6);
 

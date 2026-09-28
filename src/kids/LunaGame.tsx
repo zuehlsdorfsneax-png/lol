@@ -55,6 +55,12 @@ function starShape(
   ctx.closePath();
 }
 
+/** Sterne nach Versuchen; mit Hilfe höchstens zwei. */
+function starsFor2(tries: number, helped: boolean): number {
+  const stars = tries <= 2 ? 3 : tries <= 4 ? 2 : 1;
+  return helped ? Math.min(2, stars) : stars;
+}
+
 export function LunaGame() {
   const [levelIndex, setLevelIndex] = useState(0);
   const level: Level = LEVELS[levelIndex]!;
@@ -81,6 +87,8 @@ export function LunaGame() {
   levelRef.current = level;
   const helpRef = useRef(help);
   helpRef.current = help;
+  /** Hilfe in diesem Level benutzt? Dann gibt es höchstens zwei Sterne. */
+  const usedHelp = useRef(false);
 
   const reset = (lv: Level = level): void => {
     game.current = {
@@ -101,13 +109,14 @@ export function LunaGame() {
     reset(level);
     setTries(0);
     setHelp(false);
+    usedHelp.current = false;
   }, [levelIndex]);
 
   const finish = (won: boolean, text: string): void => {
     setPhase(won ? 'win' : 'fail');
     setMessage(text);
     if (won) {
-      const stars = tries <= 2 ? 3 : tries <= 4 ? 2 : 1;
+      const stars = starsFor2(tries, usedHelp.current);
       playSuccess(stars);
       const p = progressStore.update((prev) => ({
         ...prev,
@@ -119,59 +128,66 @@ export function LunaGame() {
     }
   };
 
-  // Spielschleife.
+  // Spielschleife: ein einziger requestAnimationFrame-Kreislauf; jedes Bild ruft die aktuelle
+  // Fassung von `frame` auf (sie sieht so immer den neuesten Zustand).
+  const frameRef = useRef<(now: number, dt: number) => void>(() => undefined);
+  frameRef.current = (now: number, dt: number): void => {
+    const g = game.current;
+    const lv = levelRef.current;
+    if (phaseRef.current === 'fly') {
+      const steps = Math.round(dt / (1 / 240)) || 1;
+      for (let k = 0; k < steps && phaseRef.current === 'fly'; k++) {
+        g.s = step(lv, g.s);
+        g.stars.forEach((st, i) => {
+          if (!g.got.has(i) && Math.hypot(g.s.x - st.x, g.s.y - st.y) < STAR_R + LUNA_R) {
+            g.got.add(i);
+            g.flash = 1;
+            sound.tone(660 + g.got.size * 90, 0.12, 'triangle', 0.12);
+          }
+        });
+        if (g.got.size === g.stars.length) {
+          finish(true, `Super! Alle ${g.stars.length} Sterne eingesammelt!`);
+          phaseRef.current = 'win';
+          break;
+        }
+        const c = collision(lv, g.s);
+        if (c) {
+          finish(false, FAIL_TEXT[c]);
+          phaseRef.current = 'fail';
+          break;
+        }
+        const a = Math.atan2(g.s.y - EARTH.y, g.s.x - EARTH.x);
+        let d = a - g.prevAngle;
+        if (d > Math.PI) d -= 2 * Math.PI;
+        if (d < -Math.PI) d += 2 * Math.PI;
+        g.angle += d;
+        g.prevAngle = a;
+        if (Math.abs(g.angle) > lv.maxLaps * 2 * Math.PI) {
+          finish(false, FAIL_TEXT.timeout);
+          phaseRef.current = 'fail';
+          break;
+        }
+      }
+      g.trail.push(g.s.x, g.s.y);
+      if (g.trail.length > 600) g.trail.splice(0, 2);
+    }
+    g.flash = Math.max(0, g.flash - dt * 2);
+    draw(now / 1000);
+  };
   useEffect(() => {
     let last = performance.now();
-    let id = requestAnimationFrame(function frame(now) {
+    let id = requestAnimationFrame(function loop(now) {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      const g = game.current;
-      const lv = levelRef.current;
-      if (phaseRef.current === 'fly') {
-        const steps = Math.round(dt / (1 / 240)) || 1;
-        for (let k = 0; k < steps && phaseRef.current === 'fly'; k++) {
-          g.s = step(lv, g.s);
-          g.stars.forEach((st, i) => {
-            if (!g.got.has(i) && Math.hypot(g.s.x - st.x, g.s.y - st.y) < STAR_R + LUNA_R) {
-              g.got.add(i);
-              g.flash = 1;
-              sound.tone(660 + g.got.size * 90, 0.12, 'triangle', 0.12);
-            }
-          });
-          if (g.got.size === g.stars.length) {
-            finish(true, `Super! Alle ${g.stars.length} Sterne eingesammelt!`);
-            phaseRef.current = 'win';
-            break;
-          }
-          const c = collision(lv, g.s);
-          if (c) {
-            finish(false, FAIL_TEXT[c]);
-            phaseRef.current = 'fail';
-            break;
-          }
-          const a = Math.atan2(g.s.y - EARTH.y, g.s.x - EARTH.x);
-          let d = a - g.prevAngle;
-          if (d > Math.PI) d -= 2 * Math.PI;
-          if (d < -Math.PI) d += 2 * Math.PI;
-          g.angle += d;
-          g.prevAngle = a;
-          if (Math.abs(g.angle) > lv.maxLaps * 2 * Math.PI) {
-            finish(false, FAIL_TEXT.timeout);
-            phaseRef.current = 'fail';
-            break;
-          }
-        }
-        g.trail.push(g.s.x, g.s.y);
-        if (g.trail.length > 600) g.trail.splice(0, 2);
-      }
-      g.flash = Math.max(0, g.flash - dt * 2);
-      draw(now / 1000);
-      id = requestAnimationFrame(frame);
+      frameRef.current(now, dt);
+      id = requestAnimationFrame(loop);
     });
     return () => cancelAnimationFrame(id);
-  });
+  }, []);
 
   const scale = size.width / WIDTH;
+  /** Schriftgröße in Spieleinheiten: auf kleinen Bildschirmen größer, damit sie lesbar bleibt. */
+  const fs = (px: number): number => Math.max(px, (px * 0.85) / Math.max(scale, 0.01));
 
   function draw(time: number): void {
     const canvas = canvasRef.current;
@@ -204,13 +220,14 @@ export function LunaGame() {
       ctx.fillStyle = sg;
       ctx.fillRect(0, EARTH.y - 140, 90, 280);
       ctx.fillStyle = '#fff3c2';
-      ctx.font = 'bold 14px Jost, system-ui, sans-serif';
+      ctx.font = `bold ${fs(14)}px Jost, system-ui, sans-serif`;
       ctx.fillText('Sonne', 8, EARTH.y - 70);
     }
 
     // Hilfe: Lösungsbahn ganz blass.
     if (helpRef.current && phaseRef.current === 'aim') {
-      drawPath(ctx, lv, lv.solution.vx, lv.solution.vy, 1400, 'rgba(255, 255, 255, 0.18)');
+      // Nur der Anfang des Weges – die Richtung, nicht die ganze Lösung.
+      drawPath(ctx, lv, lv.solution.vx, lv.solution.vy, 420, 'rgba(255, 255, 255, 0.22)');
     }
 
     // Erde mit Gesicht.
@@ -280,7 +297,7 @@ export function LunaGame() {
       ctx.arc(b.x + 3, b.y - 2, 1.8, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#ffd6e7';
-      ctx.font = 'bold 12px Jost, system-ui, sans-serif';
+      ctx.font = `bold ${fs(12)}px Jost, system-ui, sans-serif`;
       ctx.fillText('Pip', b.x + 12, b.y - 8);
     }
 
@@ -306,7 +323,7 @@ export function LunaGame() {
       ctx.stroke();
       const power = Math.hypot(v.vx, v.vy) / MAX_LAUNCH;
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Jost, system-ui, sans-serif';
+      ctx.font = `bold ${fs(14)}px Jost, system-ui, sans-serif`;
       ctx.fillText(`Schwung: ${Math.round(power * 100)} %`, g.aim.x + 12, g.aim.y + 4);
     }
 
@@ -344,12 +361,15 @@ export function LunaGame() {
 
     // Anzeige.
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px Jost, system-ui, sans-serif';
-    ctx.fillText(`★ ${g.got.size} / ${g.stars.length}`, 16, 30);
+    ctx.font = `bold ${fs(18)}px Jost, system-ui, sans-serif`;
+    ctx.fillText(`★ ${g.got.size} / ${g.stars.length}`, 16, 12 + fs(18));
     if (phaseRef.current === 'aim' && !g.aim) {
-      ctx.font = '15px Jost, system-ui, sans-serif';
+      // Hinweis mittig über Luna, aber nie über den Rand hinaus.
+      ctx.font = `${fs(15)}px Jost, system-ui, sans-serif`;
       ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillText('Luna antippen, nach hinten ziehen, loslassen!', x - 150, y - 26);
+      const hint = 'Luna antippen, nach hinten ziehen, loslassen!';
+      const w = ctx.measureText(hint).width;
+      ctx.fillText(hint, Math.min(Math.max(8, x - w / 2), WIDTH - w - 8), y - 26 - fs(15) * 0.4);
     }
   }
 
@@ -373,6 +393,36 @@ export function LunaGame() {
   const onMove = (e: PointerEvent): void => {
     if (game.current.aim) game.current.aim = toGame(e);
   };
+  /** Tastatur: Pfeile ziehen Luna nach hinten (←/→ drehen, ↑/↓ Schwung), Leertaste startet. */
+  const onKey = (e: KeyboardEvent): void => {
+    if (phaseRef.current !== 'aim') return;
+    const g = game.current;
+    const k = e.key;
+    if (k === 'Escape') {
+      g.aim = null;
+      return;
+    }
+    if (k === ' ' || k === 'Enter') {
+      if (g.aim) {
+        e.preventDefault();
+        onUp();
+      }
+      return;
+    }
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) return;
+    e.preventDefault();
+    sound.unlock();
+    const dx0 = g.aim ? g.aim.x - g.s.x : -60;
+    const dy0 = g.aim ? g.aim.y - g.s.y : 0;
+    let a = Math.atan2(dy0, dx0);
+    let r = Math.hypot(dx0, dy0);
+    if (k === 'ArrowLeft') a -= 0.08;
+    if (k === 'ArrowRight') a += 0.08;
+    if (k === 'ArrowUp') r = Math.min(160, r + 8);
+    if (k === 'ArrowDown') r = Math.max(20, r - 8);
+    g.aim = { x: g.s.x + r * Math.cos(a), y: g.s.y + r * Math.sin(a) };
+  };
+
   const onUp = (): void => {
     const g = game.current;
     if (!g.aim || phaseRef.current !== 'aim') return;
@@ -425,15 +475,21 @@ export function LunaGame() {
             borderRadius: '18px',
           }}
           role="img"
-          aria-label="Spielfeld: Luna, die Erde und Sterne"
+          aria-label="Spielfeld: Luna, die Erde und Sterne. Mit der Tastatur: Pfeiltasten zielen, Leertaste startet."
           onPointerDown={onDown}
           onPointerMove={onMove}
           onPointerUp={onUp}
-          onPointerCancel={onUp}
+          onPointerCancel={() => (game.current.aim = null)}
+          onLostPointerCapture={() => {
+            // Abgebrochene Geste (z. B. Zurück-Wischen): nicht starten, nur loslassen.
+            if (phaseRef.current === 'aim' && game.current.aim) game.current.aim = null;
+          }}
+          tabIndex={0}
+          onKeyDown={onKey}
         />
         {(phase === 'win' || phase === 'fail') && (
           <div class="kid-result" role="status">
-            {phase === 'win' && <Stars count={tries <= 2 ? 3 : tries <= 4 ? 2 : 1} size={34} />}
+            {phase === 'win' && <Stars count={starsFor2(tries, usedHelp.current)} size={34} />}
             <p class="kid-result-text">{message}</p>
             {phase === 'win' && (
               <p class="kid-fact">
@@ -463,8 +519,15 @@ export function LunaGame() {
         <button type="button" class="btn" onClick={() => reset()} disabled={phase === 'aim'}>
           <Icon name="reset" /> Neu starten
         </button>
-        <button type="button" class="btn ghost" onClick={() => setHelp((h) => !h)}>
-          {help ? 'Hilfe ausblenden' : 'Hilfe: Wo geht es lang?'}
+        <button
+          type="button"
+          class="btn ghost"
+          onClick={() => {
+            if (!help) usedHelp.current = true;
+            setHelp((h) => !h);
+          }}
+        >
+          {help ? 'Hilfe ausblenden' : 'Hilfe: Wo geht es lang? (höchstens 2 Sterne)'}
         </button>
         <span class="small muted">Versuche: {tries}</span>
       </div>

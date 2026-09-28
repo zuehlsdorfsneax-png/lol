@@ -291,16 +291,22 @@ export function StabilityMap({ preset, compact = false }: Props) {
         for (let s = 0; s < 20; s++)
           dense.push([ax + ((bx - ax) * s) / 20, ay + ((by - ay) * s) / 20]);
       }
-      const vis = dense.find(
-        ([x, y]) => x >= x0 + 4 && x <= x1 - 150 && y >= y1 + 22 && y <= y0 - 4,
-      );
+      // Senkrechte Linien oben beschriften, alle anderen am ersten sichtbaren Punkt.
+      const vertical = pts.length > 1 && pts.every(([x]) => Math.abs(x - pts[0]![0]) < 0.5);
+      const vis = vertical
+        ? pts[0]![0] >= x0 && pts[0]![0] <= x1 - 150
+          ? ([pts[0]![0], y1 + 40] as const)
+          : undefined
+        : dense.find(([x, y]) => x >= x0 + 4 && x <= x1 - 150 && y >= y1 + 22 && y <= y0 - 4);
       if (vis) {
         ctx.font = `11px ${c.fontUi}`;
         const w = ctx.measureText(o.label).width;
+        // Deckendes Schild: Die eigene Linie läuft nicht durch die Schrift.
         ctx.fillStyle = c.surface;
-        ctx.globalAlpha = 0.85;
         ctx.fillRect(vis[0] + 4, vis[1] - 16, w + 8, 15);
-        ctx.globalAlpha = 1;
+        ctx.strokeStyle = c.ink;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(vis[0] + 4.5, vis[1] - 15.5, w + 7, 14);
         ctx.fillStyle = c.ink;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
@@ -594,10 +600,10 @@ export function StabilityMap({ preset, compact = false }: Props) {
             <button
               type="button"
               class="btn small"
-              onClick={() =>
-                canvasRef.current &&
-                downloadCanvas(canvasRef.current, `stabilitaetskarte-${presetId}.png`)
-              }
+              onClick={() => {
+                if (canvasRef.current)
+                  void downloadCanvas(canvasRef.current, `stabilitaetskarte-${presetId}.png`);
+              }}
             >
               <Icon name="camera" /> Bild
             </button>

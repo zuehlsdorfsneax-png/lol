@@ -210,6 +210,22 @@ function arrow(
   ctx.fill();
 }
 
+/** Schrift mit dunklem Rand: bleibt vor Linien und Teilchenwolken lesbar. */
+function haloText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  color: string,
+): void {
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(4, 7, 16, 0.9)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+}
+
 function circle(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -228,11 +244,11 @@ function circle(
   ctx.stroke();
   ctx.setLineDash([]);
   if (label) {
-    ctx.fillStyle = color;
+    // Mit dunklem Rand und etwas Abstand, damit die Linie die Schrift nicht durchkreuzt.
     ctx.font = '11px Jost, system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(label, x, y - r - 3);
+    haloText(ctx, label, x, y - r - 6, color);
   }
 }
 
@@ -542,8 +558,8 @@ export function renderSpace(
     for (const d of drawn) {
       if (placed.some(([x, y]) => Math.hypot(x - d.px, y - d.py) < 18)) continue;
       placed.push([d.px, d.py]);
-      ctx.fillStyle = SPACE.label;
-      ctx.fillText(BODY_LABELS[d.body], d.px + d.r + 5, d.py - d.r - 4);
+      ctx.font = '600 12px Jost, system-ui, sans-serif';
+      haloText(ctx, BODY_LABELS[d.body], d.px + d.r + 5, d.py - d.r - 4, SPACE.label);
     }
   }
 

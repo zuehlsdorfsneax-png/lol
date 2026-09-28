@@ -12,10 +12,10 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 7,
     text: 'Warum lässt sich aus der Mondbahn allein nicht entscheiden, ob der Mond hohl ist?',
     options: [
-      'Weil die Bahn zu ungenau vermessen ist',
-      'Weil außerhalb einer Kugel nur die Gesamtmasse zählt (Schalentheorem)',
-      'Weil die Sonne die Bahn zu stark stört',
-      'Weil ein hohler Mond eine andere Umlaufzeit hätte',
+      'Weil die Bahn dafür viel zu ungenau vermessen ist',
+      'Weil außen nur die Gesamtmasse zählt (Schalentheorem)',
+      'Weil die Sonne die Mondbahn zu stark stört',
+      'Weil ein hohler Mond schneller um die Erde liefe',
     ],
     answer: 1,
     explanation:
@@ -25,10 +25,10 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 7,
     text: 'Das gemessene Trägheitsmoment des Mondes ist k = 0,393. Was folgt daraus?',
     options: [
-      'Der Mond ist hohl, denn k > 0',
-      'Der Mond ist eine homogene Kugel (k = 0,4)',
-      'Die Masse ist leicht zur Mitte hin konzentriert – das Gegenteil eines Hohlkörpers',
-      'Man kann daraus nichts über das Innere schließen',
+      'Der Mond ist hohl, denn k ist größer als 0',
+      'Der Mond ist eine völlig gleichmäßige Kugel (k = 0,4)',
+      'Die Masse ist zur Mitte hin etwas konzentriert',
+      'Daraus lässt sich nichts über das Innere schließen',
     ],
     answer: 2,
     explanation: 'Jede Hohlkugel hat k > 0,4. Werte unter 0,4 bedeuten einen dichteren Kern.',
@@ -45,7 +45,7 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 2,
     text: 'Wie folgt das 1/r²-Gesetz aus dem dritten Keplerschen Gesetz?',
     options: [
-      'Aus a_z = 4π²r/T² und T² ∝ r³ folgt a_z ∝ 1/r²',
+      'Aus a = 4π²r/T² und T² ∝ r³ folgt a ∝ 1/r²',
       'Aus der Energieerhaltung',
       'Es folgt nicht daraus, sondern nur aus Experimenten mit Pendeln',
       'Aus dem ersten Keplerschen Gesetz allein',
@@ -57,10 +57,10 @@ export const QUESTIONS: readonly Question[] = [
   {
     chapter: 2,
     text: 'Newtons Mondtest: Um welchen Faktor ist die Bahnbeschleunigung des Mondes kleiner als g?',
-    options: ['60', '360', 'etwa 3 600', 'etwa 216 000'],
+    options: ['60', '360', 'etwa 3.600', 'etwa 216.000'],
     answer: 2,
     explanation:
-      'Der Mond ist rund 60 Erdradien entfernt; bei 1/r² ist die Beschleunigung also 60² ≈ 3 600-mal kleiner.',
+      'Der Mond ist rund 60 Erdradien entfernt; bei 1/r² ist die Beschleunigung also 60² ≈ 3.600-mal kleiner.',
   },
   {
     chapter: 2,
@@ -145,14 +145,14 @@ export const QUESTIONS: readonly Question[] = [
   {
     chapter: 5,
     text: 'Wie groß ist der Hill-Radius der Erde ungefähr?',
-    options: ['38 000 km', '384 000 km', '1,5 Mio. km', '150 Mio. km'],
+    options: ['38.000 km', '384.000 km', '1,5 Mio. km', '150 Mio. km'],
     answer: 2,
     explanation:
       'Hill-Radius = a·∛(m/3M) ≈ 1,5 Mio. km – der Mond kreist bei etwa einem Viertel davon.',
   },
   {
     chapter: 5,
-    text: 'Was garantiert das Jacobi-Kriterium C_Mond > C(L1)?',
+    text: 'Was garantiert das Jacobi-Kriterium C(Mond) > C(L1)?',
     options: [
       'Dass der Mond eine Kreisbahn hat',
       'Dass der Mond die Umgebung der Erde niemals verlassen kann',
@@ -182,41 +182,41 @@ export const QUESTIONS: readonly Question[] = [
     options: ['etwa 5 %', 'etwa 30 %', 'etwa 50 %', 'etwa 80 %'],
     answer: 3,
     explanation:
-      'Erst unterhalb von 0,203 · v_Kreis liegt der erdnächste Punkt unter der Erdoberfläche; zerrissen würde er schon unter 0,30 · v_Kreis.',
+      'Erst unterhalb des 0,203-Fachen der Kreisbahngeschwindigkeit liegt der erdnächste Punkt unter der Erdoberfläche; zerrissen würde er schon unter dem 0,30-Fachen.',
   },
   {
     chapter: 8,
-    text: 'Ab welcher Startgeschwindigkeit entkommt der Mond im System mit Sonne?',
-    options: ['1,00 · v_Kreis', 'etwa 1,19 · v_Kreis', 'genau 1,414 · v_Kreis', 'etwa 2 · v_Kreis'],
+    text: 'Ab welcher Startgeschwindigkeit entkommt der Mond im System mit Sonne? (vₖ = Geschwindigkeit auf der Kreisbahn)',
+    options: ['1,00 · vₖ', 'etwa 1,19 · vₖ', 'genau 1,414 · vₖ', 'etwa 2 · vₖ'],
     answer: 1,
     explanation:
-      'Schon ab etwa 1,19 · v_Kreis reicht die Bahn über die Stabilitätsgrenze hinaus – die Sonne hilft beim Entkommen.',
+      'Schon ab etwa 1,19 · vₖ reicht die Bahn über die Stabilitätsgrenze hinaus – die Sonne hilft beim Entkommen.',
   },
   {
     chapter: 8,
     text: 'Was würde mit unserem Mond passieren, wenn die Erde auf der Merkurbahn (0,39 AE) kreiste?',
     options: [
-      'Nichts, er bliebe stabil',
+      'Nichts, er bliebe auf seiner Bahn stabil',
       'Er würde auf die Erde stürzen',
-      'Er würde verloren gehen, weil der Hill-Radius zu klein wäre',
-      'Er würde in die Sonne stürzen',
+      'Er ginge verloren: Die Hill-Sphäre wäre zu klein',
+      'Er würde geradewegs in die Sonne stürzen',
     ],
     answer: 2,
     explanation:
-      'Der Hill-Radius wäre nur 580 000 km; der Mond stünde bei 0,66 Hill-Radien – jenseits der Grenze von 0,48.',
+      'Der Hill-Radius wäre nur 580.000 km; der Mond stünde bei 0,66 Hill-Radien – jenseits der Grenze von 0,48.',
   },
   {
     chapter: 8,
     text: 'Warum bauen Raketen mehrere Stufen?',
     options: [
-      'Damit sie schöner aussehen',
-      'Leere Tanks werden abgeworfen, die nächste Stufe beschleunigt weniger Masse – das Massenverhältnis m_voll/m_leer steigt',
+      'Damit sie im Flug stabiler in der Luft liegen',
+      'Leere Tanks fallen weg, der Rest ist leichter',
       'Weil ein einzelnes Triebwerk nicht zünden kann',
       'Weil die Schwerkraft mit der Höhe zunimmt',
     ],
     answer: 1,
     explanation:
-      'Nach der Raketengleichung Δv = I_sp·g₀·ln(m_voll/m_leer) wächst Δv nur logarithmisch mit dem Massenverhältnis. Stufen verbessern dieses Verhältnis für jeden Abschnitt.',
+      'Nach der Raketengleichung Δv = Isp · g₀ · ln(Startmasse / Leermasse) wächst Δv nur logarithmisch mit dem Massenverhältnis. Stufen verbessern dieses Verhältnis für jeden Abschnitt, weil leere Tanks nicht mehr mitbeschleunigt werden.',
   },
   {
     chapter: 5,
@@ -235,13 +235,101 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 2,
     text: 'Warum fällt eine Rakete in der Umlaufbahn nicht auf die Erde?',
     options: [
-      'Im Weltraum gibt es keine Schwerkraft',
-      'Sie fällt ständig, ist aber so schnell zur Seite unterwegs, dass die Erde unter ihr wegkrümmt',
+      'Im Weltraum gibt es keine Schwerkraft mehr',
+      'Sie fällt, fliegt aber so schnell seitwärts, dass sie die Erde verfehlt',
       'Die Triebwerke laufen die ganze Zeit',
-      'Der Mond hält sie fest',
+      'Der Mond hält sie mit seiner Anziehung fest',
     ],
     answer: 1,
     explanation:
       'Eine Umlaufbahn ist ein endloser Fall. Die Schwerkraft liefert genau die Zentripetalkraft – wie beim Mond selbst.',
   },
+  {
+    chapter: 1,
+    text: 'Wann nennt man eine Bahn stabil?',
+    options: [
+      'Wenn sie ein perfekter Kreis ist',
+      'Wenn kleine Störungen sie nur leicht verformen',
+      'Wenn kein dritter Körper in der Nähe ist',
+      'Wenn sich der Abstand nie ändert',
+    ],
+    answer: 1,
+    explanation:
+      'Stabil heißt: Störungen schaukeln sich nicht auf. Instabil ist eine Bahn, wenn kleine Störungen wachsen, bis der Körper abstürzt oder davonfliegt.',
+  },
+  {
+    chapter: 1,
+    text: 'Warum gibt es für Sonne, Erde und Mond keine einfache Lösungsformel?',
+    options: [
+      'Weil die Massen nicht genau bekannt sind',
+      'Weil der Mond dafür viel zu klein ist',
+      'Weil ab drei Körpern keine allgemeine Formel existiert',
+      'Weil Newtons Gesetz dort nicht mehr gilt',
+    ],
+    answer: 2,
+    explanation:
+      'Für zwei Körper hat Newton das Problem vollständig gelöst. Ab drei Körpern braucht man Näherungen, Stabilitätskriterien und Simulationen.',
+  },
+  {
+    chapter: 6,
+    text: 'Um wie viel entfernt sich der Mond heute jedes Jahr von der Erde?',
+    options: ['um 3,8 mm', 'um 3,8 cm', 'um 38 cm', 'um 3,8 m'],
+    answer: 1,
+    explanation:
+      'Laserreflektoren der Apollo-Missionen zeigen 3,8 cm pro Jahr. Gleichzeitig wird der Tag um etwa 2 Millisekunden pro Jahrhundert länger.',
+  },
+  {
+    chapter: 6,
+    text: 'Kann die Gezeitenreibung den Mond aus dem Erde-Mond-System treiben?',
+    options: [
+      'Ja, in etwa einer Milliarde Jahren',
+      'Ja, sobald der Tag 30 Stunden dauert',
+      'Nein, sie endet bei etwa 554.000 km',
+      'Nein, sie zieht den Mond zur Erde',
+    ],
+    answer: 2,
+    explanation:
+      'Die Entwicklung endet, wenn Tag und Monat gleich lang sind – bei etwa 554.000 km oder 0,37 Hill-Radien. Das liegt sicher innerhalb der Stabilitätsgrenze von 0,48.',
+  },
+  {
+    chapter: 9,
+    text: 'Wie tief kreist unser Mond in der Hill-Sphäre der Erde?',
+    options: [
+      'bei 0,05 Hill-Radien',
+      'bei 0,26 Hill-Radien',
+      'bei 0,48 Hill-Radien',
+      'bei 0,92 Hill-Radien',
+    ],
+    answer: 1,
+    explanation:
+      'Der Mond kreist bei 0,26 Hill-Radien – weit innerhalb der Grenze von etwa 0,48 für Monde, die in Drehrichtung ihres Planeten umlaufen.',
+  },
+  {
+    chapter: 9,
+    text: 'Was müsste passieren, damit der Mond das Erde-Mond-System verlässt?',
+    options: [
+      'Er bräuchte etwa 19 % mehr Tempo',
+      'Er müsste 10 % langsamer werden',
+      'Die Erde müsste sich schneller drehen',
+      'Die Sonne müsste leichter werden',
+    ],
+    answer: 0,
+    explanation:
+      'Mit rund 19 % mehr Geschwindigkeit reicht seine Bahn über die Stabilitätsgrenze. Auch eine Erde viel näher an der Sonne (unter 0,52 AE) oder eine 6,5-mal schwerere Sonne würden ihn befreien.',
+  },
 ];
+
+/** Fragen nach Kapiteln geordnet (innerhalb eines Kapitels in der Reihenfolge oben). */
+export const QUIZ: readonly Question[] = [...QUESTIONS].sort((a, b) => a.chapter - b.chapter);
+
+/** Zufällige Reihenfolge der Antworten je Frage (für jeden Durchgang neu). */
+export function shuffledOrders(random: () => number = Math.random): number[][] {
+  return QUIZ.map((q) => {
+    const order = q.options.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [order[i], order[j]] = [order[j]!, order[i]!];
+    }
+    return order;
+  });
+}

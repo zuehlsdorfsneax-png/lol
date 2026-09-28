@@ -72,7 +72,7 @@ export function OwnWork() {
         <p>
           Die folgenden Voreinstellungen zeigen die untersuchten Fälle direkt im Simulator. Den
           hohlen Mond aus Kapitel 7 kann man dort ebenfalls simulieren: Bei 10 % Schalenstärke rückt
-          das Baryzentrum von 4 670 km auf etwa 1 320 km, die Umlaufzeit ändert sich kaum.
+          das Baryzentrum von 4.670 km auf etwa 1.320 km, die Umlaufzeit ändert sich kaum.
         </p>
       </div>
       <div class="btn-row">

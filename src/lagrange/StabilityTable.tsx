@@ -20,7 +20,7 @@ export function StabilityTable({
   }));
   return (
     <div class="table-wrap">
-      <table class="data">
+      <table class="data compact">
         <thead>
           <tr>
             <th>Punkt</th>
@@ -29,7 +29,7 @@ export function StabilityTable({
             {length && <th class="num">Abstand zu {secondary}</th>}
             <th class="num">C = 2Ω</th>
             <th class="num">Eigenwerte λ</th>
-            <th>Linear</th>
+            <th title="Lineare Stabilität">Stabil?</th>
           </tr>
         </thead>
         <tbody>
@@ -43,12 +43,12 @@ export function StabilityTable({
             return (
               <tr key={p.name}>
                 <td>{p.name}</td>
-                <td class="num">{fmt(p.x, 5)}</td>
-                <td class="num">{fmt(p.y, 5)}</td>
+                <td class="num">{fmt(p.x, 4)}</td>
+                <td class="num">{fmt(p.y, 4)}</td>
                 {length && (
                   <td class="num">{distance(Math.hypot(p.x - (1 - mu), p.y) * length)}</td>
                 )}
-                <td class="num">{fmt(C, 6)}</td>
+                <td class="num">{fmt(C, 5)}</td>
                 <td class="num">{lambda}</td>
                 <td>
                   <StatusChip status={s.stable ? 'ok' : 'fail'}>

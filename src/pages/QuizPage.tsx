@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { playFailure, playSuccess } from '../missions/sound';
-import { QUESTIONS } from '../quiz/questions';
+import { QUIZ as QUESTIONS, shuffledOrders } from '../quiz/questions';
 import { PageHead, StatusChip } from '../ui/content';
 import { Icon } from '../ui/Icon';
 
@@ -10,8 +10,11 @@ export function QuizPage() {
   const [chosen, setChosen] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(() => progressStore.load().quizBest);
+  // Antworten in jedem Durchgang neu gemischt – die richtige steht nicht immer an derselben Stelle.
+  const [orders, setOrders] = useState(() => shuffledOrders());
   const done = index >= QUESTIONS.length;
   const q = QUESTIONS[index];
+  const order = orders[index] ?? [];
 
   const choose = (i: number): void => {
     if (chosen !== null || !q) return;
@@ -41,13 +44,14 @@ export function QuizPage() {
     setIndex(0);
     setChosen(null);
     setScore(0);
+    setOrders(shuffledOrders());
   };
 
   return (
     <div class="stack" style={{ gap: '20px', maxWidth: '760px' }}>
       <PageHead eyebrow="Spielen" title="Quiz">
-        {QUESTIONS.length} Fragen quer durch alle neun Kapitel und die Spiele. Nach jeder Antwort
-        gibt es die Erklärung.
+        {QUESTIONS.length} Fragen zu allen neun Kapiteln und den Spielen, geordnet nach Kapiteln.
+        Nach jeder Antwort gibt es die Erklärung.
       </PageHead>
       {done ? (
         <section class="panel panel-pad">
@@ -82,9 +86,10 @@ export function QuizPage() {
               </span>
               <span class="small muted">{score} richtig</span>
             </div>
-            <h2 style={{ fontSize: '1.3rem' }}>{q.text}</h2>
+            <h2 class="quiz-question">{q.text}</h2>
             <div class="stack" style={{ gap: '8px' }}>
-              {q.options.map((o, i) => {
+              {order.map((i) => {
+                const o = q.options[i]!;
                 const state =
                   chosen === null ? '' : i === q.answer ? 'ok' : i === chosen ? 'fail' : '';
                 return (

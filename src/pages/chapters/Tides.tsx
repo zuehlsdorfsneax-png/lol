@@ -103,7 +103,7 @@ export function Tides() {
 
       <Callout kind="merke">
         Gezeitenreibung überträgt Drehimpuls von der Erdrotation auf die Mondbahn: Der Tag wird
-        länger, der Mond entfernt sich um 3,8 cm pro Jahr. Die Entwicklung endet bei etwa 554 000 km
+        länger, der Mond entfernt sich um 3,8 cm pro Jahr. Die Entwicklung endet bei etwa 554.000 km
         – sicher innerhalb der Hill-Sphäre.
       </Callout>
     </>
@@ -151,7 +151,7 @@ function TideExplorer() {
         max={Math.round(sync / KM)}
         step={1000}
         format={(v) => `${fmt(v)} km`}
-        hint="heute: 384 400 km"
+        hint="heute: 384.400 km"
         onChange={setDistKm}
       />
       <dl class="kv">

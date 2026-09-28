@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
+import { FILE_EXPORT, downloadCanvas } from '../ui/download';
 import { Icon } from '../ui/Icon';
 import { RocketAudio } from './audio';
 import { LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
@@ -347,9 +348,11 @@ export function FlightScreen({
   backPressed = 0,
 }: Props) {
   const [run, setRun] = useState(0);
-  const flight = useRef<Flight>(
-    makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites),
-  );
+  // Nur beim ersten Zeichnen einen Flug anlegen (nicht bei jedem der vielen HUD-Updates).
+  const flightRef = useRef<Flight | null>(null);
+  if (!flightRef.current)
+    flightRef.current = makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites);
+  const flight = flightRef as { current: Flight };
   const [, setTick] = useState(0);
   const [map, setMap] = useState(false);
   const [muted, setMuted] = useState(readMuted);
@@ -658,15 +661,14 @@ export function FlightScreen({
   const photo = (): void => {
     const c = canvas.current;
     if (!c) return;
-    c.toBlob((blob) => {
-      if (!blob) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `raketenwerft-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
-      a.click();
-      window.setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      toast('Foto gespeichert.');
-    }, 'image/png');
+    if (!FILE_EXPORT) {
+      toast('Fotos lassen sich in dieser Ansicht nicht speichern.', 'warn');
+      return;
+    }
+    const name = `raketenwerft-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
+    void downloadCanvas(c, name).then((ok) =>
+      ok ? toast('Foto gespeichert.') : toast('Das Foto konnte nicht gespeichert werden.', 'warn'),
+    );
   };
 
   const warpTo = (t: number, what: string): void => {
@@ -1346,7 +1348,12 @@ export function FlightScreen({
     const el = box.current?.closest<HTMLElement>('.game') ?? box.current;
     if (!el) return;
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-    else void el.requestFullscreen?.().catch(() => undefined);
+    else if (!el.requestFullscreen || !document.fullscreenEnabled)
+      toast('Vollbild ist hier nicht erlaubt – z. B. in eingebetteten Ansichten.', 'warn');
+    else
+      void el
+        .requestFullscreen()
+        .catch(() => toast('Der Browser hat das Vollbild abgelehnt.', 'warn'));
   };
 
   // ------------------------------------------------------------ Anzeige
@@ -2045,9 +2052,11 @@ export function FlightScreen({
                 </button>
               </>
             )}
-            <button type="button" class="mbtn" onClick={photo}>
-              <Icon name="camera" /> Foto speichern <kbd>O</kbd>
-            </button>
+            {FILE_EXPORT && (
+              <button type="button" class="mbtn" onClick={photo}>
+                <Icon name="camera" /> Foto speichern <kbd>O</kbd>
+              </button>
+            )}
             <button type="button" class="mbtn" onClick={() => setHelp(true)}>
               <Icon name="quiz" /> Steuerung <kbd>H</kbd>
             </button>
@@ -2065,7 +2074,15 @@ export function FlightScreen({
                 <Icon name={muted ? 'mute' : 'sound'} />{' '}
                 {muted ? 'Ton einschalten' : 'Ton ausschalten'}
               </button>
-              <button type="button" class="mbtn" onClick={fullscreen}>
+              <button
+                type="button"
+                class="mbtn"
+                onClick={fullscreen}
+                disabled={!document.fullscreenEnabled}
+                title={
+                  document.fullscreenEnabled ? 'Vollbild an/aus' : 'Vollbild ist hier nicht erlaubt'
+                }
+              >
                 <Icon name="expand" /> Vollbild
               </button>
             </div>

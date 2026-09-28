@@ -54,6 +54,24 @@ function loadSats(): Satellite[] {
 
 export type Tab = 'werft' | 'herausforderungen' | 'karriere';
 
+/**
+ * Setzt alle Geschwister von `el` und seinen Vorfahren auf `inert`: Nur `el` bleibt bedienbar.
+ * Gibt eine Funktion zurück, die das wieder aufhebt.
+ */
+function isolate(el: HTMLElement): () => void {
+  const changed: HTMLElement[] = [];
+  for (let node: HTMLElement | null = el; node?.parentElement; node = node.parentElement) {
+    for (const sib of Array.from(node.parentElement.children)) {
+      if (sib !== node && sib instanceof HTMLElement && !sib.inert) {
+        sib.inert = true;
+        changed.push(sib);
+      }
+    }
+    if (node.parentElement === document.body) break;
+  }
+  return () => changed.forEach((s) => (s.inert = false));
+}
+
 /** Welche Stern-Bedingungen einer Herausforderung schon einmal erfüllt wurden. */
 function bestMet(id: string): boolean[] {
   const r = progressStore.load().rocketChallenges?.[id];
@@ -86,6 +104,8 @@ export function RocketGame({
     const html = document.documentElement;
     html.classList.add('game-open');
     root.current?.focus({ preventScroll: true });
+    // Alles außer dem Spiel ist nicht erreichbar (Tab, Screenreader), solange es offen ist.
+    const release = root.current ? isolate(root.current) : () => undefined;
     // Eigener Verlaufseintrag: Die Zurück-Taste schließt das Spiel statt die Seite zu wechseln.
     let own = false;
     try {
@@ -110,6 +130,7 @@ export function RocketGame({
     };
     window.addEventListener('popstate', onPop);
     return () => {
+      release();
       html.classList.remove('game-open');
       window.removeEventListener('popstate', onPop);
       if (own && (history.state as { orbitGame?: boolean } | null)?.orbitGame) history.back();

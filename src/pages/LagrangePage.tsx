@@ -154,7 +154,7 @@ export function LagrangePage({ preset }: { preset: string | null }) {
             <div class="panel-title">
               <h3>Lagrange-Punkte und ihre Stabilität</h3>
               <StatusChip status={mu < ROUTH_MU ? 'ok' : 'fail'}>
-                μ = {sig(mu, 3)} {mu < ROUTH_MU ? '<' : '>'} μ_Routh = 0,0385
+                μ = {sig(mu, 3)} {mu < ROUTH_MU ? '<' : '>'} 0,0385 (Routh-Grenze)
               </StatusChip>
             </div>
             <StabilityTable mu={mu} length={system?.length} secondary={system?.labels[1] ?? 'm₂'} />

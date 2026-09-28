@@ -107,7 +107,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'merkurbahn',
     title: 'Erde auf der Merkurbahn',
     description:
-      'Bei 0,39 AE schrumpft der Hill-Radius auf 580 000 km. Der Mond steht jetzt bei 0,66 Hill-Radien – weit jenseits der Grenze.',
+      'Bei 0,39 AE schrumpft der Hill-Radius auf 580.000 km. Der Mond steht jetzt bei 0,66 Hill-Radien – weit jenseits der Grenze.',
     params: { ...BASE, earthOrbit: 0.387, earthEccentricity: 0 },
     view: { frame: 'rotating', radius: 1.6e9, speedIndex: 2 },
     chapter: 8,
@@ -134,7 +134,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'teilchen',
     title: 'Teilchenwolke: Wo endet die Stabilität?',
     description:
-      '300 masselose Testteilchen auf Kreisbahnen von 60 000 bis 1,4 Mio. km. Nach wenigen Jahren bleiben nur die inneren – die Grenze liegt bei etwa der Hälfte des Hill-Radius.',
+      '300 masselose Testteilchen auf Kreisbahnen von 60.000 bis 1,4 Mio. km. Nach wenigen Jahren bleiben nur die inneren – die Grenze liegt bei etwa der Hälfte des Hill-Radius.',
     params: {
       ...REAL_PARAMS,
       particles: { count: 300, innerKm: 60_000, outerKm: 1_400_000, retrograde: false },
@@ -158,7 +158,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'vorbeiflug',
     title: 'Vorbeiflug eines Schurkenplaneten',
     description:
-      'Ein Planet mit Jupitermasse rast mit 20 km/s in 500 000 km Abstand an der Erde vorbei. Seine Gezeitenkraft reißt den Mond aus der Bahn.',
+      'Ein Planet mit Jupitermasse rast mit 20 km/s in 500.000 km Abstand an der Erde vorbei. Seine Gezeitenkraft reißt den Mond aus der Bahn.',
     params: { ...BASE, intruder: { mass: 317.8, distance: 500_000, speed: 20, leadDays: 20 } },
     view: { frame: 'earth', radius: 3e9, speedIndex: 0 },
     chapter: 8,

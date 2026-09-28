@@ -17,7 +17,10 @@ export function MissionsPage() {
         zu drei Sterne – der dritte verlangt, dass du die Grenze fast genau triffst.
       </PageHead>
       <div class="row">
-        <Stars count={3} size={20} label={false} />
+        {/* Ein einzelnes Symbol – drei volle Sterne neben „0 von 27“ wären irreführend. */}
+        <span class="total-star" aria-hidden="true">
+          ★
+        </span>
         <span>
           <strong>{total}</strong> von {MISSIONS.length * 3} Sternen gesammelt
         </span>

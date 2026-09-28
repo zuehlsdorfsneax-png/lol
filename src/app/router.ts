@@ -14,7 +14,8 @@ export type PageId =
   | 'download'
   | 'begriffe'
   | 'methodik'
-  | 'quellen';
+  | 'quellen'
+  | 'unbekannt';
 
 export interface Route {
   page: PageId;
@@ -32,11 +33,15 @@ export function parseHash(hash: string): Route {
   if (token === '' || token === 'start') return { page: 'start', param: null };
   if (token === 'simulator') return { page: 'simulator', param: null };
   if (token.startsWith('sim-')) return { page: 'simulator', param: token.slice(4) };
-  if (token === 'stabilitaetskarte') return { page: 'karte', param: null };
+  if (token === 'stabilitaetskarte' || token === 'karte') return { page: 'karte', param: null };
   if (token.startsWith('karte-')) return { page: 'karte', param: token.slice(6) };
-  if (token === 'lagrange-labor') return { page: 'lagrange', param: null };
+  if (token === 'lagrange-labor' || token === 'lagrange') return { page: 'lagrange', param: null };
   if (token.startsWith('lagrange-')) return { page: 'lagrange', param: token.slice(9) };
-  if (token.startsWith('kapitel-')) return { page: 'kapitel', param: token.slice(8) };
+  if (token.startsWith('kapitel-')) {
+    // Nur Kapitel 1 bis 9 – alles andere ist eine unbekannte Seite, nicht still Kapitel 1.
+    const n = token.slice(8);
+    return /^[1-9]$/.test(n) ? { page: 'kapitel', param: n } : { page: 'unbekannt', param: token };
+  }
   if (token === 'missionen') return { page: 'missionen', param: null };
   if (token.startsWith('mission-')) return { page: 'mission', param: token.slice(8) };
   if (token === 'quiz') return { page: 'quiz', param: null };
@@ -46,7 +51,7 @@ export function parseHash(hash: string): Route {
   if (token === 'begriffe') return { page: 'begriffe', param: null };
   if (token === 'methodik') return { page: 'methodik', param: null };
   if (token === 'quellen') return { page: 'quellen', param: null };
-  return { page: 'start', param: null };
+  return { page: 'unbekannt', param: token };
 }
 
 export function useRoute(): Route {

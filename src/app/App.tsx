@@ -5,6 +5,7 @@ import { Icon, type IconName } from '../ui/Icon';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { usePersistentState } from '../ui/hooks';
 import { useTheme, type ThemeChoice } from '../ui/theme';
+import { findMission } from '../missions/missions';
 import { CHAPTERS } from './content';
 import { useRoute, type Route } from './router';
 
@@ -252,6 +253,7 @@ function Page({ route }: { route: Route }) {
       alive = false;
     };
   }, [route.page]);
+  if (route.page === 'unbekannt') return <NotFound token={route.param ?? ''} />;
   if (!load) return <HomePage />;
   const C = loaded.get(route.page);
   if (C) return <C route={route} />;
@@ -286,12 +288,39 @@ const PAGE_TITLES: Record<Route['page'], string> = {
   begriffe: 'Begriffe A–Z',
   methodik: 'Methodik & Validierung',
   quellen: 'Quellen & Formeln',
+  unbekannt: 'Seite nicht gefunden',
 };
+
+/** Unbekannte Adresse: sagen, was los ist, statt still die Startseite zu zeigen. */
+function NotFound({ token }: { token: string }) {
+  return (
+    <div class="stack" style={{ gap: '14px', maxWidth: '640px' }}>
+      <div class="eyebrow">Fehler 404</div>
+      <h1>Diese Seite gibt es nicht</h1>
+      <p>
+        Die Adresse <code>#{token}</code> führt nirgendwohin. Vielleicht hilft die Startseite oder
+        das Menü weiter.
+      </p>
+      <div class="btn-row">
+        <a class="btn primary" href="#start">
+          Zur Startseite
+        </a>
+        <a class="btn" href="#kapitel-1">
+          Zu Kapitel 1
+        </a>
+      </div>
+    </div>
+  );
+}
 
 function titleFor(route: Route): string {
   if (route.page === 'kapitel') {
     const c = CHAPTERS.find((x) => String(x.n) === route.param);
     if (c) return `Kapitel ${c.n}: ${c.title}`;
+  }
+  if (route.page === 'mission') {
+    const m = findMission(route.param ?? '');
+    if (m) return `Mission: ${m.title}`;
   }
   return PAGE_TITLES[route.page];
 }
@@ -300,7 +329,25 @@ export function App() {
   const route = useRoute();
   const [open, setOpen] = useState(false);
   const main = useRef<HTMLElement>(null);
+  const nav = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const first = useRef(true);
+  // Offenes Handy-Menü: Esc schließt, der Fokus bleibt im Menü, der Rest ist so lange inaktiv.
+  useEffect(() => {
+    if (!open) return;
+    const rest = [main.current, document.querySelector<HTMLElement>('.topbar')];
+    for (const el of rest) if (el) el.inert = true;
+    nav.current?.querySelector<HTMLElement>('a, button')?.focus();
+    const key = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('keydown', key);
+      for (const el of rest) if (el) el.inert = false;
+      menuButton.current?.focus({ preventScroll: true });
+    };
+  }, [open]);
   useEffect(() => {
     setOpen(false);
     document.title = `${titleFor(route)} · Orbitlabor`;
@@ -319,6 +366,9 @@ export function App() {
           type="button"
           class="btn icon ghost"
           aria-label="Menü öffnen"
+          aria-expanded={open}
+          aria-controls="hauptnavigation"
+          ref={menuButton}
           onClick={() => setOpen(true)}
         >
           <Icon name="menu" />
@@ -328,8 +378,19 @@ export function App() {
         </a>
         <span class="topbar-title">{route.page === 'start' ? 'Orbitlabor' : titleFor(route)}</span>
       </div>
-      <div class={`scrim ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
-      <nav class={`sidebar ${open ? 'open' : ''}`} aria-label="Hauptnavigation">
+      <button
+        type="button"
+        class={`scrim ${open ? 'open' : ''}`}
+        aria-label="Menü schließen"
+        tabIndex={open ? 0 : -1}
+        onClick={() => setOpen(false)}
+      />
+      <nav
+        class={`sidebar ${open ? 'open' : ''}`}
+        id="hauptnavigation"
+        aria-label="Hauptnavigation"
+        ref={nav}
+      >
         <a class="brand" href="#start">
           <BrandMark />
           <span>

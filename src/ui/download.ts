@@ -18,10 +18,20 @@ export function downloadText(name: string, text: string, type = 'text/plain'): v
   trigger(name, URL.createObjectURL(blob));
 }
 
-export function downloadCanvas(canvas: HTMLCanvasElement, name: string): void {
-  canvas.toBlob((blob) => {
-    if (blob) trigger(name, URL.createObjectURL(blob));
-  }, 'image/png');
+/** Speichert ein Bild; das Ergebnis sagt, ob der Download gestartet wurde. */
+export function downloadCanvas(canvas: HTMLCanvasElement, name: string): Promise<boolean> {
+  if (!FILE_EXPORT) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob((blob) => {
+        if (!blob) return resolve(false);
+        trigger(name, URL.createObjectURL(blob));
+        resolve(true);
+      }, 'image/png');
+    } catch {
+      resolve(false);
+    }
+  });
 }
 
 function trigger(name: string, url: string): void {

@@ -42,7 +42,7 @@ export const SYSTEMS: readonly CR3BPSystem[] = [
     labels: ['Sonne', 'Jupiter'],
     length: 5.2 * AU,
     time: (11.862 * YEAR) / (2 * Math.PI),
-    note: 'An L4 und L5 von Jupiter kreisen über 10 000 bekannte Trojaner-Asteroiden.',
+    note: 'An L4 und L5 von Jupiter kreisen über 10.000 bekannte Trojaner-Asteroiden.',
   },
   {
     id: 'pluto-charon',

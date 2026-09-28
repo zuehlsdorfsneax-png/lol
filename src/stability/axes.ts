@@ -44,8 +44,8 @@ export const AXES: Record<AxisKey, AxisDef> = {
   },
   moonSpeed: {
     key: 'moonSpeed',
-    label: 'Startgeschwindigkeit (× v_Kreis)',
-    short: 'v / v_K',
+    label: 'Startgeschwindigkeit (× vₖ, Kreisbahntempo)',
+    short: 'v / vₖ',
     min: 0.1,
     max: 1.6,
     log: false,
@@ -200,7 +200,7 @@ export const MAP_PRESETS: readonly MapPreset[] = [
     id: 'sonne',
     title: 'Erdabstand × Sonnenmasse',
     description:
-      'Der reale Mond (384 400 km) bei anderem Abstand zur Sonne und anderer Sonnenmasse. Die Grenze folgt der Theorie: Hill-Radius ∝ a · M^(−1/3).',
+      'Der reale Mond (384.400 km) bei anderem Abstand zur Sonne und anderer Sonnenmasse. Die Grenze folgt der Theorie: Hill-Radius ∝ a · M^(−1/3).',
     config: {
       x: 'earthOrbit',
       y: 'sunMass',
@@ -290,7 +290,7 @@ export function theoryOverlays(cfg: MapConfig): Overlay[] {
     });
   }
   if (cfg.x === 'earthOrbit' && cfg.y === 'sunMass') {
-    // Mond bei 384 400 km erreicht 0,48 r_H: 384 400 km = 0,48 · a · ∛(m / 3M)
+    // Mond bei 384.400 km erreicht 0,48 r_H: 384.400 km = 0,48 · a · ∛(m / 3M)
     const d = cfg.base.moonDistance * KM;
     const m = EARTH.mass + MOON.mass;
     const crit = criticalMoonDistance(false, cfg.base.earthEccentricity, 0);
