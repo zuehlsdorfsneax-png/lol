@@ -39,7 +39,7 @@ const FORMULAS: { title: string; tex: string; note: string }[] = [
   {
     title: 'Stabilitätsgrenze (Domingos et al. 2006)',
     tex: String.raw`a_\text{krit} = 0{,}4895\,(1-1{,}0305\,e_P-0{,}2738\,e_M)\,r_H`,
-    note: 'retrograd: 0,9309 (1 − 1,0764 e_P − 0,9812 e_M) r_H',
+    note: 'retrograd: 0,9309 (1 − 1,0764 e_P − 0,9812 e_M) Hill-Radien',
   },
   {
     title: 'Roche-Grenze (flüssig / starr)',

@@ -8,6 +8,29 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Oberfläche 3.0 – aufgeräumt, Raketenwerft als Vollbild-Spiel
+
+Die ganze App wurde auf Übersicht geprüft; die Raketenwerft orientiert sich jetzt an der
+Bedienung von Spaceflight Simulator (Steam): eigener Spielbildschirm, Werft als Blaupause,
+Cockpit mit wenigen großen Knöpfen.
+
+| #   | Befund                                                                                          | Status | Lösung                                                                                                                               |
+| --- | ----------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 65  | Seitenleiste mit 22 Einträgen ohne Symbole, lange Kapiteltitel brachen um                       | ✅     | Symbole je Bereich, Kapitel mit Nummernfeld, kurze Titel, „Anhang“ einklappbar (Zustand wird gemerkt), aktive Seite mit Akzentstrich |
+| 66  | Kein Schalter für Hell und Dunkel                                                               | ✅     | Umschalter System / Hell / Dunkel unten in der Leiste; gemerkt, und „System“ übernimmt wieder das Schema einer einbettenden Seite    |
+| 67  | Seitenköpfe mit großer Überschrift und bis zu sieben Zeilen Einleitung in Serifenschrift        | ✅     | Kompakte Köpfe: kleinere Überschrift, Einleitung in der Oberflächenschrift; Serifen nur noch für Lesetexte                           |
+| 68  | Startseite: acht gleich aussehende Textkarten, dazu die veraltete Angabe „22 Ziele“             | ✅     | Klare Abschnitte (Antwort, Kapitel, Selbst ausprobieren, Spielen und üben) mit Symbolkacheln; Zahlen aktualisiert                    |
+| 69  | Raketenwerft lief eingebettet unter einem langen Text, neben der Seitenleiste                   | ✅     | Eigener Vollbild-Spielbildschirm mit Rückkehr per ✕; die Seite zeigt Rang, Punkte, Sterne und zwei Startknöpfe                       |
+| 70  | Werft: Vorlagen, Hangar, drei Spalten und die Missionskontrolle untereinander – viel Scrollen   | ✅     | Wie in Spaceflight Simulator: Teile nach Art links, Blaupause mit Raster in der Mitte, Daten rechts, Vorlagen und Hangar als Menüs   |
+| 71  | Stufen waren nur in einer Tabelle zu erkennen                                                   | ✅     | Stufenklammern mit Nummer und Δv direkt am Bauplan                                                                                   |
+| 72  | Flug: 14 Knöpfe in einer Leiste oben, Speichern/Laden/Foto/Ton/Vollbild hinter „⋯“              | ✅     | Minimales Cockpit: Flugdaten links, Zeitraffer oben, Ziel rechts; das Pause-Menü (☰ oder Esc) bündelt alles Seltene                 |
+| 73  | Schubregler klein und waagerecht                                                                | ✅     | Senkrechter Regler zum Ziehen wie im Vorbild, daneben Tankanzeige, große Taste „Stufe“                                               |
+| 74  | Auf dem Handy überlagerten sich Lageanzeige, SAS-Knöpfe und Schubregler                         | ✅     | Eigenes Hochformat: Lageanzeige über den Drehknöpfen, Aktionen über dem Schubregler, Bordcomputer als Leiste von unten               |
+| 75  | Die Stile der Raketenwerft verschoben die Anzeige im Simulator (gemeinsamer Klassenname `.hud`) | ✅     | Spielstile in eigener Datei und nur innerhalb des Spiels gültig                                                                      |
+| 76  | Anleitung, Steuerung, Physik und Spielwelt standen als vier lange Blöcke untereinander          | ✅     | Reiter auf der Seite der Raketenwerft                                                                                                |
+| 77  | Kartenmaßstab und Hinweis lagen unter dem Schubregler                                           | ✅     | Links unten über den Drehknöpfen                                                                                                     |
+| 78  | Noch einige „r_H“ in Texten (Kapitel 5, 6, 9, Missionen)                                        | ✅     | r mit tiefgestelltem H bzw. „Hill-Radien“                                                                                            |
+
 ## Raketenwerft 2.0 – Ausbau als Spieleentwickler
 
 Was jetzt über Spaceflight Simulator hinausgeht (dort gibt es nichts davon oder nur einen Teil):
@@ -126,7 +149,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **170 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **173 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,
@@ -134,6 +157,8 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 - **Browser-Durchlauf** aller Seiten auf PC und Handy (hell und dunkel) ohne Fehlermeldung und
   ohne seitliches Scrollen; die Raketenwerft zusätzlich auf 1.400, 820 und 390 px Breite mit
   Start, Countdown, Umlaufbahn, Bordcomputer, Karte mit Manöver, Nacht, Satelliten, Europa,
-  Jupiter, Wiedereintritt, Absturz und Herausforderungen.
+  Jupiter, Wiedereintritt, Absturz und Herausforderungen; nach dem Umbau der Oberfläche erneut auf
+  1.400, 1.000 und 390 px: Werft, Vorlagen-Menü, Stufenmarken, Start, Bordcomputer, Karte,
+  Pause-Menü, Herausforderung mit Einweisung und Rückkehr, Karriere, Hell/Dunkel-Umschalter.
 - **Leistung:** Auch bei 5.000.000-fachem Zeitraffer mit offener Karte bleiben es 60 Bilder pro
   Sekunde (gemessen im Browser ohne Bildschirmausgabe).

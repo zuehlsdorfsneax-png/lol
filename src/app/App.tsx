@@ -1,7 +1,9 @@
 import type { ComponentType } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { HomePage } from '../pages/HomePage';
-import { Icon } from '../ui/Icon';
+import { Icon, type IconName } from '../ui/Icon';
+import { usePersistentState } from '../ui/hooks';
+import { useTheme, type ThemeChoice } from '../ui/theme';
 import { CHAPTERS } from './content';
 import { useRoute, type Route } from './router';
 
@@ -29,51 +31,168 @@ function BrandMark() {
 interface NavItem {
   to: string;
   label: string;
+  icon?: IconName;
   num?: string;
   active: (r: Route) => boolean;
 }
 
-const GROUPS: { title: string; items: NavItem[] }[] = [
+interface NavGroup {
+  id: string;
+  title: string;
+  /** Einklappbar; eingeklappt ab Werk, solange keine Seite der Gruppe offen ist. */
+  collapsible?: boolean;
+  items: NavItem[];
+}
+
+/** Kurze Titel für die Seitenleiste, damit nichts umbricht. */
+const SHORT: Record<number, string> = { 7: 'Hohle-Mond-Theorie', 8: 'Eigene Simulation' };
+
+const GROUPS: NavGroup[] = [
   {
+    id: 'werkzeuge',
     title: 'Werkzeuge',
     items: [
-      { to: 'simulator', label: 'Simulator', active: (r) => r.page === 'simulator' },
-      { to: 'stabilitaetskarte', label: 'Stabilitätskarte', active: (r) => r.page === 'karte' },
-      { to: 'lagrange-labor', label: 'Lagrange-Labor', active: (r) => r.page === 'lagrange' },
+      { to: 'simulator', label: 'Simulator', icon: 'orbit', active: (r) => r.page === 'simulator' },
+      {
+        to: 'stabilitaetskarte',
+        label: 'Stabilitätskarte',
+        icon: 'grid',
+        active: (r) => r.page === 'karte',
+      },
+      {
+        to: 'lagrange-labor',
+        label: 'Lagrange-Labor',
+        icon: 'lagrange',
+        active: (r) => r.page === 'lagrange',
+      },
     ],
   },
   {
+    id: 'kapitel',
     title: 'Kapitel',
+    collapsible: true,
     items: CHAPTERS.map((c) => ({
       to: `kapitel-${c.n}`,
-      label: c.title,
+      label: SHORT[c.n] ?? c.title,
       num: String(c.n),
       active: (r: Route) => r.page === 'kapitel' && r.param === String(c.n),
     })),
   },
   {
+    id: 'spielen',
     title: 'Spielen',
     items: [
-      { to: 'rakete', label: 'Raketenwerft', active: (r) => r.page === 'rakete' },
-      { to: 'spiel', label: 'Lunas Sternenreise', active: (r) => r.page === 'spiel' },
+      { to: 'rakete', label: 'Raketenwerft', icon: 'rocket', active: (r) => r.page === 'rakete' },
+      { to: 'spiel', label: 'Lunas Sternenreise', icon: 'moon', active: (r) => r.page === 'spiel' },
       {
         to: 'missionen',
         label: 'Missionen',
+        icon: 'flag',
         active: (r) => r.page === 'missionen' || r.page === 'mission',
       },
-      { to: 'quiz', label: 'Quiz', active: (r) => r.page === 'quiz' },
+      { to: 'quiz', label: 'Quiz', icon: 'quiz', active: (r) => r.page === 'quiz' },
     ],
   },
   {
+    id: 'anhang',
     title: 'Anhang',
+    collapsible: true,
     items: [
-      { to: 'methodik', label: 'Methodik & Validierung', active: (r) => r.page === 'methodik' },
-      { to: 'quellen', label: 'Quellen & Formeln', active: (r) => r.page === 'quellen' },
-      { to: 'begriffe', label: 'Begriffe A–Z', active: (r) => r.page === 'begriffe' },
-      { to: 'download', label: 'Download für Windows', active: (r) => r.page === 'download' },
+      {
+        to: 'methodik',
+        label: 'Methodik & Validierung',
+        icon: 'flask',
+        active: (r) => r.page === 'methodik',
+      },
+      {
+        to: 'quellen',
+        label: 'Quellen & Formeln',
+        icon: 'sigma',
+        active: (r) => r.page === 'quellen',
+      },
+      { to: 'begriffe', label: 'Begriffe A–Z', icon: 'list', active: (r) => r.page === 'begriffe' },
+      {
+        to: 'download',
+        label: 'Download für Windows',
+        icon: 'download',
+        active: (r) => r.page === 'download',
+      },
     ],
   },
 ];
+
+const THEMES: { id: ThemeChoice; icon: IconName; label: string }[] = [
+  { id: 'auto', icon: 'auto', label: 'Wie das System' },
+  { id: 'light', icon: 'sun', label: 'Hell' },
+  { id: 'dark', icon: 'dark', label: 'Dunkel' },
+];
+
+function ThemeSwitch() {
+  const [theme, setTheme] = useTheme();
+  return (
+    <div class="theme-switch" role="radiogroup" aria-label="Farbschema">
+      {THEMES.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="radio"
+          aria-checked={theme === t.id}
+          title={t.label}
+          aria-label={t.label}
+          onClick={() => setTheme(t.id)}
+        >
+          <Icon name={t.icon} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function NavLink({ item, route }: { item: NavItem; route: Route }) {
+  return (
+    <a class="nav-link" href={`#${item.to}`} aria-current={item.active(route) ? 'page' : undefined}>
+      {item.num ? <span class="nav-num">{item.num}</span> : item.icon && <Icon name={item.icon} />}
+      <span class="nav-label">{item.label}</span>
+    </a>
+  );
+}
+
+function Navigation({ route }: { route: Route }) {
+  const [open, setOpen] = usePersistentState<Record<string, boolean>>('orbitlabor-nav', {
+    kapitel: true,
+  });
+  return (
+    <>
+      <a class="nav-link" href="#start" aria-current={route.page === 'start' ? 'page' : undefined}>
+        <Icon name="home" />
+        <span class="nav-label">Start</span>
+      </a>
+      {GROUPS.map((g) => {
+        const here = g.items.some((i) => i.active(route));
+        const expanded = !g.collapsible || here || open[g.id] === true;
+        return (
+          <div class="nav-group" key={g.id}>
+            {g.collapsible ? (
+              <button
+                type="button"
+                class="nav-group-title toggle"
+                aria-expanded={expanded}
+                disabled={here}
+                onClick={() => setOpen((o) => ({ ...o, [g.id]: !expanded }))}
+              >
+                {g.title}
+                <Icon name="chevron" />
+              </button>
+            ) : (
+              <div class="nav-group-title">{g.title}</div>
+            )}
+            {expanded && g.items.map((item) => <NavLink key={item.to} item={item} route={route} />)}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
 /**
  * Seiten werden erst geladen, wenn man sie öffnet – so startet die App schneller.
@@ -203,38 +322,26 @@ export function App() {
         >
           <Icon name="menu" />
         </button>
-        <a class="brand" href="#start">
+        <a class="brand" href="#start" aria-label="Orbitlabor – Startseite">
           <BrandMark />
-          <span class="brand-name">Orbitlabor</span>
         </a>
+        <span class="topbar-title">{route.page === 'start' ? 'Orbitlabor' : titleFor(route)}</span>
       </div>
       <div class={`scrim ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
       <nav class={`sidebar ${open ? 'open' : ''}`} aria-label="Hauptnavigation">
         <a class="brand" href="#start">
           <BrandMark />
           <span>
-            <div class="brand-name">Orbitlabor</div>
-            <div class="brand-sub">Bahnstabilität im Drei-Körper-System</div>
+            <span class="brand-name">Orbitlabor</span>
+            <span class="brand-sub">Seminararbeit Astronomie</span>
           </span>
         </a>
-        {GROUPS.map((g) => (
-          <div class="nav-group" key={g.title}>
-            <div class="nav-group-title">{g.title}</div>
-            {g.items.map((item) => (
-              <a
-                key={item.to}
-                class="nav-link"
-                href={`#${item.to}`}
-                aria-current={item.active(route) ? 'page' : undefined}
-              >
-                {item.num && <span class="nav-num">{item.num}</span>}
-                {item.label}
-              </a>
-            ))}
-          </div>
-        ))}
+        <div class="nav-scroll">
+          <Navigation route={route} />
+        </div>
         <div class="sidebar-foot">
-          Seminararbeit Astronomie · Eigenanteil: digitale Drei-Körper-Simulation
+          <span>Darstellung</span>
+          <ThemeSwitch />
         </div>
       </nav>
       <main class="main" id="inhalt" ref={main} tabIndex={-1}>

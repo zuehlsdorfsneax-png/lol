@@ -10,7 +10,9 @@ import 'katex/dist/katex.min.css';
 import './styles/global.css';
 import { render } from 'preact';
 import { App } from './app/App';
+import { initTheme } from './ui/theme';
 
+initTheme();
 const root = document.getElementById('app');
 if (!root) throw new Error('Element #app fehlt.');
 render(<App />, root);

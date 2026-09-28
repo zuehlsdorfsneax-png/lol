@@ -23,7 +23,7 @@ export function Conclusion() {
           <strong>Verlassen</strong> würde er das System mit etwa 19 % mehr Geschwindigkeit, bei
           einem Abstand über 0,48 Hill-Radien, wenn die Erde der Sonne näher als 0,52 AE käme oder
           die Sonne 6,5-mal schwerer wäre. Keine dieser Bedingungen ist absehbar – auch die
-          Gezeitenreibung treibt den Mond nur bis etwa 554 000 km (0,37 r_H).
+          Gezeitenreibung treibt den Mond nur bis etwa 554 000 km (0,37 r<sub>H</sub>).
         </p>
 
         <SectionTitle n="9.2">Zusammenfassung der wichtigsten Erkenntnisse</SectionTitle>

@@ -193,7 +193,7 @@ export function drawMap(
     ctx.restore();
   }
 
-  // Maßstab über den Steuerknöpfen, unter der Anzeige links.
+  // Maßstab
   const target = W * 0.22;
   const meters = target / v.scale;
   const pow = Math.pow(10, Math.floor(Math.log10(meters)));
@@ -207,10 +207,10 @@ export function drawMap(
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   const narrow = W < 640;
-  // Rechts über dem Schubregler, damit nichts die Lageanzeige verdeckt.
-  const by = narrow ? H - 250 : H - 205;
-  const x1 = W - 16;
-  const x0 = x1 - px;
+  // Links unten über den Drehknöpfen: dort verdeckt der Maßstab weder Lageanzeige noch Schubregler.
+  const by = narrow ? H - 236 : H - 102;
+  const x0 = 16;
+  const x1 = x0 + px;
   ctx.moveTo(x0, by);
   ctx.lineTo(x1, by);
   ctx.moveTo(x0, by - 4);
@@ -219,12 +219,12 @@ export function drawMap(
   ctx.lineTo(x1, by + 4);
   ctx.stroke();
   ctx.font = '600 12px Jost, system-ui, sans-serif';
-  label(ctx, km(nice), x1 - ctx.measureText(km(nice)).width, by - 14, 'rgba(255,255,255,0.8)');
-  if (!narrow) {
+  label(ctx, km(nice), x0, by - 14, 'rgba(255,255,255,0.8)');
+  if (W >= 900) {
     const hint = f.node
-      ? 'Anfasser am Manöver ziehen · Klick auf die Bahn verschiebt es'
-      : 'Klick auf die Bahn: Manöver planen · Ziehen: verschieben · Mausrad: zoomen';
-    label(ctx, hint, x1 - ctx.measureText(hint).width - 4, by + 18, 'rgba(255,255,255,0.5)');
+      ? 'Anfasser am Manöver ziehen · Bahn anklicken verschiebt es'
+      : 'Bahn anklicken: Manöver planen · Ziehen: verschieben · Mausrad: zoomen';
+    label(ctx, hint, x0, by - 34, 'rgba(255,255,255,0.5)');
   }
   return hits;
 }

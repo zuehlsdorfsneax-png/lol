@@ -96,8 +96,8 @@ export function Tides() {
         <p>
           Für die Bahnstabilität ist wichtig: Selbst dieser Endabstand liegt bei nur{' '}
           <strong>{fmt(sync / EARTH_HILL_RADIUS, 2)} Hill-Radien</strong>, also deutlich innerhalb
-          der Stabilitätsgrenze von etwa 0,48 r_H (Kapitel 5). Die Gezeitenreibung kann den Mond
-          also nicht aus dem System treiben.
+          der Stabilitätsgrenze von etwa 0,48 r<sub>H</sub> (Kapitel 5). Die Gezeitenreibung kann
+          den Mond also nicht aus dem System treiben.
         </p>
       </div>
 
@@ -160,7 +160,9 @@ function TideExplorer() {
         <dt>Länge eines Mondmonats</dt>
         <dd>{fmt(monthLength(a) / DAY, 1)} Tage</dd>
         <dt>Anteil am Hill-Radius</dt>
-        <dd>{fmt(a / EARTH_HILL_RADIUS, 3)} r_H</dd>
+        <dd>
+          {fmt(a / EARTH_HILL_RADIUS, 3)} r<sub>H</sub>
+        </dd>
         <dt>{years >= 0 ? 'Bei heutiger Rate erreicht in' : 'Bei heutiger Rate vor'}</dt>
         <dd>{fmt(Math.abs(years) / 1e9, 1)} Mrd. Jahren (grobe Schätzung)</dd>
       </dl>

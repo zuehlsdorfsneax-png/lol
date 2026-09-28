@@ -159,7 +159,7 @@ export const MISSIONS: readonly Mission[] = [
     years: 5,
     score: (r, v) => stars(r.outcome === 'escape' || r.outcome === 'sun', [v <= 1.3, v <= 1.22]),
     starRules: ['Entkommen', 'Entkommen mit v ≤ 1,30 · v_K', 'Entkommen mit v ≤ 1,22 · v_K'],
-    hint: 'Der Mond muss nicht unendlich weit fliegen – es genügt, wenn sein erdfernster Punkt jenseits der Stabilitätsgrenze (≈ 0,48 r_H) liegt.',
+    hint: 'Der Mond muss nicht unendlich weit fliegen – es genügt, wenn sein erdfernster Punkt jenseits der Stabilitätsgrenze (≈ 0,48 Hill-Radien) liegt.',
     explanation:
       'Schon ab etwa 1,19 · v_K reicht die Ellipse bis 0,62 Hill-Radien. Dort öffnet sich das Tor bei L1 oder L2, und die Gezeitenkraft der Sonne zieht den Mond aus der Erdumgebung – 16 % weniger als die klassische Fluchtgeschwindigkeit.',
     view: { frame: 'rotating', radius: 3.5e9 },
@@ -180,15 +180,15 @@ export const MISSIONS: readonly Mission[] = [
       max: 1,
       step: 0.0025,
       initial: 0.3,
-      format: (v) => `${de(v, 3)} r_H`,
+      format: (v) => `${de(v, 3)} Hill-Radien`,
     },
     base: BASE,
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable', [v >= 0.42, v >= 0.465]),
-    starRules: ['30 Jahre stabil', 'Abstand ≥ 0,42 r_H', 'Abstand ≥ 0,465 r_H'],
+    starRules: ['30 Jahre stabil', 'Abstand ≥ 0,42 Hill-Radien', 'Abstand ≥ 0,465 Hill-Radien'],
     hint: 'Numerische Studien (Domingos et al. 2006) finden für prograde Monde eine Grenze bei etwa der Hälfte des Hill-Radius.',
     explanation:
-      'Die Simulation findet die Grenze bei 0,478 r_H, Domingos et al. geben 0,481 r_H an. Jenseits davon kann der Mond durch das Tor bei L1/L2 entkommen – die Gezeitenkraft der Sonne wächst mit r³.',
+      'Die Simulation findet die Grenze bei 0,478 Hill-Radien, Domingos et al. geben 0,481 Hill-Radien an. Jenseits davon kann der Mond durch das Tor bei L1/L2 entkommen – die Gezeitenkraft der Sonne wächst mit r³.',
     view: { frame: 'rotating', radius: 2.4e9 },
   },
   {
@@ -207,15 +207,15 @@ export const MISSIONS: readonly Mission[] = [
       max: 1.1,
       step: 0.0025,
       initial: 0.5,
-      format: (v) => `${de(v, 3)} r_H`,
+      format: (v) => `${de(v, 3)} Hill-Radien`,
     },
     base: { ...BASE, moonRetrograde: true },
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable', [v >= 0.75, v >= 0.9]),
-    starRules: ['30 Jahre stabil', 'Abstand ≥ 0,75 r_H', 'Abstand ≥ 0,90 r_H'],
+    starRules: ['30 Jahre stabil', 'Abstand ≥ 0,75 Hill-Radien', 'Abstand ≥ 0,90 Hill-Radien'],
     hint: 'Die Coriolis-Kraft im rotierenden System zeigt bei retrograden Monden zur Erde hin.',
     explanation:
-      'Retrograde Monde sind bis etwa 0,92 r_H stabil – fast doppelt so weit wie prograde. Im mitrotierenden System drückt die Coriolis-Kraft sie zur Erde hin. Im Sonnensystem kreisen tatsächlich viele weit entfernte, eingefangene Monde rückläufig.',
+      'Retrograde Monde sind bis etwa 0,92 Hill-Radien stabil – fast doppelt so weit wie prograde. Im mitrotierenden System drückt die Coriolis-Kraft sie zur Erde hin. Im Sonnensystem kreisen tatsächlich viele weit entfernte, eingefangene Monde rückläufig.',
     view: { frame: 'rotating', radius: 2.6e9 },
   },
   {
@@ -240,9 +240,9 @@ export const MISSIONS: readonly Mission[] = [
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable' && v <= 0.8, [v <= 0.62, v <= 0.54]),
     starRules: ['Stabil bei ≤ 0,80 AE', 'Stabil bei ≤ 0,62 AE', 'Stabil bei ≤ 0,54 AE'],
-    hint: 'Der Hill-Radius wächst linear mit dem Abstand zur Sonne: r_H = a · ∛(m/3M).',
+    hint: 'Der Hill-Radius wächst linear mit dem Abstand zur Sonne: Hill-Radius = a · ∛(m/3M).',
     explanation:
-      'Die Grenze liegt bei etwa 0,52 AE: Dort ist der Hill-Radius auf 790 000 km geschrumpft, und der Mond steht bei 0,48 r_H. Auf der Venusbahn (0,72 AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39 AE) nicht mehr.',
+      'Die Grenze liegt bei etwa 0,52 AE: Dort ist der Hill-Radius auf 790 000 km geschrumpft, und der Mond steht bei 0,48 Hill-Radien. Auf der Venusbahn (0,72 AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39 AE) nicht mehr.',
     view: { frame: 'rotating', radius: 1.6e9 },
   },
   {
@@ -268,9 +268,9 @@ export const MISSIONS: readonly Mission[] = [
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable' && v >= 2, [v >= 4.5, v >= 6.2]),
     starRules: ['Stabil bei ≥ 2 M☉', 'Stabil bei ≥ 4,5 M☉', 'Stabil bei ≥ 6,2 M☉'],
-    hint: 'r_H ∝ M^(−1/3): Achtfache Masse halbiert den Hill-Radius.',
+    hint: 'Hill-Radius ∝ M^(−1/3): Achtfache Masse halbiert den Hill-Radius.',
     explanation:
-      'Bei etwa 6,5 Sonnenmassen ist der Hill-Radius auf 0,54 seines heutigen Wertes geschrumpft – der Mond stünde bei 0,48 r_H. Die dritte Wurzel macht den Mond erstaunlich robust gegen eine schwerere Sonne.',
+      'Bei etwa 6,5 Sonnenmassen ist der Hill-Radius auf 0,54 seines heutigen Wertes geschrumpft – der Mond stünde bei 0,48 Hill-Radien. Die dritte Wurzel macht den Mond erstaunlich robust gegen eine schwerere Sonne.',
     view: { frame: 'rotating', radius: 1.8e9 },
   },
   {

@@ -1,4 +1,5 @@
-import { useState } from 'preact/hooks';
+import './game.css';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { Builder } from './Builder';
 import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
@@ -36,12 +37,29 @@ function loadSats(): Satellite[] {
   });
 }
 
-export type Tab = 'werft' | 'herausforderungen';
+export type Tab = 'werft' | 'herausforderungen' | 'karriere';
 
-export function RocketGame() {
+/**
+ * Das Spiel läuft als eigener Bildschirm über der ganzen App – wie ein richtiges Spiel.
+ * Schließen führt zurück auf die Seite der Raketenwerft.
+ */
+export function RocketGame({
+  startTab = 'werft',
+  onClose,
+}: {
+  startTab?: Tab;
+  onClose: () => void;
+}) {
   const [design, setDesign] = useState<Design>(loadDesign);
   const [flying, setFlying] = useState(false);
-  const [tab, setTab] = useState<Tab>('werft');
+  const [tab, setTab] = useState<Tab>(startTab);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.add('game-open');
+    root.current?.focus({ preventScroll: true });
+    return () => html.classList.remove('game-open');
+  }, []);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [goals, setGoals] = useState<string[]>(() => progressStore.load().rocketGoals);
   const [paint, setPaintId] = useState<string>(() => progressStore.load().rocketPaint);
@@ -95,47 +113,52 @@ export function RocketGame() {
 
   const next = challenge ? CHALLENGES[CHALLENGES.indexOf(challenge) + 1] : undefined;
 
-  return flying ? (
-    <FlightScreen
-      key={flightId}
-      design={design}
-      paint={paint}
-      sandbox={sandbox}
-      knownGoals={goals}
-      stars={stars}
-      satellites={sats}
-      challenge={challenge}
-      bestStars={challenge ? (stars[challenge.id] ?? 0) : 0}
-      onGoal={reachGoal}
-      onSatellites={saveSats}
-      onChallenge={finishChallenge}
-      onNextChallenge={next ? () => startChallenge(next) : null}
-      onExit={() => {
-        setFlying(false);
-        if (challenge) setTab('herausforderungen');
-        setChallenge(null);
-      }}
-    />
-  ) : (
-    <Builder
-      tab={tab}
-      onTab={setTab}
-      design={design}
-      goals={goals}
-      stars={stars}
-      satellites={sats}
-      onSatellites={saveSats}
-      paint={paint}
-      onPaint={choosePaint}
-      onChange={change}
-      onLaunch={() => {
-        setChallenge(null);
-        setFlightId((n) => n + 1);
-        setFlying(true);
-      }}
-      onChallenge={startChallenge}
-      sandbox={sandbox}
-      onSandbox={setSandbox}
-    />
+  return (
+    <div class="game" ref={root} tabIndex={-1} role="region" aria-label="Raketenwerft – Spiel">
+      {flying ? (
+        <FlightScreen
+          key={flightId}
+          design={design}
+          paint={paint}
+          sandbox={sandbox}
+          knownGoals={goals}
+          stars={stars}
+          satellites={sats}
+          challenge={challenge}
+          bestStars={challenge ? (stars[challenge.id] ?? 0) : 0}
+          onGoal={reachGoal}
+          onSatellites={saveSats}
+          onChallenge={finishChallenge}
+          onNextChallenge={next ? () => startChallenge(next) : null}
+          onExit={() => {
+            setFlying(false);
+            if (challenge) setTab('herausforderungen');
+            setChallenge(null);
+          }}
+        />
+      ) : (
+        <Builder
+          tab={tab}
+          onTab={setTab}
+          design={design}
+          goals={goals}
+          stars={stars}
+          satellites={sats}
+          onSatellites={saveSats}
+          paint={paint}
+          onPaint={choosePaint}
+          onChange={change}
+          onLaunch={() => {
+            setChallenge(null);
+            setFlightId((n) => n + 1);
+            setFlying(true);
+          }}
+          onChallenge={startChallenge}
+          sandbox={sandbox}
+          onSandbox={setSandbox}
+          onClose={onClose}
+        />
+      )}
+    </div>
   );
 }

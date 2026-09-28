@@ -1,75 +1,46 @@
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+import { useMemo, useRef } from 'preact/hooks';
 import { CHAPTERS, PROBLEM_QUESTION } from '../app/content';
 import { MISSIONS } from '../missions/missions';
 import { progressStore } from '../missions/progress';
-import { Stars } from '../missions/Stars';
 import { REAL_PARAMS } from '../physics';
-import { drawRocket } from '../rocket/draw';
-import { TEMPLATES } from '../rocket/parts';
+import { RocketArt } from '../rocket/RocketArt';
 import { Simulation } from '../sim/Simulation';
 import { SpaceCanvas } from '../sim/SpaceCanvas';
 import { DEFAULT_VIEW } from '../sim/view';
 import { LinkButton } from '../ui/LinkButton';
-import { prepareCanvas, useElementSize } from '../ui/hooks';
-import { Icon } from '../ui/Icon';
-
-/** Bild für den Hinweis auf die Raketenwerft: Rakete über dem Erdrand, Mond im Hintergrund. */
-function RocketArt() {
-  const [box, size] = useElementSize<HTMLDivElement>();
-  const canvas = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = canvas.current;
-    const { width: W, height: H } = size;
-    if (!c || W === 0) return;
-    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    let id = 0;
-    const draw = (now: number): void => {
-      const ctx = prepareCanvas(c, W, H);
-      if (!ctx) return;
-      ctx.clearRect(0, 0, W, H);
-      for (let i = 0; i < 60; i++) {
-        const x = (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1;
-        const y = (((Math.sin(i * 78.233) * 12345.678) % 1) + 1) % 1;
-        ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.5 * (((i * 7) % 10) / 10)})`;
-        ctx.fillRect(x * W, y * H * 0.8, 1.4, 1.4);
-      }
-      ctx.fillStyle = '#b6bbc4';
-      ctx.beginPath();
-      ctx.arc(W * 0.82, H * 0.2, 18, 0, Math.PI * 2);
-      ctx.fill();
-      const g = ctx.createRadialGradient(W * 0.3, H * 2.4, H * 1.9, W * 0.3, H * 2.4, H * 2.1);
-      g.addColorStop(0, '#2764b8');
-      g.addColorStop(0.8, '#3f8fd8');
-      g.addColorStop(1, 'rgba(120,180,255,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(W * 0.3, H * 2.4, H * 2.1, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.save();
-      ctx.translate(W * 0.52, H * 0.78);
-      ctx.rotate(0.5 + (calm ? 0 : 0.03 * Math.sin(now / 900)));
-      const scale = (H * 0.62) / 36;
-      ctx.scale(scale, -scale);
-      drawRocket(ctx, TEMPLATES[2]!.parts, {
-        throttle: 1,
-        air: 0.1,
-        chuteOpen: 0,
-        time: now / 1000,
-      });
-      ctx.restore();
-      id = requestAnimationFrame(draw);
-    };
-    id = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(id);
-  }, [size]);
-  return (
-    <div ref={box} aria-hidden="true">
-      <canvas ref={canvas} />
-    </div>
-  );
-}
+import { Icon, type IconName } from '../ui/Icon';
 
 const HERO_VIEW = { ...DEFAULT_VIEW, frame: 'rotating' as const, labels: true, trailSpan: 0 };
+
+function Tile({
+  to,
+  icon,
+  title,
+  meta,
+  children,
+}: {
+  to: string;
+  icon: IconName;
+  title: string;
+  meta?: string;
+  children: ComponentChildren;
+}) {
+  return (
+    <a class="tile" href={`#${to}`}>
+      <span class="tile-icon">
+        <Icon name={icon} />
+      </span>
+      <span class="tile-text">
+        <strong>
+          {title}
+          {meta && <span class="tile-meta">{meta}</span>}
+        </strong>
+        <span>{children}</span>
+      </span>
+    </a>
+  );
+}
 
 export function HomePage() {
   const sim = useRef<Simulation | null>(
@@ -165,26 +136,13 @@ export function HomePage() {
         </div>
       </section>
 
-      <a class="rocket-banner" href="#rakete">
-        <div class="stack" style={{ gap: '10px' }}>
-          <div class="eyebrow" style={{ color: '#e2a846' }}>
-            Neu · Spiel
-          </div>
-          <h2>Raketenwerft: Bau dir deinen Weg durchs Sonnensystem</h2>
-          <p>
-            Rakete aus Tanks, Triebwerken, Boostern und Stufen bauen, an der Raumstation andocken,
-            auf dem Mond landen und zum Mars fliegen – mit echter Schwerkraft von Sonne, Planeten
-            und Monden. 22 Ziele, Ränge und Lackierungen; mit Hilfe-Pilot für den Anfang.
-          </p>
-          <span class="btn primary" style={{ justifySelf: 'start' }}>
-            Jetzt spielen <Icon name="arrow" />
-          </span>
+      <section class="home-section" aria-labelledby="kapitel">
+        <div class="section-head">
+          <h2 id="kapitel">Der Weg durch die Arbeit</h2>
+          <a class="more" href="#kapitel-1">
+            Von vorn lesen <Icon name="arrow" />
+          </a>
         </div>
-        <RocketArt />
-      </a>
-
-      <section aria-labelledby="kapitel">
-        <h2 id="kapitel">Der Weg durch die Arbeit</h2>
         <ol class="chapter-list">
           {CHAPTERS.map((c) => (
             <li key={c.n}>
@@ -200,61 +158,56 @@ export function HomePage() {
         </ol>
       </section>
 
-      <section class="tools" aria-labelledby="werkzeuge">
-        <h2 id="werkzeuge">Werkzeuge und Spiele</h2>
-        <div class="grid-3">
-          <a class="tool-card" href="#simulator">
-            <h3>Simulator</h3>
-            <p class="small muted">
-              Alle Parameter frei einstellbar, drei Bezugssysteme, Messwerte, Diagramme und Export.
+      <section class="home-section" aria-labelledby="werkzeuge">
+        <div class="section-head">
+          <h2 id="werkzeuge">Selbst ausprobieren</h2>
+        </div>
+        <div class="tile-grid">
+          <Tile to="simulator" icon="orbit" title="Simulator">
+            Erde, Mond und Sonne mit allen Parametern, drei Bezugssystemen, Messwerten und Export.
+          </Tile>
+          <Tile to="stabilitaetskarte" icon="grid" title="Stabilitätskarte">
+            Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt er?
+          </Tile>
+          <Tile to="lagrange-labor" icon="lagrange" title="Lagrange-Labor">
+            Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
+          </Tile>
+        </div>
+      </section>
+
+      <section class="home-section" aria-labelledby="spielen">
+        <div class="section-head">
+          <h2 id="spielen">Spielen und üben</h2>
+        </div>
+        <a class="rocket-banner" href="#rakete">
+          <div class="rocket-banner-text">
+            <div class="eyebrow">Raketenwerft</div>
+            <h3>Bau dir deinen Weg durchs Sonnensystem</h3>
+            <p>
+              Rakete bauen, an der Raumstation andocken, auf Mond, Mars und Europa landen – mit
+              echter Schwerkraft, Bordcomputer, 9 Herausforderungen und 36 Zielen.
             </p>
-          </a>
-          <a class="tool-card" href="#stabilitaetskarte">
-            <h3>Stabilitätskarte</h3>
-            <p class="small muted">
-              Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt er?
-            </p>
-          </a>
-          <a class="tool-card" href="#lagrange-labor">
-            <h3>Lagrange-Labor</h3>
-            <p class="small muted">
-              Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
-            </p>
-          </a>
-          <a class="tool-card" href="#rakete">
-            <h3>Raketenwerft</h3>
-            <p class="small muted">
-              Rakete bauen, andocken, auf Mond und Mars landen – im verkleinerten Sonnensystem mit
-              echter Schwerkraft, Luftwiderstand und Hitze.
-            </p>
-          </a>
-          <a class="tool-card" href="#spiel">
-            <h3>Lunas Sternenreise</h3>
-            <p class="small muted">
-              Das Spiel für Jüngere: Schleudere den kleinen Mond Luna in eine Umlaufbahn und sammle
-              Sterne. Sechs Level mit echter Schwerkraft.
-            </p>
-          </a>
-          <a class="tool-card" href="#missionen">
-            <h3>Missionen</h3>
-            <p class="small muted">
-              Neun Aufträge, darunter die Steuerung einer Sonde am instabilen Punkt L1.
-            </p>
-            <Stars count={Math.min(3, Math.floor(stars / 9))} />
-            <span class="small muted">
-              {stars} von {MISSIONS.length * 3} Sternen
+            <span class="btn primary">
+              Jetzt spielen <Icon name="arrow" />
             </span>
-          </a>
-          <a class="tool-card" href="#quiz">
-            <h3>Quiz</h3>
-            <p class="small muted">21 Fragen zu allen Kapiteln mit Erklärungen.</p>
-          </a>
-          <a class="tool-card" href="#methodik">
-            <h3>Methodik & Validierung</h3>
-            <p class="small muted">
-              Wie genau rechnet der Simulator? Vergleich mit Messwerten und Integratoren.
-            </p>
-          </a>
+          </div>
+          <RocketArt />
+        </a>
+        <div class="tile-grid">
+          <Tile to="spiel" icon="moon" title="Lunas Sternenreise">
+            Für Jüngere: Schleudere den Mond Luna in eine Umlaufbahn und sammle Sterne.
+          </Tile>
+          <Tile
+            to="missionen"
+            icon="flag"
+            title="Missionen"
+            meta={`${stars} / ${MISSIONS.length * 3} ★`}
+          >
+            Neun Aufträge an den Grenzen der Stabilität, bis zu drei Sterne pro Auftrag.
+          </Tile>
+          <Tile to="quiz" icon="quiz" title="Quiz">
+            21 Fragen zu allen Kapiteln, jede mit Erklärung.
+          </Tile>
         </div>
       </section>
     </div>

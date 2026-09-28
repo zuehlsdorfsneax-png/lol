@@ -66,9 +66,12 @@ export function Chapter5() {
         />
         <p>
           Er stimmt mit dem Abstand von L1 und L2 überein (Kapitel 4). Der Mond kreist bei{' '}
-          <strong>{fmt(moonFrac, 3)} r_H</strong>. Dort ist die Anziehung der Erde rund{' '}
-          {fmt(1 / ((3 * moonFrac ** 3) / 1), 0)}-mal stärker als die störende Gezeitenwirkung der
-          Sonne (sie wächst mit <Tex>r^3</Tex>, die Erdanziehung fällt mit <Tex>{'1/r^2'}</Tex>).
+          <strong>
+            {fmt(moonFrac, 3)} r<sub>H</sub>
+          </strong>
+          . Dort ist die Anziehung der Erde rund {fmt(1 / ((3 * moonFrac ** 3) / 1), 0)}-mal stärker
+          als die störende Gezeitenwirkung der Sonne (sie wächst mit <Tex>r^3</Tex>, die
+          Erdanziehung fällt mit <Tex>{'1/r^2'}</Tex>).
         </p>
       </div>
 
@@ -121,9 +124,15 @@ export function Chapter5() {
         />
         <p>
           Der Simulator bestätigt das: Kreisbahnen um die Erde bleiben prograd bis{' '}
-          <strong>0,478 r_H</strong> und retrograd bis <strong>0,923 r_H</strong> stabil (30 Jahre,
-          Skript <code>npm run calibrate</code>). Der Mond hat also fast die doppelte
-          Sicherheitsreserve.
+          <strong>
+            0,478 r<sub>H</sub>
+          </strong>{' '}
+          und retrograd bis{' '}
+          <strong>
+            0,923 r<sub>H</sub>
+          </strong>{' '}
+          stabil (30 Jahre, Skript <code>npm run calibrate</code>). Der Mond hat also fast die
+          doppelte Sicherheitsreserve.
         </p>
         <p>
           Warum sind rückläufige Monde so viel stabiler? Im mitrotierenden System wirkt auf einen
@@ -139,9 +148,12 @@ export function Chapter5() {
           Die Gezeitenreibung bremst die Erdrotation und schiebt den Mond nach außen – heute um 3,8
           cm pro Jahr (gemessen mit Laserreflektoren). Das endet, wenn ein Erdtag so lang ist wie
           ein Monat. Aus der Erhaltung des Drehimpulses von Erdrotation und Mondbahn folgt dafür ein
-          Abstand von etwa 555 000 km. Das sind rund <strong>0,37 r_H</strong> – immer noch deutlich
-          innerhalb der Stabilitätsgrenze. Dieser Zustand würde erst in vielen Milliarden Jahren
-          erreicht, lange nachdem sich die Sonne zum Roten Riesen aufgebläht hat.
+          Abstand von etwa 555 000 km. Das sind rund{' '}
+          <strong>
+            0,37 r<sub>H</sub>
+          </strong>{' '}
+          – immer noch deutlich innerhalb der Stabilitätsgrenze. Dieser Zustand würde erst in vielen
+          Milliarden Jahren erreicht, lange nachdem sich die Sonne zum Roten Riesen aufgebläht hat.
         </p>
       </div>
 
@@ -149,7 +161,7 @@ export function Chapter5() {
         Der Mond ist stabil, weil er (1) bei nur einem Viertel des Hill-Radius kreist, wo die Erde
         die Sonne um fast das Hundertfache übertrifft, (2) seine Jacobi-Konstante größer als C(L1)
         ist und die Erdumgebung damit beweisbar geschlossen bleibt, und (3) die numerisch bestimmte
-        Stabilitätsgrenze bei 0,48 r_H fast doppelt so weit außen liegt.
+        Stabilitätsgrenze bei 0,48 r<sub>H</sub> fast doppelt so weit außen liegt.
       </Callout>
 
       <div class="btn-row">
@@ -157,7 +169,9 @@ export function Chapter5() {
           Teilchenwolke: Grenze sichtbar machen
         </LinkButton>
         <LinkButton to="sim-teilchen-retro">Dasselbe retrograd</LinkButton>
-        <LinkButton to="sim-grenze">Mond bei 0,45 r_H</LinkButton>
+        <LinkButton to="sim-grenze">
+          Mond bei 0,45 r<sub>H</sub>
+        </LinkButton>
       </div>
     </>
   );
@@ -230,12 +244,18 @@ function HillCalculator() {
         <dl class="kv">
           <dt>Hill-Radius</dt>
           <dd>{distance(r)}</dd>
-          <dt>Stabil prograd bis ≈ 0,49 r_H</dt>
+          <dt>
+            Stabil prograd bis ≈ 0,49 r<sub>H</sub>
+          </dt>
           <dd>{distance(pro)}</dd>
-          <dt>Stabil retrograd bis ≈ 0,93 r_H</dt>
+          <dt>
+            Stabil retrograd bis ≈ 0,93 r<sub>H</sub>
+          </dt>
           <dd>{distance(retro)}</dd>
           <dt>Unser Mond (384 400 km) läge bei</dt>
-          <dd>{fmt(MOON.semiMajorAxis / r, 2)} r_H</dd>
+          <dd>
+            {fmt(MOON.semiMajorAxis / r, 2)} r<sub>H</sub>
+          </dd>
         </dl>
         <StatusChip
           status={MOON.semiMajorAxis < pro ? 'ok' : MOON.semiMajorAxis < retro ? 'warn' : 'fail'}
@@ -316,7 +336,7 @@ function MoonJacobi() {
             max={1_500_000}
             log
             format={(v) => `${fmt(v)} km`}
-            hint={`= ${fmt((dist * KM) / EARTH_HILL_RADIUS, 2)} r_H`}
+            hint={`= ${fmt((dist * KM) / EARTH_HILL_RADIUS, 2)} Hill-Radien`}
             onChange={(v) => setDist(Math.round(v / 1000) * 1000)}
           />
           <Slider

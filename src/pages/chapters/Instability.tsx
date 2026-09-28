@@ -25,15 +25,15 @@ const THRESHOLDS = [
   },
   {
     cond: 'Kreisbahn zu weit außen (prograd)',
-    theory: 'a > 0,48 r_H',
-    sim: 'a > 0,478 r_H',
+    theory: 'a > 0,48 Hill-Radien',
+    sim: 'a > 0,478 Hill-Radien',
     result: 'Flucht',
     link: 'sim-jenseits',
   },
   {
     cond: 'Kreisbahn zu weit außen (retrograd)',
-    theory: 'a > 0,91 r_H',
-    sim: 'a > 0,923 r_H',
+    theory: 'a > 0,91 Hill-Radien',
+    sim: 'a > 0,923 Hill-Radien',
     result: 'Flucht',
     link: 'sim-retrograd',
   },
@@ -103,8 +103,8 @@ export function Instability() {
         <SectionTitle n="8.3.4">Die Hill-Sphäre schrumpft</SectionTitle>
         <p>
           Aus <Tex>{String.raw`r_H = a\,\sqrt[3]{m/3M}`}</Tex> folgt: Der Mond wird instabil, wenn
-          die Erde der Sonne näher kommt oder die Sonne schwerer wird. Mit der Grenze 0,48 r_H gilt
-          für unseren Mond (384 400 km)
+          die Erde der Sonne näher kommt oder die Sonne schwerer wird. Mit der Grenze 0,48 r
+          <sub>H</sub> gilt für unseren Mond (384 400 km)
         </p>
         <Equation
           tex={String.raw`a_\text{Erde} > \frac{384\,400\ \text{km}}{0{,}48\cdot 1{,}5\ \text{Mio. km}}\ \text{AE} \approx 0{,}52\ \text{AE},\qquad M_\odot < \left(\frac{0{,}48\cdot r_H}{384\,400\ \text{km}}\right)^3 M_\odot \approx 6{,}6\,M_\odot.`}

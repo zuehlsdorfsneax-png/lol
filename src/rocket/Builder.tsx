@@ -1,8 +1,9 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
-import { Icon } from '../ui/Icon';
+import { Icon, type IconName } from '../ui/Icon';
 import { CHALLENGES, type Challenge, type ChallengeGroup } from './challenges';
 import { PAINTS, drawPart, drawRocket, setPaint } from './draw';
 import { apsides, type Satellite } from './flight';
@@ -15,6 +16,7 @@ import {
   checkDesign,
   designHeight,
   part,
+  segments,
   stageStats,
   totalDeltaV,
   totalMass,
@@ -86,28 +88,62 @@ function Preview({
     if (!c || width === 0) return;
     const ctx = prepareCanvas(c, width, height);
     if (!ctx) return;
-    ctx.clearRect(0, 0, width, height);
-    // Boden und Hilfslinien alle 5 m
+    // Blaupause: feines Raster je Meter, kräftige Linien alle 5 m
     const total = Math.max(designHeight(design), 8);
-    const scale = Math.min((height - 50) / (total + 2), 26);
-    const base = height - 26;
-    ctx.strokeStyle = 'rgba(143,153,184,0.25)';
-    ctx.fillStyle = 'rgba(143,153,184,0.8)';
-    ctx.font = '11px Jost, system-ui, sans-serif';
+    const base = height - 44;
+    // Oben bleibt Platz für die Werkzeugleiste (auf dem Handy auch für die Datenzeile).
+    const topPad = width < 520 ? 124 : 70;
+    const scale = Math.min((base - topPad) / (total + 1), 30);
+    const cx = width / 2;
+    ctx.clearRect(0, 0, width, height);
     ctx.lineWidth = 1;
-    for (let m = 5; m < total + 2; m += 5) {
-      const y = base - m * scale;
+    if (scale >= 7) {
+      ctx.strokeStyle = 'rgba(150,190,255,0.07)';
       ctx.beginPath();
-      ctx.moveTo(10, y);
-      ctx.lineTo(width - 10, y);
+      for (let m = 1; base - m * scale > 0; m++) {
+        if (m % 5 === 0) continue;
+        const y = Math.round(base - m * scale) + 0.5;
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+      }
+      for (let k = -Math.ceil(cx / scale); k * scale < cx; k++) {
+        if (k % 5 === 0) continue;
+        const x = Math.round(cx + k * scale) + 0.5;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, base);
+      }
       ctx.stroke();
-      ctx.fillText(`${m} m`, 12, y - 3);
     }
-    ctx.fillStyle = '#3c434d';
-    ctx.fillRect(width / 2 - 70, base, 140, 8);
+    ctx.strokeStyle = 'rgba(150,190,255,0.16)';
+    ctx.beginPath();
+    for (let k = -Math.ceil(cx / (5 * scale)) * 5; k * scale < cx; k += 5) {
+      const x = Math.round(cx + k * scale) + 0.5;
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, base);
+    }
+    for (let m = 5; base - m * scale > 0; m += 5) {
+      const y = Math.round(base - m * scale) + 0.5;
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(190,210,245,0.55)';
+    ctx.font = '500 11px Jost, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    for (let m = 5; base - m * scale > 14; m += 5)
+      ctx.fillText(`${m} m`, width - 10, base - m * scale - 4);
+    ctx.textAlign = 'left';
+
+    // Startplattform
+    ctx.fillStyle = '#2a3346';
+    ctx.fillRect(cx - 80, base, 160, 7);
+    ctx.fillStyle = '#1b2233';
+    ctx.fillRect(cx - 64, base + 7, 128, 5);
+    ctx.fillStyle = 'rgba(226,168,70,0.9)';
+    for (let x = cx - 76; x < cx + 76; x += 16) ctx.fillRect(x, base + 1, 8, 2);
 
     ctx.save();
-    ctx.translate(width / 2, base);
+    ctx.translate(cx, base);
     ctx.scale(scale, -scale);
     drawRocket(ctx, design);
     ctx.restore();
@@ -121,26 +157,84 @@ function Preview({
       y += h;
     }
     layout.current = { scale, base, spans };
+
+    // Stufen wie in Spaceflight Simulator am Bauplan markieren: Klammer, Nummer, Δv
+    const segs = segments(design);
+    if (segs.length > 1) {
+      const st = stageStats(design);
+      const maxW = Math.max(
+        ...design.map((id) => part(id).width + (part(id).kind === 'booster' ? 2.6 : 0)),
+      );
+      const bx = Math.round(cx - (maxW / 2) * scale - 20) + 0.5;
+      let idx = 0;
+      ctx.font = '600 11px Jost, system-ui, sans-serif';
+      segs.forEach((seg, k) => {
+        const first = idx;
+        const last = idx + seg.length - 1;
+        idx += seg.length;
+        const y0 = base - spans[first]![1] * scale + 3;
+        const y1 = base - spans[last]![0] * scale - 3;
+        const number = segs.length - k;
+        const mid = (y0 + y1) / 2;
+        ctx.strokeStyle = 'rgba(226,168,70,0.75)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(bx + 6, y0);
+        ctx.lineTo(bx, y0);
+        ctx.lineTo(bx, y1);
+        ctx.lineTo(bx + 6, y1);
+        ctx.stroke();
+        ctx.fillStyle = '#e2a846';
+        ctx.beginPath();
+        ctx.arc(bx - 11, mid, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a1305';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(number), bx - 11, mid + 4);
+        const dv = st[number - 1]?.deltaV ?? 0;
+        if (dv > 0 && y1 - y0 > 26) {
+          const text = `${fmt(dv)} m/s`;
+          ctx.textAlign = 'right';
+          if (bx - 26 - ctx.measureText(text).width > 6) {
+            ctx.fillStyle = 'rgba(200,215,245,0.75)';
+            ctx.fillText(text, bx - 26, mid + 4);
+          }
+        }
+      });
+      ctx.textAlign = 'left';
+    }
     if (selected >= 0 && spans[selected]) {
       const [a, b] = spans[selected];
       const w = part(design[selected]!).width;
+      const x0 = cx - (w / 2) * scale - 6;
+      const y0 = base - b * scale - 4;
+      const bw = w * scale + 12;
+      const bh = (b - a) * scale + 8;
+      ctx.fillStyle = 'rgba(226,168,70,0.12)';
+      ctx.fillRect(x0, y0, bw, bh);
       ctx.strokeStyle = '#e2a846';
       ctx.lineWidth = 2;
-      ctx.setLineDash([5, 4]);
-      ctx.strokeRect(
-        width / 2 - (w / 2) * scale - 5,
-        base - b * scale - 3,
-        w * scale + 10,
-        (b - a) * scale + 6,
-      );
-      ctx.setLineDash([]);
+      // Nur die Ecken – wie ein Sucher
+      const k = Math.min(10, bw / 3, bh / 3);
+      ctx.beginPath();
+      for (const [px, py, dx, dy] of [
+        [x0, y0, 1, 1],
+        [x0 + bw, y0, -1, 1],
+        [x0, y0 + bh, 1, -1],
+        [x0 + bw, y0 + bh, -1, -1],
+      ] as const) {
+        ctx.moveTo(px + dx * k, py);
+        ctx.lineTo(px, py);
+        ctx.lineTo(px, py + dy * k);
+      }
+      ctx.stroke();
     }
     if (design.length === 0) {
-      ctx.fillStyle = 'rgba(223,229,245,0.8)';
+      ctx.fillStyle = 'rgba(223,229,245,0.75)';
       ctx.textAlign = 'center';
-      ctx.font = '15px Jost, system-ui, sans-serif';
-      ctx.fillText('Wähle links Bauteile aus –', width / 2, height / 2 - 10);
-      ctx.fillText('oder nimm eine Vorlage.', width / 2, height / 2 + 12);
+      ctx.font = '500 16px Jost, system-ui, sans-serif';
+      ctx.fillText('Wähle links ein Bauteil –', cx, height / 2 - 12);
+      ctx.fillText('oder oben eine Vorlage.', cx, height / 2 + 12);
     }
   }, [design, selected, size]);
 
@@ -158,15 +252,72 @@ function Preview({
   };
 
   return (
-    <div class="build-preview" ref={box}>
+    <div class="blueprint-canvas" ref={box}>
       <canvas
         ref={canvas}
         onClick={click}
         role="img"
-        aria-label="Vorschau der Rakete; ein Klick wählt ein Bauteil aus"
+        aria-label="Bauplan der Rakete; ein Klick wählt ein Bauteil aus"
       />
     </div>
   );
+}
+
+/** Kleines Aufklappmenü in der Werft (schließt bei Klick daneben und mit Esc). */
+function Menu({
+  icon,
+  label,
+  children,
+}: {
+  icon: IconName;
+  label: string;
+  children: (close: () => void) => ComponentChildren;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent): void => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('pointerdown', away);
+    window.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('pointerdown', away);
+      window.removeEventListener('keydown', key);
+    };
+  }, [open]);
+  return (
+    <div class="gmenu" ref={ref}>
+      <button
+        type="button"
+        class={`gbtn ${open ? 'on' : ''}`}
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name={icon} />
+        <span class="gbtn-label">{label}</span>
+      </button>
+      {open && <div class="gmenu-list">{children(() => setOpen(false))}</div>}
+    </div>
+  );
+}
+
+const CATEGORIES: { id: string; label: string; kinds: PartDef['kind'][] }[] = [
+  { id: 'kopf', label: 'Kapseln', kinds: ['capsule', 'probe', 'payload'] },
+  { id: 'tank', label: 'Tanks', kinds: ['tank'] },
+  { id: 'antrieb', label: 'Antrieb', kinds: ['engine', 'booster'] },
+  { id: 'technik', label: 'Technik', kinds: ['decoupler', 'chute', 'legs', 'shield'] },
+];
+
+function spec(p: PartDef): string {
+  if (p.thrust > 0) return `${fmt(p.thrust / 1000)} kN · ${p.isp} s`;
+  if (p.fuel > 0) return `${fmt(p.fuel / 1000, 1)} t Treibstoff`;
+  return `${fmt(p.dry / 1000, 1)} t`;
 }
 
 export function Builder({
@@ -184,6 +335,7 @@ export function Builder({
   onChallenge,
   sandbox,
   onSandbox,
+  onClose,
 }: {
   tab: Tab;
   onTab: (t: Tab) => void;
@@ -199,98 +351,120 @@ export function Builder({
   onChallenge: (c: Challenge) => void;
   sandbox: boolean;
   onSandbox: (on: boolean) => void;
+  onClose: () => void;
 }) {
   setPaint(paint);
   const points = careerPoints(goals, stars);
-  const tabs = (
-    <div class="rocket-tabs" role="tablist" aria-label="Bereiche der Raketenwerft">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'werft'}
-        class={tab === 'werft' ? 'on' : ''}
-        onClick={() => onTab('werft')}
-      >
-        🔧 Werft &amp; Freier Flug
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'herausforderungen'}
-        class={tab === 'herausforderungen' ? 'on' : ''}
-        onClick={() => onTab('herausforderungen')}
-      >
-        ★ Herausforderungen{' '}
-        <span class="tab-count">
-          {Object.values(stars).reduce((a, b) => a + b, 0)} / {CHALLENGES.length * 3}
-        </span>
-      </button>
-    </div>
-  );
-  if (tab === 'herausforderungen')
-    return (
-      <div class="build">
-        {tabs}
-        <ChallengeList stars={stars} onStart={onChallenge} />
-        <MissionControl
-          goals={goals}
-          stars={stars}
-          paint={paint}
-          onPaint={onPaint}
-          satellites={satellites}
-          onSatellites={onSatellites}
-        />
-      </div>
-    );
+  const starSum = Object.values(stars).reduce((a, b) => a + b, 0);
+  const rank = rankFor(points);
+  const problems = checkDesign(design);
+  const lockedParts = design.filter((id) => !unlocked(id, points, sandbox));
+  const canLaunch = !problems.some((p) => p.level === 'error') && lockedParts.length === 0;
+  const TABS: { id: Tab; label: string; icon: IconName; meta?: string }[] = [
+    { id: 'werft', label: 'Werft', icon: 'wrench' },
+    {
+      id: 'herausforderungen',
+      label: 'Herausforderungen',
+      icon: 'trophy',
+      meta: `${starSum}/${CHALLENGES.length * 3}`,
+    },
+    { id: 'karriere', label: 'Karriere', icon: 'medal', meta: rank.title },
+  ];
   return (
-    <Werft
-      tabs={tabs}
-      design={design}
-      goals={goals}
-      stars={stars}
-      points={points}
-      satellites={satellites}
-      onSatellites={onSatellites}
-      paint={paint}
-      onPaint={onPaint}
-      onChange={onChange}
-      onLaunch={onLaunch}
-      sandbox={sandbox}
-      onSandbox={onSandbox}
-    />
+    <div class="build">
+      <header class="game-bar">
+        <button
+          type="button"
+          class="gbtn icon"
+          onClick={onClose}
+          aria-label="Spiel verlassen"
+          title="Spiel verlassen"
+        >
+          <Icon name="close" />
+        </button>
+        <div class="game-tabs" role="tablist" aria-label="Bereiche der Raketenwerft">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              class={tab === t.id ? 'on' : ''}
+              onClick={() => onTab(t.id)}
+            >
+              <Icon name={t.icon} />
+              <span class="gbtn-label">{t.label}</span>
+              {t.meta && <span class="tab-meta">{t.meta}</span>}
+            </button>
+          ))}
+        </div>
+        <div class="game-bar-end">
+          {tab === 'werft' && (
+            <button
+              type="button"
+              class="gbtn launch"
+              disabled={!canLaunch}
+              onClick={onLaunch}
+              title={canLaunch ? 'Zur Startrampe' : 'Erst die Hinweise rechts beheben'}
+            >
+              <Icon name="rocket" />
+              <span>Starten</span>
+            </button>
+          )}
+        </div>
+      </header>
+      {tab === 'werft' ? (
+        <Werft
+          design={design}
+          points={points}
+          problems={problems}
+          lockedParts={lockedParts}
+          onChange={onChange}
+          sandbox={sandbox}
+          onSandbox={onSandbox}
+        />
+      ) : (
+        <div class="game-page">
+          <div class="game-page-inner">
+            {tab === 'herausforderungen' ? (
+              <ChallengeList stars={stars} onStart={onChallenge} />
+            ) : (
+              <MissionControl
+                goals={goals}
+                stars={stars}
+                paint={paint}
+                onPaint={onPaint}
+                satellites={satellites}
+                onSatellites={onSatellites}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
 function Werft({
-  tabs,
   design,
-  goals,
-  stars,
   points,
-  satellites,
-  onSatellites,
-  paint,
-  onPaint,
+  problems,
+  lockedParts,
   onChange,
-  onLaunch,
   sandbox,
   onSandbox,
 }: {
-  tabs: preact.ComponentChildren;
   design: Design;
-  goals: readonly string[];
-  stars: Record<string, number>;
   points: number;
-  satellites: Satellite[];
-  onSatellites: (s: Satellite[]) => void;
-  paint: string;
-  onPaint: (id: string) => void;
+  problems: ReturnType<typeof checkDesign>;
+  lockedParts: string[];
   onChange: (d: Design) => void;
-  onLaunch: () => void;
   sandbox: boolean;
   onSandbox: (on: boolean) => void;
 }) {
   const [selected, setSelected] = useState(-1);
+  const [cat, setCat] = useState(CATEGORIES[0]!.id);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [hangar, setHangar] = useState<Record<string, string[]>>(
     () => progressStore.load().rocketHangar ?? {},
   );
@@ -300,16 +474,15 @@ function Werft({
     progressStore.update((p) => ({ ...p, rocketHangar: next }));
   };
   const stats = stageStats(design.length ? design : ['kapsel']);
-  const problems = checkDesign(design);
-  const blocked = problems.some((p) => p.level === 'error');
   const dv = design.length ? totalDeltaV(design) : 0;
   const mass = totalMass(design);
+  const first = design.length ? stats[0] : undefined;
 
   const [lockHint, setLockHint] = useState('');
   const add = (id: string): void => {
     if (!unlocked(id, points, sandbox)) {
       setLockHint(
-        `${part(id).name} gibt es ab ${part(id).unlock} Punkten (du hast ${points}). Oder im Sandkasten ausprobieren.`,
+        `${part(id).name} gibt es ab ${part(id).unlock} Punkten (du hast ${points}). Im Sandkasten kannst du es schon ausprobieren.`,
       );
       return;
     }
@@ -333,6 +506,10 @@ function Werft({
     onChange(design.filter((_, i) => i !== selected));
     setSelected(Math.min(selected, design.length - 2));
   };
+  const load = (d: readonly string[]): void => {
+    onChange([...d]);
+    setSelected(-1);
+  };
 
   useEffect(() => {
     const key = (e: KeyboardEvent): void => {
@@ -345,191 +522,288 @@ function Werft({
   });
 
   const maxBar = 12_000;
-  const lockedParts = design.filter((id) => !unlocked(id, points, sandbox));
+  const sel = selected >= 0 && design[selected] ? part(design[selected]) : null;
   return (
-    <div class="build">
-      {tabs}
-      <div class="build-templates">
-        <span class="small muted">Vorlagen:</span>
-        {TEMPLATES.map((t) => {
-          const locked = t.parts.some((id) => !unlocked(id, points, sandbox));
-          return (
+    <div class="werft">
+      <aside class="parts-panel" aria-label="Bauteile">
+        <div class="part-cats" role="tablist" aria-label="Art der Bauteile">
+          {CATEGORIES.map((c) => (
             <button
-              key={t.id}
+              key={c.id}
               type="button"
-              class={`btn small ${locked ? 'locked' : ''}`}
-              title={locked ? `${t.info} (Einige Teile sind noch gesperrt.)` : t.info}
-              onClick={() => {
-                onChange([...t.parts]);
-                setSelected(-1);
-              }}
+              role="tab"
+              aria-selected={cat === c.id}
+              class={cat === c.id ? 'on' : ''}
+              onClick={() => setCat(c.id)}
             >
-              {locked ? '🔒 ' : ''}
-              {t.name}
+              {c.label}
             </button>
-          );
-        })}
-        <button
-          type="button"
-          class="btn small ghost"
-          onClick={() => {
-            onChange([]);
-            setSelected(-1);
-          }}
-        >
-          Alles abbauen
-        </button>
-      </div>
-      <div class="build-templates hangar">
-        <span class="small muted">Hangar:</span>
-        {Object.keys(hangar).length === 0 && (
-          <span class="small muted">noch keine eigenen Raketen gespeichert</span>
-        )}
-        {Object.entries(hangar).map(([n, d]) => (
-          <span key={n} class="hangar-item">
-            <button
-              type="button"
-              class="btn small"
-              onClick={() => {
-                onChange([...d]);
-                setSelected(-1);
-                setName(n);
-              }}
-            >
-              {n}
-            </button>
-            <button
-              type="button"
-              class="btn small ghost"
-              aria-label={`${n} löschen`}
-              onClick={() => {
-                const next = { ...hangar };
-                delete next[n];
-                saveHangar(next);
-              }}
-            >
-              <Icon name="close" />
-            </button>
-          </span>
-        ))}
-        <input
-          class="hangar-name"
-          type="text"
-          maxLength={24}
-          placeholder="Name der Rakete"
-          value={name}
-          onInput={(e) => setName((e.target as HTMLInputElement).value)}
-        />
-        <button
-          type="button"
-          class="btn small"
-          disabled={!name.trim() || design.length === 0}
-          onClick={() => saveHangar({ ...hangar, [name.trim()]: [...design] })}
-        >
-          Speichern
-        </button>
-      </div>
-
-      <div class="build-grid">
-        <section class="build-palette" aria-label="Bauteile">
-          <h3>Bauteile</h3>
-          <p class="small muted">
-            Klick fügt das Teil {selected >= 0 ? 'unter dem markierten Teil' : 'unten'} an.
-          </p>
-          <div class="palette-list">
-            {PARTS.map((p) => {
+          ))}
+        </div>
+        <div class="part-grid">
+          {PARTS.filter((p) => CATEGORIES.find((c) => c.id === cat)!.kinds.includes(p.kind)).map(
+            (p) => {
               const open = unlocked(p.id, points, sandbox);
               return (
                 <button
                   key={p.id}
                   type="button"
-                  class={`palette-item ${open ? '' : 'locked'}`}
+                  class={`part-tile ${open ? '' : 'locked'}`}
                   onClick={() => add(p.id)}
                   title={open ? p.info : `Ab ${p.unlock} Punkten: ${p.info}`}
                 >
                   <PartIcon def={p} />
-                  <span>
-                    <strong>
-                      {open ? '' : '🔒 '}
-                      {p.name}
-                    </strong>
-                    <span class="small muted">
-                      {!open
-                        ? `ab ${p.unlock} Punkten`
-                        : p.thrust > 0
-                          ? `${fmt(p.thrust / 1000)} kN · ${p.isp} s`
-                          : p.fuel > 0
-                            ? `${fmt(p.fuel / 1000, 1)} t Treibstoff`
-                            : `${fmt(p.dry / 1000, 1)} t`}
-                    </span>
-                  </span>
+                  <span class="part-name">{p.name}</span>
+                  <span class="part-spec">{open ? spec(p) : `🔒 ab ${p.unlock} P.`}</span>
                 </button>
               );
-            })}
-          </div>
-          {lockHint && <p class="small lock-hint">{lockHint}</p>}
-        </section>
+            },
+          )}
+        </div>
+        <p class="parts-hint">
+          {lockHint ||
+            (selected >= 0
+              ? 'Neue Teile kommen unter das markierte Teil.'
+              : 'Tippen fügt unten an.')}
+        </p>
+      </aside>
 
-        <section class="build-center" aria-label="Rakete">
-          <Preview design={design} selected={selected} onSelect={setSelected} />
-          <div class="btn-row build-tools">
+      <section class="blueprint" aria-label="Rakete">
+        <div class="blueprint-tools">
+          <Menu icon="stack" label="Vorlagen">
+            {(close) =>
+              TEMPLATES.map((t) => {
+                const locked = t.parts.some((id) => !unlocked(id, points, sandbox));
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    class="gmenu-item"
+                    onClick={() => {
+                      load(t.parts);
+                      close();
+                    }}
+                  >
+                    <strong>
+                      {locked ? '🔒 ' : ''}
+                      {t.name}
+                    </strong>
+                    <span>{t.info}</span>
+                  </button>
+                );
+              })
+            }
+          </Menu>
+          <Menu icon="box" label="Hangar">
+            {(close) => (
+              <>
+                {Object.keys(hangar).length === 0 && (
+                  <p class="gmenu-note">Noch keine eigenen Raketen gespeichert.</p>
+                )}
+                {Object.entries(hangar).map(([n, d]) => (
+                  <div key={n} class="gmenu-row">
+                    <button
+                      type="button"
+                      class="gmenu-item"
+                      onClick={() => {
+                        load(d);
+                        setName(n);
+                        close();
+                      }}
+                    >
+                      <strong>{n}</strong>
+                      <span>{d.length} Teile</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="gbtn icon small"
+                      aria-label={`${n} löschen`}
+                      onClick={() => {
+                        const next = { ...hangar };
+                        delete next[n];
+                        saveHangar(next);
+                      }}
+                    >
+                      <Icon name="trash" />
+                    </button>
+                  </div>
+                ))}
+                <form
+                  class="gmenu-save"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!name.trim() || design.length === 0) return;
+                    saveHangar({ ...hangar, [name.trim()]: [...design] });
+                  }}
+                >
+                  <input
+                    type="text"
+                    maxLength={24}
+                    placeholder="Name der Rakete"
+                    aria-label="Name der Rakete"
+                    value={name}
+                    onInput={(e) => setName((e.target as HTMLInputElement).value)}
+                  />
+                  <button
+                    type="submit"
+                    class="gbtn primary small"
+                    disabled={!name.trim() || design.length === 0}
+                  >
+                    <Icon name="save" /> Speichern
+                  </button>
+                </form>
+              </>
+            )}
+          </Menu>
+          <button
+            type="button"
+            class="gbtn"
+            disabled={design.length === 0}
+            onClick={() => load([])}
+            title="Alle Teile entfernen"
+          >
+            <Icon name="trash" />
+            <span class="gbtn-label">Abbauen</span>
+          </button>
+          <label
+            class={`gtoggle ${sandbox ? 'on' : ''}`}
+            title="Unendlich Treibstoff, alle Teile – dafür keine Punkte"
+          >
+            <input
+              type="checkbox"
+              checked={sandbox}
+              onChange={(e) => onSandbox((e.target as HTMLInputElement).checked)}
+            />
+            <span class="gtoggle-knob" aria-hidden="true" />
+            Sandkasten
+          </label>
+        </div>
+
+        <Preview design={design} selected={selected} onSelect={setSelected} />
+
+        {sel && (
+          <div class="part-toolbar" role="toolbar" aria-label={`Bauteil ${sel.name}`}>
+            <div class="part-toolbar-text">
+              <strong>{sel.name}</strong>
+              <span>{sel.info}</span>
+            </div>
             <button
               type="button"
-              class="btn small"
+              class="gbtn icon"
               disabled={selected <= 0}
               onClick={() => move(-1)}
+              aria-label="Nach oben"
+              title="Nach oben"
             >
-              ▲ nach oben
+              <Icon name="up" />
             </button>
             <button
               type="button"
-              class="btn small"
-              disabled={selected < 0 || selected >= design.length - 1}
+              class="gbtn icon"
+              disabled={selected >= design.length - 1}
               onClick={() => move(1)}
+              aria-label="Nach unten"
+              title="Nach unten"
             >
-              ▼ nach unten
+              <Icon name="down" />
             </button>
-            <button type="button" class="btn small" disabled={selected < 0} onClick={remove}>
-              <Icon name="close" /> Entfernen
+            <button
+              type="button"
+              class="gbtn icon danger"
+              onClick={remove}
+              aria-label="Entfernen"
+              title="Entfernen (Entf)"
+            >
+              <Icon name="trash" />
             </button>
           </div>
-          {selected >= 0 && design[selected] && (
-            <p class="small muted build-info">
-              <strong>{part(design[selected]).name}:</strong> {part(design[selected]).info}
-            </p>
-          )}
-        </section>
+        )}
+      </section>
 
-        <section class="build-stats" aria-label="Daten der Rakete">
-          <h3>Flugdaten</h3>
-          <dl class="kv">
-            <dt>Startmasse</dt>
-            <dd>{fmt(mass / 1000, 1)} t</dd>
-            <dt>Höhe</dt>
-            <dd>{fmt(designHeight(design), 1)} m</dd>
-            <dt>Teile</dt>
-            <dd>
-              {design.length} / {MAX_PARTS}
-            </dd>
+      <aside class={`stats-panel ${statsOpen ? 'open' : ''}`} aria-label="Daten der Rakete">
+        <button
+          type="button"
+          class="stats-summary"
+          aria-expanded={statsOpen}
+          onClick={() => setStatsOpen(!statsOpen)}
+        >
+          <span>
+            Δv <strong>{fmt(dv)} m/s</strong>
+          </span>
+          <span>
+            TWR <strong>{first && first.thrust > 0 ? fmt(first.twrEarth, 2) : '–'}</strong>
+          </span>
+          <span>
+            <strong>{fmt(mass / 1000, 1)} t</strong>
+          </span>
+          {problems.some((p) => p.level === 'error') && <span class="stats-alert">!</span>}
+          <Icon name="chevron" />
+        </button>
+        <div class="stats-body">
+          <div class="dv-big">
+            <span>Δv gesamt</span>
+            <strong>
+              {fmt(dv)} <small>m/s</small>
+            </strong>
+          </div>
+          <div class="dv-bar" aria-hidden="true">
+            <div class="dv-fill" style={{ width: `${Math.min(100, (dv / maxBar) * 100)}%` }} />
+            {MILESTONES.map((m) => (
+              <span
+                key={m.label}
+                class={`dv-mark ${dv >= m.dv ? 'ok' : ''}`}
+                style={{ left: `${(m.dv / maxBar) * 100}%` }}
+              />
+            ))}
+          </div>
+          <ul class="dv-list">
+            {MILESTONES.map((m) => (
+              <li key={m.label} class={dv >= m.dv ? 'ok' : ''}>
+                <span aria-hidden="true">{dv >= m.dv ? '✓' : '·'}</span> {m.label}
+                <span class="dv-need">{fmt(m.dv)}</span>
+              </li>
+            ))}
+          </ul>
+          <dl class="stat-grid">
+            <div>
+              <dt>Masse</dt>
+              <dd>{fmt(mass / 1000, 1)} t</dd>
+            </div>
+            <div>
+              <dt title="Schub-Gewichts-Verhältnis beim Start auf der Erde">TWR</dt>
+              <dd class={first && first.thrust > 0 && first.twrEarth < 1 ? 'weak' : ''}>
+                {first && first.thrust > 0 ? fmt(first.twrEarth, 2) : '–'}
+              </dd>
+            </div>
+            <div>
+              <dt>Höhe</dt>
+              <dd>{fmt(designHeight(design), 1)} m</dd>
+            </div>
+            <div>
+              <dt>Teile</dt>
+              <dd>
+                {design.length}/{MAX_PARTS}
+              </dd>
+            </div>
           </dl>
-          {design.length > 0 && (
-            <table class="table stage-table">
+          {design.length > 0 && stats.length > 1 && (
+            <table class="stage-table">
               <thead>
                 <tr>
                   <th>Stufe</th>
                   <th>Δv</th>
                   <th title="Schub-Gewichts-Verhältnis auf der Erde">TWR</th>
-                  <th>Brenndauer</th>
+                  <th>Brennt</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.map((s) => (
                   <tr key={s.number}>
                     <td>{s.number}</td>
-                    <td>{fmt(s.deltaV)} m/s</td>
+                    <td>{fmt(s.deltaV)}</td>
                     <td class={s.thrust > 0 && s.twrEarth < 1 ? 'weak' : ''}>
                       {s.thrust > 0 ? fmt(s.twrEarth, 2) : '–'}
-                      {s.thrust > 0 && s.twrMoon >= 1 && s.twrEarth < 1 ? ' (Mond ✓)' : ''}
+                      {s.thrust > 0 && s.twrMoon >= 1 && s.twrEarth < 1 ? ' ☾' : ''}
                     </td>
                     <td>{s.burnTime > 0 ? `${fmt(s.burnTime)} s` : '–'}</td>
                   </tr>
@@ -537,30 +811,6 @@ function Werft({
               </tbody>
             </table>
           )}
-          <div class="dv-meter" aria-label={`Gesamt-Δv ${fmt(dv)} m/s`}>
-            <div class="dv-head">
-              <span>Gesamt-Δv</span>
-              <strong>{fmt(dv)} m/s</strong>
-            </div>
-            <div class="dv-bar">
-              <div class="dv-fill" style={{ width: `${Math.min(100, (dv / maxBar) * 100)}%` }} />
-              {MILESTONES.map((m) => (
-                <span
-                  key={m.label}
-                  class={`dv-mark ${dv >= m.dv ? 'ok' : ''}`}
-                  style={{ left: `${(m.dv / maxBar) * 100}%` }}
-                  title={`${m.label}: etwa ${fmt(m.dv)} m/s`}
-                />
-              ))}
-            </div>
-            <ul class="dv-list">
-              {MILESTONES.map((m) => (
-                <li key={m.label} class={dv >= m.dv ? 'ok' : ''}>
-                  {dv >= m.dv ? '✓' : '○'} {m.label} <span class="muted">≈ {fmt(m.dv)} m/s</span>
-                </li>
-              ))}
-            </ul>
-          </div>
           {problems.length > 0 && (
             <ul class="build-problems">
               {problems.map((p) => (
@@ -570,57 +820,28 @@ function Werft({
               ))}
             </ul>
           )}
-          <label class="sandbox-toggle">
-            <input
-              type="checkbox"
-              checked={sandbox}
-              onChange={(e) => onSandbox((e.target as HTMLInputElement).checked)}
-            />
-            <span>
-              <strong>Sandkasten:</strong> unendlich Treibstoff zum Ausprobieren – dafür gibt es
-              keine Punkte.
-            </span>
-          </label>
           {lockedParts.length > 0 && (
-            <p class="small lock-hint">
+            <p class="build-problems-note">
               🔒 Noch gesperrt: {[...new Set(lockedParts)].map((id) => part(id).name).join(', ')}.
               Mehr Punkte sammeln – oder im Sandkasten fliegen.
             </p>
           )}
-          <button
-            type="button"
-            class="btn primary launch-btn"
-            disabled={blocked || lockedParts.length > 0}
-            onClick={onLaunch}
-          >
-            Zur Startrampe <Icon name="arrow" />
-          </button>
           <details class="rocket-eq">
-            <summary>Woher kommt das Δv? – die Raketengleichung</summary>
-            <p class="small">
-              Eine Rakete stößt Masse nach hinten aus und wird dadurch schneller. Wie viel
-              Geschwindigkeit sie insgesamt gewinnen kann, sagt die Raketengleichung von Ziolkowski:
+            <summary>Woher kommt das Δv?</summary>
+            <p>
+              Die Raketengleichung von Ziolkowski: Wie viel Geschwindigkeit eine Rakete gewinnt,
+              hängt vom Triebwerk (I<sub>sp</sub>) und vom Massenverhältnis ab.
             </p>
             <Tex
               block
             >{String.raw`\Delta v = I_\text{sp}\, g_0 \ln\frac{m_\text{voll}}{m_\text{leer}}`}</Tex>
-            <p class="small">
-              I<sub>sp</sub> misst, wie sparsam ein Triebwerk ist, m<sub>voll</sub>/m
-              <sub>leer</sub> ist das Massenverhältnis. Weil der Logarithmus langsam wächst, lohnen
-              sich Stufen: Leere Tanks werden abgeworfen, und die nächste Stufe beschleunigt weniger
-              Masse.
+            <p>
+              Weil der Logarithmus langsam wächst, lohnen sich Stufen: Leere Tanks werden
+              abgeworfen, und die nächste Stufe beschleunigt weniger Masse.
             </p>
           </details>
-        </section>
-      </div>
-      <MissionControl
-        goals={goals}
-        stars={stars}
-        paint={paint}
-        onPaint={onPaint}
-        satellites={satellites}
-        onSatellites={onSatellites}
-      />
+        </div>
+      </aside>
     </div>
   );
 }

@@ -327,7 +327,6 @@ export function FlightScreen({
   const memo = useRef<Memo>({});
   const judged = useRef(false);
   const startGoals = useRef(new Set<string>(knownGoals));
-  const [menu, setMenu] = useState(false);
   const goalCallback = useRef(onGoal);
   goalCallback.current = onGoal;
   const satCallback = useRef(onSatellites);
@@ -1140,7 +1139,8 @@ export function FlightScreen({
   });
 
   const fullscreen = (): void => {
-    const el = box.current;
+    // Das ganze Spiel in den Vollbildmodus, damit auch Dialoge sichtbar bleiben.
+    const el = box.current?.closest<HTMLElement>('.game') ?? box.current;
     if (!el) return;
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
     else void el.requestFullscreen?.().catch(() => undefined);
@@ -1183,7 +1183,7 @@ export function FlightScreen({
     !(o.bound && o.periapsis > Math.max(ref.atmosphere, 5_000)) &&
     (!challenge || challenge.computer);
   const newGoals = [...f.goals].filter((g) => !startGoals.current.has(g));
-  const navSize = size.width < 640 ? 92 : size.width < 1000 ? 112 : 128;
+  const navSize = size.width < 640 ? 88 : size.width < 1000 ? 112 : 128;
   const jumps: { label: string; t: number; what: string }[] = [];
   if (f.status === 'flying') {
     if (f.node && !f.node.frozen)
@@ -1226,127 +1226,266 @@ export function FlightScreen({
         />
       </div>
 
-      <div class="hud hud-left">
-        <div class="hud-title">
-          {ref.name}
-          {sf.mode === 'target' ? ' · relativ zur Station' : ''}
+      {/* Oben links: Menü, Karte und Flugdaten */}
+      <div class="hud-tl">
+        <div class="hud-row">
+          <button
+            type="button"
+            class="hbtn icon"
+            onClick={() => setPaused(true)}
+            aria-label="Menü öffnen (Esc)"
+            title="Menü (Esc)"
+          >
+            <Icon name="menu" />
+          </button>
+          <button
+            type="button"
+            class={`hbtn ${map ? 'on' : ''}`}
+            onClick={() => openMap(!map)}
+            title="Karte (M)"
+          >
+            <Icon name={map ? 'rocket' : 'map'} />
+            <span class="hbtn-label">{map ? 'Rakete' : 'Karte'}</span>
+          </button>
+          {map && (
+            <select
+              class="hselect"
+              aria-label="Kartenmitte"
+              value={mapCam.current.focus}
+              onChange={(e) => setFocus((e.target as HTMLSelectElement).value as MapFocus)}
+            >
+              {FOCI.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-        <dl>
-          <dt>Höhe</dt>
-          <dd>{distance(rel.altitude)}</dd>
-          <dt>Tempo</dt>
-          <dd>{fmt(speed, speed < 10 ? 1 : 0)} m/s</dd>
-          <dt>Steigen</dt>
-          <dd>{fmt(vertical)} m/s</dd>
-          <dt>Ap</dt>
-          <dd>
-            {o.bound ? distance(o.apoapsis) : 'Flucht'}
-            {Number.isFinite(tAp) && f.status === 'flying' && <small> · {shortTime(tAp)}</small>}
-          </dd>
-          <dt>Pe</dt>
-          <dd class={o.periapsis < 0 ? 'bad' : ''}>
-            {o.periapsis < 0 ? (ref.solid ? 'im Boden' : 'im Inneren') : distance(o.periapsis)}
-            {Number.isFinite(tPe) && f.status === 'flying' && o.periapsis >= 0 && (
-              <small> · {shortTime(tPe)}</small>
-            )}
-          </dd>
-          <dt>Belastung</dt>
-          <dd class={f.gForce > 6 ? 'bad' : ''}>{fmt(f.gForce, 1)} g</dd>
-          <dt>Zeit</dt>
-          <dd>T+ {clock(f.t)}</dd>
-        </dl>
-        {win && (
-          <div class={`hud-window ${win.wait < 30 ? 'now' : ''}`}>
-            {win.title}: {win.wait < 30 ? <strong>jetzt!</strong> : <>in {clock(win.wait)}</>}
-            <div class="small">
-              Vorsprung {fmt((win.lead * 180) / Math.PI)}° · ideal{' '}
-              {fmt((win.ideal * 180) / Math.PI)}°
-            </div>
-            <div class="small">{win.hint}</div>
+        <div class="telemetry">
+          <div class="tele-head">
+            {ref.name}
+            {sf.mode === 'target' ? ' · relativ zur Station' : ''}
           </div>
-        )}
-        {f.node && (
-          <div class="hud-window node">
-            Manöver: {fmt(f.nodeRemaining().mag, f.nodeRemaining().mag < 10 ? 1 : 0)} m/s ·{' '}
-            {f.node.frozen ? (
-              <strong>jetzt brennen!</strong>
-            ) : (
-              <>zünden in {clock(f.nodeBurnStart() - f.t)}</>
-            )}
+          <div class="tele-big">
+            <span>Höhe</span>
+            <strong>{distance(rel.altitude)}</strong>
           </div>
-        )}
+          <div class="tele-big">
+            <span>Tempo</span>
+            <strong>
+              {fmt(speed, speed < 10 ? 1 : 0)} <small>m/s</small>
+            </strong>
+          </div>
+          <dl class="tele-rows">
+            <dt>Ap</dt>
+            <dd>
+              {o.bound ? distance(o.apoapsis) : 'Flucht'}
+              {Number.isFinite(tAp) && f.status === 'flying' && <small>{shortTime(tAp)}</small>}
+            </dd>
+            <dt>Pe</dt>
+            <dd class={o.periapsis < 0 ? 'bad' : ''}>
+              {o.periapsis < 0 ? (ref.solid ? 'im Boden' : 'im Inneren') : distance(o.periapsis)}
+              {Number.isFinite(tPe) && f.status === 'flying' && o.periapsis >= 0 && (
+                <small>{shortTime(tPe)}</small>
+              )}
+            </dd>
+            <dt>Steigen</dt>
+            <dd>{fmt(vertical)} m/s</dd>
+          </dl>
+          <div class="tele-foot">
+            <span>T+ {clock(f.t)}</span>
+            <span class={f.gForce > 6 ? 'bad' : ''}>{fmt(f.gForce, 1)} g</span>
+          </div>
+        </div>
       </div>
 
-      <div class="hud hud-right">
-        <label class="hud-target">
-          <span class="hud-title">Ziel</span>
-          <select
-            value={f.target ?? ''}
-            onChange={(e) => {
-              const v = (e.target as HTMLSelectElement).value;
-              f.target = v ? (v as TargetId) : null;
-              refresh();
-            }}
+      {/* Oben Mitte: Zeitraffer, Tipp und Meldungen */}
+      <div class="hud-tc">
+        <div class="warp" role="group" aria-label="Zeitraffer">
+          <button
+            type="button"
+            onClick={() => warpBy(-1)}
+            disabled={f.warpIndex === 0}
+            aria-label="Langsamer (Komma)"
+            title="Langsamer ( , )"
           >
-            <option value="">– keins –</option>
-            {TARGETS.filter((t) => t.id !== ref.id).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {ti && (
-          <dl class="target-info">
-            <dt>Abstand</dt>
-            <dd>{distance(ti.distance)}</dd>
-            <dt>Relativ</dt>
-            <dd>{fmt(ti.speed, ti.speed < 10 ? 1 : 0)} m/s</dd>
-            <dt>{ti.closing > 0 ? 'Entfernt sich' : 'Kommt näher'}</dt>
-            <dd>{fmt(Math.abs(ti.closing), Math.abs(ti.closing) < 10 ? 1 : 0)} m/s</dd>
-          </dl>
+            <Icon name="chevron" />
+          </button>
+          <span class="warp-val" title="Zeitraffer">
+            {fmt(f.warp)}×
+          </span>
+          <button
+            type="button"
+            onClick={() => warpBy(1)}
+            disabled={f.warpIndex >= maxWarp}
+            aria-label="Schneller (Punkt)"
+            title="Schneller ( . )"
+          >
+            <Icon name="chevron" />
+          </button>
+          <div class="warp-menu-wrap">
+            <button
+              type="button"
+              class={`warp-jump ${warpMenu || f.warpTarget !== null ? 'on' : ''}`}
+              onClick={() => setWarpMenu(!warpMenu)}
+              aria-expanded={warpMenu}
+              aria-label="Zeitsprung"
+              title="Zeitsprung: automatisch vorspulen und rechtzeitig abbremsen"
+            >
+              <Icon name="forward" />
+            </button>
+            {warpMenu && (
+              <div class="warp-menu" role="menu">
+                <div class="warp-menu-title">Zeitsprung</div>
+                {f.warpTarget !== null && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      f.setWarp(0);
+                      setWarpMenu(false);
+                    }}
+                  >
+                    ■ Anhalten
+                  </button>
+                )}
+                {jumps.map((j) => (
+                  <button
+                    key={j.label}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => warpTo(j.t, j.what)}
+                  >
+                    {j.label}
+                    <span>{clock(j.t - f.t)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Tipp und Meldungen */}
+      <div class="hud-msg">
+        <div class="hud-pills">
+          {win && (
+            <div class={`hud-pill ${win.wait < 30 ? 'now' : ''}`} title={win.hint}>
+              <strong>{win.title}</strong>
+              <span>{win.wait < 30 ? 'jetzt!' : `in ${clock(win.wait)}`}</span>
+            </div>
+          )}
+          {f.node && (
+            <div class="hud-pill node">
+              <strong>
+                Manöver {fmt(f.nodeRemaining().mag, f.nodeRemaining().mag < 10 ? 1 : 0)} m/s
+              </strong>
+              <span>
+                {f.node.frozen ? 'jetzt brennen!' : `zünden in ${clock(f.nodeBurnStart() - f.t)}`}
+              </span>
+            </div>
+          )}
+        </div>
+        {f.status !== 'crashed' && !paused && !briefing && (
+          <div class="hud-tip">
+            {challenge && !pilotLabel
+              ? // Tipps der Herausforderung, alle paar Sekunden der nächste
+                challenge.tips[Math.floor(performance.now() / 7000) % challenge.tips.length]
+              : tipFor(f, pilotLabel)}
+          </div>
         )}
-        {site && !challenge && (
-          <dl class="target-info">
-            <dt>{site.name}</dt>
-            <dd>{site.distance < 10_000 ? `${fmt(site.distance)} m` : km(site.distance)}</dd>
+        <div class="toasts" aria-live="polite">
+          {toasts.map((t) => (
+            <div key={t.id} class={`rocket-toast ${t.kind}`}>
+              {t.title && <strong>{t.title}</strong>}
+              <span>{t.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Oben rechts: Ziel, Bordcomputer, Aufgabe */}
+      <div class="hud-tr">
+        <div class="hud-row">
+          <label class="hselect-wrap" title="Ziel wählen">
+            <Icon name="target" />
+            <select
+              class="hselect"
+              aria-label="Ziel"
+              value={f.target ?? ''}
+              onChange={(e) => {
+                const v = (e.target as HTMLSelectElement).value;
+                f.target = v ? (v as TargetId) : null;
+                refresh();
+              }}
+            >
+              <option value="">Kein Ziel</option>
+              {TARGETS.filter((t) => t.id !== ref.id).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            class={`hbtn ${computer ? 'on' : ''}`}
+            onClick={() => setComputer(!computer)}
+            aria-expanded={computer}
+            title="Bordcomputer (B)"
+          >
+            <Icon name="chip" />
+            <span class="hbtn-label">Bordcomputer</span>
+          </button>
+        </div>
+        {(ti || (site && !challenge)) && (
+          <dl class="hud-card target-info">
+            {ti && (
+              <>
+                <dt>Abstand</dt>
+                <dd>{distance(ti.distance)}</dd>
+                <dt>Relativ</dt>
+                <dd>{fmt(ti.speed, ti.speed < 10 ? 1 : 0)} m/s</dd>
+                <dt>{ti.closing > 0 ? 'Entfernt sich' : 'Kommt näher'}</dt>
+                <dd>{fmt(Math.abs(ti.closing), Math.abs(ti.closing) < 10 ? 1 : 0)} m/s</dd>
+              </>
+            )}
+            {site && !challenge && (
+              <>
+                <dt>{site.name}</dt>
+                <dd>{site.distance < 10_000 ? `${fmt(site.distance)} m` : km(site.distance)}</dd>
+              </>
+            )}
           </dl>
         )}
         {challenge ? (
-          <div class="challenge-box">
-            <div class="hud-title rank">{challenge.title}</div>
+          <div class="hud-card challenge-box">
+            <div class="hud-card-title">{challenge.title}</div>
             <p>{challenge.progress(f)}</p>
             <ol>
-              {challenge.stars.map((s, i) => (
-                <li key={s}>
-                  <span aria-hidden="true">{'★'.repeat(i + 1)}</span> {s}
+              {challenge.stars.map((st, i) => (
+                <li key={st}>
+                  <span aria-hidden="true">{'★'.repeat(i + 1)}</span> {st}
                 </li>
               ))}
             </ol>
           </div>
         ) : (
-          <>
-            <div class="hud-title rank">
-              {sandbox ? 'Sandkasten · keine Punkte' : `${rank.title} · ${points} Punkte`}
+          <div class="hud-card goals">
+            <div class="hud-card-title">
+              {sandbox ? 'Sandkasten · keine Punkte' : `${rank.title} · ${points} P.`}
             </div>
             <ul class="goal-list">
-              {open.map((g) => (
+              {open.slice(0, 3).map((g) => (
                 <li key={g.id} title={g.text}>
                   <span aria-hidden="true">☆</span> {g.title} <span class="pts">+{g.points}</span>
                 </li>
               ))}
               {open.length === 0 && <li class="done">★ Alle Ziele erreicht!</li>}
             </ul>
-          </>
+          </div>
         )}
-        <button
-          type="button"
-          class={`hud-btn computer-btn ${computer ? 'on' : ''}`}
-          onClick={() => setComputer(!computer)}
-          aria-expanded={computer}
-        >
-          Bordcomputer <kbd>B</kbd>
-        </button>
       </div>
 
       {computer && (
@@ -1364,173 +1503,18 @@ export function FlightScreen({
         />
       )}
 
-      <div class="hud-bar">
-        <div class="hud-group">
-          <button type="button" class="hud-btn" onClick={onExit} aria-label="Zurück zur Werft">
-            ← <span class="btn-label">{challenge ? 'Übersicht' : 'Werft'}</span>
-          </button>
-          <button type="button" class="hud-btn" onClick={() => restart()} aria-label="Neustart">
-            <Icon name="reset" /> <span class="btn-label">Neustart</span>
-          </button>
-        </div>
-        <div class="hud-group hud-center">
-          <div class="warp" role="group" aria-label="Zeitraffer">
-            <button
-              type="button"
-              onClick={() => warpBy(-1)}
-              disabled={f.warpIndex === 0}
-              aria-label="Langsamer"
-            >
-              «
-            </button>
-            <span title="Zeitraffer (Tasten , und .)">
-              {fmt(f.warp)}×{f.warpTarget !== null ? ' ⏩' : ''}
-            </span>
-            <button
-              type="button"
-              onClick={() => warpBy(1)}
-              disabled={f.warpIndex >= maxWarp}
-              aria-label="Schneller"
-            >
-              »
-            </button>
-          </div>
-          <div class="warp-menu-wrap">
-            <button
-              type="button"
-              class={`hud-btn ${warpMenu ? 'on' : ''}`}
-              onClick={() => setWarpMenu(!warpMenu)}
-              aria-expanded={warpMenu}
-              title="Zeitsprung: automatisch vorspulen und rechtzeitig abbremsen"
-            >
-              ⏩ <span class="btn-label">Zeitsprung</span>
-            </button>
-            {warpMenu && (
-              <div class="warp-menu" role="menu">
-                {f.warpTarget !== null && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      f.setWarp(0);
-                      setWarpMenu(false);
-                    }}
-                  >
-                    ■ Zeitsprung anhalten
-                  </button>
-                )}
-                {jumps.map((j) => (
-                  <button
-                    key={j.label}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => warpTo(j.t, j.what)}
-                  >
-                    {j.label}
-                    <span>{clock(j.t - f.t)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            class={`hud-btn ${paused ? 'on' : ''}`}
-            onClick={() => setPaused(!paused)}
-            aria-label="Pause"
-          >
-            {paused ? '▶' : '❚❚'} <kbd>Esc</kbd>
-          </button>
-          <button type="button" class={`hud-btn ${map ? 'on' : ''}`} onClick={() => openMap(!map)}>
-            {map ? 'Rakete' : 'Karte'} <kbd>M</kbd>
-          </button>
-          {map && (
-            <select
-              class="hud-select map-focus"
-              aria-label="Kartenmitte"
-              value={mapCam.current.focus}
-              onChange={(e) => setFocus((e.target as HTMLSelectElement).value as MapFocus)}
-            >
-              {FOCI.map((q) => (
-                <option key={q.id} value={q.id}>
-                  Mitte: {q.label}
-                </option>
-              ))}
-            </select>
-          )}
-          <div class="warp zoom-group" role="group" aria-label="Zoom">
-            <button type="button" onClick={() => zoomBy(1 / 1.6)} aria-label="Verkleinern">
-              −
-            </button>
-            <button type="button" onClick={() => zoomBy(1.6)} aria-label="Vergrößern">
-              +
-            </button>
-          </div>
-        </div>
+      <div class="hud-zoom" role="group" aria-label="Zoom">
+        <button type="button" class="hbtn icon" onClick={() => zoomBy(1.6)} aria-label="Vergrößern">
+          <Icon name="plus" />
+        </button>
         <button
           type="button"
-          class={`hud-btn menu-toggle ${menu ? 'on' : ''}`}
-          aria-expanded={menu}
-          aria-label="Weitere Knöpfe"
-          onClick={() => setMenu(!menu)}
+          class="hbtn icon"
+          onClick={() => zoomBy(1 / 1.6)}
+          aria-label="Verkleinern"
         >
-          ⋯
+          <Icon name="minus" />
         </button>
-        <div class={`hud-group hud-extra ${menu ? 'open' : ''}`}>
-          <button
-            type="button"
-            class="hud-btn"
-            onClick={quicksave}
-            disabled={f.status === 'crashed' || !!challenge}
-            title="Spielstand speichern (F5)"
-          >
-            Speichern
-          </button>
-          <button
-            type="button"
-            class="hud-btn"
-            onClick={quickload}
-            disabled={!saved || !!challenge}
-            title="Spielstand laden (F9)"
-          >
-            Laden
-          </button>
-          <button type="button" class="hud-btn" onClick={photo} title="Foto als Bild speichern (O)">
-            📷 <span class="btn-label">Foto</span>
-          </button>
-          <button
-            type="button"
-            class="hud-btn"
-            onClick={() => setHelp(!help)}
-            aria-label="Hilfe"
-            title="Hilfe (H)"
-          >
-            ?
-          </button>
-          <button
-            type="button"
-            class="hud-btn"
-            onClick={() => {
-              setMuted(!muted);
-              audio.current.setMuted(!muted);
-            }}
-            aria-label={muted ? 'Ton einschalten' : 'Ton ausschalten'}
-          >
-            {muted ? '🔇' : '🔊'}
-          </button>
-          <button type="button" class="hud-btn" onClick={fullscreen} aria-label="Vollbild">
-            <Icon name="expand" />
-          </button>
-        </div>
-      </div>
-
-      <div class="toasts" aria-live="polite">
-        {toasts.map((t) => (
-          <div key={t.id} class={`rocket-toast ${t.kind}`}>
-            {t.title && <strong>{t.title}</strong>}
-            <span>{t.text}</span>
-          </div>
-        ))}
       </div>
 
       {landing && (landing.urgent || landing.impact < 60) && !pilot.current && (
@@ -1547,93 +1531,64 @@ export function FlightScreen({
           {Math.ceil(countdown)}
         </div>
       )}
-      {f.status !== 'crashed' && !paused && !briefing && (
-        <div class="hud-tip">
-          {challenge && !pilotLabel
-            ? // Tipps der Herausforderung, alle paar Sekunden der nächste
-              challenge.tips[Math.floor(performance.now() / 7000) % challenge.tips.length]
-            : tipFor(f, pilotLabel)}
-        </div>
-      )}
 
-      <div class="hud-bottom">
+      {/* Unten links: drehen und RCS */}
+      <div class="hud-bl">
+        {f.rcs && (
+          <div class="rcs-pad" role="group" aria-label="RCS-Düsen">
+            <button type="button" class="hbtn icon" aria-label="Vorwärts" {...nudge(0, 1)}>
+              <Icon name="up" />
+            </button>
+            <button type="button" class="hbtn icon" aria-label="Links" {...nudge(-1, 0)}>
+              <Icon name="up" />
+            </button>
+            <button type="button" class="hbtn icon" aria-label="Rechts" {...nudge(1, 0)}>
+              <Icon name="up" />
+            </button>
+            <button type="button" class="hbtn icon" aria-label="Rückwärts" {...nudge(0, -1)}>
+              <Icon name="down" />
+            </button>
+          </div>
+        )}
         <div class="turn-pad">
-          <button type="button" class="pad-btn" aria-label="Nach links drehen" {...hold(-1)}>
-            ⟲
+          <button type="button" class="round-btn" aria-label="Nach links drehen" {...hold(-1)}>
+            <Icon name="rotl" />
           </button>
-          <button type="button" class="pad-btn" aria-label="Nach rechts drehen" {...hold(1)}>
-            ⟳
+          <button type="button" class="round-btn" aria-label="Nach rechts drehen" {...hold(1)}>
+            <Icon name="rotr" />
           </button>
-          {f.rcs && (
-            <div class="rcs-pad" role="group" aria-label="RCS-Düsen">
-              <button type="button" class="pad-btn small" aria-label="Vorwärts" {...nudge(0, 1)}>
-                ▲
-              </button>
-              <button type="button" class="pad-btn small" aria-label="Links" {...nudge(-1, 0)}>
-                ◀
-              </button>
-              <button type="button" class="pad-btn small" aria-label="Rechts" {...nudge(1, 0)}>
-                ▶
-              </button>
-              <button type="button" class="pad-btn small" aria-label="Rückwärts" {...nudge(0, -1)}>
-                ▼
-              </button>
-            </div>
-          )}
         </div>
+      </div>
+
+      {/* Unten Mitte: Lageanzeige mit SAS */}
+      <div class="hud-bc">
         <Navball flight={flight} size={navSize} onSas={setSas} />
-        <div class="action-pad">
+      </div>
+
+      {/* Unten rechts: Aktionen, Stufe und Schub */}
+      <div class="hud-br">
+        <div class="action-col">
           {f.status === 'docked' ? (
             <>
               <button
                 type="button"
-                class="pad-btn wide go"
+                class="abtn go"
                 onClick={() => {
                   if (f.refuel()) toast('Alle Tanks sind voll!');
                 }}
               >
                 Tanken
               </button>
-              <button type="button" class="pad-btn wide" onClick={() => f.undock()}>
+              <button type="button" class="abtn" onClick={() => f.undock()}>
                 Ablegen
               </button>
             </>
           ) : (
             <>
-              <button
-                type="button"
-                class="pad-btn wide stage-btn"
-                onClick={() => {
-                  audio.current.unlock();
-                  f.stage();
-                }}
-                disabled={f.segs.length <= 1 && f.chute !== 'stowed'}
-              >
-                {f.segs.length > 1 ? `Stufe ab (${f.segs.length - 1})` : 'Fallschirm'} <kbd>␣</kbd>
-              </button>
-              {f.chute === 'stowed' && f.segs.length > 1 && (
-                <button type="button" class="pad-btn wide" onClick={() => f.deployChute()}>
-                  Fallschirm <kbd>P</kbd>
-                </button>
-              )}
-              {f.chute === 'armed' && <span class="chip warn">Fallschirm scharf</span>}
-              {f.satellitesOnBoard > 0 && f.status === 'flying' && (
-                <button type="button" class="pad-btn wide" onClick={deploySatellite}>
-                  Satellit ({f.satellitesOnBoard}) <kbd>N</kbd>
-                </button>
-              )}
-              <button
-                type="button"
-                class={`pad-btn wide ${f.rcs ? 'on' : ''}`}
-                onClick={() => (f.rcs = !f.rcs)}
-                aria-pressed={f.rcs}
-              >
-                RCS <kbd>R</kbd>
-              </button>
               {f.status === 'landed' && f.stats.liftoff === null && f.landedOn === EARTH && (
                 <button
                   type="button"
-                  class={`pad-btn wide ${countdown !== null ? 'on' : ''}`}
+                  class={`abtn ${countdown !== null ? 'on' : ''}`}
                   onClick={startCountdown}
                 >
                   {countdown !== null ? 'Abbrechen' : 'Countdown'} <kbd>C</kbd>
@@ -1642,71 +1597,84 @@ export function FlightScreen({
               {(orbitPilotAvailable || pilot.current === 'orbit') && (
                 <button
                   type="button"
-                  class={`pad-btn wide ${pilot.current === 'orbit' ? 'on' : ''}`}
+                  class={`abtn ${pilot.current === 'orbit' ? 'on' : ''}`}
                   onClick={togglePilot}
                 >
                   {pilot.current === 'orbit' ? 'Hilfe-Pilot aus' : 'Hilfe-Pilot'} <kbd>T</kbd>
                 </button>
               )}
               {pilot.current && pilot.current !== 'orbit' && (
-                <button type="button" class="pad-btn wide on" onClick={() => stopPilots()}>
+                <button type="button" class="abtn on" onClick={() => stopPilots()}>
                   Autopilot aus
                 </button>
               )}
+              {f.chute === 'stowed' && f.segs.length > 1 && (
+                <button type="button" class="abtn" onClick={() => f.deployChute()}>
+                  Fallschirm <kbd>P</kbd>
+                </button>
+              )}
+              {f.chute === 'armed' && <span class="abtn-note">Fallschirm scharf</span>}
+              {f.satellitesOnBoard > 0 && f.status === 'flying' && (
+                <button type="button" class="abtn" onClick={deploySatellite}>
+                  Satellit ({f.satellitesOnBoard}) <kbd>N</kbd>
+                </button>
+              )}
+              <button
+                type="button"
+                class={`abtn ${f.rcs ? 'on' : ''}`}
+                onClick={() => (f.rcs = !f.rcs)}
+                aria-pressed={f.rcs}
+              >
+                RCS <kbd>R</kbd>
+              </button>
             </>
           )}
         </div>
-        <div class="throttle-pad">
+        <div class="engine">
           <div class="gauges">
-            <div class="gauge" title="Treibstoff der aktiven Stufe">
+            <div
+              class={`vgauge fuel ${fuel < 0.15 ? 'low' : ''}`}
+              title={`Treibstoff der aktiven Stufe: ${fmt(fuel * 100)} %`}
+            >
+              <div class="vgauge-fill" style={{ height: `${fuel * 100}%` }} />
               <span>Tank</span>
-              <div class="bar">
-                <div
-                  class={`fill ${fuel < 0.15 ? 'low' : ''}`}
-                  style={{ width: `${fuel * 100}%` }}
-                />
-              </div>
             </div>
             {f.heat > 0.05 && (
               <div
-                class="gauge heat"
+                class={`vgauge heat ${f.heat > 0.6 ? 'low' : ''}`}
                 title="Hitze beim Wiedereintritt – bei 100 % verglüht die Rakete"
               >
+                <div class="vgauge-fill" style={{ height: `${Math.min(1, f.heat) * 100}%` }} />
                 <span>{f.shielded ? 'Schild' : 'Hitze'}</span>
-                <div class="bar">
-                  <div
-                    class={`fill ${f.heat > 0.6 ? 'low' : ''}`}
-                    style={{ width: `${Math.min(1, f.heat) * 100}%` }}
-                  />
-                </div>
               </div>
             )}
-            <div class="small">
-              Δv übrig <strong>{sandbox && !challenge ? '∞' : `${fmt(f.deltaV())} m/s`}</strong>
-            </div>
           </div>
-          <label class="throttle">
-            <span>
-              Schub {fmt(f.throttle * 100)} %{f.fine ? ' · fein' : ''}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={Math.round(f.throttle * 100)}
-              onInput={(e) => {
-                if (pilot.current) stopPilots();
-                audio.current.unlock();
-                f.throttle = Number((e.target as HTMLInputElement).value) / 100;
-              }}
-              aria-label="Schub"
-            />
-          </label>
-          <div class="throttle-buttons">
+          <Throttle
+            value={f.throttle}
+            fine={f.fine}
+            onChange={(v) => {
+              if (pilot.current) stopPilots();
+              audio.current.unlock();
+              f.throttle = v;
+            }}
+          />
+          <div class="engine-btns">
             <button
               type="button"
-              class="pad-btn go"
+              class="stage-btn"
+              onClick={() => {
+                audio.current.unlock();
+                f.stage();
+              }}
+              disabled={f.status === 'docked' || (f.segs.length <= 1 && f.chute !== 'stowed')}
+              title="Nächste Stufe zünden (Leertaste)"
+            >
+              <strong>{f.segs.length > 1 ? 'Stufe' : 'Schirm'}</strong>
+              <span>{f.segs.length > 1 ? `${f.segs.length - 1} übrig` : 'öffnen'}</span>
+            </button>
+            <button
+              type="button"
+              class="abtn go"
               onClick={() => {
                 if (pilot.current) stopPilots();
                 audio.current.unlock();
@@ -1717,7 +1685,7 @@ export function FlightScreen({
             </button>
             <button
               type="button"
-              class="pad-btn"
+              class="abtn"
               onClick={() => {
                 if (pilot.current) stopPilots();
                 f.throttle = 0;
@@ -1727,21 +1695,70 @@ export function FlightScreen({
             </button>
           </div>
         </div>
+        <div class="dv-readout">
+          Δv <strong>{sandbox && !challenge ? '∞' : `${fmt(f.deltaV())} m/s`}</strong>
+        </div>
       </div>
 
       {paused && !help && f.status !== 'crashed' && !briefing && (
-        <div class="rocket-overlay" role="dialog" aria-label="Pause">
+        <div class="rocket-overlay pause-menu" role="dialog" aria-label="Menü">
           <h3>Pause</h3>
-          <p>Die Zeit steht still. Weiter mit Esc oder dem Knopf.</p>
-          <div class="btn-row">
-            <button type="button" class="btn primary" onClick={() => setPaused(false)}>
-              Weiterfliegen
+          <div class="menu-list">
+            <button type="button" class="mbtn primary" onClick={() => setPaused(false)}>
+              <Icon name="play" /> Weiterfliegen <kbd>Esc</kbd>
+            </button>
+            <button
+              type="button"
+              class="mbtn"
+              onClick={() => {
+                setPaused(false);
+                restart();
+              }}
+            >
+              <Icon name="reset" /> Neustart
             </button>
             {!challenge && (
-              <button type="button" class="btn" onClick={quicksave}>
-                Spielstand speichern
-              </button>
+              <>
+                <button type="button" class="mbtn" onClick={quicksave}>
+                  <Icon name="save" /> Spielstand speichern <kbd>F5</kbd>
+                </button>
+                <button
+                  type="button"
+                  class="mbtn"
+                  onClick={() => {
+                    quickload();
+                    setPaused(false);
+                  }}
+                  disabled={!saved}
+                >
+                  <Icon name="folder" /> Spielstand laden <kbd>F9</kbd>
+                </button>
+              </>
             )}
+            <button type="button" class="mbtn" onClick={photo}>
+              <Icon name="camera" /> Foto speichern <kbd>O</kbd>
+            </button>
+            <button type="button" class="mbtn" onClick={() => setHelp(true)}>
+              <Icon name="quiz" /> Steuerung <kbd>H</kbd>
+            </button>
+            <div class="menu-split">
+              <button
+                type="button"
+                class="mbtn"
+                onClick={() => {
+                  setMuted(!muted);
+                  audio.current.setMuted(!muted);
+                }}
+              >
+                <Icon name={muted ? 'mute' : 'sound'} /> {muted ? 'Ton aus' : 'Ton an'}
+              </button>
+              <button type="button" class="mbtn" onClick={fullscreen}>
+                <Icon name="expand" /> Vollbild
+              </button>
+            </div>
+            <button type="button" class="mbtn" onClick={onExit}>
+              <Icon name="wrench" /> {challenge ? 'Zur Übersicht' : 'Zur Werft'}
+            </button>
           </div>
         </div>
       )}
@@ -1768,7 +1785,7 @@ export function FlightScreen({
                 ['L / T / C', 'Lande-Autopilot / Hilfe-Pilot / Countdown'],
                 [', und .', 'Zeitraffer (⏩ Zeitsprung: automatisch vorspulen)'],
                 ['F5 / F9 / O', 'Spielstand speichern / laden / Foto'],
-                ['Esc / H', 'Pause / diese Hilfe'],
+                ['Esc / H', 'Menü (Pause, Speichern, Foto, Ton, Vollbild) / diese Hilfe'],
                 ['Gamepad', 'Stick drehen, Trigger Schub, A Stufe, B Fallschirm, X RCS, Y Karte'],
               ].map(([k, v]) => (
                 <tr key={k}>
@@ -1793,8 +1810,6 @@ export function FlightScreen({
           onStart={() => {
             audio.current.unlock();
             setBriefing(false);
-            // Falls die Seite inzwischen verrutscht ist: Spielfeld wieder ganz ins Bild.
-            box.current?.scrollIntoView({ block: 'start' });
           }}
           onExit={onExit}
         />
@@ -1860,6 +1875,56 @@ export function FlightScreen({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Senkrechter Schubregler wie in Spaceflight Simulator: ziehen oder tippen.
+ * Die Tasten W/S und die Pfeiltasten steuern ihn über die Tastatursteuerung des Spiels.
+ */
+function Throttle({
+  value,
+  fine,
+  onChange,
+}: {
+  value: number;
+  fine: boolean;
+  onChange: (v: number) => void;
+}) {
+  const track = useRef<HTMLDivElement>(null);
+  const set = (clientY: number): void => {
+    const r = track.current?.getBoundingClientRect();
+    if (!r || r.height === 0) return;
+    const v = Math.min(1, Math.max(0, 1 - (clientY - r.top) / r.height));
+    // Oben und unten einrasten, damit 0 % und 100 % leicht zu treffen sind.
+    onChange(v > 0.97 ? 1 : v < 0.03 ? 0 : v);
+  };
+  const pct = Math.round(value * 100);
+  return (
+    <div
+      class="throttle"
+      role="slider"
+      aria-label="Schub"
+      aria-orientation="vertical"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      aria-valuetext={`${pct} %`}
+      onPointerDown={(e) => {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        set(e.clientY);
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons & 1) set(e.clientY);
+      }}
+    >
+      <span class="throttle-val">{pct} %</span>
+      <div class="throttle-track" ref={track}>
+        <div class="throttle-fill" style={{ height: `${value * 100}%` }} />
+        <div class="throttle-knob" style={{ bottom: `${value * 100}%` }} />
+      </div>
+      <span class="throttle-label">{fine ? 'Schub · fein' : 'Schub'}</span>
     </div>
   );
 }
