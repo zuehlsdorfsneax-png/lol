@@ -8,6 +8,29 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Autopilot und Bahnberechnung: Ruckeln und Rechenfehler
+
+Gemeldet: Mit dem Autopiloten ruckelt das Spiel stark, und die Bahnberechnung stimmt nicht richtig.
+Gemessen wurde im Browser (Profiler, auch mit vierfach gedrosselter CPU) und mit einem neuen
+Prüflauf (`npx tsx scripts/scenarios.ts`), der ganze Missionen so fliegt, wie ein Spieler die
+Knöpfe drücken würde.
+
+| #   | Befund                                                                                                                                            | Status | Lösung                                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 111 | Karte beim Autopilot-Brennen: einzelne Bilder dauerten bis zu 0,95 s – die gestrichelte Plan-Bahn wurde auch weit außerhalb des Bildes gezeichnet | ✅     | Nur der sichtbare Teil der Bahnen wird gezeichnet; die Bahnpunkte relativ zu Mond oder Planet werden einmal je Vorhersage berechnet statt in jedem Bild                         |
+| 112 | Bordcomputer fror das Spiel beim Planen ein (0,3–1 s, auf langsamen Geräten länger)                                                               | ✅     | Geplant wird in einem Hintergrund-Thread (Web Worker); das Spiel läuft flüssig weiter. Ändert sich die Bahn währenddessen (Schub), verwirft der Computer den Plan               |
+| 113 | Orte von Sonne, Planeten und Monden wurden rekursiv und mehrfach berechnet                                                                        | ✅     | Alle Körper in einem Durchgang (14-mal schneller, Ergebnisse bitgleich); Planen und Vorhersage rund doppelt so schnell                                                          |
+| 114 | Bahnvorhersage wurde auch im freien Flug alle 0,15 s neu gerechnet                                                                                | ✅     | Im freien Flug nur neu, wenn sich etwas ändert oder ein merklicher Teil schon hinter der Rakete liegt                                                                           |
+| 115 | Während eines langen Brennens sprang die vorhergesagte Bahn (Rest-Δv bis zu 25 % zu groß geschätzt)                                               | ✅     | Rest-Δv exakt aus der Bahnenergie statt linear genähert                                                                                                                         |
+| 116 | Rückflug vom Mond: Nach dem Wechsel in den Einflussbereich der Erde zeigte die Vorhersage plötzlich 30 statt 25 km                                | ✅     | Der Computer zielte auf den tiefsten Punkt irgendeiner späteren Runde; jetzt zählt immer der erste Vorbeiflug (auch bei Kurskorrektur und Kreisbahn)                            |
+| 117 | Kreisbahn auf weiten, langgestreckten Bahnen: Brennen an der falschen Stelle, danach Pe im Boden                                                  | ✅     | Dort kommen Bahnpunkt und Schub aus der echten Vorhersage (mit dem Zug des Mondes), der senkrechte Anteil wird mit weggebremst                                                  |
+| 118 | Rendezvous mit der Station scheiterte aus 120 km oder gleicher Höhe (nächste Annäherung 400–700 km)                                               | ✅     | Neue Planung mit Phasenbahnen: Treffen auch nach bis zu zwölf Umläufen; „Geschwindigkeit angleichen“ schlägt vorher eine kleine Korrektur vor, wenn es sonst knapp danebenginge |
+| 119 | Hilfe-Pilot: Aurora verbrannte beim Einkreisen alles und landete auf einer 36.000-km-Bahn                                                         | ✅     | Einkreisen mit Schwerkraftausgleich entlang der fehlenden Geschwindigkeit; schwache Oberstufen zünden früher, aber erst in der oberen Hälfte des Anstiegs                       |
+| 120 | Lande-Autopilot schwebte unter dem Fallschirm minutenlang in 8 km Höhe und leerte den Tank                                                        | ✅     | Abbremsen beginnt erst, wenn die Verzögerung über die Schwerkraft hinaus nötig ist; der Fallschirm wird eingerechnet; dicht über dem Boden retrograd; sanftes Aufsetzen         |
+| 121 | Bei hohem Zeitraffer flog die Rakete auch auf stark gestörten Bahnen „auf Schienen“ (reine Kepler-Ellipse) und wich von der Vorhersage ab         | ✅     | Schienen nur noch, wo Monde und Mutterkörper kaum zerren (unter 1/10.000 der Schwerkraft)                                                                                       |
+| 122 | Cockpit zeigte weit draußen „Pe im Boden“, die Karte aber 25 km; der Bordcomputer bot dann kein Einschwenken an                                   | ✅     | Weit draußen kommen Ap und Pe im Cockpit und für die Plan-Knöpfe aus der echten Vorhersage – wie auf der Karte                                                                  |
+| 123 | Titelbild der Raketenwerft lief hinter dem geöffneten Spiel weiter                                                                                | ✅     | Es ruht, solange das Spiel offen oder das Bild nicht sichtbar ist                                                                                                               |
+
 ## QA-Bericht: 126 Befunde (geprüfter Stand bee92f2)
 
 Ein ausführlicher QA-Bericht hat die ganze App noch einmal durchgesehen. Alle 126 Befunde sind
@@ -202,7 +225,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **209 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **218 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,
@@ -216,5 +239,12 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
   dem QA-Bericht zusätzlich im Querformat (844 × 390), auf dem Tablet hochkant (820 × 1.180) und
   mit Touch-Bedienung: Pause, Hilfe, Tastensperre, Nachfragen, Karte, Bordcomputer, Hangar,
   Rückgängig, Herausforderungen, Karriere, Luna, Quiz, Quellen und unbekannte Adressen.
+- **Prüflauf für Bordcomputer und Autopiloten** (`npx tsx scripts/scenarios.ts`): Aufstieg mit
+  allen großen Vorlagen, Mondtransfer aus 15 Startbahnen, ganze Mondmission mit Landung, Rückstart,
+  Heimflug und Landung auf der Erde, Rückflug aus neun Mondbahnen, Wiedereintritt aus drei Höhen,
+  Kreisbahn an Ap und Pe, Rendezvous mit der Station aus vier Bahnen, Mars mit Startfenster,
+  Korrekturen, Einschwenken und Landung, Transfers zu Venus, Jupiter und Merkur – alles ohne Fehler.
 - **Leistung:** Auch bei 5.000.000-fachem Zeitraffer mit offener Karte bleiben es 60 Bilder pro
-  Sekunde (gemessen im Browser ohne Bildschirmausgabe).
+  Sekunde (gemessen im Browser ohne Bildschirmausgabe). Planen, Autopilot-Brennen und Karte
+  zusammen: 60 Bilder pro Sekunde ohne lange Blockaden (vorher bis 0,95 s pro Bild);
+  `npx tsx scripts/bench-autopilot.ts` misst Planungs- und Rechenzeiten.

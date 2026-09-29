@@ -24,16 +24,18 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-| Befehl                   | Zweck                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------ |
-| `npm run dev`            | Entwicklungsserver                                                                               |
-| `npm run build`          | Typprüfung + Produktions-Build nach `dist/`                                                      |
-| `npm run preview`        | Build lokal ausliefern                                                                           |
-| `npm test`               | Automatische Tests (Physik, Simulation, Missionen, Spiele, Engine)                               |
-| `npm run calibrate`      | Stabilitätsgrenzen per Simulation bestimmen (für Kapitel 8)                                      |
-| `npm run build:artifact` | Variante mit eingebetteten Schriften für eingebettete Seiten; CSV-Export über die Zwischenablage |
-| `npm run check`          | Typen, Lint, Formatierung und Tests (wie in der CI)                                              |
-| `npm run exe`            | Windows-EXE nach `release/Orbitlabor.exe` bauen (braucht zusätzlich Go ≥ 1.22)                   |
+| Befehl                               | Zweck                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `npm run dev`                        | Entwicklungsserver                                                                               |
+| `npm run build`                      | Typprüfung + Produktions-Build nach `dist/`                                                      |
+| `npm run preview`                    | Build lokal ausliefern                                                                           |
+| `npm test`                           | Automatische Tests (Physik, Simulation, Missionen, Spiele, Engine)                               |
+| `npm run calibrate`                  | Stabilitätsgrenzen per Simulation bestimmen (für Kapitel 8)                                      |
+| `npm run build:artifact`             | Variante mit eingebetteten Schriften für eingebettete Seiten; CSV-Export über die Zwischenablage |
+| `npm run check`                      | Typen, Lint, Formatierung und Tests (wie in der CI)                                              |
+| `npx tsx scripts/scenarios.ts`       | Prüflauf: ganze Raketenmissionen mit Bordcomputer und Autopiloten (Mond, Station, Mars …)        |
+| `npx tsx scripts/bench-autopilot.ts` | Rechenzeiten von Planung, Vorhersage und Autopilot messen                                        |
+| `npm run exe`                        | Windows-EXE nach `release/Orbitlabor.exe` bauen (braucht zusätzlich Go ≥ 1.22)                   |
 
 ## Was die App enthält
 
