@@ -68,5 +68,11 @@ fly('Phobos', 'spatzsonde', { target: 'phobos', land: true, home: false });
 fly('Europa', 'jupiter', { target: 'europa', land: true, home: false });
 fly('Ganymed', 'jupiter', { target: 'ganymede', land: true, home: false });
 fly('Ceres', 'jupiter', { target: 'ceres', land: true, home: false });
+fly('Odyssee: Ganymed', 'odyssee', { target: 'ganymede', land: true, home: false });
+fly('Odyssee: Mond und zurück', 'odyssee', { target: 'moon', land: true, home: true });
+fly('Odyssee: Marslandung', 'odyssee', { target: 'mars', land: true, home: false });
+fly('Odyssee: Merkurlandung', 'odyssee', { target: 'mercury', land: true, home: false });
+fly('Odyssee: Ceres', 'odyssee', { target: 'ceres', land: true, home: false });
+fly('Odyssee: Europa', 'odyssee', { target: 'europa', land: true, home: false });
 
 console.log(`\n${problems ? `✗ ${problems} Missionen gescheitert` : '✓ alle Missionen erfüllt'}`);

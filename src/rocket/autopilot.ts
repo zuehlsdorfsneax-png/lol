@@ -388,6 +388,13 @@ export class LandingPilot {
         return (this.phase = 'chute');
       }
     }
+    if (amax <= g * 1.05 && f.segs.length > 1 && f.engine().thrust > 0) {
+      // Zu schwer (etwa noch mit der Transferstufe): die unterste Stufe abwerfen und mit der
+      // Landestufe weiter.
+      f.throttle = 0;
+      f.stage();
+      return this.phase;
+    }
     if (amax <= g * 1.05) {
       this.message =
         body.atmosphere > 0 && f.segs.length > 1
