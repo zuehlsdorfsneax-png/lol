@@ -50,7 +50,7 @@ const CONTROLS: [string, string][] = [
   ['P / N / U', 'Fallschirm scharf, entschärfen oder abwerfen / Satellit aussetzen / Luftbremsen'],
   ['R, dann W / S / Q / E', 'RCS-Düsen: sanft verschieben (zum Andocken)'],
   ['M', 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
-  ['B', 'Bordcomputer: Manöver planen und automatisch fliegen'],
+  ['B', 'Bordcomputer: Manöver planen, automatisch fliegen, ganze Missionen (Reiter „Mission“)'],
   ['L / T / C', 'Lande-Autopilot / Hilfe-Pilot / Countdown mit Sprachausgabe'],
   [', und . oder ⏩', 'Zeitraffer / Zeitsprung (bremst von selbst am Ziel)'],
   ['+ / − oder Mausrad', 'Zoomen'],
@@ -204,6 +204,11 @@ function Guide() {
           „Automatisch landen“ – oder alles selbst fliegen.
         </li>
         <li>
+          <strong>Missions-Autopilot:</strong> Im Bordcomputer den Reiter „Mission“ öffnen, Ziel
+          wählen, „Landen“ oder „Danach zurück zur Erde“ ankreuzen und starten. Er fliegt alles
+          allein und zeigt jeden Schritt – eine Steuertaste gibt dir die Kontrolle zurück.
+        </li>
+        <li>
           <strong>Satelliten:</strong> Mit N aussetzen – sie bleiben auf ihrer Bahn, auch in
           späteren Flügen. Drei um die Erde ergeben ein Satellitennetz.
         </li>
@@ -349,8 +354,8 @@ function World() {
             <tr>
               <td>Körper im Spiel</td>
               <td colSpan={2}>
-                Sonne, Merkur, Venus, Erde mit Mond und Raumstation, Mars mit Phobos, Jupiter mit
-                Europa
+                Sonne, Merkur, Venus, Erde mit Mond und Raumstation, Mars mit Phobos, der
+                Zwergplanet Ceres im Asteroidengürtel, Jupiter mit Europa und Ganymed
               </td>
             </tr>
             <tr>

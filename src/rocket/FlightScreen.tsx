@@ -2427,7 +2427,7 @@ const HELP_ROWS: [string[] | string, string][] = [
   [['P'], 'Fallschirm scharf machen, entschärfen oder abwerfen'],
   [['N', '/', 'U'], 'Satellit aussetzen / Luftbremsen'],
   [['M'], 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
-  [['B'], 'Bordcomputer: Pläne, Manöver, Autopilot'],
+  [['B'], 'Bordcomputer: Pläne, Manöver, Missions-Autopilot'],
   [['L', '/', 'T', '/', 'C'], 'Lande-Autopilot / Hilfe-Pilot / Countdown'],
   [[',', 'und', '.'], 'Zeitraffer langsamer / schneller (Zeitsprung: automatisch vorspulen)'],
   [['F5', '/', 'F9'], 'Spielstand speichern / laden'],

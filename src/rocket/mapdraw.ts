@@ -173,6 +173,8 @@ export function drawMap(
     reserveLabel({ x: rx - 14, y: ry - 14, w: 28, h: 28 });
   }
 
+  drawBelt(ctx, v, t);
+
   // Bahnen der Körper um ihren Mutterkörper
   ctx.lineWidth = 1;
   for (const b of BODIES) {
@@ -339,6 +341,32 @@ function drawSatellites(ctx: CanvasRenderingContext2D, f: Flight, v: View): void
   }
 }
 
+/**
+ * Asteroidengürtel zwischen Mars und Jupiter (2,1 bis 3,3 AE, wie im echten Sonnensystem): feine
+ * Punkte, die langsam mit ihrer Keplergeschwindigkeit um die Sonne ziehen. Nur in der Übersicht,
+ * dicht an einem Körper wäre er bloß Rauschen.
+ */
+const BELT = Array.from({ length: 420 }, (_, i) => {
+  // Feste Pseudozufallszahlen: jedes Bild derselbe Gürtel.
+  const r = (Math.sin(i * 12.9898) * 43_758.5453) % 1;
+  const q = (Math.sin(i * 78.233) * 12_543.853) % 1;
+  return { a: Math.abs(r) * Math.PI * 2, d: 2.1 + Math.abs(q) * 1.2 };
+});
+
+function drawBelt(ctx: CanvasRenderingContext2D, v: View, t: number): void {
+  const au = EARTH.distance;
+  const px = au * v.scale;
+  // Nur, wenn der Gürtel auf den Schirm passt und nicht zu grob wirkt.
+  if (px < 25 || px > 2_000) return;
+  const [sx0, sy0] = bodyState(SUN, t);
+  ctx.fillStyle = 'rgba(200,190,170,0.45)';
+  for (const p of BELT) {
+    const rate = Math.sqrt(SUN.mu / (p.d * au) ** 3);
+    const a = p.a - rate * t;
+    const [x, y] = toScreen(v, sx0 + p.d * au * Math.cos(a), sy0 + p.d * au * Math.sin(a));
+    ctx.fillRect(x, y, 1.4, 1.4);
+  }
+}
 function drawSiteMarker(ctx: CanvasRenderingContext2D, f: Flight, v: View): void {
   const site = f.site!;
   const b = bodyById(site.body);
