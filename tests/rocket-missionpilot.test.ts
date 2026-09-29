@@ -201,3 +201,16 @@ describe('Missions-Autopilot: Flüge', () => {
     expect(calls).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('Station: Abdocken', () => {
+  it('legt ab und dockt nicht sofort wieder an', () => {
+    const f = new Flight(template('faehre'));
+    const m = fly(f, { target: 'station', land: false, home: false });
+    expect(m.status, m.message).toBe('done');
+    expect(f.status).toBe('docked');
+    f.undock();
+    for (let i = 0; i < 60 * 60; i++) f.update(1 / 60);
+    expect(f.status).toBe('flying');
+    expect(f.targetInfo()!.distance).toBeGreaterThan(20);
+  });
+});

@@ -1448,6 +1448,8 @@ export class Flight {
   undock(): void {
     if (this.status !== 'docked') return;
     this.status = 'flying';
+    // Nicht gleich wieder einfangen: erst nach etwas Abstand darf wieder angedockt werden.
+    this.dockLock = true;
     this.vx -= Math.cos(this.angle) * 0.8;
     this.vy -= Math.sin(this.angle) * 0.8;
     this.x -= Math.cos(this.angle) * 3;
@@ -2168,15 +2170,25 @@ export class Flight {
 
   // ---------------------------------------------------------------- Station
 
+  /** Nach dem Abdocken gesperrt, bis die Rakete sich ein Stück von der Station entfernt hat. */
+  private dockLock = false;
+
   private checkDocking(): void {
     // Grobe Vorprüfung, damit nicht in jedem Schritt die genaue Rechnung nötig ist.
     const [sx, sy] = stationState(this.t);
-    if (Math.abs(this.x - sx) > 200 || Math.abs(this.y - sy) > 200) return;
+    if (Math.abs(this.x - sx) > 200 || Math.abs(this.y - sy) > 200) {
+      this.dockLock = false;
+      return;
+    }
     // Kurz auf die Station umschalten, um Abstand und Tempo zu messen – das Ziel bleibt.
     const target = this.target;
     this.target = 'station';
     const ti = this.targetInfo();
     this.target = target;
+    if (this.dockLock) {
+      if (!ti || ti.distance > DOCK_DISTANCE * 2) this.dockLock = false;
+      return;
+    }
     if (!ti || ti.distance > DOCK_DISTANCE || ti.speed > DOCK_SPEED) return;
     // Angedockt ist die Station das Ziel (für Anzeige und Abdocken).
     this.target = 'station';
