@@ -21,7 +21,7 @@ import {
   type TargetId,
 } from './flight';
 import { clock, clockIn, distance, fmt, km, missionClock, shortTime } from './format';
-import { CIRCULAR_E, timeToApoapsis, timeToPeriapsis } from './kepler';
+import { CIRCULAR_E } from './kepler';
 import {
   drawMap,
   fitMapScale,
@@ -1390,8 +1390,8 @@ export function FlightScreen({
   const el = f.status === 'flying' && ref !== SUN ? f.elements(ref) : null;
   // Auf einer fast runden Bahn sind Ap und Pe kaum bestimmt: dann keine Zeiten.
   const round = !!el && el.e < CIRCULAR_E;
-  const tAp = el && !round ? timeToApoapsis(el, f.t) : Infinity;
-  const tPe = el && !round ? timeToPeriapsis(el, f.t) : Infinity;
+  // Weit draußen aus der echten Vorhersage (wie die Karte), sonst aus der Kepler-Bahn.
+  const { apoapsis: apo, periapsis: peri, tAp, tPe } = f.apsidesShown(pred.current);
   const goals = new Set<string>([...knownGoals, ...f.goals]);
   const points = careerPoints(goals, stars);
   const rank = rankFor(points);
@@ -1554,14 +1554,14 @@ export function FlightScreen({
           <dl class="tele-rows">
             <dt>Ap</dt>
             <dd>
-              {o.bound ? distance(o.apoapsis) : 'Flucht'}
+              {o.bound ? distance(apo) : 'Flucht'}
               {Number.isFinite(tAp) && f.status === 'flying' && <small>{shortTime(tAp)}</small>}
               {round && <small>Kreisbahn</small>}
             </dd>
             <dt>Pe</dt>
-            <dd class={o.periapsis < 0 && f.status === 'flying' ? 'bad' : ''}>
-              {o.periapsis < 0 ? (ref.solid ? 'im Boden' : 'im Inneren') : distance(o.periapsis)}
-              {Number.isFinite(tPe) && f.status === 'flying' && o.periapsis >= 0 && (
+            <dd class={peri < 0 && f.status === 'flying' ? 'bad' : ''}>
+              {peri < 0 ? (ref.solid ? 'im Boden' : 'im Inneren') : distance(peri)}
+              {Number.isFinite(tPe) && f.status === 'flying' && peri >= 0 && (
                 <small>{shortTime(tPe)}</small>
               )}
             </dd>

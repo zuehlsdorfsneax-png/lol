@@ -142,6 +142,25 @@ export function timeToRadius(el: Elements, t: number, r: number): number {
   return target > now ? (target - now) / el.n : Infinity;
 }
 
+/**
+ * Zeiten bis die (elliptische) Bahn den Abstand r nach außen und nach innen kreuzt – je die
+ * nächste. Leer, wenn die Bahn r nicht erreicht. Streift sie r nur knapp (bis `slack`), zählt der
+ * nächstgelegene Scheitelpunkt.
+ */
+export function radiusCrossings(el: Elements, t: number, r: number, slack = 0): number[] {
+  const { e, p } = el;
+  if (e >= 1 || e < 1e-9) return [];
+  let c = (p / r - 1) / e;
+  if (c > 1 || c < -1) {
+    const apsis = c > 1 ? p / (1 + e) : p / (1 - e);
+    if (Math.abs(apsis - r) > slack) return [];
+    c = Math.max(-1, Math.min(1, c));
+  }
+  const nu = Math.acos(c);
+  const now = el.m0 + el.n * (t - el.t0);
+  return [meanAnomaly(e, nu), meanAnomaly(e, -nu)].map((m) => mod2pi(m - now) / el.n);
+}
+
 export function period(el: Elements): number {
   return el.e < 1 ? (2 * Math.PI) / el.n : Infinity;
 }

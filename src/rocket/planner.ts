@@ -6,7 +6,14 @@
  */
 import { Flight, nodeFrame, type Prediction } from './flight';
 import { clockIn, fmt, km } from './format';
-import { period, stateAt, timeToApoapsis, timeToPeriapsis } from './kepler';
+import {
+  elements,
+  period,
+  radiusCrossings,
+  stateAt,
+  timeToApoapsis,
+  timeToPeriapsis,
+} from './kepler';
 import {
   EARTH,
   STATION,
@@ -14,7 +21,6 @@ import {
   angularRate,
   bodyById,
   bodyState,
-  dominantBody,
   forms,
   orbitAround,
   phaseLead,
@@ -62,31 +68,71 @@ export function arrivalAltitude(b: Body): number {
 }
 
 /**
- * Höhe des tiefsten Punkts über `body` auf der vorhergesagten Bahn ab dem Index `from`
+ * Wandert die Vorhersage ab `from` entlang und meldet für jeden Punkt den Abstand zu `body` –
+ * bis der erste tiefste Punkt vorbei ist. Spätere Vorbeiflüge zählen nicht: Bis dahin hätten die
+ * Luft oder das nächste Manöver die Bahn längst verändert (sonst zielt der Computer beim Rückflug
+ * vom Mond womöglich auf die zweite Runde statt auf die erste).
+ */
+function untilFirstClosest(
+  p: Prediction,
+  body: Body,
+  from: number,
+  visit: (i: number, d: number) => boolean | void,
+): void {
+  let prev = Infinity;
+  let low = Infinity;
+  let falling = false;
+  for (let i = Math.max(0, from); i < p.n; i++) {
+    const [bx, by] = bodyState(body, p.ts[i]!);
+    const d = Math.hypot(p.xs[i]! - bx, p.ys[i]! - by);
+    if (Number.isFinite(prev) && d < prev * 0.9999) falling = true;
+    else if (falling && d > low * 1.01 + 1_000) return;
+    prev = d;
+    low = Math.min(low, d);
+    if (visit(i, d) === false) return;
+  }
+}
+
+/** Wie `untilFirstClosest`, nur bis der erste höchste Punkt vorbei ist. */
+function untilFirstFarthest(
+  p: Prediction,
+  body: Body,
+  from: number,
+  visit: (i: number, d: number) => boolean | void,
+): void {
+  let prev = -Infinity;
+  let high = 0;
+  let rising = false;
+  for (let i = Math.max(0, from); i < p.n; i++) {
+    const [bx, by] = bodyState(body, p.ts[i]!);
+    const d = Math.hypot(p.xs[i]! - bx, p.ys[i]! - by);
+    if (Number.isFinite(prev) && d > prev * 1.0001) rising = true;
+    else if (rising && d < high * 0.99 - 1_000) return;
+    prev = d;
+    high = Math.max(high, d);
+    if (visit(i, d) === false) return;
+  }
+}
+
+/**
+ * Höhe des (ersten) tiefsten Punkts über `body` auf der vorhergesagten Bahn ab dem Index `from`
  * (echte Mehrkörperbahn; bei einem Aufschlag negativ aus den Bahnelementen). null, wenn die Bahn
  * nicht in die Hill-Sphäre des Körpers kommt.
  */
 export function arrivalPeriapsis(p: Prediction, body: Body, from: number): number | null {
   let best: number | null = null;
   let entered = false;
-  for (let i = Math.max(0, from); i < p.n; i++) {
-    const t = p.ts[i]!;
-    const [bx, by, bvx, bvy] = bodyState(body, t);
-    const rx = p.xs[i]! - bx;
-    const ry = p.ys[i]! - by;
-    const d = Math.hypot(rx, ry);
-    if (d > body.hill) {
-      if (entered) break;
-      continue;
-    }
+  untilFirstClosest(p, body, from, (i, d) => {
+    if (d > body.hill) return !entered;
     entered = true;
     const alt = d - body.radius;
     if (best === null || alt < best) best = alt;
     if (p.impact === body && i === p.n - 1) {
-      const o = orbitAround(body, rx, ry, p.vxs[i]! - bvx, p.vys[i]! - bvy);
+      const [bx, by, bvx, bvy] = bodyState(body, p.ts[i]!);
+      const o = orbitAround(body, p.xs[i]! - bx, p.ys[i]! - by, p.vxs[i]! - bvx, p.vys[i]! - bvy);
       best = Math.min(o.periapsis, 0);
     }
-  }
+  });
   return best;
 }
 
@@ -98,14 +144,12 @@ export function arrivalPeriapsis(p: Prediction, body: Body, from: number): numbe
 export function signedMiss(p: Prediction, body: Body, from: number): number | null {
   let best = -1;
   let bestD = Infinity;
-  for (let i = Math.max(0, from); i < p.n; i++) {
-    const [bx, by] = bodyState(body, p.ts[i]!);
-    const d = Math.hypot(p.xs[i]! - bx, p.ys[i]! - by);
+  untilFirstClosest(p, body, from, (i, d) => {
     if (d < bestD) {
       bestD = d;
       best = i;
     }
-  }
+  });
   if (best < 0) return null;
   const t = p.ts[best]!;
   const [bx, by, bvx, bvy] = bodyState(body, t);
@@ -159,7 +203,10 @@ function search(
 export function planOptions(f: Flight, pred: Prediction | null = null): PlanOption[] {
   if (f.status !== 'flying') return [];
   const ref = f.refBody();
-  const o = f.orbit(ref);
+  const kepler = f.orbit(ref);
+  // Tiefster und höchster Punkt wie im Cockpit: weit draußen aus der echten Vorhersage.
+  const shown = f.apsidesShown(pred);
+  const o = { ...kepler, periapsis: shown.periapsis, apoapsis: shown.apoapsis };
   const out: PlanOption[] = [];
   // Eine schon runde Bahn braucht keine Kreisbahn-Manöver.
   const round = o.bound && o.eccentricity < 0.01;
@@ -233,7 +280,9 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
       hint: `Aus der Bahn um ${forms(ref).acc} zurück ${forms(parent).to}.`,
     });
   }
-  if (o.bound && ref.solid && o.periapsis > 0)
+  // Weit draußen (z. B. auf dem Heimweg vom Mond) täuscht die Kepler-Bahn beim tiefsten Punkt –
+  // dort zählt die echte Vorhersage, die der Computer ohnehin nimmt.
+  if (o.bound && ref.solid && (o.periapsis > 0 || o.apoapsis > 10 * ref.radius))
     out.push({
       id: 'deorbit',
       label: ref.atmosphere > 0 ? 'Wiedereintritt vorbereiten' : 'Abstieg zur Landung',
@@ -265,43 +314,77 @@ export function makePlan(f: Flight, id: PlanId): Plan {
 }
 
 /** Am höchsten bzw. tiefsten Punkt auf Kreisbahngeschwindigkeit bringen. */
+/**
+ * Manöver zur Kreisbahn an einem Bahnpunkt (Weltkoordinaten): waagerecht auf Kreisbahntempo,
+ * die senkrechte Geschwindigkeit weg. Gibt den Anteil in Flugrichtung zurück.
+ */
+function circularNode(
+  f: Flight,
+  ref: Body,
+  t: number,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+): number {
+  const [bx, by, bvx, bvy] = bodyState(ref, t);
+  const rx = x - bx;
+  const ry = y - by;
+  const r = Math.hypot(rx, ry);
+  const ux = rx / r;
+  const uy = ry / r;
+  const rvx = vx - bvx;
+  const rvy = vy - bvy;
+  const radial = rvx * ux + rvy * uy;
+  const hx = rvx - radial * ux;
+  const hy = rvy - radial * uy;
+  const h = Math.hypot(hx, hy) || 1;
+  const vc = Math.sqrt(ref.mu / r);
+  const dx = ((vc - h) * hx) / h - radial * ux;
+  const dy = ((vc - h) * hy) / h - radial * uy;
+  const [px, py, qx, qy] = nodeFrame(ref, x, y, vx, vy, t);
+  const pro = dx * px + dy * py;
+  f.setNode(t, pro, dx * qx + dy * qy);
+  return pro;
+}
+
 export function planCircularize(f: Flight, where: 'ap' | 'pe'): Plan {
   const title = where === 'ap' ? 'Kreisbahn am Ap' : 'Kreisbahn am Pe';
   if (f.status !== 'flying') return fail(title, 'Erst abheben.');
   const ref = f.refBody();
   const el = f.elements(ref);
-  if (where === 'pe' && (el.e >= 1 || el.e > 0.5)) {
-    // Weit draußen stören Sonne und Nachbarn die Kepler-Bahn: den tiefsten Punkt aus der echten
-    // Vorhersage nehmen.
+  const o = f.orbit(ref);
+  // Weit draußen stören Sonne, Planeten und Monde die Kepler-Bahn: den Bahnpunkt dann aus der
+  // echten Vorhersage nehmen (nahe am Körper ist die Kepler-Rechnung genauer).
+  const far = el.e > 0.5 || (o.bound && o.apoapsis + ref.radius > 0.05 * ref.hill);
+  if (far) {
     const node = f.node;
     f.node = null;
     const p = f.predict(2500);
     f.node = node;
     let best = -1;
-    let bestD = Infinity;
-    for (let i = 1; i < p.n; i++) {
-      const [bx, by] = bodyState(ref, p.ts[i]!);
-      const d = Math.hypot(p.xs[i]! - bx, p.ys[i]! - by);
-      if (d > ref.hill) break;
-      if (d < bestD) {
+    let bestD = where === 'pe' ? Infinity : -Infinity;
+    const visit = (i: number, d: number): boolean | void => {
+      if (d > ref.hill) return false;
+      if (where === 'pe' ? d < bestD : d > bestD) {
         bestD = d;
         best = i;
       }
-    }
+    };
+    if (where === 'pe') untilFirstClosest(p, ref, 1, visit);
+    else untilFirstFarthest(p, ref, 1, visit);
     if (best > 0 && best < p.n - 1 && p.ts[best]! > f.t + 10) {
       if (bestD - ref.radius < Math.max(ref.atmosphere, 1_000))
         return fail(
           title,
           `Der tiefste Punkt liegt ${ref.atmosphere > 0 ? 'in der Atmosphäre' : 'zu dicht am Boden'} – erst den Anflug korrigieren (oder mit Fallschirm direkt landen).`,
         );
-      const [, , bvx, bvy] = bodyState(ref, p.ts[best]!);
-      const v = Math.hypot(p.vxs[best]! - bvx, p.vys[best]! - bvy);
-      const vc = Math.sqrt(ref.mu / bestD);
-      f.setNode(p.ts[best]!, vc - v, 0);
+      const t = p.ts[best]!;
+      const dv = circularNode(f, ref, t, p.xs[best]!, p.ys[best]!, p.vxs[best]!, p.vys[best]!);
       return {
         ok: true,
         title: el.e >= 1 ? `Einschwenken ${forms(ref).at}` : title,
-        text: `${fmt(Math.abs(vc - v))} m/s gegen die Flugrichtung in ${clockIn(p.ts[best]! - f.t)}, auf ${km(bestD - ref.radius)} Höhe.`,
+        text: `${fmt(Math.abs(dv))} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(t - f.t)}, auf ${km(bestD - ref.radius)} Höhe.`,
       };
     }
   }
@@ -321,9 +404,8 @@ export function planCircularize(f: Flight, where: 'ap' | 'pe'): Plan {
       title,
       `Dieser Bahnpunkt liegt ${ref.atmosphere > 0 ? 'in der Atmosphäre' : 'zu dicht am Boden'} – dort hält keine Kreisbahn.`,
     );
-  const vc = Math.sqrt(ref.mu / r);
-  const dv = vc - Math.hypot(vx, vy);
-  f.setNode(f.t + dt, dv, 0);
+  const [bx, by, bvx, bvy] = bodyState(ref, f.t + dt);
+  const dv = circularNode(f, ref, f.t + dt, bx + x, by + y, bvx + vx, bvy + vy);
   return {
     ok: true,
     title,
@@ -523,73 +605,204 @@ export function planCorrection(f: Flight): Plan {
   };
 }
 
-/** Rendezvous mit der Station: Transferbahn, die nach einer halben Runde bei ihr ankommt. */
+/** Winkel eines Punkts um den Erdmittelpunkt. */
+const angleOf = (x: number, y: number): number => Math.atan2(y, x);
+
+/**
+ * Rendezvous mit der Station: ein Schub in oder gegen die Flugrichtung auf eine Bahn, die die
+ * Stationsbahn kreuzt – und zwar so, dass die Station genau dann an der Kreuzung ist. Dafür darf
+ * die Rakete auch ein paar Umläufe auf der neuen Bahn warten (Phasenbahn); so klappt es auch aus
+ * einer Bahn knapp unter oder auf der Höhe der Station. Gerechnet wird mit Kepler-Bahnen (in der
+ * niedrigen Erdbahn stören Mond und Sonne praktisch nicht) und genau per Intervallhalbierung.
+ */
 export function planRendezvous(f: Flight): Plan {
   const title = 'Rendezvous mit der Station';
   const ref = f.refBody();
   if (ref !== EARTH) return fail(title, 'Die Station kreist um die Erde.');
   const el = f.elements(EARTH);
   if (el.e >= 1) return fail(title, 'Erst eine geschlossene Erdumlaufbahn fliegen.');
-  const P = period(el);
+  const [x0, y0, vx0, vy0] = stateAt(el, f.t);
+  const r0 = Math.hypot(x0, y0);
   const r2 = STATION.radius;
-  const arrival = (t: number): { err: number; dv: number } => {
-    const [x, y, vx, vy] = stateAt(el, t);
-    const r1 = Math.hypot(x, y);
-    const need = Math.sqrt(EARTH.mu * (2 / r1 - 2 / (r1 + r2)));
-    const tt = Math.PI * Math.sqrt(((r1 + r2) / 2) ** 3 / EARTH.mu);
-    const [sx, sy] = stationState(t + tt);
-    const meet = Math.atan2(y, x) - Math.PI;
-    return { err: Math.abs(wrap(meet - Math.atan2(sy, sx))), dv: need - Math.hypot(vx, vy) };
-  };
-  // Grob über bis zu zwölf Umläufe suchen, früh treffen bevorzugt.
-  let t0 = f.t + 60;
-  let bestErr = Infinity;
-  let dv0 = 0;
-  for (let t = f.t + 60; t < f.t + 12 * P; t += P / 90) {
-    const a = arrival(t);
-    const cost = a.err + (t - f.t) / (P * 40);
-    if (cost < bestErr) {
-      bestErr = cost;
-      t0 = t;
-      dv0 = a.dv;
-    }
-  }
-  const score = (p: Prediction): number => p.closest?.distance ?? 1e12;
-  const best = search(f, t0, dv0, P / 45, 0.04, score, 4);
-  f.setNode(best.t, best.dv, 0);
+  const dvH = Math.sqrt(EARTH.mu * (2 / r0 - 2 / (r0 + r2))) - Math.hypot(vx0, vy0);
+  const best = findMeeting(f, el, dvH, 60 + 0.6 * Math.abs(dvH), 1);
+  if (!best)
+    return fail(
+      title,
+      'Von dieser Bahn aus findet der Computer kein Treffen – erst eine niedrige, runde Erdbahn fliegen.',
+    );
+  f.setNode(best.tb, best.dv, 0);
+  const laps = Math.round((best.tc - best.tb) / period(el));
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)}. Nächste Annäherung etwa ${km(best.score)}. Danach „Geschwindigkeit angleichen“.`,
+    text: `${fmt(Math.abs(best.dv), Math.abs(best.dv) < 10 ? 1 : 0)} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.tb - f.t)}. Treffen mit der Station in ${clockIn(best.tc - f.t)}${laps >= 2 ? ` (nach ${laps} Umläufen)` : ''} – dann „Geschwindigkeit angleichen“ (${fmt(best.rel)} m/s).`,
   };
+}
+
+interface Meeting {
+  tb: number;
+  dv: number;
+  tc: number;
+  rel: number;
+  cost: number;
+}
+
+/**
+ * Sucht Zündzeit (innerhalb eines Umlaufs) und Schub in Flugrichtung (dvCenter ± span), nach dem
+ * die Rakete die Station an einer Kreuzung ihrer Bahnen genau trifft – auch erst nach bis zu zwölf
+ * Umläufen. Bewertet werden Schub, Tempo gegenüber der Station beim Treffen (mal `relWeight`) und
+ * die Wartezeit.
+ */
+function findMeeting(
+  f: Flight,
+  el: ReturnType<typeof elements>,
+  dvCenter: number,
+  span: number,
+  relWeight: number,
+): Meeting | null {
+  const P = period(el);
+  const r2 = STATION.radius;
+  const low = EARTH.radius + EARTH.atmosphere + 5_000;
+  const REVS = 12;
+  const STEPS = 80;
+  const TIMES = 48;
+
+  /** Bahn nach dem Schub und Winkelfehler zur Station an einer Kreuzung (Zweig b, Umlauf k). */
+  const meet = (
+    tb: number,
+    dv: number,
+    b: number,
+    k: number,
+  ): { err: number; tc: number; rel: number } | null => {
+    const [x, y, vx, vy] = stateAt(el, tb);
+    const v = Math.hypot(vx, vy);
+    const q = (v + dv) / v;
+    const el2 = elements(EARTH.mu, x, y, vx * q, vy * q, tb);
+    if (el2.e >= 1 || el2.p / (1 + el2.e) < low) return null;
+    const dt = radiusCrossings(el2, tb, r2, 3_000)[b];
+    if (dt === undefined) return null;
+    const tc = tb + dt + k * period(el2);
+    const [sx, sy, svx, svy] = stateAt(el2, tc);
+    const [tx, ty, tvx, tvy] = stationState(tc);
+    return {
+      err: wrap(angleOf(tx, ty) - angleOf(sx, sy)),
+      tc,
+      rel: Math.hypot(tvx - svx, tvy - svy),
+    };
+  };
+
+  let best: Meeting | null = null;
+  const errs = new Array<number | null>(STEPS + 1);
+  const dvAt = (j: number): number => dvCenter - span + (2 * span * j) / STEPS;
+  for (let i = 0; i < TIMES; i++) {
+    const tb = f.t + 60 + (i * P) / TIMES;
+    for (let b = 0; b < 2; b++) {
+      for (let k = 0; k < REVS; k++) {
+        for (let j = 0; j <= STEPS; j++) errs[j] = meet(tb, dvAt(j), b, k)?.err ?? null;
+        for (let j = 0; j < STEPS; j++) {
+          const e0 = errs[j];
+          const e1 = errs[j + 1];
+          if (e0 == null || e1 == null || e0 * e1 > 0 || Math.abs(e0 - e1) > 1) continue;
+          // Nullstelle einschachteln: dort trifft die Rakete die Station an der Kreuzung.
+          let lo = dvAt(j);
+          let hi = dvAt(j + 1);
+          let elo = e0;
+          for (let it = 0; it < 40; it++) {
+            const mid = (lo + hi) / 2;
+            const m = meet(tb, mid, b, k);
+            if (!m) break;
+            if (m.err * elo > 0) {
+              lo = mid;
+              elo = m.err;
+            } else hi = mid;
+          }
+          const dv = (lo + hi) / 2;
+          const m = meet(tb, dv, b, k);
+          if (!m || Math.abs(m.err) > 5e-4) continue;
+          // Treibstoff für beide Schübe plus etwas für jede Stunde Warten.
+          const cost = Math.abs(dv) + relWeight * m.rel + (5 * (m.tc - f.t)) / 3_600;
+          if (!best || cost < best.cost) best = { tb, dv, tc: m.tc, rel: m.rel, cost };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Nächste Annäherung an die Station auf der Kepler-Bahn: die erste deutliche, nicht unbedingt
+ * die allernächste (die kann viele Umläufe später kommen). Grob abtasten, dann fein suchen.
+ */
+function stationApproach(
+  el: ReturnType<typeof elements>,
+  t0: number,
+  t1: number,
+): { t: number; distance: number } | null {
+  const dist = (t: number): number => {
+    const [x, y] = stateAt(el, t);
+    const [sx, sy] = stationState(t);
+    return Math.hypot(x - sx, y - sy);
+  };
+  const step = Math.min(period(el), TAU / STATION.rate) / 360;
+  const found: { t: number; distance: number }[] = [];
+  let a = dist(t0);
+  let b = dist(t0 + step);
+  for (let t = t0 + step; t < t1; t += step) {
+    const c = dist(t + step);
+    if (b <= a && b <= c) {
+      let lo = t - step;
+      let hi = t + step;
+      for (let k = 0; k < 50; k++) {
+        const m1 = lo + (hi - lo) * 0.382;
+        const m2 = lo + (hi - lo) * 0.618;
+        if (dist(m1) < dist(m2)) hi = m2;
+        else lo = m1;
+      }
+      const tm = (lo + hi) / 2;
+      found.push({ t: tm, distance: dist(tm) });
+    }
+    a = b;
+    b = c;
+  }
+  if (!found.length) return null;
+  const closest = Math.min(...found.map((q) => q.distance));
+  return found.find((q) => q.distance <= Math.max(5_000, 2 * closest)) ?? null;
 }
 
 /** Bei der nächsten Annäherung die Geschwindigkeit der Station übernehmen. */
 export function planMatch(f: Flight): Plan {
   const title = 'Geschwindigkeit angleichen';
   if (f.target !== 'station') return fail(title, 'Erst die Station als Ziel wählen.');
-  const node = f.node;
-  f.node = null;
-  const p = f.predict(2000);
-  f.node = node;
-  const c = p.closest;
-  if (!c || c.t < f.t + 15)
-    return fail(title, 'Keine Annäherung in Sicht – plane zuerst das Rendezvous.');
+  if (f.status !== 'flying' || f.refBody() !== EARTH)
+    return fail(title, 'Erst in eine Erdumlaufbahn fliegen.');
+  const el = f.elements(EARTH);
+  if (el.e >= 1) return fail(title, 'Erst eine geschlossene Erdumlaufbahn fliegen.');
+  const c = stationApproach(el, f.t + 15, f.t + 12 * period(el));
+  if (!c) return fail(title, 'Keine Annäherung in Sicht – plane zuerst das Rendezvous.');
+  if (c.distance > 2_000 && c.t - f.t > 0.75 * period(el)) {
+    // Noch Zeit bis zum Treffen, aber es wird knapp daneben gehen: erst den Kurs verbessern
+    // (das kostet jetzt ein paar Zehntel m/s, beim Treffen ein Vielfaches).
+    const fix = findMeeting(f, el, 0, 12, 0.1);
+    if (fix) {
+      f.setNode(fix.tb, fix.dv, 0);
+      return {
+        ok: true,
+        title: 'Kurs zur Station korrigieren',
+        text: `Du kämst nur auf ${km(c.distance)} heran. Erst ${fmt(Math.abs(fix.dv), 2)} m/s ${fix.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(fix.tb - f.t)} – dann triffst du die Station in ${clockIn(fix.tc - f.t)}. Danach noch einmal „Geschwindigkeit angleichen“.`,
+      };
+    }
+  }
   if (c.distance > 50_000)
     return fail(
       title,
       `Die nächste Annäherung ist ${km(c.distance)} weit weg – erst das Rendezvous planen.`,
     );
-  const i = c.index;
-  const x = p.xs[i]!;
-  const y = p.ys[i]!;
-  const vx = p.vxs[i]!;
-  const vy = p.vys[i]!;
+  const [x, y, vx, vy] = stateAt(el, c.t);
   const [, , svx, svy] = stationState(c.t);
   const dx = svx - vx;
   const dy = svy - vy;
-  const b = dominantBody(x, y, c.t);
-  const [px, py, qx, qy] = nodeFrame(b, x, y, vx, vy, c.t);
+  const [px, py, qx, qy] = nodeFrame(EARTH, x, y, vx, vy, c.t);
   f.setNode(c.t, dx * px + dy * py, dx * qx + dy * qy);
   return {
     ok: true,

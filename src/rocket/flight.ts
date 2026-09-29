@@ -1,6 +1,14 @@
 import { fmt } from './format';
 import { goalById, type GoalId } from './goals';
-import { elements, stateAt, timeToPeriapsis, timeToRadius, type Elements } from './kepler';
+import {
+  CIRCULAR_E,
+  elements,
+  stateAt,
+  timeToApoapsis,
+  timeToPeriapsis,
+  timeToRadius,
+  type Elements,
+} from './kepler';
 import { part, segments, type Design, type PartDef } from './parts';
 import {
   BODIES,
@@ -373,6 +381,21 @@ function horizonFor(s: Coast): number {
   let h = po.bound ? Math.min(1.02 * po.period, 3 * YEAR) : YEAR;
   if (ref === EARTH || ref === MOON) h = Math.max(h, 12 * 86_400);
   return h;
+}
+
+/**
+ * Wie stark andere Körper eine Bahn um `ref` mit höchstem Abstand `ra` stören: größte
+ * Gezeitenbeschleunigung durch Monde und Mutterkörper im Verhältnis zur Schwerkraft von `ref`.
+ */
+function tidalRatio(ref: Body, ra: number): number {
+  let tidal = 0;
+  for (const b of BODIES) {
+    if (b.parent !== ref.id) continue;
+    const near = Math.max(b.distance - ra, b.radius);
+    tidal += b.mu * (1 / (near * near) - 1 / (b.distance * b.distance));
+  }
+  if (ref.parent) tidal += (2 * bodyById(ref.parent).mu * ra) / ref.distance ** 3;
+  return tidal / (ref.mu / (ra * ra));
 }
 
 /** Richtungen „prograd“ und „radial nach außen“ relativ zu einem Körper. */
@@ -839,6 +862,55 @@ export class Flight {
     return orbitAround(body, rel.rx, rel.ry, rel.vx, rel.vy);
   }
 
+  /**
+   * Höchster und tiefster Punkt über dem Bezugskörper (Höhen) mit der Zeit bis dorthin. Nahe am
+   * Körper aus der Kepler-Bahn; weit draußen, wo Mond, Planet oder Sonne kräftig mitziehen, aus der
+   * Vorhersage – sonst widerspräche die Anzeige der Karte (etwa „im Boden“ statt 25 km beim
+   * Heimflug vom Mond). Ohne Treffer in der Vorhersage bleibt es bei Kepler.
+   */
+  apsidesShown(pred: Prediction | null): {
+    apoapsis: number;
+    periapsis: number;
+    tAp: number;
+    tPe: number;
+  } {
+    const ref = this.refBody();
+    const o = this.orbit(ref);
+    const el = this.status === 'flying' && ref !== SUN ? this.elements(ref) : null;
+    const round = !!el && el.e < CIRCULAR_E;
+    const out = {
+      apoapsis: o.apoapsis,
+      periapsis: o.periapsis,
+      tAp: el && !round ? timeToApoapsis(el, this.t) : Infinity,
+      tPe: el && !round ? timeToPeriapsis(el, this.t) : Infinity,
+    };
+    const p = pred;
+    if (
+      !p ||
+      p.ref !== ref ||
+      this.status !== 'flying' ||
+      ref === SUN ||
+      (o.bound && o.apoapsis + ref.radius < 0.1 * ref.hill)
+    )
+      return out;
+    const alt = (i: number): number => {
+      const [bx, by] = bodyState(ref, p.ts[i]!);
+      return Math.hypot(p.xs[i]! - bx, p.ys[i]! - by) - ref.radius;
+    };
+    if (p.low >= 0 && p.ts[p.low]! > this.t) {
+      out.periapsis = alt(p.low);
+      out.tPe = p.ts[p.low]! - this.t;
+    } else if (p.impact === ref) {
+      out.periapsis = Math.min(out.periapsis, -1);
+      out.tPe = Infinity;
+    }
+    if (o.bound && p.high >= 0 && p.ts[p.high]! > this.t) {
+      out.apoapsis = alt(p.high);
+      out.tAp = p.ts[p.high]! - this.t;
+    }
+    return out;
+  }
+
   /** Kepler-Bahnelemente relativ zum Bezugskörper (für Zeit bis Ap/Pe). */
   elements(body: Body = this.refBody()): Elements {
     const rel = this.relative(body);
@@ -981,6 +1053,19 @@ export class Flight {
     return accel <= 2 ? 100 : 10;
   }
 
+  /**
+   * Endgeschwindigkeit im freien Fall bei Luftdichte `rho` und Schwerebeschleunigung `g` – mit oder
+   * ohne offenen Fallschirm (∞ ohne Luft oder ohne Luftwiderstand).
+   */
+  terminalSpeed(g: number, rho: number, chute = false): number {
+    if (!this.dragOn) return Infinity;
+    const cda =
+      ROCKET_CDA * (this.streamlined ? 0.5 : 1) +
+      (this.airbrakes ? AIRBRAKE_CDA * this.count('airbrake') : 0) +
+      (chute ? CHUTE_CDA * this.chuteArea : 0);
+    return rho > 0 ? Math.sqrt((2 * this.mass * g) / (rho * cda)) : Infinity;
+  }
+
   /** Größter erlaubter Zeitraffer in der momentanen Lage. */
   maxWarpIndex(): number {
     if (this.status === 'crashed') return 0;
@@ -1091,6 +1176,10 @@ export class Flight {
     const o = this.orbit(ref);
     if (!o.bound || o.apoapsis + ref.radius > 0.1 * ref.hill) return null;
     if (o.periapsis < Math.max(ref.atmosphere, 10_000)) return null;
+    // Nur wo Monde und Mutterkörper kaum zerren (Gezeitenbeschleunigung unter 1/10 000 der
+    // Schwerkraft am höchsten Punkt) – sonst liefe die Rakete auf Schienen sichtbar anders als
+    // die Vorhersage, die alle Körper mitrechnet.
+    if (tidalRatio(ref, o.apoapsis + ref.radius) > 1e-4) return null;
     return ref;
   }
 
@@ -1398,12 +1487,15 @@ export class Flight {
     let p = n.prograde - n.doneP;
     const r = n.radial - n.doneR;
     const b = bodyById(n.ref);
-    if (n.frozen && n.energy !== null && Math.abs(p) <= Math.abs(n.prograde) * 1.15 + 5) {
-      // Fehlendes Δv aus der Energie: ΔE ≈ v·Δv.
+    if (n.frozen && n.energy !== null) {
+      // Fehlendes Δv aus der Energie, genau (nicht linear genähert – bei großen Schüben wäre das
+      // bis zu einem Viertel zu viel): ½(v + p)² = E_Ziel + μ/r.
       const rel = this.relative(b);
       const v = Math.hypot(rel.vx, rel.vy);
       const e = (v * v) / 2 - b.mu / rel.r;
-      p = (n.energy - e) / Math.max(v, 1);
+      const w = v * v + 2 * (n.energy - e);
+      const exact = w >= 0 ? Math.sqrt(w) - v : NaN;
+      if (Number.isFinite(exact) && Math.abs(exact) <= Math.abs(n.prograde) * 1.15 + 5) p = exact;
     }
     const [px, py, qx, qy] = nodeFrame(b, this.x, this.y, this.vx, this.vy, this.t);
     return {

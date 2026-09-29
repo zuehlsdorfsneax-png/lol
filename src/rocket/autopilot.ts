@@ -101,22 +101,48 @@ export class OrbitPilot {
       // Nachregeln, falls der Luftwiderstand den höchsten Punkt gesenkt hat.
       if (h < b.atmosphere && o.apoapsis < this.apoapsis - 3_000) f.throttle = 1;
       const radial = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
-      const { thrust } = f.engine();
-      const accel = thrust > 0 ? thrust / f.mass : 1;
       const needed = Math.max(0, Math.sqrt(b.mu / (b.radius + h)) - o.v);
-      const burnTime = needed / accel;
+      // Über die Stufen hinweg (eine fast leere Stufe mit starkem Triebwerk täuscht sonst).
+      const burnTime = Math.min(f.burnTime(needed), 600);
       const timeToTop = radial / (b.mu / (b.radius + h) ** 2);
-      if (h > safe && timeToTop < burnTime / 2 + 1) this.phase = 'circularize';
+      // Schwache Triebwerke müssen früh zünden – aber erst in der oberen Hälfte des Anstiegs, sonst
+      // wird die Bahn unnötig niedrig. Spätestens am höchsten Punkt geht es los.
+      const high = h > (safe + this.apoapsis) / 2;
+      if (h > safe && ((high && timeToTop < burnTime / 2 + 1) || timeToTop <= 0))
+        this.phase = 'circularize';
     } else if (this.phase === 'circularize') {
-      // Waagerecht, leicht gegen das Sinken angesteuert.
-      const radial = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
-      const lift = Math.max(-0.3, Math.min(0.3, -radial / 150));
-      steerTo(f, up - Math.PI / 2 + lift);
-      f.throttle = 1;
-      if (o.bound && o.periapsis > safe + (b === EARTH ? 5_000 : 1_000)) {
+      // Gelenkt wird entlang der fehlenden Geschwindigkeit zur Kreisbahn auf der jetzigen Höhe:
+      // waagerecht auf Kreisbahntempo, senkrecht auf null. Ein schwaches Triebwerk, das lange vor
+      // dem höchsten Punkt zünden muss, hebt so nicht den Gipfel immer weiter an, sondern die
+      // ganze Bahn.
+      const ux = rel.rx / rel.r;
+      const uy = rel.ry / rel.r;
+      const radial = rel.vx * ux + rel.vy * uy;
+      const hx = rel.vx - radial * ux;
+      const hy = rel.vy - radial * uy;
+      const hv = Math.hypot(hx, hy) || 1;
+      const vc = Math.sqrt(b.mu / rel.r);
+      const deficit = vc - hv;
+      const need = Math.hypot(deficit, radial);
+      const { thrust } = f.engine();
+      const amax = thrust > 0 ? thrust / f.mass : 1;
+      // Senkrecht: Schwerkraft abzüglich Fliehkraft tragen und die Sinkrate in etwa 20 s abbauen
+      // (höchstens 45° steil, sonst verpufft der Schub nach oben). Der Rest geht waagerecht.
+      const gNet = b.mu / rel.r ** 2 - (hv * hv) / rel.r;
+      const aUp = Math.max(-0.7 * amax, Math.min(0.7 * amax, gNet - radial / 20));
+      const aSide = Math.sqrt(Math.max(0, amax * amax - aUp * aUp)) * (deficit >= 0 ? 1 : -1);
+      const dirX = aUp * ux + (aSide * hx) / hv;
+      const dirY = aUp * uy + (aSide * hy) / hv;
+      const err = steerTo(f, Math.atan2(dirY, dirX));
+      f.throttle = err < 0.3 ? Math.min(1, Math.max(0.05, need / (amax * 1.5))) : 0;
+      const margin = b === EARTH ? 5_000 : 1_000;
+      if (o.bound && (o.periapsis > safe + margin || (need < 1 && o.periapsis > safe))) {
         f.throttle = 0;
         f.turn = 0;
         this.phase = 'done';
+      } else if (h < safe - 2_000 && radial < 0) {
+        // Zurück in die Luft gefallen: wieder steigen, dann neu anlaufen.
+        this.phase = 'ascent';
       }
     }
     if (this.phase === 'done') {
@@ -231,8 +257,14 @@ export class LandingPilot {
     if (body.atmosphere > 0) {
       if (f.chute === 'stowed') f.deployChute();
       const o = f.orbit(body);
-      const terminal = Math.sqrt((2 * f.mass * g) / (body.density0 * 4));
-      const thick = terminal < 250;
+      // Dichte Luft: Sie bremst die Rakete am Boden unter das Tempo, bei dem sich der Fallschirm
+      // öffnet (oder ganz ohne Schirm auf ein Tempo, das das Triebwerk leicht abfängt).
+      const chute = f.chute === 'armed' || f.chute === 'open';
+      // Mit etwas Spielraum, damit der Pilot beim Sinken (g wächst) nicht zwischen Gleiten und
+      // Bremsen hin- und herspringt.
+      const limit =
+        (chute ? 250 : 150) * (this.phase === 'aero' || this.phase === 'chute' ? 1 : 0.85);
+      const thick = f.terminalSpeed(g, body.density0) < limit;
       const coasting = r.altitude > body.atmosphere && o.periapsis < body.atmosphere;
       if (coasting || (thick && speed > 150 && r.altitude > 2_000)) {
         f.throttle = 0;
@@ -242,7 +274,7 @@ export class LandingPilot {
         return (this.phase = 'aero');
       }
       if (thick && amax <= g * 1.05) {
-        // Kein Triebwerk (Kapsel): nur der Fallschirm bremst.
+        // Kein (starkes) Triebwerk: nur Luft und Fallschirm bremsen.
         f.throttle = 0;
         steerTo(f, Math.atan2(-r.vy, -r.vx));
         if (f.chute === 'none' && -radial > 14)
@@ -251,9 +283,21 @@ export class LandingPilot {
       }
     }
     if (amax <= g * 1.05) {
-      this.message = 'Das Triebwerk ist zu schwach, um hier zu landen.';
+      this.message =
+        body.atmosphere > 0 && f.segs.length > 1
+          ? 'Zu schwer für Fallschirm und Triebwerk – untere Stufen abwerfen (Leertaste), dann den Lande-Autopiloten neu starten.'
+          : 'Das Triebwerk ist zu schwach, um hier zu landen.';
       f.throttle = 0;
       return (this.phase = 'failed');
+    }
+    // Schnell und schon dicht über dem Boden: gegen die ganze Bewegung bremsen (retrograd) statt
+    // erst waagerecht – sonst schlägt die Rakete auf, bevor sie senkrecht abfangen kann.
+    const stopDist = radial < 0 ? (radial * radial) / (2 * Math.max(0.1, amax - g)) : 0;
+    if (horizontal > 3 && stopDist > 0.6 * r.altitude) {
+      this.phase = 'suicide';
+      if (f.warpIndex) f.setWarp(0);
+      f.throttle = steerTo(f, Math.atan2(-r.vy, -r.vx)) < 0.3 ? 1 : 0;
+      return this.phase;
     }
     // Große Bahngeschwindigkeit zuerst waagerecht abbauen.
     if (horizontal > 30 || (horizontal > 3 && this.phase === 'brake')) {
@@ -262,8 +306,12 @@ export class LandingPilot {
       if (f.warpIndex) f.setWarp(0);
       return this.phase;
     }
-    // Nötige Bremsbeschleunigung, um bei 2 m/s knapp über dem Boden anzukommen.
-    const need = (radial * radial - 4) / (2 * Math.max(r.altitude, 1)) + g;
+    // Nötige Verzögerung (zusätzlich zur Schwerkraft), um bei 2 m/s knapp über dem Boden
+    // anzukommen – verglichen mit dem, was das Triebwerk über die Schwerkraft hinaus schafft. (Früher
+    // stand hier die Schwerkraft mit drin: Eine Kapsel mit schwachem Triebwerk schwebte dann unter
+    // dem Fallschirm in 8 km Höhe, bis der Tank leer war.)
+    const brake = Math.max(0, (radial * radial - 4) / (2 * Math.max(r.altitude, 1)));
+    const net = amax - g;
     const falling = radial < 0;
     // Gewünschte Richtung: nach oben bremsen und dabei die Restgeschwindigkeit zur Seite
     // wegregeln; kurz vor dem Boden fast senkrecht (sonst kippt die Rakete beim Aufsetzen).
@@ -273,12 +321,18 @@ export class LandingPilot {
     const ay = horizontal > 1e-6 ? -hy / horizontal : 0;
     const upright =
       steerTo(f, Math.atan2(uy + ay * Math.tan(side), ux + ax * Math.tan(side))) < 0.1;
-    const start = this.phase === 'suicide' ? 0.5 : 0.72;
-    if (falling && (need > start * amax || r.altitude < 60)) {
+    const start = this.phase === 'suicide' ? 0.35 : 0.8;
+    if (falling && (brake > start * net || r.altitude < 60)) {
       this.phase = 'suicide';
       if (f.warpIndex) f.setWarp(0);
-      f.throttle = Math.min(1, Math.max(0, need / (amax * Math.cos(side))));
-      if (r.altitude < 60 && -radial < 3) f.throttle = Math.min(1, (g * 0.95) / amax);
+      f.throttle = Math.min(1, Math.max(0, (brake + g) / (amax * Math.cos(side))));
+      if (r.altitude < 60) {
+        // Die letzten Meter: auf ein sanftes Sinktempo regeln (bremst der Fallschirm mit, gibt das
+        // Triebwerk entsprechend weniger – statt lange knapp über dem Boden zu schweben).
+        const sink = Math.max(2.5, Math.min(8, r.altitude / 6));
+        const a = g + 1.5 * (-radial - sink);
+        f.throttle = Math.min(1, Math.max(0, a / (amax * Math.cos(side))));
+      }
     } else {
       this.phase = 'fall';
       f.throttle = 0;
