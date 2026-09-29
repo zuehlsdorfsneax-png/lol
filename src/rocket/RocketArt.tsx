@@ -1,17 +1,30 @@
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { drawRocket } from './draw';
 import { TEMPLATES } from './parts';
 
-/** Bild für den Hinweis auf die Raketenwerft: Rakete über dem Erdrand, Mond im Hintergrund. */
-export function RocketArt() {
+/**
+ * Bild für den Hinweis auf die Raketenwerft: Rakete über dem Erdrand, Mond im Hintergrund.
+ * `paused`: nur ein Standbild (z. B. solange das Spiel darüber liegt). Außerhalb des sichtbaren
+ * Bereichs ruht die Animation ebenfalls.
+ */
+export function RocketArt({ paused = false }: { paused?: boolean }) {
   const [box, size] = useElementSize<HTMLDivElement>();
   const canvas = useRef<HTMLCanvasElement>(null);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setVisible(e?.isIntersecting ?? true));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [box]);
   useEffect(() => {
     const c = canvas.current;
     const { width: W, height: H } = size;
     if (!c || W === 0) return;
     const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const still = calm || paused || !visible;
     let id = 0;
     const draw = (now: number): void => {
       const ctx = prepareCanvas(c, W, H);
@@ -37,7 +50,7 @@ export function RocketArt() {
       ctx.fill();
       ctx.save();
       ctx.translate(W * 0.52, H * 0.78);
-      ctx.rotate(0.5 + (calm ? 0 : 0.03 * Math.sin(now / 900)));
+      ctx.rotate(0.5 + (still ? 0 : 0.03 * Math.sin(now / 900)));
       const scale = (H * 0.62) / 36;
       ctx.scale(scale, -scale);
       drawRocket(ctx, TEMPLATES[2]!.parts, {
@@ -47,11 +60,11 @@ export function RocketArt() {
         time: now / 1000,
       });
       ctx.restore();
-      id = requestAnimationFrame(draw);
+      if (!still) id = requestAnimationFrame(draw);
     };
     id = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(id);
-  }, [size]);
+  }, [size, paused, visible]);
   return (
     <div ref={box} aria-hidden="true">
       <canvas ref={canvas} />

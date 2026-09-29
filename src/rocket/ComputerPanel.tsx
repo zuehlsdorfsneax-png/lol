@@ -3,7 +3,8 @@ import { Icon } from '../ui/Icon';
 import type { Flight, Prediction, TargetId } from './flight';
 import { clock, clockIn, duration, fmt } from './format';
 import { period } from './kepler';
-import { makePlan, planOptions, type Plan, type PlanId } from './planner';
+import { runPlan, warmPlanner } from './planClient';
+import { planOptions, type Plan, type PlanId } from './planner';
 import { forms } from './world';
 
 /** Knopf, der beim Festhalten immer schneller wiederholt. */
@@ -73,15 +74,24 @@ export function ComputerPanel({
   const f = flight.current;
   const node = f.node;
 
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    warmPlanner();
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
   const plan = (id: PlanId): void => {
     setBusy(id);
-    // Kurz warten, damit „rechnet …“ sichtbar wird – die Suche dauert einen Augenblick.
-    window.setTimeout(() => {
-      const r = makePlan(flight.current, id);
+    // Die Suche läuft im Hintergrund – das Spiel läuft währenddessen flüssig weiter.
+    void runPlan(flight.current, id).then((r) => {
+      onChanged();
+      if (!alive.current) return;
       setResult(r);
       setBusy(null);
-      onChanged();
-    }, 30);
+    });
   };
 
   const edit = (change: { t?: number; prograde?: number; radial?: number }): void => {

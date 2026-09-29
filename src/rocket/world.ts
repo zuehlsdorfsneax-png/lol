@@ -331,50 +331,80 @@ export function orbitAngle(b: Body, t: number): number {
   return b.phase0 - RATES.get(b.id)! * t;
 }
 
-/** Ort und Geschwindigkeit relativ zur Sonne. */
-function helio(b: Body, t: number): [number, number, number, number] {
-  if (!b.parent) return [0, 0, 0, 0];
-  const [px, py, pvx, pvy] = helio(bodyById(b.parent), t);
-  const a = orbitAngle(b, t);
-  const w = RATES.get(b.id)! * b.distance;
-  return [
-    px + b.distance * Math.cos(a),
-    py + b.distance * Math.sin(a),
-    pvx + w * Math.sin(a),
-    pvy - w * Math.cos(a),
-  ];
-}
+// Alle Körper in einem Durchgang: Eltern stehen in BODIES vor ihren Monden, jeder Winkel wird nur
+// einmal berechnet (vorher rechnete jeder Körper seine Eltern und die Erde neu). Die Rechenschritte
+// sind dieselben wie zuvor – die Ergebnisse stimmen Bit für Bit überein.
+const N_BODIES = BODIES.length;
+const PARENT = BODIES.map((b) => (b.parent ? BODIES.indexOf(bodyById(b.parent)) : -1));
+const DIST = BODIES.map((b) => b.distance);
+const RATE = BODIES.map((b) => RATES.get(b.id)!);
+const SPEED = BODIES.map((b, i) => RATE[i]! * b.distance);
+const PHASE = BODIES.map((b) => b.phase0);
+const MU = BODIES.map((b) => b.mu);
+const I_EARTH = BODIES.indexOf(EARTH);
+const I_MOON = BODIES.indexOf(MOON);
+const hx = new Float64Array(N_BODIES);
+const hy = new Float64Array(N_BODIES);
+const hvx = new Float64Array(N_BODIES);
+const hvy = new Float64Array(N_BODIES);
 
-function computeState(b: Body, t: number): [number, number, number, number] {
-  if (b === EARTH) return [0, 0, 0, 0];
-  if (b === MOON) {
-    const a = orbitAngle(MOON, t);
-    const w = RATES.get('moon')! * MOON.distance;
-    return [
-      MOON.distance * Math.cos(a),
-      MOON.distance * Math.sin(a),
-      w * Math.sin(a),
-      -w * Math.cos(a),
-    ];
+function computeAll(t: number): [number, number, number, number][] {
+  for (let i = 0; i < N_BODIES; i++) {
+    const p = PARENT[i]!;
+    if (p < 0) {
+      hx[i] = hy[i] = hvx[i] = hvy[i] = 0;
+      continue;
+    }
+    const a = PHASE[i]! - RATE[i]! * t;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    hx[i] = hx[p]! + DIST[i]! * c;
+    hy[i] = hy[p]! + DIST[i]! * sn;
+    hvx[i] = hvx[p]! + SPEED[i]! * sn;
+    hvy[i] = hvy[p]! - SPEED[i]! * c;
   }
-  const [x, y, vx, vy] = helio(b, t);
-  const [ex, ey, evx, evy] = helio(EARTH, t);
-  return [x - ex, y - ey, vx - evx, vy - evy];
+  const out = new Array<[number, number, number, number]>(N_BODIES);
+  const ex = hx[I_EARTH]!;
+  const ey = hy[I_EARTH]!;
+  const evx = hvx[I_EARTH]!;
+  const evy = hvy[I_EARTH]!;
+  for (let i = 0; i < N_BODIES; i++) {
+    if (i === I_EARTH) out[i] = [0, 0, 0, 0];
+    else if (i === I_MOON) {
+      // Der Mond direkt relativ zur Erde (genauer als die Differenz zweier Sonnenabstände).
+      const a = PHASE[i]! - RATE[i]! * t;
+      out[i] = [
+        DIST[i]! * Math.cos(a),
+        DIST[i]! * Math.sin(a),
+        SPEED[i]! * Math.sin(a),
+        -SPEED[i]! * Math.cos(a),
+      ];
+    } else out[i] = [hx[i]! - ex, hy[i]! - ey, hvx[i]! - evx, hvy[i]! - evy];
+  }
+  return out;
 }
 
-// Kleiner Zwischenspeicher: Runge-Kutta fragt dieselben Zeitpunkte mehrfach ab.
-const CACHE_SIZE = 6;
+// Kleiner Zwischenspeicher: Runge-Kutta und Zeichnen fragen dieselben Zeitpunkte mehrfach ab.
+const CACHE_SIZE = 8;
 const cacheT = new Float64Array(CACHE_SIZE).fill(NaN);
 const cacheS: [number, number, number, number][][] = Array.from({ length: CACHE_SIZE }, () => []);
 let cacheNext = 0;
 const INDEX = new Map(BODIES.map((b, i) => [b, i]));
+
+/**
+ * Zustände aller Körper zur Zeit t in der Reihenfolge von BODIES (Erdsystem). Nur lesen – die
+ * Liste wird zwischengespeichert und geteilt.
+ */
+export function bodyStates(t: number): readonly (readonly [number, number, number, number])[] {
+  return statesAt(t);
+}
 
 function statesAt(t: number): [number, number, number, number][] {
   for (let i = 0; i < CACHE_SIZE; i++) if (cacheT[i] === t) return cacheS[i]!;
   const slot = cacheNext;
   cacheNext = (cacheNext + 1) % CACHE_SIZE;
   cacheT[slot] = t;
-  cacheS[slot] = BODIES.map((b) => computeState(b, t));
+  cacheS[slot] = computeAll(t);
   return cacheS[slot];
 }
 
@@ -442,17 +472,23 @@ export function gravity(x: number, y: number, t: number): [number, number] {
   const r = Math.sqrt(r2);
   let ax = (-EARTH.mu * x) / (r2 * r);
   let ay = (-EARTH.mu * y) / (r2 * r);
-  for (const b of BODIES) {
-    if (b === EARTH) continue;
-    const [bx, by] = bodyPosition(b, t);
+  // Direkt über die Zustandsliste (ohne Zwischen-Arrays): wird pro Runge-Kutta-Schritt viermal
+  // gerufen und ist die innerste Schleife von Flug, Vorhersage und Planung.
+  const st = statesAt(t);
+  for (let i = 0; i < N_BODIES; i++) {
+    if (i === I_EARTH) continue;
+    const s = st[i]!;
+    const bx = s[0];
+    const by = s[1];
+    const mu = MU[i]!;
     const dx = x - bx;
     const dy = y - by;
     const d2 = dx * dx + dy * dy;
     const d = Math.sqrt(d2);
     const b2 = bx * bx + by * by;
     const bd = Math.sqrt(b2);
-    ax += (-b.mu * dx) / (d2 * d) - (b.mu * bx) / (b2 * bd);
-    ay += (-b.mu * dy) / (d2 * d) - (b.mu * by) / (b2 * bd);
+    ax += (-mu * dx) / (d2 * d) - (mu * bx) / (b2 * bd);
+    ay += (-mu * dy) / (d2 * d) - (mu * by) / (b2 * bd);
   }
   return [ax, ay];
 }
@@ -463,10 +499,12 @@ export function gravity(x: number, y: number, t: number): [number, number] {
  */
 export function dominantBody(x: number, y: number, t: number): Body {
   let best: Body = SUN;
-  for (const b of BODIES) {
+  const st = statesAt(t);
+  for (let i = 0; i < N_BODIES; i++) {
+    const b = BODIES[i]!;
     if (b === SUN) continue;
-    const [bx, by] = bodyPosition(b, t);
-    if (Math.hypot(x - bx, y - by) < b.hill && b.hill < best.hill) best = b;
+    const s = st[i]!;
+    if (Math.hypot(x - s[0], y - s[1]) < b.hill && b.hill < best.hill) best = b;
   }
   return best;
 }

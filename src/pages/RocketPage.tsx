@@ -68,7 +68,7 @@ const DOC_TABS: { id: DocTab; label: string }[] = [
   { id: 'welt', label: 'Spielwelt und Wirklichkeit' },
 ];
 
-function Launcher({ onPlay }: { onPlay: (t: Tab) => void }) {
+function Launcher({ onPlay, playing }: { onPlay: (t: Tab) => void; playing: boolean }) {
   const p = progressStore.load();
   const stars = Object.values(p.rocketChallenges ?? {}).reduce((s, r) => s + r.stars, 0);
   const starMap = Object.fromEntries(
@@ -79,7 +79,7 @@ function Launcher({ onPlay }: { onPlay: (t: Tab) => void }) {
   return (
     <section class="launcher" aria-label="Spiel starten">
       <div class="launcher-art">
-        <RocketArt />
+        <RocketArt paused={playing} />
       </div>
       <div class="launcher-body">
         <dl class="launcher-stats">
@@ -130,7 +130,7 @@ export function RocketPage() {
         Herausforderungen.
       </PageHead>
 
-      <Launcher onPlay={play} />
+      <Launcher onPlay={play} playing={game !== null} />
 
       <section class="doc-tabs" aria-label="Anleitung und Hintergrund">
         <div class="seg" role="tablist">

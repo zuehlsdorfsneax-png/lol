@@ -1002,6 +1002,9 @@ export function FlightScreen({
     let last = performance.now();
     let hudTimer = 0;
     let predTimer = 1;
+    let predFlight: Flight | null = null;
+    let predSig = '';
+    let predDv = NaN;
     let lastEvent = 0;
     let alarmTimer = 0;
     let segCount = flight.current.segs.length;
@@ -1202,12 +1205,27 @@ export function FlightScreen({
         if (shown.length) setToasts((t) => [...t, ...shown].slice(-MAX_TOASTS));
       }
 
+      // Bahnvorhersage: nach Änderungen sofort, unter Schub oder in der Luft regelmäßig. Im freien
+      // Flug bleibt die alte Vorhersage gültig – dann nur neu, wenn ein merklicher Teil davon schon
+      // hinter der Rakete liegt (sonst rechnet jeder Frame umsonst tausende Schritte).
       predTimer += dt;
       const dragging = drag.current && drag.current.kind !== 'pan';
-      const every = dragging ? 0.05 : mapOpen.current ? 0.15 : 0.5;
-      if (predTimer > every || (predDirty.current && predTimer > 0.05)) {
+      const n = fl.node;
+      const sig = `${fl.status}|${fl.target}|${fl.segs.length}|${n ? `${n.t}|${n.prograde}|${n.radial}|${n.frozen}` : ''}`;
+      const changed = fl !== predFlight || sig !== predSig;
+      const moving = fl.stats.dvUsed !== predDv || air.rho > 0;
+      const p = pred.current;
+      let every = dragging ? 0.05 : mapOpen.current ? 0.15 : 0.5;
+      if (!moving && p && p.n > 1) {
+        const span = p.ts[p.n - 1]! - p.ts[0]!;
+        if (fl.t - p.ts[0]! < 0.02 * span) every = mapOpen.current ? 1 : 2;
+      }
+      if (predTimer > every || ((predDirty.current || changed) && predTimer > 0.05)) {
         predTimer = 0;
         predDirty.current = false;
+        predFlight = fl;
+        predSig = sig;
+        predDv = fl.stats.dvUsed;
         pred.current = fl.status === 'flying' ? fl.predict() : null;
       }
 

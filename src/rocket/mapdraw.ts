@@ -2,7 +2,6 @@
  * Karte: Sonnensystem mit Bahnen, Hill-Sphären, Station, Satelliten, vorhergesagter und
  * geplanter Bahn samt Manöver mit Anfassern zum Ziehen.
  */
-import { smoothPath } from '../sim/view';
 import { drawSatellite } from './draw';
 import { bodySpin, satelliteState, type Flight, type Prediction } from './flight';
 import { clockIn, km } from './format';
@@ -335,6 +334,103 @@ function drawSiteMarker(ctx: CanvasRenderingContext2D, f: Flight, v: View): void
   label(ctx, site.name, sx + 12, sy - 12, '#fde68a', 11);
 }
 
+const relCache = new WeakMap<Prediction, { x: Float64Array; y: Float64Array }>();
+
+/**
+ * Bahnpunkte relativ zu dem Körper, in dessen Bild sie gezeichnet werden (Bezugskörper bzw. der
+ * Körper der Begegnung), jeweils zur Zeit des Punkts. Pro Vorhersage nur einmal berechnet.
+ */
+function relativePath(pred: Prediction): { x: Float64Array; y: Float64Array } {
+  const cached = relCache.get(pred);
+  if (cached) return cached;
+  const enc = pred.encounter;
+  const x = new Float64Array(pred.n);
+  const y = new Float64Array(pred.n);
+  for (let i = 0; i < pred.n; i++) {
+    const body = enc && i >= enc.enter && i <= enc.exit ? enc.body : pred.ref;
+    const [bx, by] = bodyState(body, pred.ts[i]!);
+    x[i] = pred.xs[i]! - bx;
+    y[i] = pred.ys[i]! - by;
+  }
+  const out = { x, y };
+  relCache.set(pred, out);
+  return out;
+}
+
+/**
+ * Streckenzug in sichtbare Stücke zerlegen (Bildschirm plus etwas Rand). Strecken, die den
+ * Bereich schneiden, werden an seinem Rand abgeschnitten (Liang-Barsky).
+ */
+export function clippedRuns(
+  xs: ArrayLike<number>,
+  ys: ArrayLike<number>,
+  a: number,
+  b: number,
+  width: number,
+  height: number,
+  margin = 80,
+): { x: number[]; y: number[] }[] {
+  const x0 = -margin;
+  const y0 = -margin;
+  const x1 = width + margin;
+  const y1 = height + margin;
+  const runs: { x: number[]; y: number[] }[] = [];
+  let cur: { x: number[]; y: number[] } | null = null;
+  for (let i = a + 1; i <= b; i++) {
+    const ax = xs[i - 1]!;
+    const ay = ys[i - 1]!;
+    const bx = xs[i]!;
+    const by = ys[i]!;
+    if (!Number.isFinite(ax + ay + bx + by)) {
+      cur = null;
+      continue;
+    }
+    const dx = bx - ax;
+    const dy = by - ay;
+    let t0 = 0;
+    let t1 = 1;
+    let visible = true;
+    for (const [p, q] of [
+      [-dx, ax - x0],
+      [dx, x1 - ax],
+      [-dy, ay - y0],
+      [dy, y1 - ay],
+    ] as const) {
+      if (p === 0) {
+        if (q < 0) visible = false;
+      } else {
+        const r = q / p;
+        if (p < 0) t0 = Math.max(t0, r);
+        else t1 = Math.min(t1, r);
+      }
+      if (t0 > t1) visible = false;
+      if (!visible) break;
+    }
+    if (!visible) {
+      cur = null;
+      continue;
+    }
+    if (!cur || t0 > 0) {
+      cur = { x: [ax + t0 * dx], y: [ay + t0 * dy] };
+      runs.push(cur);
+    }
+    cur.x.push(ax + t1 * dx);
+    cur.y.push(ay + t1 * dy);
+    if (t1 < 1) cur = null;
+  }
+  return runs;
+}
+
+/** Weicher Linienzug durch die Mittelpunkte (wie `smoothPath`), für ein sichtbares Stück. */
+function smoothRun(ctx: CanvasRenderingContext2D, x: number[], y: number[]): void {
+  const n = x.length;
+  if (n < 2) return;
+  ctx.moveTo(x[0]!, y[0]!);
+  for (let k = 1; k < n - 1; k++)
+    ctx.quadraticCurveTo(x[k]!, y[k]!, (x[k]! + x[k + 1]!) / 2, (y[k]! + y[k + 1]!) / 2);
+  ctx.lineTo(x[n - 1]!, y[n - 1]!);
+}
+
 /**
  * Vorhergesagte Bahn relativ zum Bezugskörper; innerhalb der Hill-Sphäre eines anderen Körpers
  * relativ zu diesem (an der Stelle, an der er bei der Ankunft steht) – wie in Raumfahrtspielen.
@@ -352,52 +448,55 @@ function drawPrediction(
   const [rx0, ry0] = bodyState(pred.ref, t);
   const enc = pred.encounter;
   const encPos = enc ? bodyState(enc.body, enc.t) : null;
+  // Die Lage relativ zu den Körpern ändert sich nur mit einer neuen Vorhersage: einmal rechnen,
+  // danach pro Bild nur noch verschieben und skalieren.
+  const rel = relativePath(pred);
   const xs = new Float64Array(pred.n);
   const ys = new Float64Array(pred.n);
   for (let i = 0; i < pred.n; i++) {
-    let x = pred.xs[i]!;
-    let y = pred.ys[i]!;
-    if (enc && encPos && i >= enc.enter && i <= enc.exit) {
-      const [bx, by] = bodyState(enc.body, pred.ts[i]!);
-      x += encPos[0] - bx;
-      y += encPos[1] - by;
-    } else {
-      const [bx, by] = bodyState(pred.ref, pred.ts[i]!);
-      x += rx0 - bx;
-      y += ry0 - by;
-    }
-    [xs[i], ys[i]] = toScreen(v, x, y);
+    const inEnc = enc && encPos && i >= enc.enter && i <= enc.exit;
+    const ox = inEnc ? encPos[0] : rx0;
+    const oy = inEnc ? encPos[1] : ry0;
+    [xs[i], ys[i]] = toScreen(v, rel.x[i]! + ox, rel.y[i]! + oy);
   }
   hits.path = { xs, ys, ts: pred.ts, n: pred.n };
   const segment = (a: number, b: number, color: string, dash = false): void => {
     if (b <= a) return;
+    // Nur der sichtbare Teil: Eine Bahn zum Mond reicht bei starkem Zoom Millionen Pixel über den
+    // Rand hinaus – gestrichelt gezeichnet hat das früher fast eine Sekunde pro Bild gekostet.
+    const runs = clippedRuns(xs, ys, a, b, v.width, v.height);
+    if (runs.length === 0) return;
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     if (dash) ctx.setLineDash([7, 5]);
     ctx.beginPath();
-    smoothPath(ctx, xs, ys, a, b, pred.n);
+    for (const r of runs) smoothRun(ctx, r.x, r.y);
     ctx.stroke();
     ctx.setLineDash([]);
     // Richtungspfeile etwa alle 140 Pixel
     ctx.fillStyle = color;
-    let run = 0;
-    for (let i = a + 1; i <= b; i++) {
-      const dx = xs[i]! - xs[i - 1]!;
-      const dy = ys[i]! - ys[i - 1]!;
-      run += Math.hypot(dx, dy);
-      if (run < 140) continue;
-      run = 0;
-      ctx.save();
-      ctx.translate(xs[i]!, ys[i]!);
-      ctx.rotate(Math.atan2(dy, dx));
-      ctx.beginPath();
-      ctx.moveTo(6, 0);
-      ctx.lineTo(-4, -5);
-      ctx.lineTo(-4, 5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+    for (const r of runs) {
+      let run = 0;
+      for (let i = 1; i < r.x.length; i++) {
+        const dx = r.x[i]! - r.x[i - 1]!;
+        const dy = r.y[i]! - r.y[i - 1]!;
+        run += Math.hypot(dx, dy);
+        if (run < 140) continue;
+        run = 0;
+        const px = r.x[i]!;
+        const py = r.y[i]!;
+        if (px < 0 || px > v.width || py < 0 || py > v.height) continue;
+        const a2 = Math.atan2(dy, dx);
+        const c = Math.cos(a2);
+        const sn = Math.sin(a2);
+        ctx.beginPath();
+        ctx.moveTo(px + 6 * c, py + 6 * sn);
+        ctx.lineTo(px - 4 * c + 5 * sn, py - 4 * sn - 5 * c);
+        ctx.lineTo(px - 4 * c - 5 * sn, py - 4 * sn + 5 * c);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
   };
   /** Ein Abschnitt, in dem die Begegnung orange hervorgehoben wird. */
