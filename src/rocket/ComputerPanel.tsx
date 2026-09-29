@@ -15,8 +15,8 @@ import {
   type MissionTarget,
 } from './mission';
 import { runPlan, warmPlanner } from './planClient';
-import { planOptions, type Plan, type PlanId } from './planner';
-import { EARTH, bodyById, forms } from './world';
+import { planOptions, recommendedPlan, type Plan, type PlanId } from './planner';
+import { EARTH, bodyById, forms, tinyBody } from './world';
 
 /** Knopf, der beim Festhalten immer schneller wiederholt. */
 function useRepeat(action: () => void) {
@@ -135,6 +135,7 @@ export function ComputerPanel({
     );
 
   const options = planOptions(f, pred.current);
+  const rec = recommendedPlan(f, options, pred.current);
   const rem = f.nodeRemaining();
   const total = node ? Math.hypot(node.prograde, node.radial) : 0;
   const burn = node ? f.burnTime(node.frozen ? rem.mag : total) : 0;
@@ -146,6 +147,10 @@ export function ComputerPanel({
   const climbing = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r > 5;
   // Landen nur anbieten, wenn es passt – nicht im Steigflug unter Schub.
   const solidRef = f.status === 'flying' && ref.solid && !(climbing && f.thrusting);
+  // Ein naher winziger Mond als Ziel (Phobos): Dort landet der Autopilot, nicht auf dem Planeten.
+  const tiny = f.target && f.target !== 'station' ? bodyById(f.target) : null;
+  const near = tiny && tinyBody(tiny) ? f.targetInfo() : null;
+  const landOn = tiny && near && near.distance < 30_000 ? tiny : ref;
 
   return (
     <div class="computer-panel" role="dialog" aria-label="Bordcomputer">
@@ -215,12 +220,15 @@ export function ComputerPanel({
                     <button
                       key={o.id}
                       type="button"
-                      class="cp-plan"
+                      class={`cp-plan ${o.id === rec ? 'rec' : ''}`}
                       title={o.hint}
                       disabled={busy !== null}
                       onClick={() => plan(o.id)}
                     >
-                      <strong>{busy === o.id ? 'Rechnet …' : o.label}</strong>
+                      <strong>
+                        {busy === o.id ? 'Rechnet …' : o.label}
+                        {o.id === rec && busy !== o.id && <em>nächster Schritt</em>}
+                      </strong>
                       <span>{o.hint}</span>
                     </button>
                   ))}
@@ -458,7 +466,7 @@ export function ComputerPanel({
                 </>
               ) : (
                 <>
-                  <Icon name="down" /> Automatisch landen auf {forms(f.refBody()).dat}
+                  <Icon name="down" /> Automatisch landen auf {forms(landOn).dat}
                 </>
               )}
             </button>

@@ -148,6 +148,8 @@ const LOOK: Record<string, { base: string; detail: string; glow: string | null }
   phobos: { base: '#8a7b6c', detail: 'rgba(60,50,40,0.4)', glow: null },
   jupiter: { base: '#d8b48a', detail: '#b0764a', glow: 'rgba(240,200,150,' },
   europa: { base: '#e2d6c0', detail: '#a0663d', glow: null },
+  ganymede: { base: '#9d9384', detail: 'rgba(70,60,50,0.4)', glow: null },
+  ceres: { base: '#8e8a86', detail: 'rgba(50,48,46,0.45)', glow: null },
 };
 
 /** Bodenfarbe in der Nahansicht. */
@@ -158,6 +160,8 @@ const GROUND: Record<string, string> = {
   mars: '#b04a26',
   phobos: '#7d6f60',
   europa: '#d8ccb6',
+  ganymede: '#948a7c',
+  ceres: '#85817c',
 };
 
 function drawCraters(
@@ -839,6 +843,8 @@ const DUST: Record<string, string> = {
   phobos: '#9c8b78',
   mercury: '#a39a92',
   europa: '#e8e0d0',
+  ganymede: '#b0a698',
+  ceres: '#a09c96',
   venus: '#d8a860',
 };
 

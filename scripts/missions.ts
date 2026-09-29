@@ -66,5 +66,7 @@ fly('Jupiterbahn', 'jupiter', { target: 'jupiter', land: false, home: false });
 fly('Merkurlandung', 'jupiter', { target: 'mercury', land: true, home: false });
 fly('Phobos', 'spatzsonde', { target: 'phobos', land: true, home: false });
 fly('Europa', 'jupiter', { target: 'europa', land: true, home: false });
+fly('Ganymed', 'jupiter', { target: 'ganymede', land: true, home: false });
+fly('Ceres', 'jupiter', { target: 'ceres', land: true, home: false });
 
 console.log(`\n${problems ? `✗ ${problems} Missionen gescheitert` : '✓ alle Missionen erfüllt'}`);

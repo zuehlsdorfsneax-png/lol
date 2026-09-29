@@ -1,5 +1,5 @@
 import type { Flight } from './flight';
-import { EARTH, type Body } from './world';
+import { EARTH, bodyById, tinyBody, type Body } from './world';
 
 export type PilotPhase = 'ascent' | 'coast' | 'circularize' | 'done' | 'failed';
 
@@ -236,7 +236,68 @@ export class NodeExecutor {
   }
 }
 
-export type LandPhase = 'aero' | 'chute' | 'brake' | 'fall' | 'suicide' | 'done' | 'failed';
+/**
+ * Nähert sich dem Andockstutzen der Station (oder einem winzigen Mond): zielt mit der Spitze aufs
+ * Ziel, regelt das Tempo gegenüber dem Ziel (weit weg bis 12 m/s, zuletzt unter 1 m/s) mit den
+ * Lagekontrolldüsen und – bei großen Abweichungen – mit dem Triebwerk.
+ */
+export class DockPilot {
+  /** Höchstes Tempo gegenüber dem Ziel (m/s). */
+  constructor(readonly maxSpeed = 12) {}
+
+  update(f: Flight): 'running' | 'done' {
+    if (f.status === 'docked') {
+      f.rcs = false;
+      f.translate = { x: 0, y: 0 };
+      f.throttle = 0;
+      return 'done';
+    }
+    const s = f.targetState();
+    if (!s) return 'running';
+    const [cx, cy] = f.center();
+    const dx = s.x - cx;
+    const dy = s.y - cy;
+    const d = Math.hypot(dx, dy) || 1;
+    const wx = f.vx - s.vx;
+    const wy = f.vy - s.vy;
+    // Bei einem Mond zählt der Abstand zur Oberfläche – und dort wird langsamer angeflogen.
+    const gap = Math.max(0, d - s.surface);
+    const want = Math.max(
+      0.4,
+      Math.min(this.maxSpeed, (s.surface > 0 ? 0.008 : 0.018) * gap + 0.3),
+    );
+    const ex = (dx / d) * want - wx;
+    const ey = (dy / d) * want - wy;
+    const err = Math.hypot(ex, ey);
+    f.sas = 'off';
+    if (err > 4 && d > 150) {
+      // Große Abweichung: mit dem Triebwerk nachregeln.
+      f.rcs = false;
+      f.translate = { x: 0, y: 0 };
+      const aligned = steerTo(f, Math.atan2(ey, ex)) < 0.15;
+      const a = f.engine().thrust / Math.max(f.mass, 1);
+      f.throttle = aligned && a > 0 ? Math.min(1, err / (a * 2)) : 0;
+      return 'running';
+    }
+    f.throttle = 0;
+    f.rcs = true;
+    steerTo(f, Math.atan2(dy, dx));
+    // Beschleunigung in Rakete-Koordinaten: vorwärts entlang der Spitze, seitlich rechts davon.
+    const ax = Math.cos(f.angle);
+    const ay = Math.sin(f.angle);
+    const fwd = ex * ax + ey * ay;
+    const side = ex * ay - ey * ax;
+    const dead = 0.05;
+    f.translate = {
+      x: Math.abs(side) > dead ? Math.max(-1, Math.min(1, side * 2)) : 0,
+      y: Math.abs(fwd) > dead ? Math.max(-1, Math.min(1, fwd * 2)) : 0,
+    };
+    return 'running';
+  }
+}
+
+export type LandPhase =
+  'approach' | 'aero' | 'chute' | 'brake' | 'fall' | 'suicide' | 'done' | 'failed';
 
 /**
  * Lande-Autopilot: In einer Atmosphäre erst mit dem Hitzeschild voran abbremsen lassen und den
@@ -246,6 +307,7 @@ export type LandPhase = 'aero' | 'chute' | 'brake' | 'fall' | 'suicide' | 'done'
 export class LandingPilot {
   phase: LandPhase = 'brake';
   message = '';
+  private dock: DockPilot | null = null;
 
   update(f: Flight): LandPhase {
     if (f.status === 'landed') {
@@ -255,6 +317,26 @@ export class LandingPilot {
     if (f.status !== 'flying') {
       f.throttle = 0;
       return (this.phase = 'failed');
+    }
+    // Ein winziger Mond als nahes Ziel (Phobos): erst bis dicht über den Boden heranfliegen. Sein
+    // Einflussbereich misst nur ein paar Kilometer, an dessen Rand zieht noch der Planet – sonst
+    // landete der Pilot auf dem Planeten statt auf dem Mond.
+    const tb = f.target && f.target !== 'station' ? bodyById(f.target) : null;
+    const ti = tb && tinyBody(tb) ? f.targetInfo() : null;
+    if (tb && ti && ti.distance < 30_000) {
+      const far = f.refBody() !== tb || ti.distance > (this.dock ? 300 : 1_500);
+      if (far) {
+        this.dock ??= new DockPilot(6);
+        if (f.warpIndex) f.setWarp(0);
+        this.dock.update(f);
+        return (this.phase = 'approach');
+      }
+      if (this.dock) {
+        this.dock = null;
+        f.rcs = false;
+        f.translate = { x: 0, y: 0 };
+        this.phase = 'brake';
+      }
     }
     f.sas = 'off';
     // Gelandet wird auf dem Bezugskörper (nicht auf einem kleinen Mond, der gerade näher ist).

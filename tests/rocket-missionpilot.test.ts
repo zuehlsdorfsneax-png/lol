@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LandingPilot, NodeExecutor } from '../src/rocket/autopilot';
 import { Flight } from '../src/rocket/flight';
 import {
   MissionPilot,
@@ -9,7 +10,15 @@ import {
 } from '../src/rocket/mission';
 import { TEMPLATES } from '../src/rocket/parts';
 import { runPlan } from '../src/rocket/planClient';
-import { legGoal, makePlan, orbiterFor, planOptions } from '../src/rocket/planner';
+import {
+  arrivalAltitude,
+  arrivalPeriapsis,
+  legGoal,
+  makePlan,
+  orbiterFor,
+  planOptions,
+  recommendedPlan,
+} from '../src/rocket/planner';
 import { EARTH, MARS, PHOBOS, SUN, bodyById } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
@@ -67,6 +76,39 @@ describe('Missions-Autopilot: Ablauf', () => {
   });
 });
 
+describe('Bordcomputer: nächster Schritt', () => {
+  it('empfiehlt in der Erdbahn den Transfer zum Ziel und bei der Station das Rendezvous', () => {
+    const f = new Flight(template('luna'));
+    f.placeInOrbit(EARTH, 100_000, 1);
+    f.target = 'moon';
+    const pred = f.predict();
+    expect(recommendedPlan(f, planOptions(f, pred), pred)).toBe('transfer');
+    f.target = 'station';
+    expect(recommendedPlan(f, planOptions(f, pred), pred)).toBe('transfer');
+  });
+
+  it('empfiehlt nach dem Transfer zum Mars die Kurskorrektur, solange die Ankunft nicht passt', () => {
+    const f = new Flight(template('ares'));
+    f.placeInOrbit(EARTH, 200_000, 1);
+    f.target = 'mars';
+    const r = makePlan(f, 'transfer');
+    if (r.wait) f.warpTo(f.t + r.wait - f.orbit().period);
+    for (let i = 0; i < 20_000 && f.warpTarget !== null; i++) f.update(1 / 60);
+    expect(makePlan(f, 'transfer').ok).toBe(true);
+    const x = new NodeExecutor();
+    for (let i = 0; i < 100_000; i++) {
+      const p = x.update(f);
+      if (p === 'done' || p === 'failed') break;
+      f.update(1 / 60);
+    }
+    const pred = f.predict();
+    expect(pred.encounter?.body).toBe(MARS);
+    const pe = arrivalPeriapsis(pred, MARS, 0)!;
+    const fine = Math.abs(pe - arrivalAltitude(MARS)) < 9_000;
+    expect(recommendedPlan(f, planOptions(f, pred), pred)).toBe(fine ? null : 'correct');
+  });
+});
+
 describe('Missions-Autopilot: Flüge', () => {
   it('bringt die Rakete vom Startplatz in eine runde Umlaufbahn', () => {
     const f = new Flight(template('orbiter'));
@@ -94,6 +136,40 @@ describe('Missions-Autopilot: Flüge', () => {
     expect(ids).toContain('match');
     const m = fly(f, { target: 'phobos', land: true, home: false });
     expect(m.status, m.message).toBe('done');
+    expect(f.status).toBe('landed');
+    expect(f.landedOn).toBe(PHOBOS);
+  });
+
+  it('Bordcomputer von Hand: Rendezvous, Angleichen, dann landet der Lande-Autopilot auf Phobos', () => {
+    const f = new Flight(template('spatzsonde'));
+    f.placeInOrbit(MARS, 60_000, 1);
+    f.target = 'phobos';
+    const burn = (): void => {
+      const x = new NodeExecutor();
+      for (let i = 0; i < 400_000; i++) {
+        const p = x.update(f);
+        if (p === 'done' || p === 'failed') break;
+        f.update(1 / 60);
+      }
+      expect(x.phase, x.message).toBe('done');
+    };
+    expect(makePlan(f, 'transfer').ok).toBe(true);
+    burn();
+    // Angleichen (bei einem knappen Vorbeiflug erst den Kurs verbessern).
+    for (let k = 0; k < 4; k++) {
+      const p = makePlan(f, 'match');
+      expect(p.ok, p.text).toBe(true);
+      burn();
+      if (!p.title.startsWith('Kurs')) break;
+    }
+    const ti = f.targetInfo()!;
+    expect(ti.distance).toBeLessThan(20_000);
+    // Noch im Einflussbereich des Mars – trotzdem geht es auf Phobos hinunter.
+    const lander = new LandingPilot();
+    for (let i = 0; i < 400_000 && f.status === 'flying'; i++) {
+      lander.update(f);
+      f.update(1 / 60);
+    }
     expect(f.status).toBe('landed');
     expect(f.landedOn).toBe(PHOBOS);
   });

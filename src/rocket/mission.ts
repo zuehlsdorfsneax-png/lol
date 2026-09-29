@@ -5,11 +5,11 @@
  * Bordcomputer, Manöver-Autopilot, Lande-Autopilot) und spult die Wartezeiten mit dem Zeitraffer
  * vor. Die Pläne kommen über `planFn` – im Spiel aus dem Hintergrund-Thread, in Tests direkt.
  */
-import { LandingPilot, NodeExecutor, OrbitPilot, steerTo } from './autopilot';
+import { DockPilot, LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
 import type { Flight, TargetId } from './flight';
 import { part } from './parts';
-import { planOptions, tinyBody, type Plan, type PlanId } from './planner';
-import { EARTH, SUN, bodyById, forms, type Body } from './world';
+import { planOptions, type Plan, type PlanId } from './planner';
+import { EARTH, SUN, bodyById, forms, tinyBody, type Body } from './world';
 
 export type PlanFn = (f: Flight, id: PlanId) => Plan | Promise<Plan>;
 
@@ -67,6 +67,8 @@ export function missionBudget(spec: MissionSpec, fromOrbit = false): number {
     jupiter: [2_000, 2_600, 0],
     phobos: [1_150 + 950, 400, 60],
     europa: [2_000 + 2_600, 1_100, 700],
+    ganymede: [2_000 + 2_600, 900, 750],
+    ceres: [1_700, 1_600, 80],
   };
   const [t, c, l] = table[spec.target] ?? [1_000, 1_000, 800];
   let dv = orbit + t + c + (spec.land ? l : 0);
@@ -161,66 +163,6 @@ export function missionSteps(spec: MissionSpec, f: Flight): Step[] {
     steps.push({ kind: 'reentry', at: EARTH });
   }
   return steps;
-}
-
-/**
- * Nähert sich dem Andockstutzen der Station: zielt mit der Spitze auf den Stutzen, regelt das
- * Tempo gegenüber der Station (weit weg bis 12 m/s, zuletzt unter 1 m/s) mit den
- * Lagekontrolldüsen und – bei großen Abweichungen – mit dem Triebwerk.
- */
-export class DockPilot {
-  /** Höchstes Tempo gegenüber dem Ziel (m/s). */
-  constructor(readonly maxSpeed = 12) {}
-
-  update(f: Flight): 'running' | 'done' {
-    if (f.status === 'docked') {
-      f.rcs = false;
-      f.translate = { x: 0, y: 0 };
-      f.throttle = 0;
-      return 'done';
-    }
-    const s = f.targetState();
-    if (!s) return 'running';
-    const [cx, cy] = f.center();
-    const dx = s.x - cx;
-    const dy = s.y - cy;
-    const d = Math.hypot(dx, dy) || 1;
-    const wx = f.vx - s.vx;
-    const wy = f.vy - s.vy;
-    // Bei einem Mond zählt der Abstand zur Oberfläche – und dort wird langsamer angeflogen.
-    const gap = Math.max(0, d - s.surface);
-    const want = Math.max(
-      0.4,
-      Math.min(this.maxSpeed, (s.surface > 0 ? 0.008 : 0.018) * gap + 0.3),
-    );
-    const ex = (dx / d) * want - wx;
-    const ey = (dy / d) * want - wy;
-    const err = Math.hypot(ex, ey);
-    f.sas = 'off';
-    if (err > 4 && d > 150) {
-      // Große Abweichung: mit dem Triebwerk nachregeln.
-      f.rcs = false;
-      f.translate = { x: 0, y: 0 };
-      const aligned = steerTo(f, Math.atan2(ey, ex)) < 0.15;
-      const a = f.engine().thrust / Math.max(f.mass, 1);
-      f.throttle = aligned && a > 0 ? Math.min(1, err / (a * 2)) : 0;
-      return 'running';
-    }
-    f.throttle = 0;
-    f.rcs = true;
-    steerTo(f, Math.atan2(dy, dx));
-    // Beschleunigung in Rakete-Koordinaten: vorwärts entlang der Spitze, seitlich rechts davon.
-    const ax = Math.cos(f.angle);
-    const ay = Math.sin(f.angle);
-    const fwd = ex * ax + ey * ay;
-    const side = ex * ay - ey * ax;
-    const dead = 0.05;
-    f.translate = {
-      x: Math.abs(side) > dead ? Math.max(-1, Math.min(1, side * 2)) : 0,
-      y: Math.abs(fwd) > dead ? Math.max(-1, Math.min(1, fwd * 2)) : 0,
-    };
-    return 'running';
-  }
 }
 
 /** Die unteren Stufen unter Kapsel/Schirm bzw. Hitzeschild (für den Wiedereintritt). */
@@ -659,13 +601,9 @@ export class MissionPilot {
       this.next(f);
       return this.status;
     }
-    // Winziger Mond: Wer aus seinem kleinen Einflussbereich treibt, fliegt erst wieder heran.
-    if (tinyBody(on)) {
-      f.target = on.id;
-      const ti = f.targetInfo();
-      if (f.refBody() !== on || (ti && ti.distance > 1_500)) return this.approach(f, on, true);
-      if (this.sub instanceof DockPilot) this.sub = null;
-    }
+    // Winziger Mond: Der Lande-Autopilot fliegt erst wieder heran, falls die Rakete aus dem
+    // kleinen Einflussbereich treibt – dafür muss der Mond das Ziel sein.
+    if (tinyBody(on)) f.target = on.id;
     if (this.phase === 'start') {
       const o = f.orbit(on);
       // Aus einer Umlaufbahn erst den tiefsten Punkt absenken.
@@ -827,13 +765,10 @@ export class MissionPilot {
    * Langsam an einen winzigen Mond heran, bis dicht über den Boden – erst dort übernimmt der
    * Lande-Autopilot (am Rand des winzigen Einflussbereichs zieht der Planet noch kräftig).
    */
-  private approach(f: Flight, to: Body, inLanding = false): MissionStatus {
+  private approach(f: Flight, to: Body): MissionStatus {
     f.target = to.id;
     const near = f.targetInfo();
-    if (
-      !inLanding &&
-      ((f.refBody() === to && near && near.distance < 300) || f.status === 'landed')
-    ) {
+    if ((f.refBody() === to && near && near.distance < 300) || f.status === 'landed') {
       this.next(f);
       return this.status;
     }

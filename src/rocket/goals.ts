@@ -32,6 +32,10 @@ export type GoalId =
   | 'jupiterorbit'
   | 'europa'
   | 'europaland'
+  | 'ganymede'
+  | 'ganymedeland'
+  | 'ceres'
+  | 'ceresland'
   | 'sunclose'
   | 'soft'
   | 'node'
@@ -274,6 +278,34 @@ export const GOALS: readonly GoalDef[] = [
     points: 120,
     title: 'Europa-Landung',
     text: 'Auf dem Eispanzer über dem verborgenen Ozean gelandet.',
+  },
+  {
+    id: 'ganymede',
+    group: 'Planeten',
+    points: 75,
+    title: 'Ganymed erreicht',
+    text: 'In der Hill-Sphäre des größten Mondes im Sonnensystem angekommen.',
+  },
+  {
+    id: 'ganymedeland',
+    group: 'Planeten',
+    points: 120,
+    title: 'Ganymed-Landung',
+    text: 'Auf einem Mond gelandet, der größer ist als der Merkur.',
+  },
+  {
+    id: 'ceres',
+    group: 'Planeten',
+    points: 80,
+    title: 'Ceres erreicht',
+    text: 'Im Asteroidengürtel beim Zwergplaneten Ceres angekommen.',
+  },
+  {
+    id: 'ceresland',
+    group: 'Planeten',
+    points: 110,
+    title: 'Ceres-Landung',
+    text: 'Auf dem größten Brocken des Asteroidengürtels aufgesetzt – bei nur 3 % der Erdschwerkraft.',
   },
   {
     id: 'sunclose',

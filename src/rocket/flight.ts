@@ -13,7 +13,9 @@ import { CHUTE_SEMI, chuteExtent, part, segments, type Design, type PartDef } fr
 import {
   BODIES,
   EARTH,
+  CERES,
   EUROPA,
+  GANYMEDE,
   G0,
   JUPITER,
   MARS,
@@ -25,6 +27,7 @@ import {
   VENUS,
   bodyById,
   bodyState,
+  bodyStates,
   forms,
   densityAt,
   dominantBody,
@@ -311,6 +314,10 @@ const DOCK_SPEED = 2;
 const YEAR = 2 * Math.PI * Math.sqrt(EARTH.distance ** 3 / SUN.mu);
 /** Körper mit Lufthülle (für das Ende der Vorhersage beim Wiedereintritt). */
 const AIR_BODIES = BODIES.filter((b) => b.atmosphere > 0);
+const AIR_INDEX = AIR_BODIES.map((b) => BODIES.indexOf(b));
+const N_BODIES = BODIES.length;
+const MUS = BODIES.map((b) => b.mu);
+const RADII = BODIES.map((b) => b.radius);
 /** Höchstens so viele Satelliten bleiben gespeichert. */
 export const MAX_SATELLITES = 24;
 
@@ -347,14 +354,28 @@ interface Coast {
   t: number;
 }
 
-/** Schrittweite der Bahnvorhersage: Bruchteil der kürzesten Umlaufzeitskala. */
-function coastDt(x: number, y: number, t: number): number {
-  let tau = Infinity;
-  for (const b of BODIES) {
-    const [bx, by] = bodyState(b, t);
-    tau = Math.min(tau, Math.sqrt(Math.hypot(x - bx, y - by) ** 3 / b.mu));
+/**
+ * Schrittweite der Bahnvorhersage: Bruchteil der kürzesten Umlaufzeitskala – und (wie beim
+ * Flug selbst) höchstens ein Drittel der Zeit bis zur Oberfläche eines Körpers. Sonst spränge die
+ * Rechnung an kleinen Körpern mit großem Einflussbereich (Ceres) glatt vorbei.
+ */
+function coastDt(x: number, y: number, vx: number, vy: number, t: number): number {
+  // Innerste Schleife der Vorhersage: alle Körper aus einem Abruf, ohne Zwischen-Arrays.
+  const st = bodyStates(t);
+  let dt = Infinity;
+  for (let i = 0; i < N_BODIES; i++) {
+    const q = st[i]!;
+    const dx = x - q[0];
+    const dy = y - q[1];
+    const d = Math.sqrt(dx * dx + dy * dy);
+    const rvx = vx - q[2];
+    const rvy = vy - q[3];
+    const tau = 0.02 * d * Math.sqrt(d / MUS[i]!);
+    const hop = (d - RADII[i]!) / (3 * Math.sqrt(rvx * rvx + rvy * rvy) + 1e-9);
+    if (tau < dt) dt = tau;
+    if (hop < dt) dt = hop;
   }
-  return Math.max(0.05, 0.02 * tau);
+  return Math.max(0.05, dt);
 }
 
 /** Ein Runge-Kutta-Schritt ohne Schub. */
@@ -380,7 +401,7 @@ function coastStep(s: Coast, dt: number): void {
 /** Freier Flug bis `until` (ohne Schub). false, wenn die Schrittgrenze oder ein Körper stört. */
 function coastTo(s: Coast, until: number, maxSteps: number): boolean {
   for (let i = 0; i < maxSteps && s.t < until - 1e-9; i++) {
-    coastStep(s, Math.min(coastDt(s.x, s.y, s.t), until - s.t));
+    coastStep(s, Math.min(coastDt(s.x, s.y, s.vx, s.vy, s.t), until - s.t));
     for (const b of BODIES) {
       const [bx, by] = bodyState(b, s.t);
       if (Math.hypot(s.x - bx, s.y - by) < b.radius) return false;
@@ -1253,10 +1274,11 @@ export class Flight {
 
   private stepEstimate(): number {
     let tau = Infinity;
-    for (const b of BODIES) {
-      const [bx, by] = bodyState(b, this.t);
+    const st = bodyStates(this.t);
+    for (let i = 0; i < N_BODIES; i++) {
+      const [bx, by] = st[i]!;
       const d = Math.hypot(this.x - bx, this.y - by);
-      tau = Math.min(tau, Math.sqrt(d ** 3 / b.mu));
+      tau = Math.min(tau, d * Math.sqrt(d / MUS[i]!));
     }
     return Math.max(0.02, 0.01 * tau);
   }
@@ -1835,12 +1857,14 @@ export class Flight {
     // Schrittweite: Bruchteil der kürzesten Umlaufzeitskala, nahe Oberflächen noch kleiner.
     let dt = Infinity;
     let atmosphere = false;
-    for (const b of BODIES) {
-      const [bx, by, bvx, bvy] = bodyState(b, this.t);
+    const st = bodyStates(this.t);
+    for (let i = 0; i < N_BODIES; i++) {
+      const b = BODIES[i]!;
+      const [bx, by, bvx, bvy] = st[i]!;
       const d = Math.hypot(this.x - bx, this.y - by);
       const h = d - b.radius;
       const rel = Math.hypot(this.vx - bvx, this.vy - bvy);
-      dt = Math.min(dt, 0.01 * Math.sqrt(d ** 3 / b.mu), Math.max(0.02, h / (3 * rel + 1e-9)));
+      dt = Math.min(dt, 0.01 * d * Math.sqrt(d / b.mu), Math.max(0.02, h / (3 * rel + 1e-9)));
       if (h < b.atmosphere) atmosphere = true;
     }
     const rcsOn = this.rcs && (this.translate.x !== 0 || this.translate.y !== 0);
@@ -2078,6 +2102,8 @@ export class Flight {
       else if (body === PHOBOS) this.goal('phobos');
       else if (body === MERCURY) this.goal('mercuryland');
       else if (body === EUROPA) this.goal('europaland');
+      else if (body === GANYMEDE) this.goal('ganymedeland');
+      else if (body === CERES) this.goal('ceresland');
       else if (body === EARTH) {
         // Heimkehr zählt nur mit Crew an Bord (Kapsel), nicht für unbemannte Sonden.
         const crew = this.allParts().some((id) => part(id).kind === 'capsule');
@@ -2225,9 +2251,12 @@ export class Flight {
       const o = this.orbit(MARS);
       if (o.bound && o.periapsis > MARS.atmosphere && o.apoapsis + MARS.radius < MARS.hill)
         this.goal('marsorbit');
-    } else if (ref === JUPITER || ref === EUROPA) {
+    } else if (ref === CERES) {
+      this.goal('ceres');
+    } else if (ref === JUPITER || ref === EUROPA || ref === GANYMEDE) {
       this.goal('jupiter');
       if (ref === EUROPA) this.goal('europa');
+      if (ref === GANYMEDE) this.goal('ganymede');
       const o = this.orbit(JUPITER);
       if (o.bound && o.periapsis > JUPITER.atmosphere && o.apoapsis + JUPITER.radius < JUPITER.hill)
         this.goal('jupiterorbit');
@@ -2513,6 +2542,7 @@ export class Flight {
     let postHorizon = pending ? 0 : horizonFor(s);
 
     const others = BODIES.filter((b) => b !== ref && b.id !== ref.parent && b !== SUN);
+    const otherIndex = others.map((b) => BODIES.indexOf(b));
     const inside = new Map<Body, boolean>();
     for (const b of others) {
       const [bx, by] = bodyState(b, s.t);
@@ -2541,7 +2571,7 @@ export class Flight {
         }
       } else if (n >= maxPoints || s.t - postStart >= postHorizon) break;
 
-      let dt = coastDt(s.x, s.y, s.t);
+      let dt = coastDt(s.x, s.y, s.vx, s.vy, s.t);
       let hitNode = false;
       if (pending && s.t + dt >= node!.t) {
         dt = node!.t - s.t;
@@ -2550,16 +2580,19 @@ export class Flight {
       if (dt > 1e-9) coastStep(s, dt);
       push();
       const i = n - 1;
-      for (const b of BODIES) {
-        const [bx, by] = bodyState(b, s.t);
-        if (Math.hypot(s.x - bx, s.y - by) < b.radius) result.impact = b;
+      const st = bodyStates(s.t);
+      for (let k = 0; k < N_BODIES; k++) {
+        const q = st[k]!;
+        const dx = s.x - q[0];
+        const dy = s.y - q[1];
+        if (dx * dx + dy * dy < RADII[k]! ** 2) result.impact = BODIES[k]!;
       }
       if (result.impact) break;
       // In der Luft nur bis zum tiefsten Punkt: Danach würde die Bahn ohne Luftwiderstand wieder
       // hinausführen (und beim nächsten Umlauf scheinbar aufschlagen).
       for (let k = 0; k < AIR_BODIES.length; k++) {
         const b = AIR_BODIES[k]!;
-        const [bx, by, bvx, bvy] = bodyState(b, s.t);
+        const [bx, by, bvx, bvy] = st[AIR_INDEX[k]!]!;
         const rx = s.x - bx;
         const ry = s.y - by;
         const r = Math.hypot(rx, ry);
@@ -2569,8 +2602,9 @@ export class Flight {
         else if (sinking[k]) result.reentry = b;
       }
       if (result.reentry) break;
-      for (const b of others) {
-        const [bx, by] = bodyState(b, s.t);
+      for (let k = 0; k < others.length; k++) {
+        const b = others[k]!;
+        const [bx, by] = st[otherIndex[k]!]!;
         const d = Math.hypot(s.x - bx, s.y - by);
         const was = inside.get(b)!;
         const now = d < b.hill;

@@ -34,7 +34,18 @@ import {
 } from './world';
 
 export type MapFocus =
-  'rocket' | 'ref' | 'sun' | 'mercury' | 'venus' | 'earth' | 'moon' | 'mars' | 'jupiter' | 'europa';
+  | 'rocket'
+  | 'ref'
+  | 'sun'
+  | 'mercury'
+  | 'venus'
+  | 'earth'
+  | 'moon'
+  | 'mars'
+  | 'ceres'
+  | 'jupiter'
+  | 'europa'
+  | 'ganymede';
 
 export type HandleKind = 'pro' | 'retro' | 'out' | 'in';
 

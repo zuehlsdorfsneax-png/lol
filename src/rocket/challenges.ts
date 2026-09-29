@@ -5,7 +5,7 @@
  */
 import { apsides, bodySpin, satelliteState, type Flight } from './flight';
 import { fmt, km } from './format';
-import { EARTH, MARS, MOON, PHOBOS, bodyState, stationState } from './world';
+import { CERES, EARTH, JUPITER, MARS, MOON, PHOBOS, bodyState, stationState } from './world';
 
 export type ChallengeGroup = 'Flugschule' | 'Profi' | 'Meister';
 
@@ -77,6 +77,10 @@ function placeFalling(f: Flight, body: typeof MARS, angle: number, altitude: num
 /** Der Punkt auf der Mondoberfläche, der zur Erde zeigt, liegt beim Winkel π (mitdrehend). */
 const MOON_BASE = Math.PI + 0.35;
 const PHOBOS_BASE = 1.2;
+/** Der Eisvulkan Ahuna Mons auf Ceres (Winkel auf der Oberfläche; Ceres dreht sich im Spiel nicht). */
+const CERES_BASE = 0.9;
+/** Bahnradius Ganymeds (für die Wertung beim Einfangen am Jupiter). */
+const GANYMEDE_ORBIT = 100_800_000;
 
 export const CHALLENGES: readonly Challenge[] = [
   {
@@ -470,6 +474,120 @@ export const CHALLENGES: readonly Challenge[] = [
     progress: (f) => {
       const s = f.siteInfo();
       return s ? `Abstand zur Station: ${Math.round(s.distance)} m` : '';
+    },
+  },
+  {
+    id: 'ceres',
+    group: 'Profi',
+    title: 'Eisvulkan auf Ceres',
+    brief:
+      'Aus einer niedrigen Bahn um den Zwergplaneten Ceres hinunter zum Eisvulkan Ahuna Mons – und dort sanft aufsetzen.',
+    tips: [
+      'Um Ceres geht es nur mit rund 100 m/s – ein kurzer Bremsschub gegen die Flugrichtung genügt.',
+      'Der Eisvulkan ist auf der Karte (M) markiert. Bremse, wenn er etwa eine Viertelrunde vor dir liegt.',
+      'Ceres zieht nur mit 0,28 m/s² – kurz vor dem Boden reicht ganz wenig Schub.',
+    ],
+    stars: ['gelandet', 'höchstens 5 km vom Ahuna Mons', 'höchstens 1 km vom Ahuna Mons'],
+    design: ['sonde', 'tank-s', 'beine', 'kolibri'],
+    computer: true,
+    setup(f) {
+      f.site = { body: 'ceres', angle: CERES_BASE, name: 'Ahuna Mons' };
+      // Die Bahn läuft im Uhrzeigersinn: der Vulkan liegt gut eine halbe Runde voraus.
+      f.placeInOrbit(CERES, 15_000, CERES_BASE + 2.4);
+      f.target = 'ceres';
+    },
+    judge(f) {
+      const c = crashed(f);
+      if (c) return c;
+      if (f.status === 'flying' && f.refBody() !== CERES)
+        return {
+          success: false,
+          stars: 0,
+          text: 'Zu viel Schub – die Sonde ist Ceres davongeflogen.',
+        };
+      if (f.status !== 'landed') return null;
+      const d = f.siteInfo()!.distance;
+      return {
+        success: true,
+        ...stars(true, d <= 5_000, d <= 1_000),
+        text: `Gelandet ${d < 10_000 ? `${Math.round(d)} m` : km(d)} vom Ahuna Mons.`,
+      };
+    },
+    progress: (f) => {
+      const s = f.siteInfo();
+      return s
+        ? `Abstand zum Ahuna Mons: ${s.distance < 10_000 ? `${Math.round(s.distance)} m` : km(s.distance)}`
+        : '';
+    },
+  },
+  {
+    id: 'capture',
+    group: 'Meister',
+    title: 'Vom Jupiter einfangen lassen',
+    brief:
+      'Die Sonde rast auf den Jupiter zu. Bremse am tiefsten Punkt so, dass der Riesenplanet sie einfängt – mit möglichst wenig Treibstoff.',
+    tips: [
+      'Gebremst wird am tiefsten Punkt (Pe): Dort wirkt jeder Meter pro Sekunde am stärksten.',
+      'Eine lange Ellipse genügt – eine runde Bahn dicht über den Wolken kostet ein Vielfaches.',
+      'Gewertet wird, wenn die Bahn geschlossen ist, die Sonde wieder steigt und das Triebwerk aus ist.',
+    ],
+    stars: [
+      'eingefangen, tiefster Punkt über den Wolken',
+      'höchstens 1.200 m/s verbraucht',
+      'höchster Punkt innerhalb der Ganymed-Bahn',
+    ],
+    design: ['sonde', 'tank-m', 'kolibri'],
+    computer: true,
+    setup(f) {
+      // 1,5 Mio. km vor dem Jupiter, 4 km/s Überschuss, tiefster Punkt 1.000 km über den Wolken,
+      // im Uhrzeigersinn wie die Monde.
+      const [jx, jy, jvx, jvy] = bodyState(JUPITER, f.t);
+      const r0 = 1.5e9;
+      const vinf = 4_000;
+      const rp = JUPITER.radius + JUPITER.atmosphere + 1_000_000;
+      const h = rp * Math.sqrt(vinf ** 2 + (2 * JUPITER.mu) / rp);
+      const v0 = Math.sqrt(vinf ** 2 + (2 * JUPITER.mu) / r0);
+      const vt = h / r0;
+      const vr = Math.sqrt(v0 ** 2 - vt ** 2);
+      const a = 2.4;
+      const ux = Math.cos(a);
+      const uy = Math.sin(a);
+      f.status = 'flying';
+      f.landedOn = null;
+      f.x = jx + r0 * ux;
+      f.y = jy + r0 * uy;
+      f.vx = jvx - vr * ux + vt * uy;
+      f.vy = jvy - vr * uy - vt * ux;
+      f.angle = Math.atan2(-(f.vy - jvy), -(f.vx - jvx));
+      f.target = 'jupiter';
+    },
+    judge(f, memo) {
+      const c = crashed(f);
+      if (c) return c;
+      memo.dv0 ??= f.stats.dvUsed;
+      const ref = f.refBody();
+      if (ref === JUPITER || ref.parent === 'jupiter') memo.inside = 1;
+      else if (memo.inside)
+        return {
+          success: false,
+          stars: 0,
+          text: 'Nicht eingefangen – die Sonde hat den Einflussbereich des Jupiter wieder verlassen.',
+        };
+      if (!memo.inside) return null;
+      const o = f.orbit(JUPITER);
+      const rel = f.relative(JUPITER);
+      const rising = rel.rx * rel.vx + rel.ry * rel.vy > 0;
+      if (!settled(f, memo, o.bound && o.periapsis > JUPITER.atmosphere && rising)) return null;
+      const used = f.stats.dvUsed - memo.dv0;
+      return {
+        success: true,
+        ...stars(true, used <= 1_200, o.apoapsis + JUPITER.radius < GANYMEDE_ORBIT),
+        text: `Eingefangen mit ${fmt(used)} m/s: tiefster Punkt ${km(o.periapsis)}, höchster ${km(o.apoapsis)}.`,
+      };
+    },
+    progress: (f) => {
+      const o = f.orbit(JUPITER);
+      return `Pe ${km(o.periapsis)} · ${o.bound ? `Ap ${km(o.apoapsis)}` : 'noch offen'}`;
     },
   },
 ];

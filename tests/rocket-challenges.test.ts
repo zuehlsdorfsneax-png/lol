@@ -4,7 +4,7 @@ import { CHALLENGES, challengeById, type Memo } from '../src/rocket/challenges';
 import { Flight } from '../src/rocket/flight';
 import { checkDesign } from '../src/rocket/parts';
 import { makePlan, planCircularize } from '../src/rocket/planner';
-import { EARTH, MARS, MOON, PHOBOS } from '../src/rocket/world';
+import { CERES, EARTH, JUPITER, MARS, MOON, PHOBOS } from '../src/rocket/world';
 
 function start(id: string): { f: Flight; memo: Memo } {
   const c = challengeById(id)!;
@@ -149,5 +149,33 @@ describe('Herausforderungen', () => {
     f.throttle = 0.05;
     for (let i = 0; i < 60; i++) f.update(1 / 60);
     expect(f.status).toBe('flying');
+  });
+  it('Ceres: der Lande-Autopilot setzt auf dem Zwergplaneten auf', () => {
+    const { f, memo } = start('ceres');
+    expect(f.refBody()).toBe(CERES);
+    const lander = new LandingPilot();
+    const r = play('ceres', f, memo, () => {
+      lander.update(f);
+    })!;
+    expect(r.success, r.text).toBe(true);
+    expect(f.landedOn).toBe(CERES);
+  });
+
+  it('Jupiter einfangen: „Einfangen (sparsam)“ schafft zwei Sterne, eine runde Bahn wäre teurer', () => {
+    const { f, memo } = start('capture');
+    // Bis in den Einflussbereich vorspulen, dann den sparsamen Plan des Bordcomputers ausführen.
+    const r0 = play('capture', f, memo, () => {
+      if (f.refBody() === JUPITER) return true;
+      if (f.warpIndex < f.maxWarpIndex()) f.setWarp(f.maxWarpIndex());
+    });
+    expect(r0).toBeNull();
+    const p = makePlan(f, 'capture');
+    expect(p.ok, p.text).toBe(true);
+    execute(f);
+    const r = play('capture', f, memo, () => {
+      if (f.warpIndex < 3) f.setWarp(3);
+    })!;
+    expect(r.success, r.text).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
   });
 });

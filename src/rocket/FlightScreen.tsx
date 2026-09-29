@@ -42,7 +42,9 @@ import { drawFlight, flightView } from './scene';
 import { toWorld, type View } from './view';
 import {
   EARTH,
+  CERES,
   EUROPA,
+  GANYMEDE,
   JUPITER,
   MARS,
   MERCURY,
@@ -71,8 +73,10 @@ const TARGETS: readonly { id: TargetId; label: string }[] = [
   { id: 'venus', label: 'Venus' },
   { id: 'mars', label: 'Mars' },
   { id: 'phobos', label: 'Phobos' },
+  { id: 'ceres', label: 'Ceres' },
   { id: 'jupiter', label: 'Jupiter' },
   { id: 'europa', label: 'Europa' },
+  { id: 'ganymede', label: 'Ganymed' },
   { id: 'earth', label: 'Erde' },
 ];
 
@@ -85,8 +89,10 @@ const FOCI: readonly { id: MapFocus; label: string }[] = [
   { id: 'mercury', label: 'Merkur' },
   { id: 'venus', label: 'Venus' },
   { id: 'mars', label: 'Mars' },
+  { id: 'ceres', label: 'Ceres' },
   { id: 'jupiter', label: 'Jupiter' },
   { id: 'europa', label: 'Europa' },
+  { id: 'ganymede', label: 'Ganymed' },
 ];
 
 interface Window {
@@ -162,6 +168,10 @@ function tipFor(f: Flight, pilot: string | null): string {
     if (on === MERCURY)
       return 'Auf dem Merkur: tagsüber über 400 °C, nachts −170 °C. Keine Luft, viele Krater.';
     if (on === EUROPA) return 'Auf Europa! Unter deinen Füßen liegt ein Ozean unter dem Eis.';
+    if (on === GANYMEDE)
+      return 'Auf Ganymed, dem größten Mond im Sonnensystem! Am Himmel steht riesig der Jupiter.';
+    if (on === CERES)
+      return 'Auf Ceres im Asteroidengürtel! Die Schwerkraft ist so schwach, dass schon wenig Schub zum Abheben reicht.';
     if (!f.goals.has('lift'))
       return !f.infiniteFuel && f.deltaV() < 3_700
         ? `Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C). Mit ${fmt(f.deltaV())} m/s Δv reicht es ins All, für eine Umlaufbahn braucht es rund 3.900 m/s.`
@@ -187,10 +197,17 @@ function tipFor(f: Flight, pilot: string | null): string {
   if (ref === SUN)
     return 'Du kreist um die Sonne! Bordcomputer: „Kurskorrektur“ legt den tiefsten Punkt am Ziel fest. Dann Zeitraffer hoch.';
   if (ref === JUPITER)
-    return 'Jupiter hat keine feste Oberfläche – nur vorbeifliegen oder einschwenken! Ziel „Europa“ wählen für den Eismond.';
+    return 'Jupiter hat keine feste Oberfläche – nur vorbeifliegen oder einschwenken („Einfangen (sparsam)“)! Ziel „Europa“ oder „Ganymed“ wählen für die Monde.';
   if (ref === PHOBOS)
     return 'Phobos hat fast keine Schwerkraft: mit ganz wenig Schub (unter 5 %) langsam aufsetzen. Zu viel Gas – und du fliegst davon.';
-  if (ref === MARS || ref === VENUS || ref === MERCURY || ref === EUROPA) {
+  if (
+    ref === MARS ||
+    ref === VENUS ||
+    ref === MERCURY ||
+    ref === EUROPA ||
+    ref === GANYMEDE ||
+    ref === CERES
+  ) {
     if (!o.bound)
       return `Angekommen ${forms(ref).at}! Bordcomputer: „Einschwenken“ – oder am tiefsten Punkt (Pe) gegen die Flugrichtung bremsen.`;
     if (ref.atmosphere > 0)
@@ -1531,7 +1548,7 @@ export function FlightScreen({
       : pilot.current === 'node'
         ? `Autopilot führt das Manöver aus (${executor.current?.phase === 'burn' ? 'brennt' : executor.current?.phase === 'wait' ? 'wartet auf den Zündzeitpunkt' : 'richtet aus'}).`
         : pilot.current === 'land'
-          ? `Lande-Autopilot: ${{ aero: 'die Luft bremst.', chute: 'am Fallschirm.', brake: 'Bahngeschwindigkeit abbauen.', fall: 'freier Fall.', suicide: 'Bremsen!', done: 'gelandet.', failed: 'abgebrochen.' }[lander.current?.phase ?? 'brake']}`
+          ? `Lande-Autopilot: ${{ approach: 'Anflug an den kleinen Mond.', aero: 'die Luft bremst.', chute: 'am Fallschirm.', brake: 'Bahngeschwindigkeit abbauen.', fall: 'freier Fall.', suicide: 'Bremsen!', done: 'gelandet.', failed: 'abgebrochen.' }[lander.current?.phase ?? 'brake']}`
           : pilot.current === 'mission' && mission.current
             ? `Missions-Autopilot (Schritt ${Math.min(mission.current.index + 1, mission.current.steps.length)}/${mission.current.steps.length}): ${mission.current.detail || mission.current.stepLabel}`
             : null;

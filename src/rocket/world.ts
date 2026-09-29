@@ -15,7 +15,17 @@ export const SCALE = 600_000 / 6_371_000;
 const AU = 1.496e11 * SCALE;
 
 export type BodyId =
-  'sun' | 'mercury' | 'venus' | 'earth' | 'moon' | 'mars' | 'phobos' | 'jupiter' | 'europa';
+  | 'sun'
+  | 'mercury'
+  | 'venus'
+  | 'earth'
+  | 'moon'
+  | 'mars'
+  | 'phobos'
+  | 'ceres'
+  | 'jupiter'
+  | 'europa'
+  | 'ganymede';
 
 export interface Body {
   id: BodyId;
@@ -128,6 +138,22 @@ const FORMS: Record<BodyId, NameForms> = {
     acc: 'Europa',
     to: 'zu Europa',
     at: 'bei Europa',
+  },
+  ganymede: {
+    nom: 'Ganymed',
+    gen: 'Ganymeds',
+    dat: 'Ganymed',
+    acc: 'Ganymed',
+    to: 'zu Ganymed',
+    at: 'bei Ganymed',
+  },
+  ceres: {
+    nom: 'Ceres',
+    gen: 'von Ceres',
+    dat: 'Ceres',
+    acc: 'Ceres',
+    to: 'zu Ceres',
+    at: 'bei Ceres',
   },
 };
 
@@ -300,6 +326,38 @@ export const EUROPA = body({
   info: 'Eismond des Jupiter. Unter seinem Eispanzer liegt ein Ozean aus flüssigem Wasser.',
 });
 
+export const GANYMEDE = body({
+  id: 'ganymede',
+  name: 'Ganymed',
+  radius: 2_634_100 * SCALE,
+  g: 1.428,
+  atmosphere: 0,
+  density0: 0,
+  scaleHeight: 1,
+  solid: true,
+  parent: 'jupiter',
+  distance: 1_070_400_000 * SCALE,
+  phase0: 3.4,
+  parentMu: JUPITER_MU,
+  info: 'Größter Mond im Sonnensystem – größer als der Merkur. Er hat sogar ein eigenes Magnetfeld.',
+});
+
+export const CERES = body({
+  id: 'ceres',
+  name: 'Ceres',
+  radius: 469_700 * SCALE,
+  g: 0.28,
+  atmosphere: 0,
+  density0: 0,
+  scaleHeight: 1,
+  solid: true,
+  parent: 'sun',
+  distance: 2.767 * AU,
+  phase0: NOON + 1.9,
+  parentMu: SUN_MU,
+  info: 'Zwergplanet im Asteroidengürtel zwischen Mars und Jupiter – der größte Brocken dort, rund und eisig.',
+});
+
 export const BODIES: readonly Body[] = [
   SUN,
   MERCURY,
@@ -308,13 +366,23 @@ export const BODIES: readonly Body[] = [
   MOON,
   MARS,
   PHOBOS,
+  CERES,
   JUPITER,
   EUROPA,
+  GANYMEDE,
 ];
 const BY_ID = new Map(BODIES.map((b) => [b.id, b]));
 
 export function bodyById(id: BodyId): Body {
   return BY_ID.get(id)!;
+}
+
+/**
+ * Winziger Mond ohne nennenswerten Einflussbereich (Phobos): Man fliegt ihn an wie die Station und
+ * landet erst, wenn man dicht über dem Boden ist.
+ */
+export function tinyBody(b: Body): boolean {
+  return b.hill < 50_000 && !!b.parent && b.parent !== 'sun';
 }
 
 /** Winkelgeschwindigkeit eines Körpers auf seiner Kreisbahn (negativ = Uhrzeigersinn). */
@@ -341,6 +409,12 @@ const RATE = BODIES.map((b) => RATES.get(b.id)!);
 const SPEED = BODIES.map((b, i) => RATE[i]! * b.distance);
 const PHASE = BODIES.map((b) => b.phase0);
 const MU = BODIES.map((b) => b.mu);
+/**
+ * Winzige Körper (Phobos, Ceres) ziehen nur in ihrer Nähe spürbar: Weiter weg als das
+ * Hundertfache ihres Einflussbereichs bleibt ihre Anziehung unter einem Milliardstel der Sonnen-
+ * und Planetenschwerkraft – dort lässt die Rechnung sie (samt indirektem Term) weg.
+ */
+const FAR2 = BODIES.map((b) => (b.mu < 1e10 ? (100 * b.hill) ** 2 : Infinity));
 const I_EARTH = BODIES.indexOf(EARTH);
 const I_MOON = BODIES.indexOf(MOON);
 const hx = new Float64Array(N_BODIES);
@@ -484,6 +558,7 @@ export function gravity(x: number, y: number, t: number): [number, number] {
     const dx = x - bx;
     const dy = y - by;
     const d2 = dx * dx + dy * dy;
+    if (d2 > FAR2[i]!) continue;
     const d = Math.sqrt(d2);
     const b2 = bx * bx + by * by;
     const bd = Math.sqrt(b2);

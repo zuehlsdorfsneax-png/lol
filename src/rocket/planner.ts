@@ -27,6 +27,7 @@ import {
   phaseLead,
   requiredExcess,
   stationState,
+  tinyBody,
   transferWindow,
   type Body,
 } from './world';
@@ -344,6 +345,52 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
   return out;
 }
 
+/**
+ * Welcher der angebotenen Pläne gerade der nächste sinnvolle Schritt zum Ziel ist (oder null).
+ * Nur eine Empfehlung aus der letzten Vorhersage – gerechnet wird erst beim Antippen.
+ */
+export function recommendedPlan(
+  f: Flight,
+  options: readonly PlanOption[],
+  pred: Prediction | null,
+): PlanId | null {
+  const has = (id: PlanId): PlanId | null => (options.some((o) => o.id === id) ? id : null);
+  const target = f.target;
+  if (f.status !== 'flying' || !target) return null;
+  const ref = f.refBody();
+  const o = f.orbit(ref);
+  // Noch keine stabile Bahn: erst rund machen.
+  if (o.bound && o.periapsis < Math.max(ref.atmosphere, 1_000) && ref !== SUN)
+    return has('circ-ap');
+  const orb = orbiterFor(target);
+  if (orb) {
+    if (ref !== orb.ref) return null;
+    const near = pred?.closest && pred.closest.distance < 50_000;
+    return near ? has('match') : has('transfer');
+  }
+  if (target === 'station') return null;
+  const tb = bodyById(target);
+  if (tb === ref) {
+    if (o.bound) return null;
+    // Angekommen: Anflughöhe prüfen, dann einschwenken (bei Riesen sparsam).
+    const pe = pred ? arrivalPeriapsis(pred, ref, 0) : null;
+    if (
+      pe !== null &&
+      Math.abs(pe - arrivalAltitude(ref)) > Math.max(5_000, 0.3 * arrivalAltitude(ref))
+    )
+      return has('correct');
+    return ref.solid ? has('circ-pe') : (has('capture') ?? has('circ-pe'));
+  }
+  const goal = legGoal(tb, ref);
+  if (pred?.encounter?.body === goal) {
+    const pe = arrivalPeriapsis(pred, goal, 0);
+    const want = arrivalAltitude(goal);
+    return pe === null || Math.abs(pe - want) > Math.max(5_000, 0.3 * want) ? has('correct') : null;
+  }
+  if (ref.parent === goal.id) return has('return');
+  return has('transfer') ?? has('correct');
+}
+
 export function makePlan(f: Flight, id: PlanId): Plan {
   switch (id) {
     case 'circ-ap':
@@ -512,6 +559,13 @@ export function planCapture(f: Flight): Plan {
   };
 }
 
+/** „Ankunft 45 km über dem Mars“ – oder, bei einem Treffer, der Hinweis auf die Kurskorrektur. */
+function arrivalText(pe: number, target: Body): string {
+  return pe < 0
+    ? `Die Bahn trifft ${forms(target).acc} noch mitten – nach dem Brennen mit „Kurskorrektur“ auf ${km(arrivalAltitude(target))} bringen`
+    : `Ankunft ${km(pe)} über ${forms(target).dat}`;
+}
+
 /** Hohmann-Transfer zu einem Mond des Bezugskörpers oder zu einem anderen Planeten. */
 export function planTransfer(f: Flight): Plan {
   const target =
@@ -555,7 +609,7 @@ export function planTransfer(f: Flight): Plan {
       text:
         pe === null
           ? `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)} – danach mit einer Kurskorrektur nachbessern.`
-          : `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)}. Ankunft ${km(pe)} über ${forms(target).dat}${laps >= 2 ? ` nach ${laps} Umläufen` : ''}.`,
+          : `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)}. ${arrivalText(pe, target)}${laps >= 2 ? ` (nach ${laps} Umläufen)` : ''}.`,
     };
   }
 
@@ -589,7 +643,7 @@ export function planTransfer(f: Flight): Plan {
       : {
           ok: true,
           title,
-          text: `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Ankunft ${km(pe)} über ${forms(target).dat}.`,
+          text: `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. ${arrivalText(pe, target)}.`,
         };
   }
 
@@ -634,7 +688,7 @@ export function planTransfer(f: Flight): Plan {
       text:
         pe === null
           ? `Das Fenster passt, aber noch kein Treffer: ${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Nach dem Brennen mit kleinen Korrekturen nachbessern.`
-          : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Flugzeit etwa ${Math.round(flight / 86_400)} Tage, Ankunft ${km(pe)} über ${forms(target).dat}.`,
+          : `${fmt(best.dv)} m/s in ${clockIn(best.t - f.t)}. Flugzeit etwa ${Math.round(flight / 86_400)} Tage. ${arrivalText(pe, target)}.`,
     };
   }
   return fail(title, `Von ${forms(ref).dat} aus ist ${forms(target).nom} kein direktes Ziel.`);
@@ -802,11 +856,6 @@ function moonOrbiter(b: Body): Orbiter {
     gen: forms(b).gen,
     dat: forms(b).dat,
   };
-}
-
-/** Winziger Mond ohne nennenswerten Einflussbereich (Phobos): Anflug wie an die Station. */
-export function tinyBody(b: Body): boolean {
-  return b.hill < 50_000 && !!b.parent && b.parent !== 'sun';
 }
 
 /** Das Ziel als „Orbiter“, wenn man es wie die Station anfliegt (Station, winzige Monde). */

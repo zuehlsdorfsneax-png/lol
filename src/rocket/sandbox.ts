@@ -2,7 +2,9 @@ import type { Flight } from './flight';
 import type { BuildRules } from './parts';
 import {
   EARTH,
+  CERES,
   EUROPA,
+  GANYMEDE,
   JUPITER,
   MARS,
   MERCURY,
@@ -52,6 +54,8 @@ export type StartId =
   | 'venusorbit'
   | 'merkur'
   | 'europa'
+  | 'ganymed'
+  | 'ceres'
   | 'jupiterorbit';
 
 export interface StartOption {
@@ -121,6 +125,14 @@ export const START_OPTIONS: readonly StartOption[] = [
   },
   { id: 'merkur', label: 'Auf Merkur', group: 'Planeten', body: MERCURY, place: landed(MERCURY) },
   { id: 'europa', label: 'Auf Europa', group: 'Planeten', body: EUROPA, place: landed(EUROPA) },
+  {
+    id: 'ganymed',
+    label: 'Auf Ganymed',
+    group: 'Planeten',
+    body: GANYMEDE,
+    place: landed(GANYMEDE),
+  },
+  { id: 'ceres', label: 'Auf Ceres', group: 'Planeten', body: CERES, place: landed(CERES) },
   {
     id: 'jupiterorbit',
     label: 'Jupiterumlaufbahn',

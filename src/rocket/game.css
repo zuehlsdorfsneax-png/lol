@@ -2157,6 +2157,24 @@ html.game-open body {
   background: rgb(110 168 255 / 10%);
 }
 
+.cp-plan.rec {
+  border-color: rgb(226 168 70 / 70%);
+  background: rgb(226 168 70 / 10%);
+}
+
+.cp-plan strong em {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--g-accent);
+  color: var(--g-accent-ink);
+  font-size: 0.66rem;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
 .cp-plan span {
   font-size: 0.76rem;
   color: var(--g-ink-2);
