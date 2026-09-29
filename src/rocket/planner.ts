@@ -4,7 +4,7 @@
  * Rückflug vom Mond und Wiedereintritt. Die Formeln liefern einen Startwert; danach sucht der
  * Computer mit der echten Mehrkörper-Vorhersage die beste Zündzeit und Stärke.
  */
-import { Flight, nodeFrame, type Prediction } from './flight';
+import { Flight, nodeFrame, type Prediction, type TargetId } from './flight';
 import { clockIn, fmt, km } from './format';
 import {
   elements,
@@ -15,6 +15,7 @@ import {
   timeToPeriapsis,
 } from './kepler';
 import {
+  BODIES,
   EARTH,
   STATION,
   SUN,
@@ -31,7 +32,7 @@ import {
 } from './world';
 
 export type PlanId =
-  'circ-ap' | 'circ-pe' | 'transfer' | 'correct' | 'match' | 'return' | 'deorbit';
+  'circ-ap' | 'circ-pe' | 'capture' | 'transfer' | 'correct' | 'match' | 'return' | 'deorbit';
 
 export interface Plan {
   ok: boolean;
@@ -39,6 +40,8 @@ export interface Plan {
   text: string;
   /** Wartezeit bis zum Startfenster, wenn es für die Planung noch zu weit weg ist. */
   wait?: number;
+  /** Die Bahn hat sich beim Rechnen verändert – einfach noch einmal planen. */
+  retry?: boolean;
 }
 
 export interface PlanOption {
@@ -82,8 +85,19 @@ function untilFirstClosest(
   let prev = Infinity;
   let low = Infinity;
   let falling = false;
+  // Solange die Rakete noch bei einem Mond des Körpers ist (etwa kurz nach dem Rückflug-Brennen),
+  // zählen Annäherungen an den Körper nicht – sie kreist ja noch um den Mond.
+  const moons = BODIES.filter((b) => b.parent === body.id);
   for (let i = Math.max(0, from); i < p.n; i++) {
-    const [bx, by] = bodyState(body, p.ts[i]!);
+    const t = p.ts[i]!;
+    if (
+      moons.some((m) => {
+        const [mx, my] = bodyState(m, t);
+        return Math.hypot(p.xs[i]! - mx, p.ys[i]! - my) < m.hill;
+      })
+    )
+      continue;
+    const [bx, by] = bodyState(body, t);
     const d = Math.hypot(p.xs[i]! - bx, p.ys[i]! - by);
     if (Number.isFinite(prev) && d < prev * 0.9999) falling = true;
     else if (falling && d > low * 1.01 + 1_000) return;
@@ -120,20 +134,29 @@ function untilFirstFarthest(
  * nicht in die Hill-Sphäre des Körpers kommt.
  */
 export function arrivalPeriapsis(p: Prediction, body: Body, from: number): number | null {
+  return arrival(p, body, from)?.altitude ?? null;
+}
+
+/** Wie `arrivalPeriapsis`, dazu der Zeitpunkt des tiefsten Punkts. */
+function arrival(p: Prediction, body: Body, from: number): { altitude: number; t: number } | null {
   let best: number | null = null;
+  let when = 0;
   let entered = false;
   untilFirstClosest(p, body, from, (i, d) => {
     if (d > body.hill) return !entered;
     entered = true;
     const alt = d - body.radius;
-    if (best === null || alt < best) best = alt;
+    if (best === null || alt < best) {
+      best = alt;
+      when = p.ts[i]!;
+    }
     if (p.impact === body && i === p.n - 1) {
       const [bx, by, bvx, bvy] = bodyState(body, p.ts[i]!);
       const o = orbitAround(body, p.xs[i]! - bx, p.ys[i]! - by, p.vxs[i]! - bvx, p.vys[i]! - bvy);
       best = Math.min(o.periapsis, 0);
     }
   });
-  return best;
+  return best === null ? null : { altitude: best, t: when };
 }
 
 /**
@@ -199,6 +222,18 @@ function search(
   return best;
 }
 
+/**
+ * Nächste Etappe auf dem Weg zu `tb`: Zu einem Mond eines anderen Planeten (Phobos, Europa) geht
+ * es erst zu diesem Planeten, von dort weiter zum Mond.
+ */
+export function legGoal(tb: Body, ref: Body): Body {
+  if (tb !== ref && tb.parent && tb.parent !== 'sun' && tb.parent !== ref.id) {
+    const planet = bodyById(tb.parent);
+    if (planet.parent === 'sun' && planet !== ref) return planet;
+  }
+  return tb;
+}
+
 /** Welche Pläne gerade sinnvoll sind (mit der letzten Vorhersage, falls vorhanden). */
 export function planOptions(f: Flight, pred: Prediction | null = null): PlanOption[] {
   if (f.status !== 'flying') return [];
@@ -225,24 +260,29 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
         : 'Am tiefsten Punkt bremsen – dann fängt dich der Körper ein.',
     });
   const target = f.target;
-  if (target === 'station' && ref === EARTH && o.bound) {
+  const orb = orbiterFor(target);
+  if (orb && ref === orb.ref && o.bound) {
     out.push({
       id: 'transfer',
-      label: 'Rendezvous mit der Station',
-      hint: 'Zündung so, dass du die Station nach einer halben Runde triffst.',
+      label: `Rendezvous mit ${orb.dat}`,
+      hint: `Zündung so, dass du ${orb.nom} an einer Kreuzung eurer Bahnen triffst.`,
     });
     out.push({
       id: 'match',
       label: 'Geschwindigkeit angleichen',
-      hint: 'Bei der nächsten Annäherung auf die Geschwindigkeit der Station bremsen.',
+      hint: `Bei der nächsten Annäherung auf die Geschwindigkeit ${orb.gen} bremsen.`,
     });
   } else if (target && target !== 'station' && o.bound) {
     const tb = bodyById(target);
-    if (tb.parent === ref.id || (tb.parent === 'sun' && ref.parent === 'sun' && tb !== ref))
+    const goal = legGoal(tb, ref);
+    if (goal.parent === ref.id || (goal.parent === 'sun' && ref.parent === 'sun' && goal !== ref))
       out.push({
         id: 'transfer',
-        label: `Transfer zu: ${tb.name}`,
-        hint: 'Hohmann-Transfer im richtigen Startfenster.',
+        label: `Transfer zu: ${goal.name}${goal !== tb ? ` (weiter zu ${tb.name})` : ''}`,
+        hint:
+          goal.parent === ref.id && f.elements(ref).e > 0.1
+            ? `Treffpunkt mit ${forms(goal).dat} an einer Bahnkreuzung – auch aus einer langen Ellipse.`
+            : 'Hohmann-Transfer im richtigen Startfenster.',
       });
     if (ref.parent === tb.id && ref.parent !== 'sun')
       out.push({
@@ -257,19 +297,29 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
       label: `Anflug korrigieren`,
       hint: `Tiefsten Punkt auf ${km(arrivalAltitude(ref))} über ${forms(ref).dat} legen – dann einschwenken.`,
     });
+  if (!o.bound && o.periapsis > Math.max(ref.atmosphere, 1_000) && ref !== SUN && ref !== EARTH)
+    out.push({
+      id: 'capture',
+      label: `Einfangen ${forms(ref).at} (sparsam)`,
+      hint: 'Am tiefsten Punkt nur so viel bremsen, dass eine lange Ellipse bleibt – spart viel Treibstoff.',
+    });
   if (target && target !== 'station' && target !== ref.id) {
-    const tb = bodyById(target);
+    const goal = legGoal(bodyById(target), ref);
     const onWay =
-      pred?.encounter?.body === tb ||
+      pred?.encounter?.body === goal ||
       ref === SUN ||
       !o.bound ||
       o.apoapsis + ref.radius >
-        0.2 * Math.min(ref.hill, tb.parent === ref.id ? tb.distance * 5 : Infinity);
-    if (onWay && tb.parent !== ref.id ? true : onWay && o.apoapsis + ref.radius > 0.5 * tb.distance)
+        0.2 * Math.min(ref.hill, goal.parent === ref.id ? goal.distance * 5 : Infinity);
+    const offer =
+      goal !== ref &&
+      !tinyBody(goal) &&
+      (goal.parent !== ref.id ? onWay : onWay && o.apoapsis + ref.radius > 0.5 * goal.distance);
+    if (offer)
       out.push({
         id: 'correct',
-        label: `Kurskorrektur zu: ${tb.name}`,
-        hint: `Kleiner Schub, damit du ${km(arrivalAltitude(tb))} über ${forms(tb).dat} ankommst.`,
+        label: `Kurskorrektur zu: ${goal.name}`,
+        hint: `Kleiner Schub, damit du ${km(arrivalAltitude(goal))} über ${forms(goal).dat} ankommst.`,
       });
   }
   if (!target && ref.parent && ref.parent !== 'sun' && o.bound) {
@@ -300,8 +350,12 @@ export function makePlan(f: Flight, id: PlanId): Plan {
       return planCircularize(f, 'ap');
     case 'circ-pe':
       return planCircularize(f, 'pe');
-    case 'transfer':
-      return f.target === 'station' ? planRendezvous(f) : planTransfer(f);
+    case 'capture':
+      return planCapture(f);
+    case 'transfer': {
+      const orb = orbiterFor(f.target);
+      return orb && f.refBody() === orb.ref ? planRendezvous(f, orb) : planTransfer(f);
+    }
     case 'correct':
       return planCorrection(f);
     case 'match':
@@ -326,6 +380,7 @@ function circularNode(
   y: number,
   vx: number,
   vy: number,
+  speed?: number,
 ): number {
   const [bx, by, bvx, bvy] = bodyState(ref, t);
   const rx = x - bx;
@@ -339,7 +394,7 @@ function circularNode(
   const hx = rvx - radial * ux;
   const hy = rvy - radial * uy;
   const h = Math.hypot(hx, hy) || 1;
-  const vc = Math.sqrt(ref.mu / r);
+  const vc = speed ?? Math.sqrt(ref.mu / r);
   const dx = ((vc - h) * hx) / h - radial * ux;
   const dy = ((vc - h) * hy) / h - radial * uy;
   const [px, py, qx, qy] = nodeFrame(ref, x, y, vx, vy, t);
@@ -413,9 +468,54 @@ export function planCircularize(f: Flight, where: 'ap' | 'pe'): Plan {
   };
 }
 
+/**
+ * Einfangen (sparsam): am tiefsten Punkt nur so viel bremsen, dass die Bahn geschlossen ist – mit
+ * dem höchsten Punkt etwas hinter dem äußersten Mond (für den Weiterflug), sonst weit draußen.
+ * Bei großen Planeten kostet das nur einen Bruchteil einer Kreisbahn knapp über den Wolken.
+ */
+export function planCapture(f: Flight): Plan {
+  const ref = f.refBody();
+  const title = `Einfangen ${forms(ref).at}`;
+  if (f.status !== 'flying') return fail(title, 'Erst abheben.');
+  const node = f.node;
+  f.node = null;
+  const p = f.predict(2500);
+  f.node = node;
+  let best = -1;
+  let bestD = Infinity;
+  untilFirstClosest(p, ref, 1, (i, d) => {
+    if (d > ref.hill) return false;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  });
+  if (best <= 0 || best >= p.n - 1 || p.ts[best]! < f.t + 10)
+    return fail(title, 'Kein tiefster Punkt in Sicht – erst den Anflug korrigieren.');
+  if (bestD - ref.radius < Math.max(ref.atmosphere, 1_000))
+    return fail(
+      title,
+      `Der tiefste Punkt liegt ${ref.atmosphere > 0 ? 'in der Atmosphäre' : 'zu dicht am Boden'} – erst den Anflug korrigieren.`,
+    );
+  const moons = BODIES.filter((b) => b.parent === ref.id);
+  const apo = Math.max(
+    bestD * 1.5,
+    moons.length ? Math.max(...moons.map((m) => m.distance)) * 1.5 : 0.1 * ref.hill,
+  );
+  const need = Math.sqrt(ref.mu * (2 / bestD - 2 / (bestD + apo)));
+  const t = p.ts[best]!;
+  const dv = circularNode(f, ref, t, p.xs[best]!, p.ys[best]!, p.vxs[best]!, p.vys[best]!, need);
+  return {
+    ok: true,
+    title,
+    text: `${fmt(Math.abs(dv))} m/s gegen die Flugrichtung in ${clockIn(t - f.t)}, auf ${km(bestD - ref.radius)} Höhe. Danach eine lange Ellipse bis ${km(apo - ref.radius)}.`,
+  };
+}
+
 /** Hohmann-Transfer zu einem Mond des Bezugskörpers oder zu einem anderen Planeten. */
 export function planTransfer(f: Flight): Plan {
-  const target = f.target && f.target !== 'station' ? bodyById(f.target) : null;
+  const target =
+    f.target && f.target !== 'station' ? legGoal(bodyById(f.target), f.refBody()) : null;
   if (!target) return fail('Transfer', 'Erst ein Ziel wählen.');
   const ref = f.refBody();
   const el = f.elements(ref);
@@ -428,6 +528,36 @@ export function planTransfer(f: Flight): Plan {
     if (pe !== null) return Math.abs(pe - want) + (pe < 0 ? target.radius : 0);
     return 1e12 + (p.closest?.distance ?? 1e12);
   };
+
+  if (target.parent === ref.id && el.e > 0.1) {
+    // Langgestreckte Bahn (etwa gleich nach dem Einfangen): Zündzeit und Schub so wählen, dass
+    // die Rakete den Mond an einer Kreuzung der Bahnen trifft, dann mit der echten Vorhersage
+    // auf die gewünschte Ankunftshöhe feinstellen.
+    // Gleich nach dem Brennen ankommen (die Vorhersage reicht nicht über viele Umläufe), dafür
+    // bis zu vier Umläufe auf die richtige Stellung des Mondes warten.
+    const m = findMeeting(f, el, moonOrbiter(target), hohmannCenter(el, target.distance), 1, {
+      revs: 1,
+      laps: 4,
+    });
+    if (!m)
+      return fail(
+        title,
+        `Von dieser Bahn aus findet der Computer keinen Treffpunkt mit ${forms(target).dat} – erst die Bahn runder machen.`,
+      );
+    const best = search(f, m.tb, m.dv, Math.min(P / 48, 1_800), 0.01, score, 3);
+    f.setNode(best.t, best.dv, 0);
+    const p = f.predict(1400, true);
+    const pe = arrivalPeriapsis(p, target, Math.max(p.nodeIndex, 0));
+    const laps = Math.round((m.tc - m.tb) / period(el));
+    return {
+      ok: true,
+      title,
+      text:
+        pe === null
+          ? `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)} – danach mit einer Kurskorrektur nachbessern.`
+          : `${fmt(Math.abs(best.dv))} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.t - f.t)}. Ankunft ${km(pe)} über ${forms(target).dat}${laps >= 2 ? ` nach ${laps} Umläufen` : ''}.`,
+    };
+  }
 
   if (target.parent === ref.id) {
     // Mond des Bezugskörpers: Phasenwinkel wie beim Mondfenster.
@@ -515,7 +645,8 @@ export function planTransfer(f: Flight): Plan {
  * am Ziel die gewünschte Höhe hat (Intervallhalbierung mit der echten Vorhersage).
  */
 export function planCorrection(f: Flight): Plan {
-  const target = f.target && f.target !== 'station' ? bodyById(f.target) : null;
+  const target =
+    f.target && f.target !== 'station' ? legGoal(bodyById(f.target), f.refBody()) : null;
   if (!target) return fail('Kurskorrektur', 'Erst ein Ziel wählen.');
   const title =
     f.refBody() === target ? `Anflug auf ${forms(target).acc}` : `Kurskorrektur zu: ${target.name}`;
@@ -530,19 +661,25 @@ export function planCorrection(f: Flight): Plan {
     f.clearNode();
     return fail(title, 'Keine Vorhersage möglich.');
   }
-  const side = base >= 0 ? 1 : -1;
-  const want = side * (target.radius + arrivalAltitude(target));
-  const g0 = base - want;
-  if (
-    Math.abs(g0) < Math.max(2_000, 0.05 * arrivalAltitude(target)) &&
-    Math.abs(base) < target.hill
-  ) {
+  const natural = base >= 0 ? 1 : -1;
+  // Zu einem Planeten mit Monden möglichst im Uhrzeigersinn ankommen (so laufen die Monde) – dann
+  // ist der Weiterflug zu einem Mond billig. Nur, solange das Ziel noch weit weg ist und der
+  // Seitenwechsel wenig kostet.
+  const moony =
+    f.refBody() !== target && target !== EARTH && BODIES.some((b) => b.parent === target.id);
+  const prefer = moony ? -1 : natural;
+  const radius = target.radius + arrivalAltitude(target);
+  const fine =
+    Math.abs(base - natural * radius) < Math.max(2_000, 0.05 * arrivalAltitude(target)) &&
+    Math.abs(base) < target.hill;
+  const fits = (): Plan => {
     f.clearNode();
     return fail(
       title,
       `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${forms(target).dat}.`,
     );
-  }
+  };
+  if (fine && prefer === natural) return fits();
   // Wirksamste Richtung aus kleinen Probeschüben (in Flugrichtung und radial).
   const gp = (miss(1, 0) ?? base) - base;
   const gr = (miss(0, 1) ?? base) - base;
@@ -553,41 +690,56 @@ export function planCorrection(f: Flight): Plan {
   }
   const dp = gp / norm;
   const dr = gr / norm;
-  const g = (x: number): number => {
-    const m = miss(x * dp, x * dr);
-    return m === null ? NaN : m - want;
-  };
-  // Schätzung aus der Steigung, dann einschachteln und halbieren.
-  const est = -g0 / norm;
-  let lo = 0;
-  let hi = NaN;
-  for (let k = 0; k < 14; k++) {
-    const x = est * 0.25 * 1.6 ** k;
-    if (Math.abs(x) > 3_000) break;
-    const gx = g(x);
-    if (!Number.isFinite(gx)) continue;
-    if (gx * g0 <= 0) {
-      hi = x;
-      break;
+  /** Schub entlang der wirksamsten Richtung, nach dem der Vorbeiflug bei `want` liegt. */
+  const solve = (want: number): { x: number; end: number } | null => {
+    const g0 = base - want;
+    const g = (x: number): number => {
+      const m = miss(x * dp, x * dr);
+      return m === null ? NaN : m - want;
+    };
+    // Schätzung aus der Steigung, dann einschachteln und halbieren.
+    const est = -g0 / norm;
+    let lo = 0;
+    let hi = NaN;
+    for (let k = 0; k < 14; k++) {
+      const x = est * 0.25 * 1.6 ** k;
+      if (Math.abs(x) > 3_000) break;
+      const gx = g(x);
+      if (!Number.isFinite(gx)) continue;
+      if (gx * g0 <= 0) {
+        hi = x;
+        break;
+      }
+      lo = x;
     }
-    lo = x;
-  }
-  if (Number.isNaN(hi)) {
+    if (Number.isNaN(hi)) return null;
+    for (let k = 0; k < 40 && Math.abs(hi - lo) > 0.002; k++) {
+      const mid = (lo + hi) / 2;
+      const gm = g(mid);
+      if (!Number.isFinite(gm)) break;
+      if (gm * g0 > 0) lo = mid;
+      else hi = mid;
+    }
+    const x = (lo + hi) / 2;
+    const end = miss(x * dp, x * dr);
+    // Hat die Halbierung an einer Sprungstelle geendet (Treffer ↔ Vorbeiflug), passt das
+    // Ergebnis nicht: dann lieber keinen Plan als einen falschen.
+    if (end === null || Math.abs(end - want) > Math.max(20_000, 0.25 * arrivalAltitude(target)))
+      return null;
+    return { x, end };
+  };
+  let sol = prefer !== natural ? solve(prefer * radius) : null;
+  if (sol && Math.abs(sol.x) > 40) sol = null;
+  if (!sol && fine) return fits();
+  sol ??= solve(natural * radius);
+  if (!sol) {
     f.clearNode();
     return fail(
       title,
-      `Mit einem kleinen Schub ist ${forms(target).nom} nicht zu treffen – plane den Transfer neu.`,
+      `Mit einem kleinen Schub ist ${forms(target).nom} gerade nicht genau zu treffen – etwas später noch einmal versuchen.`,
     );
   }
-  for (let k = 0; k < 40 && Math.abs(hi - lo) > 0.002; k++) {
-    const mid = (lo + hi) / 2;
-    const gm = g(mid);
-    if (!Number.isFinite(gm)) break;
-    if (gm * g0 > 0) lo = mid;
-    else hi = mid;
-  }
-  const x = (lo + hi) / 2;
-  const end = miss(x * dp, x * dr);
+  const { x, end } = sol;
   const pro = x * dp;
   const rad = x * dr;
   const dir =
@@ -601,42 +753,118 @@ export function planCorrection(f: Flight): Plan {
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end ?? want) - target.radius)} über ${forms(target).dat}.`,
+    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end) - target.radius)} über ${forms(target).dat}${moony && end < 0 ? ' (im Uhrzeigersinn, wie die Monde)' : ''}.`,
   };
 }
 
-/** Winkel eines Punkts um den Erdmittelpunkt. */
+/** Winkel eines Punkts um den Mittelpunkt des Bezugskörpers. */
 const angleOf = (x: number, y: number): number => Math.atan2(y, x);
 
 /**
- * Rendezvous mit der Station: ein Schub in oder gegen die Flugrichtung auf eine Bahn, die die
- * Stationsbahn kreuzt – und zwar so, dass die Station genau dann an der Kreuzung ist. Dafür darf
- * die Rakete auch ein paar Umläufe auf der neuen Bahn warten (Phasenbahn); so klappt es auch aus
- * einer Bahn knapp unter oder auf der Höhe der Station. Gerechnet wird mit Kepler-Bahnen (in der
- * niedrigen Erdbahn stören Mond und Sonne praktisch nicht) und genau per Intervallhalbierung.
+ * Ziel auf einer Kreisbahn um `ref`, das man wie die Station anfliegt: die Station selbst und
+ * winzige Monde wie Phobos (deren Einflussbereich nur ein paar Kilometer misst), für die
+ * Hohmann-Transfers zu Monden auch aus einer langgestreckten Bahn heraus.
  */
-export function planRendezvous(f: Flight): Plan {
-  const title = 'Rendezvous mit der Station';
+export interface Orbiter {
+  ref: Body;
+  radius: number;
+  /** Größe des Ziels selbst (0 bei der Station). */
+  size: number;
+  /** Ort und Geschwindigkeit relativ zum Mittelpunkt von `ref`. */
+  state: (t: number) => [number, number, number, number];
+  nom: string;
+  gen: string;
+  dat: string;
+}
+
+const STATION_ORBITER: Orbiter = {
+  ref: EARTH,
+  radius: STATION.radius,
+  size: 0,
+  state: stationState,
+  nom: 'die Station',
+  gen: 'der Station',
+  dat: 'der Station',
+};
+
+function moonOrbiter(b: Body): Orbiter {
+  const ref = bodyById(b.parent!);
+  return {
+    ref,
+    radius: b.distance,
+    size: b.radius,
+    state: (t) => {
+      const [x, y, vx, vy] = bodyState(b, t);
+      const [px, py, pvx, pvy] = bodyState(ref, t);
+      return [x - px, y - py, vx - pvx, vy - pvy];
+    },
+    nom: forms(b).nom,
+    gen: forms(b).gen,
+    dat: forms(b).dat,
+  };
+}
+
+/** Winziger Mond ohne nennenswerten Einflussbereich (Phobos): Anflug wie an die Station. */
+export function tinyBody(b: Body): boolean {
+  return b.hill < 50_000 && !!b.parent && b.parent !== 'sun';
+}
+
+/** Das Ziel als „Orbiter“, wenn man es wie die Station anfliegt (Station, winzige Monde). */
+export function orbiterFor(target: TargetId | null): Orbiter | null {
+  if (!target) return null;
+  if (target === 'station') return STATION_ORBITER;
+  const b = bodyById(target);
+  return tinyBody(b) ? moonOrbiter(b) : null;
+}
+
+/** Sicherheitsabstand zum Mittelpunkt, bei dem das Angleichen endet (bei der Station 0). */
+function standoff(orb: Orbiter): number {
+  return orb.size > 0 ? orb.size + 4_000 : 0;
+}
+
+/**
+ * Rendezvous: ein Schub in oder gegen die Flugrichtung auf eine Bahn, die die Bahn des Ziels
+ * kreuzt – und zwar so, dass das Ziel genau dann an der Kreuzung ist. Dafür darf die Rakete auch
+ * ein paar Umläufe auf der neuen Bahn warten (Phasenbahn); so klappt es auch aus einer Bahn knapp
+ * unter oder auf der Höhe des Ziels. Gerechnet wird mit Kepler-Bahnen und genau per
+ * Intervallhalbierung.
+ */
+export function planRendezvous(f: Flight, orb: Orbiter = STATION_ORBITER): Plan {
+  const title = `Rendezvous mit ${orb.dat}`;
   const ref = f.refBody();
-  if (ref !== EARTH) return fail(title, 'Die Station kreist um die Erde.');
-  const el = f.elements(EARTH);
-  if (el.e >= 1) return fail(title, 'Erst eine geschlossene Erdumlaufbahn fliegen.');
-  const [x0, y0, vx0, vy0] = stateAt(el, f.t);
-  const r0 = Math.hypot(x0, y0);
-  const r2 = STATION.radius;
-  const dvH = Math.sqrt(EARTH.mu * (2 / r0 - 2 / (r0 + r2))) - Math.hypot(vx0, vy0);
-  const best = findMeeting(f, el, dvH, 60 + 0.6 * Math.abs(dvH), 1);
+  if (ref !== orb.ref) return fail(title, `${cap(orb.nom)} kreist um ${forms(orb.ref).acc}.`);
+  const el = f.elements(ref);
+  if (el.e >= 1) return fail(title, `Erst eine geschlossene Bahn um ${forms(ref).acc} fliegen.`);
+  const best = findMeeting(f, el, orb, hohmannCenter(el, orb.radius), 1);
   if (!best)
     return fail(
       title,
-      'Von dieser Bahn aus findet der Computer kein Treffen – erst eine niedrige, runde Erdbahn fliegen.',
+      `Von dieser Bahn aus findet der Computer kein Treffen – erst eine niedrige, runde Bahn um ${forms(ref).acc} fliegen.`,
     );
   f.setNode(best.tb, best.dv, 0);
   const laps = Math.round((best.tc - best.tb) / period(el));
   return {
     ok: true,
     title,
-    text: `${fmt(Math.abs(best.dv), Math.abs(best.dv) < 10 ? 1 : 0)} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.tb - f.t)}. Treffen mit der Station in ${clockIn(best.tc - f.t)}${laps >= 2 ? ` (nach ${laps} Umläufen)` : ''} – dann „Geschwindigkeit angleichen“ (${fmt(best.rel)} m/s).`,
+    text: `${fmt(Math.abs(best.dv), Math.abs(best.dv) < 10 ? 1 : 0)} m/s ${best.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(best.tb - f.t)}. Treffen mit ${orb.dat} in ${clockIn(best.tc - f.t)}${laps >= 2 ? ` (nach ${laps} Umläufen)` : ''} – dann „Geschwindigkeit angleichen“ (${fmt(best.rel)} m/s).`,
+  };
+}
+
+const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * Startwert für den Schub zu einer Zündzeit: so viel in Flugrichtung, dass die neue Bahn die
+ * Zielbahn gerade berührt (Hohmann), mit großzügigem Suchbereich.
+ */
+function hohmannCenter(
+  el: ReturnType<typeof elements>,
+  r2: number,
+): (tb: number) => [number, number] {
+  return (tb) => {
+    const [x, y, vx, vy] = stateAt(el, tb);
+    const r = Math.hypot(x, y);
+    const dv = Math.sqrt(el.mu * (2 / r - 2 / (r + r2))) - Math.hypot(vx, vy);
+    return [dv, 60 + 0.6 * Math.abs(dv)];
   };
 }
 
@@ -649,26 +877,28 @@ interface Meeting {
 }
 
 /**
- * Sucht Zündzeit (innerhalb eines Umlaufs) und Schub in Flugrichtung (dvCenter ± span), nach dem
- * die Rakete die Station an einer Kreuzung ihrer Bahnen genau trifft – auch erst nach bis zu zwölf
- * Umläufen. Bewertet werden Schub, Tempo gegenüber der Station beim Treffen (mal `relWeight`) und
- * die Wartezeit.
+ * Sucht Zündzeit (innerhalb eines Umlaufs) und Schub in Flugrichtung (Bereich aus `center`),
+ * nach dem die Rakete das Ziel an einer Kreuzung ihrer Bahnen genau trifft – auch erst nach bis
+ * zu zwölf Umläufen. Bewertet werden Schub, Tempo gegenüber dem Ziel beim Treffen (mal
+ * `relWeight`) und die Wartezeit.
  */
 function findMeeting(
   f: Flight,
   el: ReturnType<typeof elements>,
-  dvCenter: number,
-  span: number,
+  orb: Orbiter,
+  center: (tb: number) => [number, number],
   relWeight: number,
+  { revs = 12, laps = 1 }: { revs?: number; laps?: number } = {},
 ): Meeting | null {
   const P = period(el);
-  const r2 = STATION.radius;
-  const low = EARTH.radius + EARTH.atmosphere + 5_000;
-  const REVS = 12;
+  const ref = orb.ref;
+  const r2 = orb.radius;
+  const low = ref.radius + ref.atmosphere + 5_000;
+  const REVS = revs;
   const STEPS = 80;
-  const TIMES = 48;
+  const TIMES = 48 * laps;
 
-  /** Bahn nach dem Schub und Winkelfehler zur Station an einer Kreuzung (Zweig b, Umlauf k). */
+  /** Bahn nach dem Schub und Winkelfehler zum Ziel an einer Kreuzung (Zweig b, Umlauf k). */
   const meet = (
     tb: number,
     dv: number,
@@ -678,13 +908,13 @@ function findMeeting(
     const [x, y, vx, vy] = stateAt(el, tb);
     const v = Math.hypot(vx, vy);
     const q = (v + dv) / v;
-    const el2 = elements(EARTH.mu, x, y, vx * q, vy * q, tb);
+    const el2 = elements(ref.mu, x, y, vx * q, vy * q, tb);
     if (el2.e >= 1 || el2.p / (1 + el2.e) < low) return null;
     const dt = radiusCrossings(el2, tb, r2, 3_000)[b];
     if (dt === undefined) return null;
     const tc = tb + dt + k * period(el2);
     const [sx, sy, svx, svy] = stateAt(el2, tc);
-    const [tx, ty, tvx, tvy] = stationState(tc);
+    const [tx, ty, tvx, tvy] = orb.state(tc);
     return {
       err: wrap(angleOf(tx, ty) - angleOf(sx, sy)),
       tc,
@@ -694,9 +924,10 @@ function findMeeting(
 
   let best: Meeting | null = null;
   const errs = new Array<number | null>(STEPS + 1);
-  const dvAt = (j: number): number => dvCenter - span + (2 * span * j) / STEPS;
   for (let i = 0; i < TIMES; i++) {
-    const tb = f.t + 60 + (i * P) / TIMES;
+    const tb = f.t + 60 + (i * P * laps) / TIMES;
+    const [dvCenter, span] = center(tb);
+    const dvAt = (j: number): number => dvCenter - span + (2 * span * j) / STEPS;
     for (let b = 0; b < 2; b++) {
       for (let k = 0; k < REVS; k++) {
         for (let j = 0; j <= STEPS; j++) errs[j] = meet(tb, dvAt(j), b, k)?.err ?? null;
@@ -704,7 +935,7 @@ function findMeeting(
           const e0 = errs[j];
           const e1 = errs[j + 1];
           if (e0 == null || e1 == null || e0 * e1 > 0 || Math.abs(e0 - e1) > 1) continue;
-          // Nullstelle einschachteln: dort trifft die Rakete die Station an der Kreuzung.
+          // Nullstelle einschachteln: dort trifft die Rakete das Ziel an der Kreuzung.
           let lo = dvAt(j);
           let hi = dvAt(j + 1);
           let elo = e0;
@@ -731,20 +962,22 @@ function findMeeting(
 }
 
 /**
- * Nächste Annäherung an die Station auf der Kepler-Bahn: die erste deutliche, nicht unbedingt
- * die allernächste (die kann viele Umläufe später kommen). Grob abtasten, dann fein suchen.
+ * Nächste Annäherung an das Ziel auf der Kepler-Bahn: die erste deutliche, nicht unbedingt die
+ * allernächste (die kann viele Umläufe später kommen). Grob abtasten, dann fein suchen.
  */
-function stationApproach(
+function approach(
   el: ReturnType<typeof elements>,
+  orb: Orbiter,
   t0: number,
   t1: number,
 ): { t: number; distance: number } | null {
   const dist = (t: number): number => {
     const [x, y] = stateAt(el, t);
-    const [sx, sy] = stationState(t);
+    const [sx, sy] = orb.state(t);
     return Math.hypot(x - sx, y - sy);
   };
-  const step = Math.min(period(el), TAU / STATION.rate) / 360;
+  const rate = Math.sqrt(orb.ref.mu / orb.radius ** 3);
+  const step = Math.min(period(el), TAU / rate) / 360;
   const found: { t: number; distance: number }[] = [];
   let a = dist(t0);
   let b = dist(t0 + step);
@@ -770,26 +1003,31 @@ function stationApproach(
   return found.find((q) => q.distance <= Math.max(5_000, 2 * closest)) ?? null;
 }
 
-/** Bei der nächsten Annäherung die Geschwindigkeit der Station übernehmen. */
+/**
+ * Bei der nächsten Annäherung die Geschwindigkeit des Ziels übernehmen. Bei einem Mond endet
+ * das Bremsen ein paar Kilometer davor (sonst stürzte die Rakete mit voller Wucht hinein).
+ */
 export function planMatch(f: Flight): Plan {
   const title = 'Geschwindigkeit angleichen';
-  if (f.target !== 'station') return fail(title, 'Erst die Station als Ziel wählen.');
-  if (f.status !== 'flying' || f.refBody() !== EARTH)
-    return fail(title, 'Erst in eine Erdumlaufbahn fliegen.');
-  const el = f.elements(EARTH);
-  if (el.e >= 1) return fail(title, 'Erst eine geschlossene Erdumlaufbahn fliegen.');
-  const c = stationApproach(el, f.t + 15, f.t + 12 * period(el));
+  const orb = orbiterFor(f.target);
+  if (!orb) return fail(title, 'Erst die Station (oder einen winzigen Mond) als Ziel wählen.');
+  if (f.status !== 'flying' || f.refBody() !== orb.ref)
+    return fail(title, `Erst in eine Bahn um ${forms(orb.ref).acc} fliegen.`);
+  const el = f.elements(orb.ref);
+  if (el.e >= 1)
+    return fail(title, `Erst eine geschlossene Bahn um ${forms(orb.ref).acc} fliegen.`);
+  const c = approach(el, orb, f.t + 15, f.t + 12 * period(el));
   if (!c) return fail(title, 'Keine Annäherung in Sicht – plane zuerst das Rendezvous.');
   if (c.distance > 2_000 && c.t - f.t > 0.75 * period(el)) {
     // Noch Zeit bis zum Treffen, aber es wird knapp daneben gehen: erst den Kurs verbessern
     // (das kostet jetzt ein paar Zehntel m/s, beim Treffen ein Vielfaches).
-    const fix = findMeeting(f, el, 0, 12, 0.1);
+    const fix = findMeeting(f, el, orb, () => [0, 12], 0.1);
     if (fix) {
       f.setNode(fix.tb, fix.dv, 0);
       return {
         ok: true,
-        title: 'Kurs zur Station korrigieren',
-        text: `Du kämst nur auf ${km(c.distance)} heran. Erst ${fmt(Math.abs(fix.dv), 2)} m/s ${fix.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(fix.tb - f.t)} – dann triffst du die Station in ${clockIn(fix.tc - f.t)}. Danach noch einmal „Geschwindigkeit angleichen“.`,
+        title: `Kurs zu${orb.size > 0 ? ` ${orb.dat}` : 'r Station'} korrigieren`,
+        text: `Du kämst nur auf ${km(c.distance)} heran. Erst ${fmt(Math.abs(fix.dv), 2)} m/s ${fix.dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(fix.tb - f.t)} – dann triffst du ${orb.nom} in ${clockIn(fix.tc - f.t)}. Danach noch einmal „Geschwindigkeit angleichen“.`,
       };
     }
   }
@@ -798,16 +1036,27 @@ export function planMatch(f: Flight): Plan {
       title,
       `Die nächste Annäherung ist ${km(c.distance)} weit weg – erst das Rendezvous planen.`,
     );
-  const [x, y, vx, vy] = stateAt(el, c.t);
-  const [, , svx, svy] = stationState(c.t);
+  let t = c.t;
+  const keep = standoff(orb);
+  if (keep > c.distance) {
+    // Früher bremsen: Die Rakete bleibt etwa `keep` vor dem Mond stehen.
+    const [, , vx, vy] = stateAt(el, c.t);
+    const [, , svx, svy] = orb.state(c.t);
+    const rel = Math.hypot(vx - svx, vy - svy);
+    if (rel > 0.5) t = Math.max(f.t + 20, c.t - Math.sqrt(keep ** 2 - c.distance ** 2) / rel);
+  }
+  const [x, y, vx, vy] = stateAt(el, t);
+  const [sx, sy, svx, svy] = orb.state(t);
   const dx = svx - vx;
   const dy = svy - vy;
-  const [px, py, qx, qy] = nodeFrame(EARTH, x, y, vx, vy, c.t);
-  f.setNode(c.t, dx * px + dy * py, dx * qx + dy * qy);
+  const [bx, by, bvx, bvy] = bodyState(orb.ref, t);
+  const [px, py, qx, qy] = nodeFrame(orb.ref, bx + x, by + y, bvx + vx, bvy + vy, t);
+  f.setNode(t, dx * px + dy * py, dx * qx + dy * qy);
+  const gap = Math.max(c.distance, Math.hypot(x - sx, y - sy) - orb.size);
   return {
     ok: true,
     title,
-    text: `${fmt(Math.hypot(dx, dy))} m/s in ${clockIn(c.t - f.t)}, dann ${km(c.distance)} vor der Station. Den Rest mit RCS (R).`,
+    text: `${fmt(Math.hypot(dx, dy))} m/s in ${clockIn(t - f.t)}, dann ${km(gap)} vor ${orb.dat}. Den Rest mit RCS (R)${orb.size > 0 ? ' – oder mit dem Lande-Autopiloten' : ''}.`,
   };
 }
 
@@ -829,9 +1078,13 @@ export function planReturn(f: Flight): Plan {
     const [x, y, vx, vy] = stateAt(el, t);
     return Math.sqrt(vinf * vinf + (2 * ref.mu) / Math.hypot(x, y)) - Math.hypot(vx, vy);
   };
+  // Direkt heim: Ein Weg, der erst weit hinausführt und Tage später zurückfällt, zählt als
+  // schlechter (auch wenn er am Ende genauso tief kommt).
+  const direct = 1.5 * Math.PI * Math.sqrt(((ra + rp) / 2) ** 3 / home.mu);
   const score = (p: Prediction): number => {
-    const pe = arrivalPeriapsis(p, home, Math.max(p.nodeIndex, 0));
-    return pe === null ? 1e12 : Math.abs(pe - want);
+    const a = arrival(p, home, Math.max(p.nodeIndex, 0));
+    if (!a) return 1e12;
+    return Math.abs(a.altitude - want) + Math.max(0, a.t - f.t - direct) * 10;
   };
   let start: Candidate = { t: f.t + 60, dv: dvAt(f.t + 60), score: Infinity };
   for (let k = 0; k < 24; k++) {

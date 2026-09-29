@@ -94,6 +94,7 @@ export async function runPlan(f: Flight, id: PlanId): Promise<Plan> {
       ok: false,
       title: res.plan.title,
       text: 'Die Bahn hat sich beim Rechnen verändert. Bitte noch einmal planen.',
+      retry: true,
     };
   if (res.node) f.node = res.node;
   else f.clearNode();

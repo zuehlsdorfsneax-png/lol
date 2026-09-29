@@ -4,6 +4,8 @@ import { FILE_EXPORT, downloadCanvas } from '../ui/download';
 import { Icon } from '../ui/Icon';
 import { RocketAudio } from './audio';
 import { LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
+import { MissionPilot, missionTitle, type MissionSpec } from './mission';
+import { runPlan } from './planClient';
 import type { Challenge, ChallengeResult, Memo } from './challenges';
 import { ComputerPanel } from './ComputerPanel';
 import { setPaint } from './draw';
@@ -337,7 +339,7 @@ function modeSats(sats: readonly Satellite[], sandbox: boolean): Satellite[] {
   return sats.filter((s) => !!s.sandbox === sandbox).map((s) => ({ ...s, el: { ...s.el } }));
 }
 
-type Pilot = 'orbit' | 'node' | 'land' | null;
+type Pilot = 'orbit' | 'node' | 'land' | 'mission' | null;
 
 interface Drag {
   id: number;
@@ -400,6 +402,7 @@ export function FlightScreen({
   const orbitPilot = useRef<OrbitPilot | null>(null);
   const executor = useRef<NodeExecutor | null>(null);
   const lander = useRef<LandingPilot | null>(null);
+  const mission = useRef<MissionPilot | null>(null);
   const audioRef = useRef<RocketAudio | null>(null);
   if (!audioRef.current) {
     // Einmal pro Flug anlegen, mit der gespeicherten Ton-Einstellung.
@@ -476,6 +479,7 @@ export function FlightScreen({
     orbitPilot.current = null;
     executor.current = null;
     lander.current = null;
+    mission.current = null;
   };
 
   const restart = (next?: Flight): void => {
@@ -684,6 +688,28 @@ export function FlightScreen({
       pilot.current = 'land';
       toast('Lande-Autopilot übernimmt. Jede Steuertaste gibt die Kontrolle zurück.');
     } else flight.current.throttle = 0;
+    refresh();
+  };
+
+  const startMission = (spec: MissionSpec | null): void => {
+    const fl = flight.current;
+    audio.current.unlock();
+    if (spec && noComputer()) return;
+    stopPilots();
+    fl.throttle = 0;
+    fl.translate = { x: 0, y: 0 };
+    if (spec) {
+      const m = new MissionPilot(spec, fl, (f2, id) => runPlan(f2, id));
+      if (m.steps.length === 0) toast('Da bist du schon.');
+      else {
+        mission.current = m;
+        pilot.current = 'mission';
+        setCountdown(null);
+        toast(
+          `Missions-Autopilot: ${missionTitle(spec)}. Jede Steuertaste gibt die Kontrolle zurück.`,
+        );
+      }
+    }
     refresh();
   };
 
@@ -1150,6 +1176,20 @@ export function FlightScreen({
             stopPilots();
             fl.throttle = 0;
           }
+        } else if (pilot.current === 'mission' && mission.current) {
+          const m = mission.current;
+          const step = m.index;
+          const st = m.update(fl);
+          if (st === 'done') {
+            toast(`Mission erfüllt: ${missionTitle(m.spec)}!`, 'goal');
+            audio.current.fanfare(3);
+            stopPilots();
+            fl.throttle = 0;
+          } else if (st === 'failed') {
+            toast(m.message, 'warn');
+            stopPilots();
+            fl.throttle = 0;
+          } else if (m.index !== step) predDirty.current = true;
         } else {
           const turn =
             (k.has('arrowright') || k.has('d') ? 1 : 0) -
@@ -1492,7 +1532,9 @@ export function FlightScreen({
         ? `Autopilot führt das Manöver aus (${executor.current?.phase === 'burn' ? 'brennt' : executor.current?.phase === 'wait' ? 'wartet auf den Zündzeitpunkt' : 'richtet aus'}).`
         : pilot.current === 'land'
           ? `Lande-Autopilot: ${{ aero: 'die Luft bremst.', chute: 'am Fallschirm.', brake: 'Bahngeschwindigkeit abbauen.', fall: 'freier Fall.', suicide: 'Bremsen!', done: 'gelandet.', failed: 'abgebrochen.' }[lander.current?.phase ?? 'brake']}`
-          : null;
+          : pilot.current === 'mission' && mission.current
+            ? `Missions-Autopilot (Schritt ${Math.min(mission.current.index + 1, mission.current.steps.length)}/${mission.current.steps.length}): ${mission.current.detail || mission.current.stepLabel}`
+            : null;
   // Ein laufender Flug, den ein Fehlklick nicht beenden soll.
   const inProgress = f.stats.liftoff !== null && f.status !== 'crashed' && result === null;
   const orbitPilotAvailable =
@@ -1881,8 +1923,10 @@ export function FlightScreen({
           executing={pilot.current === 'node'}
           landing={pilot.current === 'land'}
           allowed={!challenge || challenge.computer}
+          mission={pilot.current === 'mission' ? mission.current : null}
           onExecute={toggleExecute}
           onLand={toggleLanding}
+          onMission={startMission}
           onChanged={refresh}
           onClose={() => setComputer(false)}
         />

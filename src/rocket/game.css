@@ -2299,6 +2299,144 @@ html.game-open body {
   background: var(--g-blue);
 }
 
+/* Reiter „Manöver“ / „Mission“ */
+.cp-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgb(255 255 255 / 6%);
+}
+
+.cp-tabs button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--g-ink-2);
+  font: 600 0.8rem var(--font-ui);
+  cursor: pointer;
+}
+
+.cp-tabs button.on {
+  background: rgb(110 168 255 / 22%);
+  color: var(--g-ink);
+}
+
+.cp-mission {
+  display: grid;
+  gap: 9px;
+}
+
+.cp-mission > p {
+  margin: 0;
+}
+
+.cp-mission-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cp-mission-title span {
+  font-size: 0.74rem;
+  color: var(--g-ink-2);
+  white-space: nowrap;
+}
+
+.cp-field {
+  display: grid;
+  gap: 4px;
+  color: var(--g-ink-2);
+}
+
+.cp-field select {
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 1px solid var(--g-line-2);
+  background: rgb(255 255 255 / 6%);
+  color: var(--g-ink);
+  font: 600 0.86rem var(--font-ui);
+}
+
+.cp-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.cp-checks label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.cp-checks input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--g-accent);
+}
+
+.cp-steplist {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.cp-steplist li {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  padding: 3px 8px;
+  border-radius: 7px;
+  color: var(--g-ink-2);
+}
+
+.cp-steplist li span {
+  width: 1em;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.cp-steplist li.done {
+  color: var(--g-go);
+}
+
+.cp-steplist li.active {
+  background: rgb(110 168 255 / 14%);
+  color: var(--g-ink);
+  font-weight: 600;
+}
+
+.cp-steplist.preview li {
+  counter-increment: step;
+  padding-block: 1px;
+  font-size: 0.8rem;
+}
+
+.cp-steplist.preview li::before {
+  content: counter(step) '.';
+  min-width: 1.4em;
+  font-family: var(--font-mono);
+  color: var(--g-ink-2);
+}
+
+.cp-row.warn strong {
+  color: var(--g-bad);
+}
+
+.cp-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ------------------------------ Dialoge ------------------------------ */
 .rocket-overlay {
   position: absolute;

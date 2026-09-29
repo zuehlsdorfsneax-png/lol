@@ -162,11 +162,28 @@ export type ExecPhase = 'align' | 'wait' | 'burn' | 'done' | 'failed';
 export class NodeExecutor {
   phase: ExecPhase = 'align';
   message = '';
+  /** Beginn des Brennens (Flugzeit) und wie lange es dauern dürfte – als Sicherung. */
+  private burnStart: number | null = null;
+  private burnBudget = 0;
 
   update(f: Flight): ExecPhase {
     const node = f.node;
     if (!node) {
       f.throttle = 0;
+      return (this.phase = 'done');
+    }
+    if (node.frozen && this.burnStart === null) {
+      this.burnStart = f.t;
+      this.burnBudget = 3 * f.burnTime(Math.hypot(node.prograde, node.radial)) + 30;
+    }
+    if (
+      this.burnStart !== null &&
+      Number.isFinite(this.burnBudget) &&
+      f.t - this.burnStart > this.burnBudget
+    ) {
+      // Viel länger als geplant: Rest verwerfen (kann bei winzigen Schüben passieren).
+      f.throttle = 0;
+      f.clearNode();
       return (this.phase = 'done');
     }
     if (f.status !== 'flying') {
@@ -204,9 +221,16 @@ export class NodeExecutor {
     }
     // Zu Beginn erst ausrichten, am Ende sanft auslaufen lassen.
     f.throttle = err < 0.12 ? Math.max(0.005, Math.min(1, rem.mag / (accel * 1.2))) : 0;
-    // Lange Brennphasen im Zeitraffer (so weit die Physik es erlaubt).
+    // Lange Brennphasen im Zeitraffer (so weit die Physik es erlaubt) – aber nur, solange das
+    // Triebwerk wirklich läuft; beim Ausrichten läuft die Zeit normal.
     const seconds = rem.mag / Math.max(accel, 1e-6);
-    const want = seconds > 40 ? f.maxWarpIndex() : seconds > 12 ? Math.min(2, f.maxWarpIndex()) : 0;
+    const want = !f.thrusting
+      ? 0
+      : seconds > 40
+        ? f.maxWarpIndex()
+        : seconds > 12
+          ? Math.min(2, f.maxWarpIndex())
+          : 0;
     if (f.warpIndex !== want) f.setWarp(want);
     return (this.phase = 'burn');
   }

@@ -95,6 +95,13 @@ export interface ManeuverNode {
    */
   doneP: number;
   doneR: number;
+  /**
+   * Lange Brennphase (größer als etwa ein Vierzehntel des Umlaufs): feste Richtung im Raum statt
+   * mitlaufend, gezählt entlang dieser Richtung (`doneFixed`). Sonst dreht die Bahn beim
+   * minutenlangen Brennen weg und verfehlt etwa Jupiter um Millionen Kilometer.
+   */
+  fixed?: boolean;
+  doneFixed?: number;
   /** Brennen hat begonnen: Das Manöver lässt sich nicht mehr ändern. */
   frozen: boolean;
   /**
@@ -1564,13 +1571,47 @@ export class Flight {
     n.ref = d.body.id;
   }
 
+  /**
+   * Dauert das Brennen länger als etwa ein Vierzehntel des Umlaufs? Dann wird in fester Richtung
+   * gebrannt (und schon vorher so ausgerichtet).
+   */
+  longBurn(n: ManeuverNode): boolean {
+    const bt = this.burnTime(Math.hypot(n.dx, n.dy));
+    const o = this.orbit(bodyById(n.ref));
+    return o.bound && Number.isFinite(bt) && (bt / o.period) * 360 > 25;
+  }
+
   /** Noch zu brennendes Δv des Manövers, als Richtung im jetzigen Bezugssystem (Welt). */
   nodeRemaining(): { x: number; y: number; mag: number; prograde: number; radial: number } {
     const n = this.node;
     if (!n) return { x: 0, y: 0, mag: 0, prograde: 0, radial: 0 };
+    const b = bodyById(n.ref);
+    if (n.fixed || (!n.frozen && this.longBurn(n))) {
+      const total = Math.hypot(n.dx, n.dy) || 1;
+      const ux = n.dx / total;
+      const uy = n.dy / total;
+      let left = total - (n.doneFixed ?? 0);
+      if (n.frozen && n.energy !== null) {
+        // Bis zur geplanten Bahnenergie: Beim langen Brennen in fester Richtung gehen Schwerkraft
+        // und Richtung verloren – das gleicht längeres Brennen aus. ½|v + L·u|² = E_Ziel + μ/r.
+        const rel = this.relative(b);
+        const vu = rel.vx * ux + rel.vy * uy;
+        const e = (rel.vx * rel.vx + rel.vy * rel.vy) / 2 - b.mu / rel.r;
+        const w = vu * vu + 2 * (n.energy - e);
+        const exact = w >= 0 ? -vu + Math.sqrt(w) : NaN;
+        if (Number.isFinite(exact) && exact < total * 1.3 + 5) left = exact;
+      }
+      const [px, py, qx, qy] = nodeFrame(b, this.x, this.y, this.vx, this.vy, this.t);
+      return {
+        x: ux * left,
+        y: uy * left,
+        mag: Math.abs(left),
+        prograde: left * (ux * px + uy * py),
+        radial: left * (ux * qx + uy * qy),
+      };
+    }
     let p = n.prograde - n.doneP;
     const r = n.radial - n.doneR;
-    const b = bodyById(n.ref);
     if (n.frozen && n.energy !== null) {
       // Fehlendes Δv aus der Energie, genau (nicht linear genähert – bei großen Schüben wäre das
       // bis zu einem Viertel zu viel): ½(v + p)² = E_Ziel + μ/r.
@@ -1609,7 +1650,27 @@ export class Flight {
       n.frozen = true;
       // (refreshNode hat `at` gerade neu gesetzt.)
       const at = n.at as ManeuverNode['at'];
-      if (at && Math.abs(n.radial) < 0.25 * Math.abs(n.prograde)) {
+      // Lange Brennphase im Vergleich zum Umlauf: in fester Richtung brennen, bis die geplante
+      // Bahnenergie erreicht ist.
+      if (this.longBurn(n)) {
+        n.fixed = true;
+        n.doneFixed = 0;
+        if (at) {
+          const b = bodyById(n.ref);
+          const [x, y, vx, vy] = at;
+          const [bx, by, bvx, bvy] = bodyState(b, n.t);
+          const v2 = (vx + n.dx - bvx) ** 2 + (vy + n.dy - bvy) ** 2;
+          n.energy = v2 / 2 - b.mu / Math.hypot(x - bx, y - by);
+        }
+      }
+      // Nur bei großen Schüben: Bei kleinen Korrekturen schwankt die Bahnenergie (Zug der Planeten)
+      // stärker als der ganze Schub – der Autopilot käme nie zum Ende.
+      if (
+        at &&
+        !n.fixed &&
+        Math.abs(n.prograde) > 20 &&
+        Math.abs(n.radial) < 0.25 * Math.abs(n.prograde)
+      ) {
         const b = bodyById(n.ref);
         const [x, y, vx, vy] = at;
         const [bx, by, bvx, bvy] = bodyState(b, n.t);
@@ -1623,7 +1684,8 @@ export class Flight {
     const rr = left.radial;
     const rem = left.mag;
     const total = Math.hypot(n.prograde, n.radial);
-    const over = rp * n.prograde + rr * n.radial < 0;
+    // In fester Richtung: überzogen, wenn der Rest entgegen der Brennrichtung zeigt.
+    const over = n.fixed ? left.x * n.dx + left.y * n.dy < 0 : rp * n.prograde + rr * n.radial < 0;
     // Kleine Kurskorrekturen brauchen viel mehr Genauigkeit als große Brennphasen.
     const tolerance = Math.min(0.2, Math.max(0.004, total * 0.002));
     if (total < 0.004 || rem < tolerance || over) {
@@ -1814,6 +1876,10 @@ export class Flight {
         );
         n.doneP += (tx * px + ty * py) * dt;
         n.doneR += (tx * qx + ty * qy) * dt;
+        if (n.fixed) {
+          const total = Math.hypot(n.dx, n.dy) || 1;
+          n.doneFixed = (n.doneFixed ?? 0) + ((tx * n.dx + ty * n.dy) / total) * dt;
+        }
       }
     }
     if (burning) this.stats.burnSeconds += dt;
