@@ -818,7 +818,8 @@ export function flightView(
   const up0 = near.altitude < near.body.radius * 3 ? near.body : f.refBody();
   const c = f.state(up0);
   const up = Math.atan2(f.y - c.y, f.x - c.x);
-  const h = f.length;
+  // Mit offenem Schirm liegt die Bildmitte zwischen Rakete und Schirm.
+  const h = f.visualLength;
   return {
     width,
     height,
@@ -983,8 +984,9 @@ export function drawFlight(
     drawRocket(ctx, parts, {
       throttle: f.thrusting ? f.throttle : 0,
       air: air.rho,
-      chuteOpen: f.chute === 'open' ? f.chuteOpen : 0,
+      chuteOpen: f.chuteDeployed ? f.chuteOpen : 0,
       chuteArea: f.chuteArea,
+      chuteCollapse: f.chuteCollapse,
       brakes: f.airbrakes ? 1 : 0,
       time,
     });
@@ -999,12 +1001,64 @@ export function drawFlight(
     drawSiteArrow(ctx, f, v);
     // Weit herausgezoomt: Markierung, damit man die winzige Rakete wiederfindet.
     if (heightM * scale < 10) drawRocketMarker(ctx, v, f, heightM * scale);
+    drawGroundTag(ctx, f, v, heightM * scale);
   }
   const flash = opts.flash ?? 0;
   if (flash > 0.01) {
     ctx.fillStyle = `rgba(255,240,210,${flash * 0.65})`;
     ctx.fillRect(0, 0, W, H);
   }
+}
+
+/**
+ * Liegt der Boden unter dem Bildrand, zeigt ein kleines Schild unter der Rakete, wie weit er noch
+ * weg ist – beim Sinken und dicht über dem Boden (die Kamera zeigt die Rakete groß, der Boden
+ * taucht erst spät auf).
+ */
+function drawGroundTag(ctx: CanvasRenderingContext2D, f: Flight, v: View, rocketPx: number): void {
+  if (f.status !== 'flying') return;
+  const { body, altitude } = f.nearest();
+  if (!body.solid || altitude > 20_000) return;
+  const c = f.state(body);
+  const rx = f.x - c.x;
+  const ry = f.y - c.y;
+  const r = Math.hypot(rx, ry);
+  const sink = -(rx * (f.vx - c.vx) + ry * (f.vy - c.vy)) / r;
+  if (sink < 1 && altitude > 3_000) return;
+  const [gx, gy] = toScreen(v, c.x + (rx / r) * body.radius, c.y + (ry / r) * body.radius);
+  if (gx > -20 && gx < v.width + 20 && gy > -20 && gy < v.height - 60) return;
+  const [sx, sy] = toScreen(v, f.x, f.y);
+  const dx = gx - sx;
+  const dy = gy - sy;
+  const d = Math.hypot(dx, dy) || 1;
+  const off = Math.max(28, rocketPx * 0.15 + 26);
+  const x = sx + (dx / d) * off;
+  const y = sy + (dy / d) * off;
+  const text = `Boden ${altitude < 10_000 ? `${Math.round(altitude).toLocaleString('de-DE')} m` : `${(altitude / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`}`;
+  ctx.save();
+  ctx.font = '600 12px Jost, system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 26;
+  ctx.fillStyle = 'rgba(8,12,24,0.72)';
+  ctx.beginPath();
+  ctx.roundRect(x - w / 2, y - 11, w, 22, 11);
+  ctx.fill();
+  ctx.fillStyle = sink > 40 && altitude < 2_000 ? '#fca5a5' : '#e2e8f0';
+  const a = Math.atan2(dy, dx);
+  ctx.translate(x - w / 2 + 11, y);
+  ctx.rotate(a - Math.PI / 2);
+  ctx.beginPath();
+  ctx.moveTo(0, 5);
+  ctx.lineTo(-4, -3);
+  ctx.lineTo(4, -3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.font = '600 12px Jost, system-ui, sans-serif';
+  ctx.fillStyle = sink > 40 && altitude < 2_000 ? '#fca5a5' : '#e2e8f0';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x - w / 2 + 20, y + 0.5);
+  ctx.restore();
 }
 
 /** Ring und Pfeil um eine winzige Rakete (Spitze zeigt, wohin die Nase zeigt). */

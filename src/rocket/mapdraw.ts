@@ -30,6 +30,7 @@ import {
   bodyState,
   forms,
   stationState,
+  type Body,
 } from './world';
 
 export type MapFocus =
@@ -85,8 +86,17 @@ export function mapView(
   };
 }
 
-/** Passender Maßstab, damit die Bahn bzw. der gewählte Körper ins Bild passt. */
-export function fitMapScale(f: Flight, width: number, height: number, focus: MapFocus): number {
+/**
+ * Passender Maßstab, damit die Bahn bzw. der gewählte Körper ins Bild passt. Mit Vorhersage
+ * zählt die ganze gezeichnete Bahn samt geplantem Manöver und Begegnung.
+ */
+export function fitMapScale(
+  f: Flight,
+  width: number,
+  height: number,
+  focus: MapFocus,
+  pred: Prediction | null = null,
+): number {
   const half = 0.44 * Math.min(width, mapArea(width, height).h);
   const ref = f.refBody();
   const b = focus === 'ref' || focus === 'rocket' ? ref : bodyById(focus);
@@ -94,9 +104,15 @@ export function fitMapScale(f: Flight, width: number, height: number, focus: Map
   if (b === ref) {
     const o = f.orbit(ref);
     r = Math.max(o.r, ref.radius * 1.4);
-    if (o.bound && Number.isFinite(o.apoapsis)) r = Math.max(r, o.apoapsis + ref.radius);
-    if (!o.bound) r = Math.max(r * 2, Math.min(ref.hill, r * 20));
-    if (ref === SUN) r = Math.max(o.r * 1.3, MARS.distance * 1.1);
+    if (pred && pred.n > 1 && pred.ref === ref && f.status === 'flying') {
+      const [cx, cy] = bodyState(ref, f.t);
+      r = Math.max(r, predictionReach(pred, f.t, cx, cy) * 1.12);
+      if (ref === SUN) r = Math.max(r, o.r * 1.2);
+    } else {
+      if (o.bound && Number.isFinite(o.apoapsis)) r = Math.max(r, o.apoapsis + ref.radius);
+      if (!o.bound) r = Math.max(r * 2, Math.min(ref.hill, r * 20));
+      if (ref === SUN) r = Math.max(o.r * 1.3, MARS.distance * 1.1);
+    }
   } else if (b === SUN) r = MARS.distance * 1.15;
   else r = Math.min(b.hill, b.radius * 60) * 1.2;
   if (focus === 'earth' && ref === EARTH && f.goals.size > 3) r = Math.max(r, MOON.distance * 1.1);
@@ -334,27 +350,104 @@ function drawSiteMarker(ctx: CanvasRenderingContext2D, f: Flight, v: View): void
   label(ctx, site.name, sx + 12, sy - 12, '#fde68a', 11);
 }
 
-const relCache = new WeakMap<Prediction, { x: Float64Array; y: Float64Array }>();
+/** Ein Bahnabschnitt wird im Bild eines Körpers gezeichnet – jetzt oder zu einer festen Zeit. */
+interface PathFrame {
+  body: Body;
+  /** Zeitpunkt, zu dem der Körper gezeigt wird (null = jetzt). */
+  at: number | null;
+}
+
+interface PatchedPath {
+  x: Float64Array;
+  y: Float64Array;
+  frame: Uint8Array;
+  frames: PathFrame[];
+}
+
+const pathCache = new WeakMap<Prediction, PatchedPath>();
 
 /**
- * Bahnpunkte relativ zu dem Körper, in dessen Bild sie gezeichnet werden (Bezugskörper bzw. der
- * Körper der Begegnung), jeweils zur Zeit des Punkts. Pro Vorhersage nur einmal berechnet.
+ * Bahnpunkte in „Stücken“ wie in großen Raumfahrtspielen: jeder Punkt relativ zu dem Körper, in
+ * dessen Einflussbereich er liegt (Bezugskörper, dessen Mutterkörper … bis zur Sonne). Die
+ * Begegnung erscheint um den Zielkörper an der Stelle, wo er beim Eintritt stehen wird. So endet
+ * etwa der Heimflug vom Mond wirklich an der Erde (früher im Mondbild, weit neben der Erde).
+ * Pro Vorhersage nur einmal berechnet.
  */
-function relativePath(pred: Prediction): { x: Float64Array; y: Float64Array } {
-  const cached = relCache.get(pred);
+function patchedPath(pred: Prediction): PatchedPath {
+  const cached = pathCache.get(pred);
   if (cached) return cached;
   const enc = pred.encounter;
+  const chain: Body[] = [pred.ref];
+  for (let b = pred.ref; b.parent;) {
+    b = bodyById(b.parent);
+    chain.push(b);
+  }
+  const frames: PathFrame[] = chain.map((body) => ({ body, at: null }));
+  let encFrame = -1;
+  if (enc) {
+    encFrame = frames.length;
+    frames.push({ body: enc.body, at: pred.ts[enc.enter]! });
+  }
   const x = new Float64Array(pred.n);
   const y = new Float64Array(pred.n);
+  const frame = new Uint8Array(pred.n);
   for (let i = 0; i < pred.n; i++) {
-    const body = enc && i >= enc.enter && i <= enc.exit ? enc.body : pred.ref;
-    const [bx, by] = bodyState(body, pred.ts[i]!);
+    const t = pred.ts[i]!;
+    let k = chain.length - 1;
+    if (enc && i >= enc.enter && i <= enc.exit) k = encFrame;
+    else
+      for (let j = 0; j < chain.length; j++) {
+        const b = chain[j]!;
+        const [bx, by] = bodyState(b, t);
+        if (b === SUN || Math.hypot(pred.xs[i]! - bx, pred.ys[i]! - by) < b.hill) {
+          k = j;
+          break;
+        }
+      }
+    const [bx, by] = bodyState(frames[k]!.body, t);
     x[i] = pred.xs[i]! - bx;
     y[i] = pred.ys[i]! - by;
+    frame[i] = k;
   }
-  const out = { x, y };
-  relCache.set(pred, out);
+  const out = { x, y, frame, frames };
+  pathCache.set(pred, out);
   return out;
+}
+
+/** Weltposition, an der ein Bahnstück gezeichnet wird. */
+function frameOrigin(fr: PathFrame, t: number): [number, number] {
+  const [x, y] = bodyState(fr.body, fr.at ?? t);
+  return [x, y];
+}
+
+/**
+ * Wie weit (Weltmeter vom Punkt `cx, cy`) die gezeichnete Bahn reicht – für den automatischen
+ * Kartenmaßstab. Weit hinaus fliegende Bahnen zählen höchstens bis knapp über die Hill-Sphäre des
+ * Bezugskörpers.
+ */
+export function predictionReach(pred: Prediction, t: number, cx: number, cy: number): number {
+  const path = patchedPath(pred);
+  const origins = path.frames.map((fr) => frameOrigin(fr, t));
+  // Bei einem Mond darf die Bahn bis zum Planeten reichen (Heimflug), bei einem Planeten nur knapp
+  // über seine Hill-Sphäre hinaus (sonst wäre er beim Flug zum Nachbarplaneten nur ein Punkt).
+  const parent = pred.ref.parent ? bodyById(pred.ref.parent) : null;
+  const cap =
+    pred.ref === SUN ? Infinity : parent && parent !== SUN ? parent.hill : pred.ref.hill * 1.15;
+  // Nach einer Begegnung ist der Rest nur noch blass angedeutet – er zählt nicht mit.
+  const last = pred.encounter ? pred.encounter.exit : pred.n - 1;
+  let r = 0;
+  const step = Math.max(1, Math.floor(pred.n / 600));
+  for (let i = 0; i <= last; i += step) {
+    const o = origins[path.frame[i]!]!;
+    const d = Math.hypot(path.x[i]! + o[0] - cx, path.y[i]! + o[1] - cy);
+    r = Math.max(r, Math.min(d, cap));
+  }
+  const enc = pred.encounter;
+  if (enc) {
+    const [ex, ey] = bodyState(enc.body, pred.ts[enc.enter]!);
+    r = Math.max(r, Math.min(cap, Math.hypot(ex - cx, ey - cy) + enc.body.radius * 3));
+  }
+  return r;
 }
 
 /**
@@ -447,21 +540,27 @@ function drawPrediction(
   const t = f.t;
   const [rx0, ry0] = bodyState(pred.ref, t);
   const enc = pred.encounter;
-  const encPos = enc ? bodyState(enc.body, enc.t) : null;
+  const encPos = enc ? bodyState(enc.body, pred.ts[enc.enter]!) : null;
   // Die Lage relativ zu den Körpern ändert sich nur mit einer neuen Vorhersage: einmal rechnen,
   // danach pro Bild nur noch verschieben und skalieren.
-  const rel = relativePath(pred);
+  const path = patchedPath(pred);
+  const origins = path.frames.map((fr) => frameOrigin(fr, t));
   const xs = new Float64Array(pred.n);
   const ys = new Float64Array(pred.n);
   for (let i = 0; i < pred.n; i++) {
-    const inEnc = enc && encPos && i >= enc.enter && i <= enc.exit;
-    const ox = inEnc ? encPos[0] : rx0;
-    const oy = inEnc ? encPos[1] : ry0;
-    [xs[i], ys[i]] = toScreen(v, rel.x[i]! + ox, rel.y[i]! + oy);
+    const o = origins[path.frame[i]!]!;
+    [xs[i], ys[i]] = toScreen(v, path.x[i]! + o[0], path.y[i]! + o[1]);
   }
   hits.path = { xs, ys, ts: pred.ts, n: pred.n };
   const segment = (a: number, b: number, color: string, dash = false): void => {
     if (b <= a) return;
+    // Beim Wechsel des Bezugskörpers springt die Darstellung: dort keine Verbindungslinie.
+    for (let i = a + 1; i <= b; i++)
+      if (path.frame[i] !== path.frame[i - 1]) {
+        segment(a, i - 1, color, dash);
+        segment(i, b, color, dash);
+        return;
+      }
     // Nur der sichtbare Teil: Eine Bahn zum Mond reicht bei starkem Zoom Millionen Pixel über den
     // Rand hinaus – gestrichelt gezeichnet hat das früher fast eine Sekunde pro Bild gekostet.
     const runs = clippedRuns(xs, ys, a, b, v.width, v.height);
@@ -539,13 +638,16 @@ function drawPrediction(
   const timeAt = (i: number): string => (round ? ' · Kreisbahn' : when(i));
   if (pred.high >= 0 && apart(pred.high))
     mark(pred.high, `Ap ${km(alt(pred.high))}${timeAt(pred.high)}`, '#fcd34d');
-  if (pred.low >= 0 && apart(pred.low) && !round)
+  // Endet die Bahn in der Luft, beschriftet der Wiedereintritt den tiefsten Punkt.
+  const airEnd = (i: number): boolean => !!pred.reentry && i === pred.n - 1;
+  if (pred.low >= 0 && apart(pred.low) && !round && !airEnd(pred.low))
     mark(pred.low, `Pe ${km(alt(pred.low))}${when(pred.low)}`, '#fcd34d');
   if (planned && pred.nodeRef) {
     const nr = pred.nodeRef;
     if (pred.planHigh >= 0)
       mark(pred.planHigh, `neuer Ap ${km(alt(pred.planHigh, nr))}`, '#f9a8d4');
-    if (pred.planLow >= 0) mark(pred.planLow, `neuer Pe ${km(alt(pred.planLow, nr))}`, '#f9a8d4');
+    if (pred.planLow >= 0 && !airEnd(pred.planLow))
+      mark(pred.planLow, `neuer Pe ${km(alt(pred.planLow, nr))}`, '#f9a8d4');
   }
   if (pred.impact) {
     const i = pred.n - 1;
@@ -558,6 +660,22 @@ function drawPrediction(
     ctx.lineTo(xs[i]! - 6, ys[i]! + 6);
     ctx.stroke();
     label(ctx, `Aufschlag: ${pred.impact.name}`, xs[i]! + 10, ys[i]! + 10, '#fca5a5');
+  }
+  if (pred.reentry && !pred.impact) {
+    const i = pred.n - 1;
+    const b = pred.reentry;
+    ctx.strokeStyle = '#fb923c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(xs[i]!, ys[i]!, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    label(
+      ctx,
+      `Wiedereintritt · tiefster Punkt ${km(alt(i, b))} · in ${clockIn(pred.ts[i]! - t)}`,
+      xs[i]! + 10,
+      ys[i]! + 12,
+      '#fed7aa',
+    );
   }
   if (enc && encPos) {
     const [sx, sy] = toScreen(v, encPos[0], encPos[1]);
@@ -574,6 +692,32 @@ function drawPrediction(
       sy + 16,
       '#fed7aa',
     );
+  }
+  // Wo die Bahn den Einflussbereich eines Körpers verlässt, springt die Darstellung ins Bild des
+  // Mutterkörpers (wie in großen Raumfahrtspielen). Dort zeigt ein blasser Kreis, wo der Körper
+  // dann stehen wird, und eine gepunktete Linie verbindet die beiden Stücke.
+  for (let i = 1; i < pred.n; i++) {
+    const a = path.frame[i - 1]!;
+    const b = path.frame[i]!;
+    if (a === b) continue;
+    const from = path.frames[a]!;
+    ctx.setLineDash([2, 5]);
+    ctx.strokeStyle = 'rgba(200,210,230,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xs[i - 1]!, ys[i - 1]!);
+    ctx.lineTo(xs[i]!, ys[i]!);
+    ctx.stroke();
+    if (from.at === null && from.body.parent === path.frames[b]!.body.id) {
+      const [gx, gy] = bodyState(from.body, pred.ts[i]!);
+      const [sx, sy] = toScreen(v, gx, gy);
+      ctx.beginPath();
+      ctx.arc(sx, sy, Math.max(4, from.body.radius * v.scale), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      label(ctx, `${from.body.name} beim Verlassen`, sx + 8, sy + 14, 'rgba(210,220,240,0.8)', 11);
+    }
+    ctx.setLineDash([]);
   }
   if (pred.closest && f.target === 'station') {
     const i = pred.closest.index;
@@ -594,7 +738,13 @@ function drawPrediction(
       sy - 12,
       '#e9d5ff',
     );
-  } else if (pred.closest && f.target && f.target !== 'station' && !enc) {
+  } else if (
+    pred.closest &&
+    f.target &&
+    f.target !== 'station' &&
+    f.target !== pred.ref.id &&
+    !enc
+  ) {
     const i = pred.closest.index;
     mark(
       i,

@@ -52,12 +52,14 @@ import {
   VENUS,
   angularRate,
   bodyById,
+  bodyState,
   densityAt,
   forms,
   moonAngle,
   phaseLead,
   transferWindow,
   type Body,
+  type BodyId,
 } from './world';
 
 const TARGETS: readonly { id: TargetId; label: string }[] = [
@@ -164,10 +166,21 @@ function tipFor(f: Flight, pilot: string | null): string {
         : 'Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C) drücken. Der Hilfe-Pilot (T) fliegt bis in die Umlaufbahn.';
     return 'Sicher gelandet! In der Werft kannst du eine größere Rakete bauen.';
   }
-  if (f.chute === 'open')
-    return 'Am Fallschirm – gleich sanft aufsetzen. Mit P wirfst du den Schirm ab (dann fällt die Rakete wieder).';
-  if (f.chute === 'armed' && rel.altitude < Math.max(ref.atmosphere, 1))
-    return 'Fallschirm scharf: Er öffnet sich von selbst in der unteren Luft, sobald die Rakete langsamer als 300 m/s ist. P entschärft ihn wieder.';
+  if (f.chute === 'open' || f.chute === 'semi' || (f.chute === 'armed' && ref.atmosphere > 0)) {
+    // Mit welchem Tempo die Rakete am ganz offenen Schirm aufsetzt – und ob das reicht.
+    const vt = f.chuteLandingSpeed(ref);
+    const safe = f.safeLandingSpeed;
+    const touch = Number.isFinite(vt)
+      ? vt <= safe
+        ? ` Aufsetzen mit etwa ${fmt(vt, 1)} m/s – das hält die Rakete aus.`
+        : ` Aufsetzen mit etwa ${fmt(vt)} m/s – zu schnell (höchstens ${safe} m/s)! Kurz vor dem Boden mit dem Triebwerk bremsen, Stufen abwerfen oder einen größeren Schirm bauen.`
+      : '';
+    if (f.chute === 'open') return `Am Fallschirm.${touch} Mit P wirfst du den Schirm ab.`;
+    if (f.chute === 'semi')
+      return `Fallschirm halb offen – er bremst vor. Ganz auf geht er unter ${km(f.chuteFullAltitude(ref))} Höhe.${touch}`;
+    if (rel.altitude < ref.atmosphere * 1.5)
+      return `Fallschirm scharf: In der Luft öffnet er sich zuerst halb (unter 450 m/s), ganz dann unter ${km(f.chuteFullAltitude(ref))}.${touch} P entschärft ihn wieder.`;
+  }
   if (f.sas === 'point') return 'SAS hält die gezeigte Richtung. Eine Drehtaste schaltet es aus.';
   if (ref === SUN)
     return 'Du kreist um die Sonne! Bordcomputer: „Kurskorrektur“ legt den tiefsten Punkt am Ziel fest. Dann Zeitraffer hoch.';
@@ -193,6 +206,14 @@ function tipFor(f: Flight, pilot: string | null): string {
   }
   if (f.goals.has('moonland') || (f.goals.has('soi') && !o.bound))
     return 'Heimweg: Bordcomputer „Wiedereintritt“ (Pe 25 km), Stufe mit Triebwerk abwerfen, Fallschirm scharf (P), SAS retrograd.';
+  // Von weit draußen im Sturz zurück (etwa nach einem Mondvorbeiflug): kein Aufstiegstipp.
+  if (
+    rel.altitude > ref.atmosphere &&
+    o.bound &&
+    o.apoapsis > 20 * Math.max(ref.atmosphere, 10_000) &&
+    o.periapsis < ref.atmosphere
+  )
+    return 'Anflug zum Wiedereintritt: Bordcomputer „Wiedereintritt“ stellt den tiefsten Punkt auf 25 km. Dann Stufe mit Triebwerk abwerfen, Fallschirm scharf (P), SAS retrograd.';
   if (!(o.bound && o.periapsis > EARTH.atmosphere)) {
     const climb = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
     if (climb < -20 && !f.thrusting && rel.altitude < 40_000)
@@ -386,13 +407,27 @@ export function FlightScreen({
     audioRef.current.setMuted(readMuted());
   }
   const audio = audioRef as { current: RocketAudio };
-  /** Zoomfaktor des Spielers; der Grundmaßstab folgt automatisch der Flughöhe. */
+  /** Zoomfaktor des Spielers; der Grundmaßstab (camScale, Pixel je Meter) folgt der Rakete. */
   const zoom = useRef(1);
-  const mapCam = useRef<{ scale: number; focus: MapFocus; panX: number; panY: number }>({
+  const camScale = useRef(0);
+  /**
+   * Kartenkamera. `auto`: Maßstab und Mitte folgen der Bahn (bis der Spieler selbst zoomt oder
+   * schiebt); `ref`: Bezugskörper beim letzten Bild – wechselt er, gleitet die Karte hinüber.
+   */
+  const mapCam = useRef<{
+    scale: number;
+    focus: MapFocus;
+    panX: number;
+    panY: number;
+    auto: boolean;
+    ref: string;
+  }>({
     scale: 0,
     focus: 'ref',
     panX: 0,
     panY: 0,
+    auto: true,
+    ref: 'earth',
   });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const drag = useRef<Drag | null>(null);
@@ -449,6 +484,8 @@ export function FlightScreen({
     startT.current = flight.current.t;
     stopPilots();
     pred.current = null;
+    zoom.current = 1;
+    camScale.current = 0;
     memo.current = {};
     judged.current = false;
     setToasts([]);
@@ -516,9 +553,11 @@ export function FlightScreen({
       const fl = flight.current;
       mapCam.current = {
         focus: 'ref',
-        scale: fitMapScale(fl, size.width, size.height, 'ref'),
+        scale: fitMapScale(fl, size.width, size.height, 'ref', pred.current),
         panX: 0,
         panY: 0,
+        auto: true,
+        ref: fl.refBody().id,
       };
     }
     predDirty.current = true;
@@ -539,8 +578,9 @@ export function FlightScreen({
       cam.panX += ax / cam.scale - ax / next;
       cam.panY -= ay / cam.scale - ay / next;
       cam.scale = next;
+      cam.auto = false;
     } else {
-      zoom.current = Math.min(10_000, Math.max(0.001, zoom.current * factor));
+      zoom.current = Math.min(20, Math.max(1e-5, zoom.current * factor));
     }
   };
 
@@ -552,7 +592,9 @@ export function FlightScreen({
       scale:
         foc === 'rocket'
           ? Math.max(mapCam.current.scale, 2e-4)
-          : fitMapScale(flight.current, size.width, size.height, foc),
+          : fitMapScale(flight.current, size.width, size.height, foc, pred.current),
+      auto: foc !== 'rocket',
+      ref: flight.current.refBody().id,
     };
     setTick((t) => t + 1);
   };
@@ -898,6 +940,7 @@ export function FlightScreen({
         const cam = mapCam.current;
         cam.panX -= (e.clientX - old.x) / cam.scale;
         cam.panY += (e.clientY - old.y) / cam.scale;
+        if (e.clientX !== old.x || e.clientY !== old.y) cam.auto = false;
       } else if (ps.size === 1 && d?.kind === 'node') {
         // Manöver entlang der Bahn verschieben
         const i = nearestPath(d.x, d.y, 60);
@@ -969,7 +1012,8 @@ export function FlightScreen({
         ...cam,
         panX: 0,
         panY: 0,
-        scale: fitMapScale(fl, c.clientWidth, c.clientHeight, cam.focus),
+        scale: fitMapScale(fl, c.clientWidth, c.clientHeight, cam.focus, pred.current),
+        auto: cam.focus !== 'rocket',
       };
     };
     c.addEventListener('wheel', wheel, { passive: false });
@@ -1195,7 +1239,8 @@ export function FlightScreen({
             audio.current.explosion();
             audio.current.engine(0, 0);
           }
-          if (e.text === 'Fallschirm offen!') audio.current.chute();
+          if (e.text === 'Fallschirm offen!' || e.text.startsWith('Fallschirm halb offen'))
+            audio.current.chute();
           // Punkte nur für echte Flüge – nicht im Sandkasten, auch nicht nach dem Laden eines
           // Sandkasten-Spielstands.
           if (e.goal && career && !fl.sandbox) goalCallback.current(e.goal);
@@ -1249,8 +1294,29 @@ export function FlightScreen({
         const ctx = prepareCanvas(c, W, H);
         if (ctx) {
           if (mapOpen.current) {
-            if (mapCam.current.scale === 0)
-              mapCam.current.scale = fitMapScale(fl, W, H, mapCam.current.focus);
+            const cam = mapCam.current;
+            if (cam.scale === 0) cam.scale = fitMapScale(fl, W, H, cam.focus, pred.current);
+            const refNow = fl.refBody();
+            if (cam.ref !== refNow.id) {
+              // Neuer Bezugskörper: Das Bild bleibt erst stehen und gleitet dann hinüber.
+              if (cam.focus === 'ref') {
+                const [ox, oy] = bodyState(bodyById(cam.ref as BodyId), fl.t);
+                const [nx, ny] = bodyState(refNow, fl.t);
+                cam.panX += ox - nx;
+                cam.panY += oy - ny;
+              }
+              cam.ref = refNow.id;
+            }
+            if (cam.auto) {
+              // Maßstab folgt der Bahn: Wird sie beim Brennen größer, zoomt die Karte mit heraus.
+              const goal = fitMapScale(fl, W, H, cam.focus, pred.current);
+              const k = Math.min(1, dt * 2.5);
+              cam.scale = Math.exp(
+                Math.log(cam.scale) + (Math.log(goal) - Math.log(cam.scale)) * k,
+              );
+              cam.panX *= 1 - k;
+              cam.panY *= 1 - k;
+            }
             hits.current = drawMap(
               ctx,
               fl,
@@ -1270,23 +1336,45 @@ export function FlightScreen({
               },
             );
           } else {
-            // Automatischer Zoom: Mit der Höhe wird herausgezoomt, damit der Boden im Bild bleibt.
-            const altitude = Math.max(1, fl.nearest().altitude);
-            // Am Boden näher heran, damit die eigene Rakete gut zu sehen ist (etwa 16 % der
-            // Bildhöhe); schon nach wenigen hundert Metern gilt wieder der normale Zoom.
-            const close = Math.max(1, (0.16 * H) / Math.max(fl.length, 1) / 5);
-            const near =
-              (5 * (1 + (close - 1) * Math.exp(-altitude / 150))) /
-              Math.pow(1 + altitude / 300, 0.7);
-            let base = Math.min(near, (H * 0.3) / altitude);
+            // Kamera wie in Spaceflight Simulator: Die Rakete bleibt in echter Größe gut zu sehen
+            // (auf der Rampe etwa 30 %, im Flug etwa 20 % der Bildhöhe), der Boden fällt beim
+            // Steigen aus dem Bild. Im Sinkflug nahe am Boden zoomt die Kamera etwas heraus, damit
+            // der Boden rechtzeitig auftaucht. Selbst zoomen (Mausrad, +/−) verkleinert alles
+            // gleichmäßig – auch die Rakete.
+            const near = fl.nearest();
+            const altitude = Math.max(1, near.altitude);
+            const len = Math.max(fl.visualLength, 1);
+            const nr = fl.relative(near.body);
+            const sink = -(nr.rx * nr.vx + nr.ry * nr.vy) / nr.r;
+            const share =
+              fl.chuteDeployed || fl.chuteCollapse
+                ? 0.42
+                : fl.status === 'landed' || altitude < 30
+                  ? 0.3
+                  : 0.2;
+            let goal = (share * H) / len;
+            // … aber erst, wenn der Boden in knapp einer halben Minute erreicht ist (am Schirm spät).
+            if (
+              fl.status === 'flying' &&
+              near.body.solid &&
+              sink > 1 &&
+              altitude < Math.min(5_000, Math.max(300, sink * 25))
+            )
+              goal = Math.max(Math.min(goal, (0.36 * H) / altitude), (0.07 * H) / len);
             // Beim Anflug auf die Station so zoomen, dass beide ins Bild passen.
             const ti = fl.target === 'station' ? fl.targetInfo() : null;
             if (ti && ti.distance < 20_000)
-              base = Math.max(
-                base,
-                Math.min(6, (0.3 * Math.min(W, H)) / Math.max(ti.distance + 40, 60)),
+              goal = Math.max(
+                Math.min(goal, (0.3 * Math.min(W, H)) / Math.max(ti.distance + 40, 60)),
+                (0.02 * H) / len,
               );
-            const scale = Math.min(24, Math.max(1e-9, base * zoom.current));
+            // Weich nachführen (Stufentrennung, Landeanflug), beim ersten Bild sofort.
+            const cs = camScale.current;
+            camScale.current =
+              cs > 0
+                ? Math.exp(Math.log(cs) + (Math.log(goal) - Math.log(cs)) * Math.min(1, dt * 2.5))
+                : goal;
+            const scale = Math.min(80, Math.max(1e-9, camScale.current * zoom.current));
             // Wackeln: Explosion, Stufentrennung und Triebwerk am Boden
             let amp = calm ? 0 : fl.shake * fl.shake * 14;
             if (!calm && fl.thrusting && fl.nearest().altitude < 2_000 && fl.warp <= 2)
@@ -1298,8 +1386,8 @@ export function FlightScreen({
             drawFlight(ctx, fl, view, {
               time: now / 1000,
               flash: calm ? 0 : fl.flash,
-              // Selbst herauszoomen macht auch die Rakete kleiner.
-              minRocket: 34 * Math.min(1, zoom.current),
+              // Die Rakete wird immer in echter Größe gezeichnet (weit herausgezoomt mit Marke).
+              minRocket: 0,
             });
           }
         }
@@ -1535,6 +1623,17 @@ export function FlightScreen({
               ))}
             </select>
           )}
+          {map && !mapCam.current.auto && (
+            <button
+              type="button"
+              class="hbtn"
+              onClick={() => setFocus(mapCam.current.focus)}
+              title="Karte wieder automatisch einpassen (Doppelklick)"
+            >
+              <Icon name="target" />
+              <span class="hbtn-label">Einpassen</span>
+            </button>
+          )}
         </div>
         <div class="telemetry">
           <div class="tele-head">
@@ -1701,9 +1800,9 @@ export function FlightScreen({
               }}
             >
               <option value="">Kein Ziel</option>
-              {TARGETS.filter((t) => t.id !== ref.id).map((t) => (
+              {TARGETS.filter((t) => t.id !== ref.id || t.id === f.target).map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.label}
+                  {t.id === ref.id ? `${t.label} (erreicht)` : t.label}
                 </option>
               ))}
             </select>
@@ -1721,7 +1820,13 @@ export function FlightScreen({
         </div>
         {(ti || (site && !challenge)) && (
           <dl class="hud-card target-info">
-            {ti && (
+            {ti && f.target === ref.id && (
+              <>
+                <dt>Ziel erreicht</dt>
+                <dd>{f.status === 'landed' ? 'gelandet' : distance(rel.altitude)}</dd>
+              </>
+            )}
+            {ti && f.target !== ref.id && (
               <>
                 <dt>Abstand</dt>
                 <dd>{distance(ti.distance)}</dd>
@@ -1903,9 +2008,18 @@ export function FlightScreen({
                   Schirm scharf · aus <kbd>P</kbd>
                 </button>
               )}
-              {f.chute === 'open' && (
-                <button type="button" class="abtn" onClick={() => f.cutChute()}>
-                  Schirm abwerfen <kbd>P</kbd>
+              {(f.chute === 'open' || f.chute === 'semi') && (
+                <button
+                  type="button"
+                  class="abtn"
+                  onClick={() => f.cutChute()}
+                  title={
+                    f.chute === 'semi'
+                      ? 'Der Schirm ist halb offen (gerefft).'
+                      : 'Der Schirm ist ganz offen.'
+                  }
+                >
+                  {f.chute === 'semi' ? 'Schirm halb · abwerfen' : 'Schirm abwerfen'} <kbd>P</kbd>
                 </button>
               )}
               {f.satellitesOnBoard > 0 && f.status === 'flying' && (
@@ -2390,7 +2504,14 @@ function landingState(f: Flight): { impact: number; urgent: boolean; weak: boole
   const gLocal = near.body.mu / nearRel.r ** 2;
   const brake = f.engine().thrust / f.mass - gLocal;
   const stopping = brake > 0 ? (descent * descent) / (2 * brake) : Infinity;
-  if (!near.body.solid || descent <= 4 || near.altitude > 30_000 || f.chute === 'open') return null;
+  if (!near.body.solid || descent <= 4 || near.altitude > 30_000) return null;
+  // Am Schirm (oder mit scharfem Schirm in der Luft) nur warnen, wenn er nicht genug bremst.
+  const chuteSafe = f.chuteLandingSpeed(near.body) <= f.safeLandingSpeed;
+  if (
+    chuteSafe &&
+    (f.chuteDeployed || (f.chute === 'armed' && near.altitude < near.body.atmosphere))
+  )
+    return null;
   return {
     // Fallzeit mit Schwerkraft: h = v·t + g·t²/2.
     impact: (-descent + Math.sqrt(descent * descent + 2 * gLocal * near.altitude)) / gLocal,

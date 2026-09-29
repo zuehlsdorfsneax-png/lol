@@ -1,4 +1,4 @@
-import { part, segments, type FlameKind, type PartDef } from './parts';
+import { CHUTE_SEMI, part, segments, type FlameKind, type PartDef } from './parts';
 
 // ------------------------------------------------------------------ Lackierungen
 
@@ -553,6 +553,8 @@ export interface RocketLook {
   brakes?: number;
   /** Bremsfläche der Fallschirme (1 = normaler Schirm). */
   chuteArea?: number;
+  /** Nach der Landung: zusammensackender Schirm (Öffnung davor, Fläche, Sekunden seitdem). */
+  chuteCollapse?: { open: number; area: number; age: number } | null;
 }
 
 /** Zeichnet eine Rakete (Teile von oben nach unten); Ursprung = Unterkante, y nach oben. */
@@ -607,7 +609,9 @@ export function drawRocket(
     y += def.height;
   }
 
-  if (look && look.chuteOpen > 0) drawChute(ctx, top, look.chuteOpen, look.chuteArea ?? 1);
+  if (look && look.chuteOpen > 0)
+    drawChute(ctx, top, look.chuteOpen, look.chuteArea ?? 1, look.time);
+  if (look?.chuteCollapse) drawChuteCollapse(ctx, top, look.chuteCollapse);
   brakeOpen = 0;
 }
 
@@ -678,27 +682,98 @@ function drawFlame(
   }
 }
 
-function drawChute(ctx: CanvasRenderingContext2D, top: number, open: number, area = 1): void {
+/**
+ * Fallschirm über der Spitze. Halb offen (gerefft) ist er schmal und hoch, ganz offen eine breite
+ * Kuppel mit Streifen und Scheitelöffnung; er pendelt leicht im Fahrtwind.
+ */
+function drawChute(
+  ctx: CanvasRenderingContext2D,
+  top: number,
+  open: number,
+  area = 1,
+  time = 0,
+): void {
   // Größere Schirme sind breiter (Fläche wächst mit dem Quadrat).
   const k = Math.sqrt(Math.max(1, area));
-  const w = (3 + 15 * open) * k;
-  const hgt = (2 + 5 * open) * k;
-  const y = top + (6 + 12 * open) * Math.sqrt(k);
-  ctx.strokeStyle = 'rgba(240,240,240,0.8)';
-  ctx.lineWidth = 0.08;
-  for (const x of [-w / 2, -w / 4, 0, w / 4, w / 2]) {
+  const full = Math.min(1, Math.max(0, (open - CHUTE_SEMI) / (1 - CHUTE_SEMI)));
+  const w = (2.2 + (4.5 * Math.min(open, CHUTE_SEMI)) / CHUTE_SEMI + 11.5 * full) * k;
+  const hgt = (3.6 + 1.4 * full) * k;
+  const lines = (10 + 8 * full) * Math.sqrt(k);
+  const sway = Math.sin(time * 1.3) * 0.05 * (0.4 + full);
+  ctx.save();
+  ctx.translate(0, top);
+  ctx.rotate(sway);
+  const y = lines;
+  // Fangleinen
+  ctx.strokeStyle = 'rgba(235,235,235,0.85)';
+  ctx.lineWidth = 0.07;
+  const n = full > 0.5 ? 6 : 4;
+  for (let i = 0; i <= n; i++) {
+    const x = -w / 2 + (w * i) / n;
     ctx.beginPath();
-    ctx.moveTo(0, top);
-    ctx.lineTo(x, y);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(x * 0.96, y);
     ctx.stroke();
   }
+  // Kappe: Kuppel mit Streifen (orange/weiß)
   ctx.beginPath();
-  ctx.ellipse(0, y, w / 2, hgt, 0, 0, Math.PI);
+  ctx.moveTo(-w / 2, y);
+  ctx.bezierCurveTo(-w / 2, y + hgt * 1.25, w / 2, y + hgt * 1.25, w / 2, y);
+  ctx.quadraticCurveTo(0, y + hgt * 0.18, -w / 2, y);
+  ctx.closePath();
   ctx.fillStyle = '#f28c28';
   ctx.fill();
   ctx.save();
   ctx.clip();
-  ctx.fillStyle = '#ffffff';
-  for (let k = -2; k <= 2; k += 2) ctx.fillRect((k * w) / 10 - w / 20, y, w / 10, hgt);
+  ctx.fillStyle = '#fff4e6';
+  const gores = full > 0.5 ? 8 : 4;
+  for (let i = 0; i < gores; i += 2) {
+    const x0 = -w / 2 + (w * i) / gores;
+    ctx.fillRect(x0, y - 1, w / gores, hgt * 1.6);
+  }
+  // Scheitelöffnung
+  ctx.fillStyle = 'rgba(20,24,36,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(0, y + hgt * 0.93, w * 0.06, hgt * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(120,60,20,0.5)';
+  ctx.lineWidth = 0.06;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Nach der Landung: Der Schirm verliert die Luft, sinkt zur Seite und verschwindet. */
+function drawChuteCollapse(
+  ctx: CanvasRenderingContext2D,
+  top: number,
+  c: { open: number; area: number; age: number },
+): void {
+  const fade = Math.max(0, 1 - Math.max(0, c.age - 0.8) / 1.4);
+  if (fade <= 0) return;
+  const k = Math.sqrt(Math.max(1, c.area));
+  const fall = Math.min(1, c.age / 1.1);
+  const ease = fall * fall * (3 - 2 * fall);
+  const lines = (10 + 8 * Math.min(1, c.open)) * Math.sqrt(k);
+  // Die Kappe fällt in sich zusammen und kippt zur Seite, bis sie flach neben der Rakete liegt.
+  const w = (4 + 14 * Math.min(1, c.open)) * k * (1 - 0.45 * ease);
+  const h = 4.5 * k * (1 - 0.9 * ease);
+  const tilt = -1.25 * ease;
+  ctx.save();
+  ctx.globalAlpha *= fade;
+  ctx.translate(0, top);
+  ctx.rotate(tilt);
+  ctx.strokeStyle = 'rgba(235,235,235,0.85)';
+  ctx.lineWidth = 0.07;
+  ctx.beginPath();
+  for (const x of [-w / 2, 0, w / 2]) {
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(x * 0.3, lines * 0.5 * (1 - 0.6 * ease), x, lines);
+  }
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(0, lines, w / 2, Math.max(0.3, h), 0, 0, Math.PI);
+  ctx.fillStyle = '#f28c28';
+  ctx.fill();
   ctx.restore();
 }

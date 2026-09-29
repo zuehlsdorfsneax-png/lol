@@ -259,7 +259,7 @@ export class LandingPilot {
       const o = f.orbit(body);
       // Dichte Luft: Sie bremst die Rakete am Boden unter das Tempo, bei dem sich der Fallschirm
       // öffnet (oder ganz ohne Schirm auf ein Tempo, das das Triebwerk leicht abfängt).
-      const chute = f.chute === 'armed' || f.chute === 'open';
+      const chute = f.chute === 'armed' || f.chuteDeployed;
       // Mit etwas Spielraum, damit der Pilot beim Sinken (g wächst) nicht zwischen Gleiten und
       // Bremsen hin- und herspringt.
       const limit =

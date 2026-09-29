@@ -9,7 +9,7 @@ import {
   timeToRadius,
   type Elements,
 } from './kepler';
-import { part, segments, type Design, type PartDef } from './parts';
+import { CHUTE_SEMI, chuteExtent, part, segments, type Design, type PartDef } from './parts';
 import {
   BODIES,
   EARTH,
@@ -56,7 +56,11 @@ export const WARPS = [
 const WARP_LIMITED = 4;
 
 export type FlightStatus = 'landed' | 'flying' | 'crashed' | 'docked';
-export type ChuteState = 'none' | 'stowed' | 'armed' | 'open';
+/**
+ * Fallschirm: verpackt → scharf → halb offen (gerefft, bremst vor) → ganz offen. „none“: keiner
+ * (mehr) an Bord.
+ */
+export type ChuteState = 'none' | 'stowed' | 'armed' | 'semi' | 'open';
 export type TargetId = 'station' | BodyId;
 
 /**
@@ -242,6 +246,11 @@ export interface Prediction {
   ref: Body;
   /** Endet die Bahn auf einer Oberfläche? */
   impact: Body | null;
+  /**
+   * Endet die Bahn am tiefsten Punkt in der Luft eines Körpers? Weiter rechnet die Vorhersage
+   * nicht – sie kennt keinen Luftwiderstand, danach bremst die Luft die Rakete ab.
+   */
+  reentry: Body | null;
   /** Erste Begegnung mit einem anderen Körper. */
   encounter: Encounter | null;
   /** Nächste Annäherung an das Ziel (Station: Abstand, Körper: Höhe über dem Boden). */
@@ -264,8 +273,12 @@ export interface Prediction {
 const TURN_RATE = 1.1;
 const TURN_ACCEL = 3.5;
 const ROCKET_CDA = 4;
-const CHUTE_CDA = 900;
+const CHUTE_CDA = 1_800;
+/** Ganz öffnet sich der Schirm erst unter diesem Tempo (m/s) … */
 const CHUTE_MAX_SPEED = 300;
+/** … halb (gerefft) schon unter diesem. */
+const CHUTE_SEMI_SPEED = 450;
+
 const LAND_SPEED = 8;
 const LAND_SPEED_LEGS = 14;
 const LAND_TILT = 0.4;
@@ -289,6 +302,8 @@ const HEAT_COOLING = 0.08;
 const SHIELD_FACTOR = 0.25;
 const DOCK_SPEED = 2;
 const YEAR = 2 * Math.PI * Math.sqrt(EARTH.distance ** 3 / SUN.mu);
+/** Körper mit Lufthülle (für das Ende der Vorhersage beim Wiedereintritt). */
+const AIR_BODIES = BODIES.filter((b) => b.atmosphere > 0);
 /** Höchstens so viele Satelliten bleiben gespeichert. */
 export const MAX_SATELLITES = 24;
 
@@ -502,6 +517,8 @@ export class Flight {
   landedOn: Body | null = EARTH;
   chute: ChuteState;
   chuteOpen = 0;
+  /** Nach der Landung sackt der Schirm sichtbar zusammen (nur Anzeige). */
+  chuteCollapse: { open: number; area: number; age: number } | null = null;
   warpIndex = 0;
   readonly goals = new Set<GoalId>();
   readonly events: FlightEvent[] = [];
@@ -893,20 +910,53 @@ export class Flight {
       (o.bound && o.apoapsis + ref.radius < 0.1 * ref.hill)
     )
       return out;
-    const alt = (i: number): number => {
+    // Die Bahn bis zum geplanten Manöver (oder ganz) entlanggehen: erster tiefster und erster
+    // höchster Punkt. Liegt das Manöver genau am tiefsten Punkt, zählt der Punkt am Manöver.
+    const end = p.nodeIndex >= 0 ? p.preEnd : p.n - 1;
+    if (end < 1) return out;
+    let low = -1;
+    let high = -1;
+    let lowD = Infinity;
+    let highD = -Infinity;
+    let prev = NaN;
+    let falling = false;
+    let rising = false;
+    let lowDone = false;
+    let highDone = false;
+    for (let i = 1; i <= end && !(lowDone && highDone); i++) {
       const [bx, by] = bodyState(ref, p.ts[i]!);
-      return Math.hypot(p.xs[i]! - bx, p.ys[i]! - by) - ref.radius;
-    };
-    if (p.low >= 0 && p.ts[p.low]! > this.t) {
-      out.periapsis = alt(p.low);
-      out.tPe = p.ts[p.low]! - this.t;
-    } else if (p.impact === ref) {
+      const d = Math.hypot(p.xs[i]! - bx, p.ys[i]! - by);
+      if (d > ref.hill) break;
+      if (!Number.isNaN(prev)) {
+        if (d < prev) falling = true;
+        if (d > prev) rising = true;
+      }
+      if (!lowDone && falling) {
+        if (d < lowD) {
+          lowD = d;
+          low = i;
+        } else if (d > lowD * 1.0005) lowDone = true;
+      }
+      if (!highDone && rising) {
+        if (d > highD) {
+          highD = d;
+          high = i;
+        } else if (d < highD * 0.9995) highDone = true;
+      }
+      prev = d;
+    }
+    const atNode = end === p.preEnd && p.nodeIndex >= 0;
+    const inAir = p.reentry === ref && end === p.n - 1;
+    if (low > 0 && (lowDone || ((atNode || inAir) && low === end))) {
+      out.periapsis = lowD - ref.radius;
+      out.tPe = p.ts[low]! - this.t;
+    } else if (p.impact === ref && p.nodeIndex < 0) {
       out.periapsis = Math.min(out.periapsis, -1);
       out.tPe = Infinity;
     }
-    if (o.bound && p.high >= 0 && p.ts[p.high]! > this.t) {
-      out.apoapsis = alt(p.high);
-      out.tAp = p.ts[p.high]! - this.t;
+    if (o.bound && high > 0 && (highDone || (atNode && high === end))) {
+      out.apoapsis = highD - ref.radius;
+      out.tAp = p.ts[high]! - this.t;
     }
     return out;
   }
@@ -1276,9 +1326,43 @@ export class Flight {
       this.chute = 'armed';
       this.emit(
         'info',
-        'Fallschirm scharf – er öffnet sich in der unteren Atmosphäre, sobald die Rakete langsamer als 300 m/s ist.',
+        `Fallschirm scharf – er öffnet sich in der Luft erst halb (unter ${CHUTE_SEMI_SPEED} m/s), ganz dann tief unten (unter ${CHUTE_MAX_SPEED} m/s).`,
       );
     }
+  }
+
+  /** Höhe über dem Boden, unter der sich ein halb offener Schirm ganz öffnet. */
+  chuteFullAltitude(body: Body): number {
+    return Math.max(1_200, 0.03 * body.atmosphere);
+  }
+
+  /** Mit diesem Tempo (m/s) übersteht die Rakete das Aufsetzen (Landebeine federn mehr ab). */
+  get safeLandingSpeed(): number {
+    return this.hasLegs ? LAND_SPEED_LEGS : LAND_SPEED;
+  }
+
+  /** Länge für Kamera und Bildmitte: Rakete plus offener Schirm darüber. */
+  get visualLength(): number {
+    const c = this.chuteCollapse;
+    return (
+      this.length +
+      (this.chuteDeployed ? chuteExtent(this.chuteOpen, this.chuteArea) : 0) +
+      (c ? chuteExtent(c.open, c.area) * Math.max(0, 1 - c.age / 2.2) : 0)
+    );
+  }
+
+  /** Zieht gerade ein Fallschirm (halb oder ganz offen)? */
+  get chuteDeployed(): boolean {
+    return this.chute === 'semi' || this.chute === 'open';
+  }
+
+  /**
+   * Geschätztes Tempo beim Aufsetzen am ganz offenen Schirm (Endgeschwindigkeit am Boden des
+   * Körpers, auf dem die Rakete landen würde). ∞ ohne Luft oder ohne Schirm.
+   */
+  chuteLandingSpeed(body: Body = this.refBody()): number {
+    if (this.chute === 'none' || body.density0 <= 0) return Infinity;
+    return this.terminalSpeed(body.mu / body.radius ** 2, body.density0, true);
   }
 
   /** Taste P: verpackt → scharf → wieder entschärft; ein offener Schirm wird abgeworfen. */
@@ -1287,13 +1371,13 @@ export class Flight {
     else if (this.chute === 'armed') {
       this.chute = 'stowed';
       this.emit('info', 'Fallschirm entschärft – er bleibt verpackt.');
-    } else if (this.chute === 'open') this.cutChute();
+    } else if (this.chuteDeployed) this.cutChute();
   }
 
   /** Offenen (oder scharfen) Fallschirm abwerfen – er ist danach weg. */
   cutChute(): void {
-    if (this.chute !== 'open' && this.chute !== 'armed') return;
-    const wasOpen = this.chute === 'open';
+    if (!this.chuteDeployed && this.chute !== 'armed') return;
+    const wasOpen = this.chuteDeployed;
     const chuteId = this.allParts().find((id) => part(id).kind === 'chute') ?? 'fallschirm';
     this.dropChutes();
     if (wasOpen) {
@@ -1581,6 +1665,10 @@ export class Flight {
     }
     this.updateNode();
     this.updateDebris(realDt * this.warp);
+    if (this.chuteCollapse) {
+      this.chuteCollapse.age += realDt;
+      if (this.chuteCollapse.age > 4 || this.status !== 'landed') this.chuteCollapse = null;
+    }
     this.updateParticles(realDt);
     this.shake = Math.max(0, this.shake - realDt * 1.4);
     this.flash = Math.max(0, this.flash - realDt * 1.8);
@@ -1624,6 +1712,17 @@ export class Flight {
           this.angle = dir;
           this.angVel = 0;
         }
+      }
+    }
+    // Ein offener Schirm zieht die Spitze gegen den Fahrtwind – die Rakete hängt darunter.
+    if (flying && this.chuteDeployed && rotates) {
+      const air = this.air();
+      const bv = this.state(air.body);
+      const wx = this.vx - bv.vx;
+      const wy = this.vy - bv.vy;
+      if (air.rho > 0 && Math.hypot(wx, wy) > 3) {
+        const err = wrap(this.angle - Math.atan2(-wy, -wx));
+        cmd = clamp(err * (1 + 3 * this.chuteOpen) - this.angVel * 0.9, -1, 1);
       }
     }
     if (this.turn !== 0 && this.sas === 'point') this.sas = 'off';
@@ -1727,19 +1826,33 @@ export class Flight {
     const rv = Math.hypot(rvx, rvy);
     this.stats.maxSpeed = Math.max(this.stats.maxSpeed, rv);
     this.stats.distance += rv * dt;
+    // Fallschirm in zwei Stufen: In der Luft öffnet er sich zuerst halb (gerefft) und bremst vor;
+    // ganz geht er tief unten auf – oder sobald die Rakete langsam genug ist.
+    if (this.chute === 'armed' && air.rho > 0.002 && rv < CHUTE_SEMI_SPEED) {
+      this.chute = 'semi';
+      this.shake = Math.max(this.shake, 0.15);
+      this.emit('info', 'Fallschirm halb offen – er bremst vor.');
+    }
     if (
-      this.chute === 'armed' &&
+      this.chute === 'semi' &&
       air.rho > 0.002 &&
-      air.altitude < air.body.atmosphere * 0.3 &&
-      rv < CHUTE_MAX_SPEED
+      rv < CHUTE_MAX_SPEED &&
+      air.altitude < this.chuteFullAltitude(air.body)
     ) {
       this.chute = 'open';
       this.shake = Math.max(this.shake, 0.25);
       this.emit('info', 'Fallschirm offen!');
     }
-    if (this.chute === 'open') {
-      this.chuteOpen = Math.min(1, this.chuteOpen + dt / 2.5);
-      if (air.rho > 0 && rv > 2 * CHUTE_MAX_SPEED) {
+    if (this.chuteDeployed) {
+      // Halb öffnet er sich in zwei Sekunden, ganz in drei – so ruckt es nicht zu hart.
+      const goal = this.chute === 'open' ? 1 : CHUTE_SEMI;
+      const rate = this.chute === 'open' ? 1 / 3 : CHUTE_SEMI / 2;
+      this.chuteOpen =
+        this.chuteOpen < goal
+          ? Math.min(goal, this.chuteOpen + rate * dt)
+          : Math.max(goal, this.chuteOpen - rate * dt);
+      const limit = this.chute === 'open' ? 2 * CHUTE_MAX_SPEED : 1.6 * CHUTE_SEMI_SPEED;
+      if (air.rho > 0 && rv > limit) {
         this.dropChutes();
         this.emit('warn', 'Der Fallschirm ist bei zu hohem Tempo gerissen!');
       }
@@ -1776,7 +1889,7 @@ export class Flight {
         ? ROCKET_CDA * (this.streamlined ? 0.5 : 1) +
           (this.airbrakes ? AIRBRAKE_CDA * this.count('airbrake') : 0)
         : 0;
-      const cda = body + (this.chute === 'open' ? CHUTE_CDA * this.chuteArea * this.chuteOpen : 0);
+      const cda = body + (this.chuteDeployed ? CHUTE_CDA * this.chuteArea * this.chuteOpen : 0);
       const k = (0.5 * air.rho * cda) / mass;
       const f = 1 / (1 + k * rv * dt);
       this.vx = bodyV.vx + rvx * f;
@@ -1885,8 +1998,11 @@ export class Flight {
       this.stats.landings++;
       this.stats.lastLanding = { body: body.id, speed, t: this.t };
       this.puff(this.x, this.y, 20, 'dust');
-      // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht.
-      if (this.chute === 'open') this.dropChutes();
+      // Fallschirme sind Einmalteile: nach der Landung ist er verbraucht und sackt zusammen.
+      if (this.chuteDeployed) {
+        this.chuteCollapse = { open: Math.max(this.chuteOpen, 0.3), area: this.chuteArea, age: 0 };
+        this.dropChutes();
+      }
       // „Butterweich“ zählt nur nach einem echten Flug, nicht nach einem Hüpfer auf der Rampe.
       if (speed < 2 && this.hopHeight > 100) this.goal('soft');
       if (this.maxHeat > 0.7) this.goal('fire');
@@ -2283,6 +2399,7 @@ export class Flight {
       n,
       ref,
       impact: null,
+      reentry: null,
       encounter: null,
       closest: null,
       low: -1,
@@ -2336,6 +2453,7 @@ export class Flight {
       inside.set(b, Math.hypot(s.x - bx, s.y - by) < b.hill);
     }
     let minTarget = Infinity;
+    const sinking = AIR_BODIES.map(() => false);
     const target = this.target;
     const targetBody = target && target !== 'station' ? bodyById(target) : null;
 
@@ -2371,6 +2489,20 @@ export class Flight {
         if (Math.hypot(s.x - bx, s.y - by) < b.radius) result.impact = b;
       }
       if (result.impact) break;
+      // In der Luft nur bis zum tiefsten Punkt: Danach würde die Bahn ohne Luftwiderstand wieder
+      // hinausführen (und beim nächsten Umlauf scheinbar aufschlagen).
+      for (let k = 0; k < AIR_BODIES.length; k++) {
+        const b = AIR_BODIES[k]!;
+        const [bx, by, bvx, bvy] = bodyState(b, s.t);
+        const rx = s.x - bx;
+        const ry = s.y - by;
+        const r = Math.hypot(rx, ry);
+        if (r - b.radius >= b.atmosphere) continue;
+        const radial = (rx * (s.vx - bvx) + ry * (s.vy - bvy)) / r;
+        if (radial < 0) sinking[k] = true;
+        else if (sinking[k]) result.reentry = b;
+      }
+      if (result.reentry) break;
       for (const b of others) {
         const [bx, by] = bodyState(b, s.t);
         const d = Math.hypot(s.x - bx, s.y - by);
@@ -2442,7 +2574,9 @@ export class Flight {
       }
       // Nur echte Extrempunkte (nicht Anfang oder Ende der Vorhersage) markieren.
       const endsInImpact = !!result.impact && to === n - 1;
-      if (low >= last - 2 && !endsInImpact) low = -1;
+      // Endet die Vorhersage in der Luft, ist ihr letzter Punkt der echte tiefste Punkt.
+      const endsInAir = result.reentry === body && to === n - 1;
+      if (low >= last - 2 && !endsInImpact && !endsInAir) low = -1;
       if (endsInImpact && low === n - 1) low = -1;
       if (high >= last - 2) high = -1;
       return [low, high];

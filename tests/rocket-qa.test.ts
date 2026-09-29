@@ -151,7 +151,7 @@ describe('Spiellogik (QA)', () => {
     run(f, 400, () => pilot.update(f));
     expect(pilot.phase).toBe('failed');
     expect(pilot.message).toContain('Umlaufbahn');
-    expect(f.chute === 'armed' || f.chute === 'open' || f.status === 'landed').toBe(true);
+    expect(f.chute === 'armed' || f.chuteDeployed || f.status === 'landed').toBe(true);
   });
 
   it('„Butterweich“ zählt nicht für einen Hüpfer auf der Rampe', () => {

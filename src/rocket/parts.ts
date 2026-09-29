@@ -646,6 +646,19 @@ export const TEMPLATES: readonly Template[] = [
   },
 ];
 
+/** Anteil der Bremsfläche, wenn ein Fallschirm erst halb (gerefft) offen ist. */
+export const CHUTE_SEMI = 0.12;
+
+/**
+ * Wie weit ein offener Schirm über die Spitze hinausragt (m) – Fangleinen plus Kappe, genau wie
+ * gezeichnet. `open`: 0…1, `area`: Bremsfläche (1 = normaler Schirm).
+ */
+export function chuteExtent(open: number, area = 1): number {
+  const k = Math.sqrt(Math.max(1, area));
+  const full = Math.min(1, Math.max(0, (open - CHUTE_SEMI) / (1 - CHUTE_SEMI)));
+  return (10 + 8 * full) * Math.sqrt(k) + (3.6 + 1.4 * full) * k * 1.1;
+}
+
 /** Aufteilung in Stufen: Segment 0 ist die Spitze, das letzte Segment brennt zuerst. */
 export function segments(design: Design): Design[] {
   const out: Design[] = [[]];
