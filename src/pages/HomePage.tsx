@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useRef } from 'preact/hooks';
-import { CHAPTERS, PROBLEM_QUESTION } from '../app/content';
+import { VISIBLE_CHAPTERS, PROBLEM_QUESTION } from '../app/content';
 import { MISSIONS } from '../missions/missions';
 import { progressStore } from '../missions/progress';
 import { REAL_PARAMS } from '../physics';
@@ -77,7 +77,7 @@ export function HomePage() {
             <LinkButton to="simulator" primary>
               Simulator starten
             </LinkButton>
-            <LinkButton to="kapitel-1">Mit Kapitel 1 beginnen</LinkButton>
+            <LinkButton to="kapitel-2">Mit Kapitel 2 beginnen</LinkButton>
           </div>
         </div>
         <div class="hero-visual">
@@ -141,12 +141,12 @@ export function HomePage() {
       <section class="home-section" aria-labelledby="kapitel">
         <div class="section-head">
           <h2 id="kapitel">Der Weg durch die Arbeit</h2>
-          <a class="more" href="#kapitel-1">
+          <a class="more" href="#kapitel-2">
             Von vorn lesen <Icon name="arrow" />
           </a>
         </div>
         <ol class="chapter-list">
-          {CHAPTERS.map((c) => (
+          {VISIBLE_CHAPTERS.map((c) => (
             <li key={c.n}>
               <a href={`#kapitel-${c.n}`}>
                 <span class="chapter-num">{c.n}</span>

@@ -21,5 +21,14 @@ export const CHAPTERS: readonly ChapterMeta[] = [
   { n: 9, title: 'Fazit', question: 'Die Antwort auf die Problemfrage' },
 ];
 
+/**
+ * Kapitel, die in Menü, Startseite und Vor/Zurück gezeigt werden. Die übrigen bleiben erhalten
+ * und sind über ihre Adresse (#kapitel-3 …) weiter erreichbar – sie werden nur nicht angezeigt.
+ */
+export const SHOWN_CHAPTERS = new Set([2, 7]);
+export const VISIBLE_CHAPTERS: readonly ChapterMeta[] = CHAPTERS.filter((c) =>
+  SHOWN_CHAPTERS.has(c.n),
+);
+
 export const PROBLEM_QUESTION =
   'Unter welchen physikalischen Bedingungen ist ein Mond in einem Drei-Körper-System (Erde–Mond–Sonne) langfristig stabil, und wann würde er abstürzen oder das System verlassen?';

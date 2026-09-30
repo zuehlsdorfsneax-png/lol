@@ -6,7 +6,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { usePersistentState } from '../ui/hooks';
 import { useTheme, type ThemeChoice } from '../ui/theme';
 import { findMission } from '../missions/missions';
-import { CHAPTERS } from './content';
+import { CHAPTERS, VISIBLE_CHAPTERS } from './content';
 import { useRoute, type Route } from './router';
 
 function BrandMark() {
@@ -73,7 +73,7 @@ const GROUPS: NavGroup[] = [
     id: 'kapitel',
     title: 'Kapitel',
     collapsible: true,
-    items: CHAPTERS.map((c) => ({
+    items: VISIBLE_CHAPTERS.map((c) => ({
       to: `kapitel-${c.n}`,
       label: SHORT[c.n] ?? c.title,
       num: String(c.n),
@@ -305,7 +305,7 @@ function NotFound({ token }: { token: string }) {
         <a class="btn primary" href="#start">
           Zur Startseite
         </a>
-        <a class="btn" href="#kapitel-1">
+        <a class="btn" href="#kapitel-2">
           Zu Kapitel 1
         </a>
       </div>

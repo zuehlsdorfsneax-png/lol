@@ -1,4 +1,4 @@
-import { CHAPTERS } from '../app/content';
+import { CHAPTERS, VISIBLE_CHAPTERS } from '../app/content';
 import { PageHead } from '../ui/content';
 import { Basics } from './chapters/Basics';
 import { Chapter3 } from './chapters/Chapter3';
@@ -27,8 +27,8 @@ export function ChapterPage({ n }: { n: number }) {
   const Body = [Intro, Basics, Chapter3, Chapter4, Chapter5, Tides, Hollow, OwnWork, Conclusion][
     meta.n - 1
   ]!;
-  const prev = CHAPTERS.find((c) => c.n === meta.n - 1);
-  const next = CHAPTERS.find((c) => c.n === meta.n + 1);
+  const prev = [...VISIBLE_CHAPTERS].reverse().find((c) => c.n < meta.n);
+  const next = VISIBLE_CHAPTERS.find((c) => c.n > meta.n);
   return (
     <article class="chapter">
       <PageHead eyebrow={`Kapitel ${meta.n}`} title={meta.title}>
