@@ -843,6 +843,23 @@ export class Flight {
     return dv;
   }
 
+  /** Beschleunigung der nächsten Stufe (nach dem Abwerfen der aktiven) bei Vollgas. */
+  nextStageAccel(): number {
+    if (this.segs.length < 2) return 0;
+    const seg = this.active;
+    const drop = seg.parts.reduce((m, id) => m + part(id).dry, 0) + seg.fuel;
+    return this.stageEngine(this.segs[this.segs.length - 2]!.parts).thrust / (this.mass - drop);
+  }
+
+  /** Δv nur der gerade aktiven (untersten) Stufe. */
+  activeStageDeltaV(): number {
+    const seg = this.active;
+    const { thrust, flow } = this.stageEngine(seg.parts);
+    if (thrust <= 0 || seg.fuel <= 0) return 0;
+    if (this.infiniteFuel) return Infinity;
+    return (thrust / flow) * Math.log(this.mass / (this.mass - seg.fuel));
+  }
+
   /** Brenndauer bei Vollgas für ein Δv, über die Stufen hinweg (∞ = reicht nicht). */
   burnTime(dv: number): number {
     if (this.infiniteFuel) {

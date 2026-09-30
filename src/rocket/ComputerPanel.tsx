@@ -538,7 +538,7 @@ function MissionTab({
   const valid = choices.some((c) => c.id === target) ? target : 'orbit';
   const body = valid !== 'orbit' && valid !== 'station' ? bodyById(valid) : null;
   const canLand = !!body && landable(body) && body !== EARTH;
-  const canHome = canReturnHome(valid);
+  const canHome = canReturnHome(valid, canLand && land);
   const spec: MissionSpec = {
     target: valid,
     land: body === EARTH || (canLand && land) || (!!body && body === here),

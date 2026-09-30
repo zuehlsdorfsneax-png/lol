@@ -45,9 +45,16 @@ export function landable(b: Body): boolean {
   return b.solid && b !== SUN;
 }
 
-/** Ob die Rückkehr zur Erde angeboten wird: nur von Monden der Erde. */
-export function canReturnHome(target: MissionTarget): boolean {
-  return target !== 'orbit' && target !== 'station' && bodyById(target).parent === 'earth';
+/**
+ * Ob die Rückkehr zur Erde angeboten wird: von Monden der Erde, von Planeten und ihren großen
+ * Monden (nicht von der Sonne und nicht von winzigen Monden ohne Umlaufbahn).
+ */
+export function canReturnHome(target: MissionTarget, land = false): boolean {
+  if (target === 'orbit' || target === 'station') return false;
+  const b = bodyById(target);
+  // Von der Venus startet nach einer Landung keine Rakete mehr (90-facher Luftdruck, 460 °C).
+  if (land && b.id === 'venus') return false;
+  return b !== EARTH && b !== SUN && !tinyBody(b);
 }
 
 /**
@@ -72,7 +79,11 @@ export function missionBudget(spec: MissionSpec, fromOrbit = false): number {
   };
   const [t, c, l] = table[spec.target] ?? [1_000, 1_000, 800];
   let dv = orbit + t + c + (spec.land ? l : 0);
-  if (spec.home) dv += (spec.land ? 800 : 0) + 300;
+  if (spec.home) {
+    const b = bodyById(spec.target);
+    // Heimweg von Planeten: etwa derselbe Transfer zurück, dazu der Start vom Boden.
+    dv += (spec.land ? l * 1.2 : 0) + (b.parent === 'earth' ? 300 : t);
+  }
   return dv;
 }
 
@@ -83,7 +94,7 @@ export function missionTitle(spec: MissionSpec): string {
   const b = bodyById(spec.target);
   const main =
     spec.land && landable(b) ? `Landung auf ${forms(b).dat}` : `Umlaufbahn um ${forms(b).acc}`;
-  return spec.home && canReturnHome(spec.target) ? `${main} und zurück zur Erde` : main;
+  return spec.home && canReturnHome(spec.target, spec.land) ? `${main} und zurück zur Erde` : main;
 }
 
 export function stepLabel(s: Step): string {
@@ -156,10 +167,20 @@ export function missionSteps(spec: MissionSpec, f: Flight): Step[] {
   if (spec.land && landable(goal) && !(f.status === 'landed' && here === goal))
     // Auf der Erde: Wiedereintritt mit Hitzeschild und Fallschirm (untere Stufen abwerfen).
     steps.push(goal === EARTH ? { kind: 'reentry', at: goal } : { kind: 'land', on: goal });
-  if (spec.home && canReturnHome(spec.target)) {
+  if (spec.home && canReturnHome(spec.target, spec.land && landable(goal))) {
     if (steps.at(-1)?.kind === 'land' || (f.status === 'landed' && here === goal))
       steps.push({ kind: 'ascent' });
-    steps.push({ kind: 'return', to: EARTH }, { kind: 'cruise', to: EARTH });
+    if (goal.parent === 'earth') {
+      steps.push({ kind: 'return', to: EARTH }, { kind: 'cruise', to: EARTH });
+    } else {
+      // Von einem Mond erst zurück zu seinem Planeten, dann von dort heim.
+      if (goal.parent && goal.parent !== 'sun') {
+        const planet = bodyById(goal.parent);
+        steps.push({ kind: 'return', to: planet }, { kind: 'cruise', to: planet });
+        steps.push({ kind: 'capture', at: planet });
+      }
+      steps.push({ kind: 'transfer', to: EARTH }, { kind: 'cruise', to: EARTH });
+    }
     steps.push({ kind: 'reentry', at: EARTH });
   }
   return steps;
@@ -543,7 +564,10 @@ export class MissionPilot {
       // Riesenplaneten und Zwischenstopps: nur so weit bremsen, dass eine lange Ellipse bleibt –
       // eine runde Bahn dicht über den Wolken kostete dort ein Vielfaches.
       const next = this.steps[this.index + 1];
-      const cheap = !landable(at) || next?.kind === 'transfer' || next?.kind === 'rendezvous';
+      const cheap =
+        !landable(at) ||
+        (next?.kind === 'transfer' && next.to.parent === at.id) ||
+        next?.kind === 'rendezvous';
       this.detail = `Einschwenken ${forms(at).at} planen.`;
       this.plan(f, cheap ? 'capture' : 'circ-pe');
       this.phase = 'planned';
@@ -627,7 +651,11 @@ export class MissionPilot {
       if (r) this.phase = 'descent';
       return this.status;
     }
-    if (!(this.sub instanceof LandingPilot)) this.sub = new LandingPilot();
+    if (!(this.sub instanceof LandingPilot)) {
+      // Kommt danach noch ein Wiedereintritt, bleibt der Fallschirm dafür verpackt.
+      const later = this.steps.slice(this.index + 1).some((st) => st.kind === 'reentry');
+      this.sub = new LandingPilot(later && on !== EARTH && f.engine().thrust > 0);
+    }
     this.detail = `Lande-Autopilot ${forms(on).at}.`;
     const ph = this.sub.update(f);
     if (ph === 'failed') return this.fail(f, this.sub.message || 'Landung abgebrochen.');

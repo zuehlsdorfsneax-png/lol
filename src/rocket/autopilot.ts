@@ -1,4 +1,5 @@
 import type { Flight } from './flight';
+import { part } from './parts';
 import { EARTH, bodyById, tinyBody, type Body } from './world';
 
 export type PilotPhase = 'ascent' | 'coast' | 'circularize' | 'done' | 'failed';
@@ -307,6 +308,11 @@ export type LandPhase =
 export class LandingPilot {
   phase: LandPhase = 'brake';
   message = '';
+  /**
+   * @param saveChute Fallschirm nicht benutzen (er ist ein Einmalteil) – etwa auf dem Mars, wenn
+   * er für die Heimkehr zur Erde gebraucht wird. Dann bremst allein das Triebwerk.
+   */
+  constructor(readonly saveChute = false) {}
   private dock: DockPilot | null = null;
 
   update(f: Flight): LandPhase {
@@ -358,10 +364,39 @@ export class LandingPilot {
     const amax = f.active.fuel > 0 || f.infiniteFuel ? f.engine().thrust / f.mass : 0;
     const horizontal = Math.hypot(hx, hy);
 
+    // Stufen, die beim Landen nur stören, vorher abwerfen (antriebslos, nie mitten im Bremsen):
+    // – mit Fallschirm in der Luft: solange der Schirm die ganze Rakete nicht sanft genug trägt,
+    // – ohne: wenn die unterste Stufe allein nicht zum Abbremsen reicht, die nächste aber schon.
+    if (f.segs.length > 1 && !f.thrusting && this.phase !== 'suicide') {
+      const upper = f.segs.slice(0, -1);
+      const chuteAbove = upper.some((sg) => sg.parts.some((id) => part(id).kind === 'chute'));
+      const need = speed * 1.2 + Math.sqrt(2 * g * Math.max(r.altitude, 0)) * 0.5 + 30;
+      if (
+        // Nur in dichter Luft (Erde, Venus) – in der dünnen Marsluft braucht es das Triebwerk.
+        body.density0 >= 0.5 * EARTH.density0 &&
+        chuteAbove &&
+        f.chute !== 'none' &&
+        f.chuteLandingSpeed(body) > f.safeLandingSpeed &&
+        r.altitude < body.atmosphere * 1.2
+      ) {
+        f.stage();
+        return this.phase;
+      }
+      if (
+        (body.atmosphere === 0 || r.altitude < body.atmosphere) &&
+        f.activeStageDeltaV() < need &&
+        f.deltaV() - f.activeStageDeltaV() > need &&
+        f.nextStageAccel() > g * 1.3
+      ) {
+        f.stage();
+        return this.phase;
+      }
+    }
+
     // Mit Luft: Fallschirm scharf, bis zum Eintauchen treiben lassen. In dichter Luft (Erde,
     // Venus) bremst die Luft fast alles ab; in dünner Luft (Mars) muss das Triebwerk ran.
     if (body.atmosphere > 0) {
-      if (f.chute === 'stowed') f.deployChute();
+      if (f.chute === 'stowed' && !this.saveChute) f.deployChute();
       const o = f.orbit(body);
       // Dichte Luft: Sie bremst die Rakete am Boden unter das Tempo, bei dem sich der Fallschirm
       // öffnet (oder ganz ohne Schirm auf ein Tempo, das das Triebwerk leicht abfängt).
