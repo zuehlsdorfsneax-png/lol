@@ -1370,52 +1370,104 @@ function drawHeating(
   }
   const heat = Math.min(1, (speed - 700) / 1400) * Math.min(1, rho / 0.02);
   if (heat > 0.02) {
-    const flick = 0.85 + 0.15 * Math.sin(time * 37);
+    const flick = 0.85 + 0.15 * Math.sin(time * 37) * Math.sin(time * 23);
+    const cool = f.shielded;
     const hx = cx + ux * r * 0.9;
     const hy = cy + uy * r * 0.9;
-    const cool = f.shielded;
-    const ang = Math.atan2(uy, ux);
-    ctx.globalAlpha = 1;
-    // Plasmahülle um die Rakete, nach hinten gezogen
-    const sheath = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 2.6);
-    sheath.addColorStop(0, `rgba(255,236,200,${0.55 * heat * flick})`);
-    sheath.addColorStop(0.4, `rgba(255,${cool ? 150 : 110},${cool ? 90 : 60},${0.45 * heat})`);
-    sheath.addColorStop(1, 'rgba(255,60,120,0)');
-    ctx.fillStyle = sheath;
+    // Querrichtung
+    const px = -uy;
+    const py = ux;
+    const L = r * (5 + 3 * heat);
+    ctx.globalCompositeOperation = 'lighter';
+    // Stoßwelle: eine nach hinten offene, leuchtende Schale vor der Rakete
+    const shell = ctx.createLinearGradient(
+      hx + ux * r * 0.6,
+      hy + uy * r * 0.6,
+      hx - ux * L,
+      hy - uy * L,
+    );
+    shell.addColorStop(0, `rgba(255,250,235,${0.85 * heat * flick})`);
+    shell.addColorStop(
+      0.12,
+      cool ? `rgba(255,196,120,${0.6 * heat})` : `rgba(255,140,70,${0.65 * heat})`,
+    );
+    shell.addColorStop(0.45, `rgba(255,${cool ? 110 : 70},${cool ? 70 : 90},${0.3 * heat})`);
+    shell.addColorStop(1, 'rgba(200,60,140,0)');
+    ctx.fillStyle = shell;
     ctx.beginPath();
-    ctx.ellipse(cx - ux * r * 0.4, cy - uy * r * 0.4, r * 2.6, r * 1.5, ang, 0, Math.PI * 2);
+    const n = 18;
+    for (let i = 0; i <= n; i++) {
+      const sgn = (i / n) * 2 - 1;
+      const w = r * 1.35 * sgn * (1 + Math.abs(sgn) * 0.6);
+      const back = r * 0.55 - L * sgn * sgn;
+      const x = hx + ux * back + px * w;
+      const y = hy + uy * back + py * w;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    // Innenkante der Schale (die Rakete sitzt im dunkleren Kern)
+    for (let i = n; i >= 0; i--) {
+      const sgn = (i / n) * 2 - 1;
+      const w = r * 0.8 * sgn;
+      const back = r * 0.1 - L * 0.9 * sgn * sgn;
+      ctx.lineTo(hx + ux * back + px * w, hy + uy * back + py * w);
+    }
+    ctx.closePath();
     ctx.fill();
+    // Heißer Kern an der Front
+    const core = softSprite(cool ? '255,226,170' : '255,200,150', 0.3);
+    if (core) {
+      const cr = r * (1.1 + 0.25 * heat) * flick;
+      ctx.globalAlpha = Math.min(1, 0.9 * heat + 0.1);
+      ctx.drawImage(core, hx - cr, hy - cr, 2 * cr, 2 * cr);
+    }
     // Flammenzungen, die nach hinten wegströmen
-    for (let k = -2; k <= 2; k++) {
-      const len = r * (4.5 + 2.5 * Math.sin(time * 23 + k * 1.7)) * heat;
-      const side = k * r * 0.28;
-      const bx = hx - uy * side;
-      const by = hy + ux * side;
-      const tx = bx - ux * len;
-      const ty = by - uy * len;
+    ctx.globalAlpha = 1;
+    for (let k = -3; k <= 3; k++) {
+      const wob = Math.sin(time * 19 + k * 2.1) * Math.sin(time * 7 + k);
+      const len = L * (0.55 + 0.3 * wob) * (1 - Math.abs(k) * 0.08);
+      const bx = hx - ux * r * 0.3 + px * k * r * 0.24;
+      const by = hy - uy * r * 0.3 + py * k * r * 0.24;
+      const tx = bx - ux * len + px * k * r * 0.5;
+      const ty = by - uy * len + py * k * r * 0.5;
       const g = ctx.createLinearGradient(bx, by, tx, ty);
-      g.addColorStop(0, `rgba(255,${cool ? 200 : 170},${cool ? 120 : 90},${0.7 * heat})`);
-      g.addColorStop(1, 'rgba(255,80,40,0)');
+      g.addColorStop(0, `rgba(255,${cool ? 210 : 170},${cool ? 130 : 100},${0.55 * heat})`);
+      g.addColorStop(0.5, `rgba(255,90,70,${0.25 * heat})`);
+      g.addColorStop(1, 'rgba(180,60,160,0)');
       ctx.fillStyle = g;
+      const wdt = r * 0.2;
       ctx.beginPath();
-      ctx.moveTo(bx - uy * r * 0.16, by + ux * r * 0.16);
-      ctx.lineTo(tx, ty);
-      ctx.lineTo(bx + uy * r * 0.16, by - ux * r * 0.16);
+      ctx.moveTo(bx + px * wdt, by + py * wdt);
+      ctx.quadraticCurveTo(
+        (bx + tx) / 2 + px * wdt * (1.6 + wob),
+        (by + ty) / 2 + py * wdt * (1.6 + wob),
+        tx,
+        ty,
+      );
+      ctx.quadraticCurveTo(
+        (bx + tx) / 2 - px * wdt * (1.6 - wob),
+        (by + ty) / 2 - py * wdt * (1.6 - wob),
+        bx - px * wdt,
+        by - py * wdt,
+      );
       ctx.closePath();
       ctx.fill();
     }
-    // Heller Kern an der Front (Stoßwelle)
-    const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 1.3);
-    g.addColorStop(0, `rgba(255,250,235,${0.95 * heat * flick})`);
-    g.addColorStop(
-      0.4,
-      cool ? `rgba(255,190,110,${0.75 * heat})` : `rgba(255,130,60,${0.8 * heat})`,
-    );
-    g.addColorStop(1, 'rgba(255,60,20,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(hx, hy, r * 1.3, 0, Math.PI * 2);
-    ctx.fill();
+    // Glühende Funken vom Hitzeschild
+    const spark = softSprite('255,220,160', 0.6);
+    if (spark && heat > 0.25) {
+      for (let k = 0; k < 14; k++) {
+        const q = (time * (1.3 + hash(k, 201)) + hash(k, 202)) % 1;
+        const side = (hash(k, 203) - 0.5) * r * 2.2 * (0.4 + q);
+        const x = hx - ux * L * q * 1.1 + px * side;
+        const y = hy - uy * L * q * 1.1 + py * side;
+        const sr = 2 + 2.5 * (1 - q);
+        ctx.globalAlpha = (1 - q) * heat;
+        ctx.drawImage(spark, x - sr, y - sr, 2 * sr, 2 * sr);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
   }
   ctx.restore();
 }
