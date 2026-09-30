@@ -1491,6 +1491,7 @@ export function FlightScreen({
               flash: calm ? 0 : fl.flash,
               // Die Rakete wird immer in echter Größe gezeichnet (weit herausgezoomt mit Marke).
               minRocket: 0,
+              quality: renderQuality,
             });
           }
         }

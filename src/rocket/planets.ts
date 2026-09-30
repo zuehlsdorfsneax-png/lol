@@ -49,6 +49,26 @@ function puff(
   g.globalAlpha = 1;
 }
 
+/** Langgezogene weiche Wolke (Schliere), gedreht um `angle`. */
+function streak(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rx: number,
+  ry: number,
+  angle: number,
+  a: number,
+): void {
+  const img = softSprite('255,255,255', 0.45);
+  if (!img) return;
+  g.save();
+  g.translate(x, y);
+  g.rotate(angle);
+  g.globalAlpha = a;
+  g.drawImage(img, -rx, -ry, 2 * rx, 2 * ry);
+  g.restore();
+}
+
 function craters(
   g: CanvasRenderingContext2D,
   n: number,
@@ -147,33 +167,46 @@ function paint(b: Body, g: CanvasRenderingContext2D): void {
           30 + hash(i, 124) * 40,
           0.6,
         );
-      // Wolken: Ringe um den Pol (Breitengrade) und Wirbel
-      for (let i = 0; i < 360; i++) {
-        const ring = hash(i, 131) < 0.5 ? 0.45 + hash(i, 132) * 0.15 : 0.72 + hash(i, 132) * 0.18;
+      // Wolken: lange Schlieren entlang der Breitengrade (Ringe um den Pol) …
+      for (let i = 0; i < 420; i++) {
+        const ring = hash(i, 131) < 0.5 ? 0.45 + hash(i, 132) * 0.15 : 0.7 + hash(i, 132) * 0.24;
         const a = hash(i, 133) * Math.PI * 2;
         const rr = ring * R + Math.sin(a * 5 + i) * 14;
-        puff(
+        const size = 8 + hash(i, 134) * 30;
+        streak(
           g,
-          '255,255,255',
           R + Math.cos(a) * rr,
           R + Math.sin(a) * rr,
-          10 + hash(i, 134) * 34,
-          0.12 + hash(i, 135) * 0.18,
+          size * (1.8 + hash(i, 136) * 1.6),
+          size * 0.55,
+          a + Math.PI / 2 + (hash(i, 137) - 0.5) * 0.4,
+          0.14 + hash(i, 135) * 0.2,
         );
       }
+      // … kleine, scharfe Haufenwolken …
+      for (let i = 0; i < 260; i++) {
+        const [x, y] = spot(i, 151, 0.97);
+        puff(g, '255,255,255', x, y, 3 + hash(i, 152) * 7, 0.35 + hash(i, 153) * 0.3);
+      }
+      // … und Tiefdruckwirbel mit zwei Spiralarmen
       for (let s2 = 0; s2 < 7; s2++) {
         const [cx, cy] = spot(s2, 141, 0.85);
-        for (let k = 0; k < 26; k++) {
-          const a = k * 0.45;
-          const rr = 6 + k * 3.2;
-          puff(
-            g,
-            '255,255,255',
-            cx + Math.cos(a) * rr,
-            cy + Math.sin(a) * rr * 0.8,
-            10 + k * 0.7,
-            0.2,
-          );
+        const turn = hash(s2, 142) < 0.5 ? 1 : -1;
+        puff(g, '255,255,255', cx, cy, 12, 0.45);
+        for (const arm of [0, Math.PI]) {
+          for (let k = 0; k < 22; k++) {
+            const a = arm + turn * k * 0.3;
+            const rr = 5 + k * 3.1;
+            streak(
+              g,
+              cx + Math.cos(a) * rr,
+              cy + Math.sin(a) * rr,
+              12 + k * 0.9,
+              5 + k * 0.25,
+              a + (turn * Math.PI) / 2,
+              0.32 * (1 - k / 26),
+            );
+          }
         }
       }
       break;
@@ -498,6 +531,64 @@ export function planetTexture(b: Body): HTMLCanvasElement | null {
   return c;
 }
 
+/**
+ * Stadtlichter der Erde (gleiche Abbildung wie das Oberflächenbild): Lichterhaufen an Küsten und
+ * im Landesinneren, nur auf dem Land. Halbe Auflösung reicht – sie leuchten ja nur schwach.
+ */
+let lights: HTMLCanvasElement | null | undefined;
+function cityLights(): HTMLCanvasElement | null {
+  if (lights !== undefined) return lights;
+  lights = null;
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  const N = SIZE / 2;
+  c.width = c.height = N;
+  const g = c.getContext('2d');
+  if (!g) return null;
+  const k = N / SIZE;
+  g.scale(k, k);
+  const glow = softSprite('255,190,110', 0.25);
+  for (let i = 0; i < 90; i++) {
+    const [cx, cy] = spot(i, 171, 0.96);
+    const big = hash(i, 172);
+    if (glow) {
+      g.globalAlpha = 0.25 + big * 0.3;
+      const r = 14 + big * 26;
+      g.drawImage(glow, cx - r, cy - r, 2 * r, 2 * r);
+    }
+    const n = 12 + Math.floor(big * 40);
+    for (let j = 0; j < n; j++) {
+      const a = hash(i * 64 + j, 173) * Math.PI * 2;
+      const d = Math.pow(hash(i * 64 + j, 174), 1.8) * (10 + big * 34);
+      const w = 2 + hash(i * 64 + j, 175) * 3.5;
+      g.globalAlpha = 0.5 + hash(i * 64 + j, 176) * 0.5;
+      g.fillStyle = hash(i * 64 + j, 177) < 0.2 ? '#fff4d6' : '#ffc46b';
+      g.fillRect(cx + Math.cos(a) * d, cy + Math.sin(a) * d, w, w);
+    }
+  }
+  // Nur auf dem Land (dieselben Formen wie im Oberflächenbild): erst alle Kontinente in eine
+  // Maske, dann einmal ausstanzen.
+  const mask = document.createElement('canvas');
+  mask.width = mask.height = N;
+  const m = mask.getContext('2d');
+  if (m) {
+    m.scale(k, k);
+    m.fillStyle = '#000';
+    for (const [ang, dist, rad, seed] of CONTINENTS) {
+      const [x, y] = at(ang, dist);
+      blob(m, x, y, rad * (SIZE / 2) * 0.97, seed);
+      m.fill();
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(mask, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+  }
+  lights = c;
+  return c;
+}
+
 /** Leuchtfarbe der Atmosphäre (r,g,b) – null ohne Lufthülle. */
 const AIR_GLOW: Partial<Record<BodyId, string>> = {
   earth: '120,180,255',
@@ -525,6 +616,51 @@ export function drawPlanetDisk(
 ): boolean {
   const tex = planetTexture(b);
   if (!tex) return false;
+  // Kleine Scheiben (Karte, ferne Körper) einmal fertig beleuchtet merken und nur noch kopieren:
+  // Stadtlichter, Schatten und Rand kosten sonst bei jedem Bild viele Pixel.
+  const m = ctx.getTransform();
+  const dpr = Math.hypot(m.a, m.b) || 1;
+  const pad = glowPx + 3;
+  if (typeof document !== 'undefined' && 2 * (rpx + pad) * dpr <= 1100 && rpx > 2) {
+    const qr = Math.exp(Math.round(Math.log(rpx) * 60) / 60);
+    const key = `${b.id}|${Math.round(qr * dpr * 10)}|${Math.round(rot * 115)}|${Math.round(sunAngle * 115)}|${Math.round(pad)}`;
+    let hit = DISKS.get(key);
+    if (hit) DISKS.delete(key);
+    else {
+      const half = qr + pad;
+      const c = document.createElement('canvas');
+      c.width = c.height = Math.ceil(2 * half * dpr);
+      const g = c.getContext('2d');
+      if (!g) return false;
+      g.scale(dpr, dpr);
+      paintDisk(g, b, tex, half, half, qr, rot, sunAngle, glowPx);
+      hit = { canvas: c, half };
+      while (DISKS.size >= 6) DISKS.delete(DISKS.keys().next().value!);
+    }
+    DISKS.set(key, hit);
+    const k = rpx / qr;
+    const h = hit.half * k;
+    ctx.drawImage(hit.canvas, sx - h, sy - h, 2 * h, 2 * h);
+    return true;
+  }
+  paintDisk(ctx, b, tex, sx, sy, rpx, rot, sunAngle, glowPx);
+  return true;
+}
+
+/** Gemerkte, fertig beleuchtete kleine Scheiben (höchstens sechs, zuletzt benutzte bleiben). */
+const DISKS = new Map<string, { canvas: HTMLCanvasElement; half: number }>();
+
+function paintDisk(
+  ctx: CanvasRenderingContext2D,
+  b: Body,
+  tex: HTMLCanvasElement,
+  sx: number,
+  sy: number,
+  rpx: number,
+  rot: number,
+  sunAngle: number,
+  glowPx: number,
+): void {
   const glow = AIR_GLOW[b.id];
   if (glow && glowPx > 0.5) {
     const outer = rpx + glowPx;
@@ -566,6 +702,35 @@ export function drawPlanetDisk(
     shade.addColorStop(1, 'rgba(2,4,12,0.9)');
     ctx.fillStyle = shade;
     ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
+    const city = b.id === 'earth' && rpx > 25 ? cityLights() : null;
+    if (city) {
+      // Stadtlichter nur jenseits der Tag-Nacht-Grenze, zum Rand der Nacht hin kräftiger
+      const px = -uy;
+      const py = ux;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const [edge, alpha] of [
+        [0.06, 0.45],
+        [0.26, 0.5],
+      ] as const) {
+        ctx.save();
+        ctx.beginPath();
+        const ex = sx - ux * rpx * edge;
+        const ey = sy - uy * rpx * edge;
+        ctx.moveTo(ex + px * rpx * 1.2, ey + py * rpx * 1.2);
+        ctx.lineTo(ex - px * rpx * 1.2, ey - py * rpx * 1.2);
+        ctx.lineTo(ex - px * rpx * 1.2 - ux * rpx * 2.4, ey - py * rpx * 1.2 - uy * rpx * 2.4);
+        ctx.lineTo(ex + px * rpx * 1.2 - ux * rpx * 2.4, ey + py * rpx * 1.2 - uy * rpx * 2.4);
+        ctx.closePath();
+        ctx.clip();
+        ctx.globalAlpha = alpha;
+        ctx.translate(sx, sy);
+        ctx.rotate(rot);
+        ctx.drawImage(city, -rpx, -rpx, 2 * rpx, 2 * rpx);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
   }
   // Rand dunkler (Kugelform), mit Luft leicht getönt
   const limb = ctx.createRadialGradient(sx, sy, rpx * 0.55, sx, sy, rpx);
@@ -575,5 +740,18 @@ export function drawPlanetDisk(
   ctx.fillStyle = limb;
   ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
   ctx.restore();
-  return true;
+  if (glow && b.id !== 'sun' && rpx > 12 && 'createConicGradient' in ctx) {
+    // Heller, dünner Luftsaum auf der Tagseite (wie auf Fotos aus der Umlaufbahn)
+    const cg = ctx.createConicGradient(sunAngle - Math.PI, sx, sy);
+    cg.addColorStop(0, `rgba(${glow},0)`);
+    cg.addColorStop(0.22, `rgba(${glow},0)`);
+    cg.addColorStop(0.5, `rgba(${glow},0.85)`);
+    cg.addColorStop(0.78, `rgba(${glow},0)`);
+    cg.addColorStop(1, `rgba(${glow},0)`);
+    ctx.strokeStyle = cg;
+    ctx.lineWidth = Math.max(1, Math.min(6, rpx * 0.012));
+    ctx.beginPath();
+    ctx.arc(sx, sy, rpx + ctx.lineWidth * 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 }
