@@ -10,6 +10,7 @@ import {
   MERCURY,
   MOON,
   PHOBOS,
+  SUN,
   VENUS,
   stationState,
   type Body,
@@ -45,32 +46,60 @@ export const THRUST_FACTORS = [1, 2, 5, 10] as const;
 export type StartId =
   | 'rampe'
   | 'orbit'
+  | 'hoch'
   | 'station'
   | 'mond'
   | 'mondorbit'
+  | 'merkur'
+  | 'merkurorbit'
+  | 'venus'
+  | 'venusorbit'
   | 'mars'
   | 'marsorbit'
   | 'phobos'
-  | 'venusorbit'
-  | 'merkur'
-  | 'europa'
-  | 'ganymed'
   | 'ceres'
-  | 'jupiterorbit';
+  | 'ceresorbit'
+  | 'jupiterorbit'
+  | 'europa'
+  | 'europaorbit'
+  | 'ganymed'
+  | 'ganymedorbit'
+  | 'sonne';
+
+/** Gruppen der Startorte in der Auswahl (in dieser Reihenfolge). */
+export const START_GROUPS = [
+  'Erde',
+  'Mond',
+  'Merkur und Venus',
+  'Mars',
+  'Asteroidengürtel',
+  'Jupiter',
+  'Sonne',
+] as const;
 
 export interface StartOption {
   id: StartId;
   label: string;
   /** Gruppe in der Auswahl. */
-  group: 'Erde' | 'Mond' | 'Planeten';
+  group: (typeof START_GROUPS)[number];
   /** Körper am Startort (für die Werte in der Werft). */
   body: Body;
   place: (f: Flight) => void;
+  /** Start in einer Umlaufbahn (nicht auf dem Boden). */
+  orbital?: boolean;
 }
 
-/** Kreisbahn knapp über der Lufthülle (mindestens 30 km). */
-function orbit(body: Body, min = 30_000): (f: Flight) => void {
-  return (f) => f.placeInOrbit(body, Math.max(min, body.atmosphere * 1.3), Math.PI / 2);
+/**
+ * Höhe einer Start-Umlaufbahn: über der Lufthülle, sonst niedrig über dem Boden (bei kleinen
+ * Körpern entsprechend tiefer, damit die Bahn sicher im Einflussbereich bleibt).
+ */
+function orbitAltitude(body: Body): number {
+  if (body.atmosphere > 0) return Math.max(30_000, body.atmosphere * 1.3);
+  return Math.min(30_000, Math.max(5_000, body.radius * 0.15));
+}
+
+function orbit(body: Body, altitude = orbitAltitude(body)): (f: Flight) => void {
+  return (f) => f.placeInOrbit(body, altitude, Math.PI / 2);
 }
 
 function landed(body: Body): (f: Flight) => void {
@@ -85,6 +114,15 @@ export const START_OPTIONS: readonly StartOption[] = [
     group: 'Erde',
     body: EARTH,
     place: orbit(EARTH, 150_000),
+    orbital: true,
+  },
+  {
+    id: 'hoch',
+    label: 'Hohe Erdbahn (5.000 km)',
+    group: 'Erde',
+    body: EARTH,
+    place: orbit(EARTH, 5_000_000),
+    orbital: true,
   },
   {
     id: 'station',
@@ -104,47 +142,118 @@ export const START_OPTIONS: readonly StartOption[] = [
       f.target = 'station';
       f.rcs = true;
     },
+    orbital: true,
   },
   { id: 'mond', label: 'Auf dem Mond', group: 'Mond', body: MOON, place: landed(MOON) },
-  { id: 'mondorbit', label: 'Mondumlaufbahn', group: 'Mond', body: MOON, place: orbit(MOON) },
-  { id: 'mars', label: 'Auf dem Mars', group: 'Planeten', body: MARS, place: landed(MARS) },
   {
-    id: 'marsorbit',
-    label: 'Marsumlaufbahn',
-    group: 'Planeten',
-    body: MARS,
-    place: orbit(MARS),
+    id: 'mondorbit',
+    label: 'Mondumlaufbahn',
+    group: 'Mond',
+    body: MOON,
+    place: orbit(MOON),
+    orbital: true,
   },
-  { id: 'phobos', label: 'Auf Phobos', group: 'Planeten', body: PHOBOS, place: landed(PHOBOS) },
+  {
+    id: 'merkur',
+    label: 'Auf dem Merkur',
+    group: 'Merkur und Venus',
+    body: MERCURY,
+    place: landed(MERCURY),
+  },
+  {
+    id: 'merkurorbit',
+    label: 'Merkurumlaufbahn',
+    group: 'Merkur und Venus',
+    body: MERCURY,
+    place: orbit(MERCURY),
+    orbital: true,
+  },
+  {
+    id: 'venus',
+    label: 'Auf der Venus',
+    group: 'Merkur und Venus',
+    body: VENUS,
+    place: landed(VENUS),
+  },
   {
     id: 'venusorbit',
     label: 'Venusumlaufbahn',
-    group: 'Planeten',
+    group: 'Merkur und Venus',
     body: VENUS,
     place: orbit(VENUS),
+    orbital: true,
   },
-  { id: 'merkur', label: 'Auf Merkur', group: 'Planeten', body: MERCURY, place: landed(MERCURY) },
-  { id: 'europa', label: 'Auf Europa', group: 'Planeten', body: EUROPA, place: landed(EUROPA) },
+  { id: 'mars', label: 'Auf dem Mars', group: 'Mars', body: MARS, place: landed(MARS) },
   {
-    id: 'ganymed',
-    label: 'Auf Ganymed',
-    group: 'Planeten',
-    body: GANYMEDE,
-    place: landed(GANYMEDE),
+    id: 'marsorbit',
+    label: 'Marsumlaufbahn',
+    group: 'Mars',
+    body: MARS,
+    place: orbit(MARS),
+    orbital: true,
   },
-  { id: 'ceres', label: 'Auf Ceres', group: 'Planeten', body: CERES, place: landed(CERES) },
+  { id: 'phobos', label: 'Auf Phobos', group: 'Mars', body: PHOBOS, place: landed(PHOBOS) },
+  { id: 'ceres', label: 'Auf Ceres', group: 'Asteroidengürtel', body: CERES, place: landed(CERES) },
+  {
+    id: 'ceresorbit',
+    label: 'Ceres-Umlaufbahn',
+    group: 'Asteroidengürtel',
+    body: CERES,
+    place: orbit(CERES),
+    orbital: true,
+  },
   {
     id: 'jupiterorbit',
     label: 'Jupiterumlaufbahn',
-    group: 'Planeten',
+    group: 'Jupiter',
     body: JUPITER,
     place: orbit(JUPITER),
+    orbital: true,
+  },
+  { id: 'europa', label: 'Auf Europa', group: 'Jupiter', body: EUROPA, place: landed(EUROPA) },
+  {
+    id: 'europaorbit',
+    label: 'Europa-Umlaufbahn',
+    group: 'Jupiter',
+    body: EUROPA,
+    place: orbit(EUROPA),
+    orbital: true,
+  },
+  {
+    id: 'ganymed',
+    label: 'Auf Ganymed',
+    group: 'Jupiter',
+    body: GANYMEDE,
+    place: landed(GANYMEDE),
+  },
+  {
+    id: 'ganymedorbit',
+    label: 'Ganymed-Umlaufbahn',
+    group: 'Jupiter',
+    body: GANYMEDE,
+    place: orbit(GANYMEDE),
+    orbital: true,
+  },
+  {
+    id: 'sonne',
+    label: 'Sonnenumlaufbahn (bei der Venus)',
+    group: 'Sonne',
+    body: SUN,
+    place: orbit(SUN, VENUS.distance * 0.97 - SUN.radius),
+    orbital: true,
   },
 ];
 
 /** Werte der Werft passend zu den Sandkasten-Einstellungen. */
 export function buildRules(s: SandboxSettings): BuildRules {
-  return { thrust: s.thrust, infiniteFuel: s.fuel, body: startOption(s.start).body };
+  const o = startOption(s.start);
+  // Für die Sonnenbahn gelten die Werte der Erde (auf der Sonne landet niemand).
+  return {
+    thrust: s.thrust,
+    infiniteFuel: s.fuel,
+    body: o.body === SUN ? EARTH : o.body,
+    orbital: o.orbital ?? false,
+  };
 }
 
 export function startOption(id: StartId): StartOption {

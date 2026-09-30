@@ -125,6 +125,8 @@ export interface Satellite {
   el: Elements;
   /** Im Sandkasten ausgesetzt: zählt nicht für Ziele und erscheint nur im Sandkasten. */
   sandbox?: boolean;
+  /** Bauteil, falls es kein gewöhnlicher Satellit ist (z. B. ein Teleskop). */
+  part?: string;
 }
 
 /** Landeplatz auf einem Körper (Winkel mitdrehend wie die Oberfläche). */
@@ -290,9 +292,6 @@ const CHUTE_MAX_SPEED = 300;
 const CHUTE_SEMI_SPEED = 450;
 
 const LAND_SPEED = 8;
-const LAND_SPEED_LEGS = 14;
-/** Mit Stoßdämpfer-Beinen. */
-const LAND_SPEED_LEGS_XL = 20;
 const LAND_TILT = 0.4;
 const LAND_TILT_LEGS = 0.65;
 /** Beschleunigung der Lagekontrolldüsen (RCS) in m/s². */
@@ -768,12 +767,39 @@ export class Flight {
     for (const id of this.active.parts) {
       const p = part(id);
       if (p.thrust > 0) {
-        const t = p.thrust * this.thrustScale;
+        const t = p.thrust * this.thrustScale * (p.flame === 'ionen' ? this.ionPower() : 1);
         thrust += p.vacuum ? t * (1 - VACUUM_LOSS * this.pressure) : t;
         flow += t / (p.isp * G0);
       }
     }
     return { thrust, flow };
+  }
+
+  /**
+   * Stromfaktor für Ionentriebwerke: Solarflügel liefern Strom, der mit dem Quadrat der
+   * Sonnenentfernung abnimmt (in Erdnähe 1, bei Jupiter knapp 4 %). Höchstens zwei Flügel zählen.
+   */
+  ionPower(): number {
+    const n = Math.min(2, this.count('solar'));
+    if (n === 0) return 1;
+    return 1 + 1.5 * n * this.sunlight();
+  }
+
+  /** Sonnenlicht im Vergleich zur Erdbahn: (1 AE / r)², begrenzt auf das Doppelte. */
+  sunlight(): number {
+    const [sx, sy] = bodyState(SUN, this.t);
+    const r = Math.hypot(this.x - sx, this.y - sy);
+    return Math.min(2, (EARTH.distance / Math.max(r, 1)) ** 2);
+  }
+
+  /** Ausgefahrene Solarflügel (im All, außerhalb dichter Luft). */
+  get solarOpen(): boolean {
+    return this.count('solar') > 0 && this.status !== 'landed' && this.pressure < 0.02;
+  }
+
+  /** Landescheinwerfer an Bord? */
+  get hasLights(): boolean {
+    return this.count('light') > 0;
   }
 
   /** Alle Teile, die noch an der Rakete sind. */
@@ -816,7 +842,7 @@ export class Flight {
   }
 
   get hasLegs(): boolean {
-    return this.active.parts.includes('beine') || this.hasStrongLegs;
+    return this.active.parts.some((id) => part(id).kind === 'legs');
   }
 
   /** Stoßdämpfer-Beine: noch härtere Landungen möglich. */
@@ -824,14 +850,24 @@ export class Flight {
     return this.active.parts.includes('beine-xl');
   }
 
-  /** Sitzt der Hitzeschild ganz unten? */
+  /** Sitzt ein Hitzeschild ganz unten? */
   get shieldAtBottom(): boolean {
     const a = this.active.parts;
-    return a[a.length - 1] === 'hitzeschild';
+    return a.length > 0 && part(a[a.length - 1]!).kind === 'shield';
   }
 
+  /** Hitze-Anteil mit dem untersten Hitzeschild voran. */
+  private get shieldFactor(): number {
+    const a = this.active.parts;
+    return (a.length && part(a[a.length - 1]!).shieldFactor) || SHIELD_FACTOR;
+  }
+
+  /** Nutzlasten an Bord (Satelliten und Teleskope). */
   get satellitesOnBoard(): number {
-    return this.segs.reduce((s, seg) => s + seg.parts.filter((id) => id === 'satellit').length, 0);
+    return this.segs.reduce(
+      (s, seg) => s + seg.parts.filter((id) => part(id).kind === 'payload').length,
+      0,
+    );
   }
 
   get thrusting(): boolean {
@@ -1393,7 +1429,7 @@ export class Flight {
 
   /** Mit diesem Tempo (m/s) übersteht die Rakete das Aufsetzen (Landebeine federn mehr ab). */
   get safeLandingSpeed(): number {
-    return this.hasStrongLegs ? LAND_SPEED_LEGS_XL : this.hasLegs ? LAND_SPEED_LEGS : LAND_SPEED;
+    return this.active.parts.reduce((m, id) => Math.max(m, part(id).landSpeed ?? 0), LAND_SPEED);
   }
 
   /** Länge für Kamera und Bildmitte: Rakete plus offener Schirm darüber. */
@@ -1489,7 +1525,7 @@ export class Flight {
       this.emit('info', 'Satelliten lassen sich nur im Flug aussetzen.');
       return false;
     }
-    const seg = this.segs.find((s) => s.parts.includes('satellit'));
+    const seg = this.segs.find((s) => s.parts.some((id) => part(id).kind === 'payload'));
     if (!seg) {
       this.emit('info', 'Kein Satellit an Bord.');
       return false;
@@ -1497,7 +1533,10 @@ export class Flight {
     const ax = Math.cos(this.angle);
     const ay = Math.sin(this.angle);
     const top = this.length;
-    seg.parts.splice(seg.parts.indexOf('satellit'), 1);
+    const at = seg.parts.findIndex((id) => part(id).kind === 'payload');
+    const payload = seg.parts[at]!;
+    const title = payload === 'teleskop' ? 'Teleskop' : 'Satellit';
+    seg.parts.splice(at, 1);
     // Mit Federn sanft nach vorn abgestoßen.
     const sx = this.x + ax * (top + 0.5);
     const sy = this.y + ay * (top + 0.5);
@@ -1513,7 +1552,7 @@ export class Flight {
     if (el.e >= 1) {
       this.emit(
         'warn',
-        `Satellit ausgesetzt – aber auf einer Fluchtbahn. Er verlässt ${forms(ref).acc} für immer.`,
+        `${title} ausgesetzt – aber auf einer Fluchtbahn. ${title === 'Teleskop' ? 'Es' : 'Er'} verlässt ${forms(ref).acc} für immer.`,
       );
       return true;
     }
@@ -1525,12 +1564,12 @@ export class Flight {
         vy: svy,
         angle: this.angle,
         spin: 0.2,
-        parts: ['satellit'],
+        parts: [payload],
         age: 0,
       });
       this.emit(
         'warn',
-        `Satellit ausgesetzt – doch seine Bahn führt in ${ref.atmosphere > 0 ? 'die Atmosphäre' : 'den Boden'}: Er stürzt ab. Erst eine stabile Umlaufbahn fliegen!`,
+        `${title} ausgesetzt – doch seine Bahn führt in ${ref.atmosphere > 0 ? 'die Atmosphäre' : 'den Boden'}: Er stürzt ab. Erst eine stabile Umlaufbahn fliegen!`,
       );
       return true;
     }
@@ -1539,9 +1578,10 @@ export class Flight {
       Math.max(0, ...this.satellites.map((q) => Number(/(\d+)$/.exec(q.name)?.[1] ?? 0))) + 1;
     this.satellites.push({
       id: newSatId(),
-      name: `Satellit ${n}`,
+      name: `${title} ${n}`,
       body: ref.id,
       el,
+      ...(payload !== 'satellit' ? { part: payload } : {}),
       ...(this.sandbox ? { sandbox: true } : {}),
     });
     if (this.satellites.length > MAX_SATELLITES) this.satellites.shift();
@@ -1549,7 +1589,7 @@ export class Flight {
       `${Math.round((m - ref.radius) / 1000).toLocaleString('de-DE')} km`;
     this.emit(
       'info',
-      `Satellit ${n} kreist jetzt um ${forms(ref).acc}: ${km(peri)} bis ${km(apo)} hoch.`,
+      `${title} ${n} kreist jetzt um ${forms(ref).acc}: ${km(peri)} bis ${km(apo)} hoch.`,
     );
     this.satelliteGoals();
     return true;
@@ -1839,7 +1879,10 @@ export class Flight {
     }
     if (this.turn !== 0 && this.sas === 'point') this.sas = 'off';
     // Reaktionsräder: schneller drehen und schneller abbremsen (höchstens zwei zählen).
-    const wheels = Math.min(2, this.count('wheel'));
+    const wheels = Math.min(
+      2,
+      this.count('wheel') + this.allParts().filter((id) => part(id).wheel).length,
+    );
     const target = rotates ? cmd * TURN_RATE * (1 + 0.45 * wheels) : 0;
     const dv = target - this.angVel;
     const maxStep = TURN_ACCEL * (1 + 0.75 * wheels) * realDt;
@@ -1983,7 +2026,7 @@ export class Flight {
     const heating =
       air.rho > 0 && this.heatOn
         ? ((Math.sqrt(air.rho) * rv ** 3) / HEAT_SCALE) *
-          (this.shielded ? SHIELD_FACTOR : 1) *
+          (this.shielded ? this.shieldFactor : 1) *
           protect
         : 0;
     this.heat = Math.max(0, this.heat + (heating - this.heat * HEAT_COOLING) * dt);
@@ -2075,11 +2118,7 @@ export class Flight {
     const up = Math.atan2(this.y - c.y, this.x - c.x);
     const tilt = Math.abs(wrap(this.angle - up));
     const legs = this.hasLegs;
-    const speedLimit = this.hasStrongLegs
-      ? LAND_SPEED_LEGS_XL
-      : legs
-        ? LAND_SPEED_LEGS
-        : LAND_SPEED;
+    const speedLimit = this.safeLandingSpeed;
     const tiltLimit = legs ? LAND_TILT_LEGS : LAND_TILT;
     // Auf die Oberfläche setzen.
     this.x = c.x + body.radius * Math.cos(up);

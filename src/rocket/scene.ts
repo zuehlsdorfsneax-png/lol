@@ -476,6 +476,36 @@ function visibleArc(v: View, b: Body, t: number): { from: number; to: number; sp
 
 /** Wie stark Bodendetails gerade abgedunkelt werden (Nacht), 0 = voll beleuchtet. */
 let nightDim = 0;
+/** Ausklappen der Solarflügel (0…1) und Zeitpunkt des letzten Bilds. */
+let solarAnim = 0;
+let solarClock = 0;
+
+/** Lichtfleck der Landescheinwerfer auf dem Boden unter der Rakete. */
+function drawLampPool(
+  ctx: CanvasRenderingContext2D,
+  v: View,
+  f: Flight,
+  near: { body: Body; altitude: number },
+): void {
+  const [bx, by] = bodyState(near.body, f.t);
+  const up = Math.atan2(f.y - by, f.x - bx);
+  const gx = bx + Math.cos(up) * near.body.radius;
+  const gy = by + Math.sin(up) * near.body.radius;
+  const [sx, sy] = toScreen(v, gx, gy);
+  const [tx, ty] = toScreen(v, gx - Math.sin(up), gy + Math.cos(up));
+  const img = softSprite('255,240,205', 0.35);
+  if (!img) return;
+  const r = (6 + near.altitude * 0.55) * v.scale;
+  if (r < 2) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.75 * Math.max(0, 1 - near.altitude / 90);
+  ctx.translate(sx, sy);
+  ctx.rotate(Math.atan2(ty - sy, tx - sx));
+  ctx.scale(1, 0.32);
+  ctx.drawImage(img, -r, -r, 2 * r, 2 * r);
+  ctx.restore();
+}
 const litCache = new Map<string, string>();
 
 /** Farbe eines Bodendetails im aktuellen Licht. */
@@ -989,7 +1019,7 @@ export function drawFlight(
     if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
     ctx.save();
     local(ctx, v, x, y, f.t * 0.02 + s.id, Math.max(v.scale, 3.4));
-    drawSatellite(ctx);
+    drawSatellite(ctx, s.part);
     ctx.restore();
     label(ctx, s.name, sx + 18, sy - 12, '#a5f3fc', 11);
   }
@@ -1054,6 +1084,14 @@ export function drawFlight(
   if (f.status !== 'crashed') {
     const parts = f.segs.flatMap((s) => s.parts);
     const heightM = f.length;
+    // Solarflügel klappen langsam aus und ein; Scheinwerfer brennen im Dunkeln.
+    const dtAnim = Math.max(0, Math.min(0.2, time - solarClock));
+    solarClock = time;
+    solarAnim += ((f.solarOpen ? 1 : 0) - solarAnim) * Math.min(1, dtAnim * 1.2);
+    if (solarAnim < 0.01) solarAnim = f.solarOpen ? 0.01 : 0;
+    const dark = light.shadow || light.day < 0.45;
+    const lamps = f.hasLights && dark && near.body !== SUN ? 1 : 0;
+    if (lamps && near.altitude < 90 && near.body.solid) drawLampPool(ctx, v, f, near);
     const minPx = opts.minRocket ?? 34;
     const scale = Math.max(v.scale, minPx / Math.max(heightM, 1));
     // Licht von der Seite der Sonne
@@ -1069,6 +1107,8 @@ export function drawFlight(
       chuteArea: f.chuteArea,
       chuteCollapse: f.chuteCollapse,
       brakes: f.airbrakes ? 1 : 0,
+      solar: solarAnim,
+      lights: lamps,
       time,
     });
     if (f.rcs && (f.translate.x || f.translate.y) && f.status === 'flying')

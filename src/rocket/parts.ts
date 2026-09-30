@@ -14,7 +14,9 @@ export type PartKind =
   | 'nose'
   | 'airbrake'
   | 'wheel'
-  | 'rcs';
+  | 'rcs'
+  | 'solar'
+  | 'light';
 
 /** Aussehen der Triebwerksflamme. */
 export type FlameKind = 'chemisch' | 'atom' | 'ionen';
@@ -42,6 +44,14 @@ export interface PartDef {
   chuteArea?: number;
   /** Eingebauter Hitzeschutz: Anteil der Hitze, der noch ankommt. */
   heatProtect?: number;
+  /** Hitzeschild: Anteil der Hitze, der mit dem Schild voran noch ankommt. */
+  shieldFactor?: number;
+  /** Landebeine: so schnell (m/s) darf die Rakete aufsetzen. */
+  landSpeed?: number;
+  /** Tankadapter: Breite der Oberkante (die Unterkante hat `width`). */
+  topWidth?: number;
+  /** Eingebautes Reaktionsrad (Sondenkern). */
+  wheel?: boolean;
 }
 
 export const PARTS: readonly PartDef[] = [
@@ -97,6 +107,20 @@ export const PARTS: readonly PartDef[] = [
     info: 'Ein Bordcomputer statt Crew: steuert unbemannte Sonden. Leicht – aber ohne Menschen an Bord zählt keine Heimkehr.',
   },
   {
+    id: 'sonde-xl',
+    name: 'Sondenkern Kepler',
+    kind: 'probe',
+    width: 2.4,
+    height: 1.3,
+    dry: 480,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    wheel: true,
+    info: 'Großer Sondenkern mit eingebautem Reaktionsrad und großer Antennenschüssel: dreht so flink wie mit einem Rad – passt auf 2,4-m-Tanks.',
+  },
+  {
     id: 'satellit',
     name: 'Satellit',
     kind: 'payload',
@@ -107,6 +131,19 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Nutzlast: Im Flug mit N aussetzen – dann kreist er allein weiter und bleibt auch für spätere Flüge auf seiner Bahn.',
+  },
+  {
+    id: 'teleskop',
+    name: 'Weltraumteleskop',
+    kind: 'payload',
+    width: 2.2,
+    height: 3.6,
+    dry: 1100,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 300,
+    info: 'Nutzlast wie der Satellit (mit N aussetzen): Über der Luft flimmern die Sterne nicht – das Teleskop sieht schärfer als jedes auf der Erde.',
   },
   {
     id: 'fallschirm',
@@ -132,6 +169,19 @@ export const PARTS: readonly PartDef[] = [
     isp: 0,
     chuteArea: 2.5,
     info: 'Zweieinhalbmal so viel Bremsfläche wie der normale Schirm – für schwere Kapseln und die dünne Marsluft.',
+  },
+  {
+    id: 'fallschirm-s',
+    name: 'Sondenfallschirm',
+    kind: 'chute',
+    width: 0.9,
+    height: 0.55,
+    dry: 45,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    chuteArea: 0.4,
+    info: 'Kleiner, leichter Schirm (40 % Fläche) für Sonden und Mini-Lander – bremst einen Sondenkern sicher auf der Erde ab.',
   },
   {
     id: 'nase',
@@ -161,6 +211,7 @@ export const PARTS: readonly PartDef[] = [
     id: 'hitzeschild',
     name: 'Hitzeschild',
     kind: 'shield',
+    shieldFactor: 0.25,
     width: 2.6,
     height: 0.35,
     dry: 300,
@@ -168,6 +219,20 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Schluckt drei Viertel der Hitze beim Wiedereintritt – aber nur, wenn er vorn ist: als unterstes Teil der Rakete und mit dem Boden voran (SAS: retrograd).',
+  },
+  {
+    id: 'hitzeschild-xl',
+    name: 'Großer Hitzeschild',
+    kind: 'shield',
+    width: 3.4,
+    height: 0.45,
+    dry: 520,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 300,
+    shieldFactor: 0.12,
+    info: 'Dicker Ablationsschild mit 3,4 m Durchmesser: Mit ihm voran kommt nur ein Achtel der Hitze an – für den schnellen Rückflug vom Mars oder von Jupiter.',
   },
   {
     id: 'tank-s',
@@ -204,6 +269,18 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Schmaler Tank (0,8 t) passend zum Sondenkern – für leichte Sonden mit Spatz- oder Ionentriebwerk.',
+  },
+  {
+    id: 'tank-sonde-l',
+    name: 'Sondentank L',
+    kind: 'tank',
+    width: 1.4,
+    height: 4.2,
+    dry: 200,
+    fuel: 1600,
+    thrust: 0,
+    isp: 0,
+    info: 'Langer, schmaler Tank (1,6 t) für Sonden mit großer Reichweite.',
   },
   {
     id: 'tank-m',
@@ -256,6 +333,20 @@ export const PARTS: readonly PartDef[] = [
     info: 'Der größte Tank (32 t) – zusammen mit dem Mammut eine Schwerlast-Erststufe.',
   },
   {
+    id: 'adapter',
+    name: 'Tankadapter 3,2 → 2,4',
+    kind: 'tank',
+    width: 3.2,
+    height: 2.4,
+    topWidth: 2.4,
+    dry: 420,
+    fuel: 3600,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    info: 'Kegelförmiger Tank (3,6 t): verbindet eine dicke 3,2-m-Stufe glatt mit einer schlanken 2,4-m-Oberstufe.',
+  },
+  {
     id: 'spatz',
     name: 'Triebwerk Spatz',
     kind: 'engine',
@@ -280,6 +371,19 @@ export const PARTS: readonly PartDef[] = [
     info: 'Klein und sparsam – ideal zum Landen auf dem Mond. Zu schwach für den Start von der Erde.',
   },
   {
+    id: 'moewe',
+    name: 'Triebwerk Möwe',
+    kind: 'engine',
+    width: 1.8,
+    height: 1.4,
+    dry: 550,
+    fuel: 0,
+    thrust: 95_000,
+    isp: 322,
+    unlock: 150,
+    info: 'Doppelt so stark wie der Kolibri und fast so sparsam: das Landetriebwerk für schwere Lander auf Mond und Mars.',
+  },
+  {
     id: 'falke',
     name: 'Triebwerk Falke',
     kind: 'engine',
@@ -290,6 +394,19 @@ export const PARTS: readonly PartDef[] = [
     thrust: 180_000,
     isp: 310,
     info: 'Das Allround-Triebwerk für Oberstufen.',
+  },
+  {
+    id: 'adler',
+    name: 'Triebwerk Adler',
+    kind: 'engine',
+    width: 2.4,
+    height: 2.2,
+    dry: 1500,
+    fuel: 0,
+    thrust: 360_000,
+    isp: 300,
+    unlock: 50,
+    info: 'Zwischen Falke und Titan: kräftig genug für mittlere Erststufen, sparsamer als der Titan.',
   },
   {
     id: 'nova',
@@ -304,6 +421,20 @@ export const PARTS: readonly PartDef[] = [
     vacuum: true,
     unlock: 150,
     info: 'Riesige Düse für den Weltraum: sehr sparsam im Vakuum, aber in dichter Luft verliert es über die Hälfte seines Schubs. Für Oberstufen.',
+  },
+  {
+    id: 'hermes',
+    name: 'Vakuumtriebwerk Hermes',
+    kind: 'engine',
+    width: 1.4,
+    height: 1.9,
+    dry: 330,
+    fuel: 0,
+    thrust: 55_000,
+    isp: 375,
+    vacuum: true,
+    unlock: 150,
+    info: 'Kleine Vakuumdüse für Sonden: sparsamer als jedes andere chemische Triebwerk, aber nur im Weltraum mit vollem Schub.',
   },
   {
     id: 'titan',
@@ -329,6 +460,20 @@ export const PARTS: readonly PartDef[] = [
     isp: 290,
     unlock: 150,
     info: 'Das stärkste Triebwerk: 1.500 kN hebt auch die schwersten Raketen von der Rampe.',
+  },
+  {
+    id: 'herkules',
+    name: 'Vakuumtriebwerk Herkules',
+    kind: 'engine',
+    width: 3.2,
+    height: 4.2,
+    dry: 3400,
+    fuel: 0,
+    thrust: 900_000,
+    isp: 358,
+    vacuum: true,
+    unlock: 550,
+    info: 'Die größte Vakuumdüse: 900 kN für schwere Oberstufen und Transferstufen zu Mars und Jupiter. In dichter Luft verliert sie über die Hälfte des Schubs.',
   },
   {
     id: 'atom',
@@ -384,6 +529,18 @@ export const PARTS: readonly PartDef[] = [
     info: 'Wirft beim Zünden der nächsten Stufe alles darunter ab. So muss die Rakete leere Tanks nicht mitschleppen.',
   },
   {
+    id: 'trenner-s',
+    name: 'Sondentrenner',
+    kind: 'decoupler',
+    width: 1.4,
+    height: 0.3,
+    dry: 40,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Leichter Stufentrenner mit 1,4 m Durchmesser – passt zu Sondenkern und Sondentanks.',
+  },
+  {
     id: 'booster',
     name: 'Seitenbooster (Paar)',
     kind: 'booster',
@@ -409,9 +566,35 @@ export const PARTS: readonly PartDef[] = [
     info: 'Doppelt so große Feststoff-Booster: 720 kN extra für schwere Raketen. Fallen mit ihrer Stufe ab.',
   },
   {
+    id: 'booster-s',
+    name: 'Kleinbooster (Paar)',
+    kind: 'booster',
+    width: 2.4,
+    height: 0.35,
+    dry: 800,
+    fuel: 4500,
+    thrust: 170_000,
+    isp: 270,
+    info: 'Zwei schlanke Feststoff-Booster: 170 kN Starthilfe für leichte Raketen. Fallen mit ihrer Stufe ab.',
+  },
+  {
+    id: 'booster-fl',
+    name: 'Flüssigbooster (Paar)',
+    kind: 'booster',
+    width: 3.2,
+    height: 0.5,
+    dry: 3800,
+    fuel: 26_000,
+    thrust: 1_000_000,
+    isp: 305,
+    unlock: 550,
+    info: 'Zwei riesige Flüssig-Booster mit eigenen Triebwerken: 1.000 kN extra und sparsamer als Feststoff. Für die schwersten Raketen.',
+  },
+  {
     id: 'beine-xl',
     name: 'Stoßdämpfer-Beine',
     kind: 'legs',
+    landSpeed: 20,
     width: 3.2,
     height: 0.8,
     dry: 450,
@@ -425,6 +608,7 @@ export const PARTS: readonly PartDef[] = [
     id: 'beine',
     name: 'Landebeine',
     kind: 'legs',
+    landSpeed: 14,
     width: 2.4,
     height: 0.6,
     dry: 200,
@@ -432,6 +616,19 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Federn die Landung ab: erlauben bis 14 m/s statt 8 m/s und mehr Schräglage. Gehören in die unterste Stufe, direkt über das Triebwerk.',
+  },
+  {
+    id: 'beine-s',
+    name: 'Sondenbeine',
+    kind: 'legs',
+    width: 1.4,
+    height: 0.45,
+    dry: 70,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    landSpeed: 11,
+    info: 'Leichte Landebeine für Sonden: erlauben bis 11 m/s beim Aufsetzen. Direkt über das Triebwerk der untersten Stufe.',
   },
   {
     id: 'rad',
@@ -456,6 +653,31 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Vier zusätzliche Lagekontrolldüsen: RCS schiebt viermal so kräftig – praktisch zum Andocken schwerer Raketen.',
+  },
+  {
+    id: 'solar',
+    name: 'Solarflügel',
+    kind: 'solar',
+    width: 2.4,
+    height: 0.7,
+    dry: 160,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 550,
+    info: 'Klappt im All zwei Solarflügel aus: Der Strom verstärkt Ionentriebwerke (in Erdnähe 2,5-facher Schub). Die Sonnenkraft fällt mit dem Quadrat der Entfernung – bei Jupiter bringt der Flügel kaum noch etwas.',
+  },
+  {
+    id: 'scheinwerfer',
+    name: 'Scheinwerfer',
+    kind: 'light',
+    width: 2.4,
+    height: 0.35,
+    dry: 30,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Landescheinwerfer: Nachts und im Schatten beleuchten sie den Boden unter der Rakete – so sieht man die Landestelle.',
   },
 ];
 
@@ -735,6 +957,130 @@ export const TEMPLATES: readonly Template[] = [
     ],
   },
   {
+    id: 'zwerg',
+    name: 'Zwerg',
+    info: 'Kleinster Satellitenträger: Kleinbooster, Adler-Erststufe und eine schlanke Sonden-Oberstufe mit Vakuumtriebwerk Hermes.',
+    parts: [
+      'nase',
+      'satellit',
+      'sonde',
+      'tank-sonde-l',
+      'hermes',
+      'trenner-s',
+      'tank-m',
+      'tank-m',
+      'adler',
+      'booster-s',
+    ],
+  },
+  {
+    id: 'sternwarte',
+    name: 'Sternwarte',
+    info: 'Bringt ein Weltraumteleskop über die Luft: Sondenkern Kepler steuert, die Hermes-Oberstufe hebt die Bahn an – dort mit N aussetzen.',
+    parts: [
+      'nase',
+      'teleskop',
+      'sonde-xl',
+      'tank-m',
+      'hermes',
+      'trenner',
+      'tank-l',
+      'tank-m',
+      'adler',
+      'booster-s',
+    ],
+  },
+  {
+    id: 'phoenix',
+    name: 'Phönix (Marssonde)',
+    info: 'Unbemannter Mars-Lander mit Sondenfallschirm, Sondenbeinen und Scheinwerfern – landet auch nachts. Hermes schiebt ihn zum Mars.',
+    parts: [
+      'fallschirm-s',
+      'sonde',
+      'scheinwerfer',
+      'tank-sonde',
+      'beine-s',
+      'spatz',
+      'trenner-s',
+      'tank-sonde-l',
+      'hermes',
+      'trenner',
+      'tank-l',
+      'tank-m',
+      'adler',
+      'booster-s',
+    ],
+  },
+  {
+    id: 'daemmerung',
+    name: 'Dämmerung (Ionensonde)',
+    info: 'Ionensonde mit Solarflügeln wie die echte Dawn: winziger Schub, aber über 40 km/s Δv. Reist zum Zwergplaneten Ceres und landet dort.',
+    parts: [
+      'sonde-xl',
+      'solar',
+      'tank-sonde-l',
+      'tank-sonde-l',
+      'beine-s',
+      'ionen',
+      'trenner-s',
+      'tank-xl',
+      'nova',
+      'trenner',
+      'tank-xxl',
+      'mammut',
+    ],
+  },
+  {
+    id: 'nachtfalke',
+    name: 'Nachtfalke',
+    info: 'Mondlander mit Scheinwerfern und Möwe-Triebwerk: landet auch in der Mondnacht und kehrt heim. Der Tankadapter verbindet die dicke Erststufe mit der schlanken Oberstufe.',
+    parts: [
+      'fallschirm',
+      'kapsel',
+      'hitzeschild',
+      'trenner',
+      'tank-m',
+      'tank-s',
+      'scheinwerfer',
+      'beine',
+      'moewe',
+      'trenner',
+      'tank-l',
+      'tank-l',
+      'nova',
+      'trenner',
+      'tank-xl',
+      'adapter',
+      'mammut',
+    ],
+  },
+  {
+    id: 'koloss',
+    name: 'Koloss',
+    info: 'Schwerlastrakete mit Flüssigboostern und dem Vakuumtriebwerk Herkules: drei Personen, großer Hitzeschild und Stoßdämpfer-Beine – zum Mars und wieder zurück.',
+    parts: [
+      'fallschirm-xl',
+      'kapsel-xl',
+      'hitzeschild-xl',
+      'trenner',
+      'rcs-block',
+      'tank-xl',
+      'beine-xl',
+      'orion',
+      'trenner',
+      'tank-xxl',
+      'tank-xl',
+      'herkules',
+      'trenner',
+      'tank-xxl',
+      'tank-xxl',
+      'booster-fl',
+      'tank-xxl',
+      'mammut',
+      'booster-fl',
+    ],
+  },
+  {
     id: 'spatzsonde',
     name: 'Spatz-Sonde',
     info: 'Winzige Sonde mit Sondentank und Spatz-Triebwerk auf einer kleinen Trägerrakete – landet auf Phobos oder Europa.',
@@ -805,6 +1151,8 @@ export interface BuildRules {
   infiniteFuel: boolean;
   /** Wo der Flug beginnt (für das Schub-Gewichts-Verhältnis). */
   body: Body;
+  /** Start schon in einer Umlaufbahn: Abheben muss die Rakete dann nicht können. */
+  orbital?: boolean;
 }
 
 export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
@@ -815,12 +1163,17 @@ export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
   const segs = segments(design);
   const stats: StageStats[] = [];
   let above = 0;
+  let solar = 0;
   for (const seg of segs) {
     const defs = seg.map(part);
+    // Solarflügel dieser Stufe und darüber verstärken Ionentriebwerke (Werte für die Erdbahn).
+    solar += defs.filter((p) => p.kind === 'solar').length;
+    const power = (p: PartDef): number => (p.flame === 'ionen' ? 1 + 1.5 * Math.min(2, solar) : 1);
     const dry = defs.reduce((s, p) => s + p.dry, 0);
     const fuel = defs.reduce((s, p) => s + p.fuel, 0);
-    const thrust = k * defs.reduce((s, p) => s + p.thrust, 0);
-    const flow = k * defs.reduce((s, p) => s + (p.thrust > 0 ? p.thrust / (p.isp * G0) : 0), 0);
+    const thrust = k * defs.reduce((s, p) => s + p.thrust * power(p), 0);
+    const flow =
+      k * defs.reduce((s, p) => s + (p.thrust > 0 ? (p.thrust * power(p)) / (p.isp * G0) : 0), 0);
     const isp = flow > 0 ? thrust / (flow * G0) : 0;
     const startMass = above + dry + fuel;
     const endMass = startMass - fuel;
@@ -882,7 +1235,7 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
     problems.push({ level: 'error', text: 'Ganz unten muss ein Triebwerk sitzen.' });
   else if (first.fuel === 0)
     problems.push({ level: 'error', text: 'Die unterste Stufe hat keinen Tank.' });
-  else if (first.twrStart < 1)
+  else if (first.twrStart < 1 && !rules?.orbital)
     problems.push({
       level: 'warn',
       text: `Zu schwer: Der Schub der ersten Stufe trägt ${home === EARTH ? '' : `am Startort (${home.name}) `}nur ${Math.round(first.twrStart * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,

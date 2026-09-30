@@ -339,7 +339,7 @@ function drawSatellites(ctx: CanvasRenderingContext2D, f: Flight, v: View): void
     ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
     ctx.fill();
     local(ctx, v, x, y, 0, 3.4);
-    drawSatellite(ctx);
+    drawSatellite(ctx, s.part);
     ctx.restore();
     if (size > 40) label(ctx, s.name, sx + 12, sy + 10, '#a5f3fc', 11, true);
   }

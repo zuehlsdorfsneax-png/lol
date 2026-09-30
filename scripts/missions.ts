@@ -81,3 +81,9 @@ fly('Kurier: Station', 'kurier', { target: 'station', land: false, home: false }
 fly('Odyssee: Europa', 'odyssee', { target: 'europa', land: true, home: false });
 
 console.log(`\n${problems ? `✗ ${problems} Missionen gescheitert` : '✓ alle Missionen erfüllt'}`);
+fly('Zwerg: Umlaufbahn', 'zwerg', { target: 'orbit', land: false, home: false });
+fly('Sternwarte: Umlaufbahn', 'sternwarte', { target: 'orbit', land: false, home: false });
+fly('Phönix: Marslandung', 'phoenix', { target: 'mars', land: true, home: false });
+fly('Dämmerung: Ceres', 'daemmerung', { target: 'ceres', land: true, home: false });
+fly('Nachtfalke: Mond und zurück', 'nachtfalke', { target: 'moon', land: true, home: true });
+fly('Koloss: Marslandung und zurück', 'koloss', { target: 'mars', land: true, home: true });

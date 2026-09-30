@@ -3,7 +3,13 @@ import { LandingPilot } from '../src/rocket/autopilot';
 import { challengeById } from '../src/rocket/challenges';
 import { Flight } from '../src/rocket/flight';
 import { PARTS, TEMPLATES, checkDesign, unlocked } from '../src/rocket/parts';
-import { DEFAULT_SANDBOX, START_OPTIONS, applySandbox, readSandbox } from '../src/rocket/sandbox';
+import {
+  DEFAULT_SANDBOX,
+  START_OPTIONS,
+  applySandbox,
+  buildRules,
+  readSandbox,
+} from '../src/rocket/sandbox';
 import { EARTH, MARS } from '../src/rocket/world';
 
 function run(f: Flight, seconds: number, each?: () => void): void {
@@ -146,5 +152,29 @@ describe('Fallschirm', () => {
     applySandbox(f, DEFAULT_SANDBOX);
     const back = Flight.restore(f.snapshot()!);
     expect(back.sandbox).toBe(true);
+  });
+});
+
+describe('Sandkasten: Startorte auf allen Körpern', () => {
+  it('jeder Startort ist stabil – gelandet steht, in der Bahn kreist die Rakete ohne Absturz', () => {
+    for (const o of START_OPTIONS) {
+      const f = new Flight(['kapsel', 'tank-m', 'falke']);
+      o.place(f);
+      for (let i = 0; i < 600; i++) f.update(1 / 60);
+      expect(f.status, o.id).not.toBe('crashed');
+      if (o.orbital) {
+        expect(f.status, o.id).toBe('flying');
+        expect(f.orbit().bound, o.id).toBe(true);
+        expect(f.orbit().periapsis, o.id).toBeGreaterThan(f.refBody().atmosphere);
+      }
+    }
+  });
+
+  it('für Starts in der Umlaufbahn warnt die Werft nicht, dass die Rakete nicht abhebt', () => {
+    const heavy = ['kapsel', 'tank-xxl', 'tank-xxl', 'ionen'];
+    const rules = buildRules({ ...DEFAULT_SANDBOX, start: 'jupiterorbit' });
+    expect(checkDesign(heavy, rules).some((p) => p.text.includes('hebt nicht ab'))).toBe(false);
+    const ground = buildRules({ ...DEFAULT_SANDBOX, start: 'mars' });
+    expect(checkDesign(heavy, ground).some((p) => p.text.includes('hebt nicht ab'))).toBe(true);
   });
 });

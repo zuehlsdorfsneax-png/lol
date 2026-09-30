@@ -6,8 +6,9 @@ import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { ConfirmButton } from '../ui/ConfirmButton';
 import { Icon, type IconName } from '../ui/Icon';
 import { CHALLENGES, type Challenge, type ChallengeGroup } from './challenges';
-import { PAINTS, drawPart, drawRocket, setPaint, visualWidth } from './draw';
+import { PAINTS, boosterPod, drawPart, drawRocket, setPaint, visualWidth } from './draw';
 import {
+  START_GROUPS,
   START_OPTIONS,
   THRUST_FACTORS,
   buildRules,
@@ -65,7 +66,7 @@ function PartIcon({ def }: { def: PartDef }) {
     // Landebeine und Booster ragen nach unten über ihr Bauteil hinaus.
     const below =
       def.kind === 'legs' ? 1.6 : def.kind === 'booster' ? 5.5 : def.kind === 'shield' ? 0.35 : 0;
-    const extra = def.kind === 'booster' ? (def.id === 'booster-xl' ? 3.8 : 1.8) : 0;
+    const extra = def.kind === 'booster' ? boosterPod(def).rise + 0.4 : 0;
     const h = def.height + below + extra;
     const wide = visualWidth(def);
     const s = Math.min(36 / Math.max(wide, 0.5), 36 / h);
@@ -329,7 +330,11 @@ const CATEGORIES: { id: string; label: string; kinds: PartDef['kind'][] }[] = [
   { id: 'tank', label: 'Tanks', kinds: ['tank'] },
   { id: 'antrieb', label: 'Antrieb', kinds: ['engine', 'booster'] },
   { id: 'aero', label: 'Aero', kinds: ['nose', 'chute', 'airbrake', 'shield'] },
-  { id: 'technik', label: 'Technik', kinds: ['decoupler', 'legs', 'wheel', 'rcs'] },
+  {
+    id: 'technik',
+    label: 'Technik',
+    kinds: ['decoupler', 'legs', 'wheel', 'rcs', 'solar', 'light'],
+  },
 ];
 
 /** Gespeicherte Raketen prüfen: unbekannte Teile oder kaputte Einträge fallen weg. */
@@ -1049,7 +1054,7 @@ function SandboxPanel({
           value={settings.start}
           onChange={(e) => set({ start: (e.target as HTMLSelectElement).value as StartId })}
         >
-          {(['Erde', 'Mond', 'Planeten'] as const).map((g) => (
+          {START_GROUPS.map((g) => (
             <optgroup key={g} label={g}>
               {START_OPTIONS.filter((o) => o.group === g).map((o) => (
                 <option key={o.id} value={o.id}>
