@@ -6,7 +6,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { usePersistentState } from '../ui/hooks';
 import { useTheme, type ThemeChoice } from '../ui/theme';
 import { findMission } from '../missions/missions';
-import { CHAPTERS, VISIBLE_CHAPTERS } from './content';
+import { CHAPTERS, SHOW_TOOLS, VISIBLE_CHAPTERS } from './content';
 import { useRoute, type Route } from './router';
 
 function BrandMark() {
@@ -169,7 +169,7 @@ function Navigation({ route }: { route: Route }) {
         <Icon name="home" />
         <span class="nav-label">Start</span>
       </a>
-      {GROUPS.map((g) => {
+      {GROUPS.filter((g) => SHOW_TOOLS || g.id !== 'werkzeuge').map((g) => {
         const here = g.items.some((i) => i.active(route));
         const expanded = !g.collapsible || here || open[g.id] === true;
         return (

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { DAY, EARTH, G, KM, MOON, REAL_PARAMS, barycenterOffset } from '../../physics';
+import { SHOW_TOOLS } from '../../app/content';
 import { openInSimulator } from '../../app/store';
 import { LineChart } from '../../ui/charts/LineChart';
 import { Callout, Equation, Figure, SectionTitle, StatusChip, Tex } from '../../ui/content';
@@ -249,10 +250,13 @@ export function Hollow() {
           Bahn keine Rolle.
         </p>
       </div>
-      <Callout kind="seminar">
-        Die Rechnung aus Abb. 7.2 lässt sich direkt mit dem Simulator bestätigen: Mit dem Knopf „Im
-        Simulator ansehen“ wird ein Erde-Mond-System mit der Masse des hohlen Mondes gestartet.
-      </Callout>
+      {SHOW_TOOLS && (
+        <Callout kind="seminar">
+          Die Rechnung aus Abb. 7.2 lässt sich direkt mit dem Simulator bestätigen: Mit dem Knopf
+          „Im Simulator ansehen“ wird ein Erde-Mond-System mit der Masse des hohlen Mondes
+          gestartet.
+        </Callout>
+      )}
     </>
   );
 }
@@ -323,24 +327,26 @@ function HollowBarycenter() {
           <StatusChip status={ok ? 'ok' : 'fail'}>
             {ok ? 'passt zu den Messungen' : 'passt nicht zu den Messungen'}
           </StatusChip>
-          <button
-            type="button"
-            class="btn small"
-            onClick={() =>
-              openInSimulator(
-                {
-                  ...REAL_PARAMS,
-                  sunMass: 0,
-                  moonDistance: 384_400,
-                  moonSpeed: 1,
-                  moonMass: m / MOON.mass,
-                },
-                'Hohler Mond',
-              )
-            }
-          >
-            Im Simulator ansehen
-          </button>
+          {SHOW_TOOLS && (
+            <button
+              type="button"
+              class="btn small"
+              onClick={() =>
+                openInSimulator(
+                  {
+                    ...REAL_PARAMS,
+                    sunMass: 0,
+                    moonDistance: 384_400,
+                    moonSpeed: 1,
+                    moonMass: m / MOON.mass,
+                  },
+                  'Hohler Mond',
+                )
+              }
+            >
+              Im Simulator ansehen
+            </button>
+          )}
         </div>
       </div>
       <LineChart

@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useRef } from 'preact/hooks';
-import { VISIBLE_CHAPTERS, PROBLEM_QUESTION } from '../app/content';
+import { SHOW_TOOLS, SHOWN_CHAPTERS, VISIBLE_CHAPTERS, PROBLEM_QUESTION } from '../app/content';
 import { MISSIONS } from '../missions/missions';
 import { progressStore } from '../missions/progress';
 import { REAL_PARAMS } from '../physics';
@@ -74,10 +74,14 @@ export function HomePage() {
             <p>„{PROBLEM_QUESTION}“</p>
           </blockquote>
           <div class="btn-row">
-            <LinkButton to="simulator" primary>
-              Simulator starten
+            {SHOW_TOOLS && (
+              <LinkButton to="simulator" primary>
+                Simulator starten
+              </LinkButton>
+            )}
+            <LinkButton to="kapitel-2" primary={!SHOW_TOOLS}>
+              Mit Kapitel 2 beginnen
             </LinkButton>
-            <LinkButton to="kapitel-2">Mit Kapitel 2 beginnen</LinkButton>
           </div>
         </div>
         <div class="hero-visual">
@@ -113,7 +117,7 @@ export function HomePage() {
               kreist (rückläufig 0,92). Unser Mond liegt bei 0,26 – das Jacobi-Kriterium beweist,
               dass er die Erdumgebung nie verlassen kann.
             </p>
-            <a href="#kapitel-5">Kapitel 5 · Hill-Sphäre</a>
+            {SHOWN_CHAPTERS.has(5) && <a href="#kapitel-5">Kapitel 5 · Hill-Sphäre</a>}
           </div>
           <div class="answer-card">
             <span class="chip fail">
@@ -123,7 +127,7 @@ export function HomePage() {
               Erst wenn er über <strong>70 % seiner Geschwindigkeit</strong> verlöre, käme er der
               Erde näher als die Roche-Grenze und würde zerrissen; bei 80 % schlüge er ein.
             </p>
-            <a href="#kapitel-8">Kapitel 8 · Stabilitätsfälle</a>
+            {SHOWN_CHAPTERS.has(8) && <a href="#kapitel-8">Kapitel 8 · Stabilitätsfälle</a>}
           </div>
           <div class="answer-card">
             <span class="chip warn">
@@ -133,7 +137,7 @@ export function HomePage() {
               Entkommen würde er mit <strong>19 % mehr Tempo</strong>, auf der halben Entfernung zur
               Sonne oder bei 6,5-facher Sonnenmasse – dann öffnet sich das Tor bei L1/L2.
             </p>
-            <a href="#stabilitaetskarte">Zur Stabilitätskarte</a>
+            {SHOW_TOOLS && <a href="#stabilitaetskarte">Zur Stabilitätskarte</a>}
           </div>
         </div>
       </section>
@@ -160,22 +164,24 @@ export function HomePage() {
         </ol>
       </section>
 
-      <section class="home-section" aria-labelledby="werkzeuge">
-        <div class="section-head">
-          <h2 id="werkzeuge">Selbst ausprobieren</h2>
-        </div>
-        <div class="tile-grid">
-          <Tile to="simulator" icon="orbit" title="Simulator">
-            Erde, Mond und Sonne mit allen Parametern, drei Bezugssystemen, Messwerten und Export.
-          </Tile>
-          <Tile to="stabilitaetskarte" icon="grid" title="Stabilitätskarte">
-            Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt er?
-          </Tile>
-          <Tile to="lagrange-labor" icon="lagrange" title="Lagrange-Labor">
-            Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
-          </Tile>
-        </div>
-      </section>
+      {SHOW_TOOLS && (
+        <section class="home-section" aria-labelledby="werkzeuge">
+          <div class="section-head">
+            <h2 id="werkzeuge">Selbst ausprobieren</h2>
+          </div>
+          <div class="tile-grid">
+            <Tile to="simulator" icon="orbit" title="Simulator">
+              Erde, Mond und Sonne mit allen Parametern, drei Bezugssystemen, Messwerten und Export.
+            </Tile>
+            <Tile to="stabilitaetskarte" icon="grid" title="Stabilitätskarte">
+              Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt er?
+            </Tile>
+            <Tile to="lagrange-labor" icon="lagrange" title="Lagrange-Labor">
+              Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
+            </Tile>
+          </div>
+        </section>
+      )}
 
       <section class="home-section" aria-labelledby="spielen">
         <div class="section-head">

@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { EARTH, KM, MOON, G, DAY, barycenterOffset } from '../../physics';
+import { SHOW_TOOLS } from '../../app/content';
 import { openInSimulator } from '../../app/store';
 import { REAL_PARAMS } from '../../physics';
 import { CanvasBox } from '../../ui/CanvasBox';
@@ -295,13 +296,15 @@ function BarycenterDemo() {
         <StatusChip status={inside ? 'ok' : 'warn'}>
           {inside ? 'Baryzentrum im Erdinneren' : 'Baryzentrum außerhalb der Erde: Doppelplanet'}
         </StatusChip>
-        <button
-          type="button"
-          class="btn small"
-          onClick={() => openInSimulator({ ...REAL_PARAMS, moonMass: factor }, 'Baryzentrum')}
-        >
-          Mit dieser Mondmasse simulieren
-        </button>
+        {SHOW_TOOLS && (
+          <button
+            type="button"
+            class="btn small"
+            onClick={() => openInSimulator({ ...REAL_PARAMS, moonMass: factor }, 'Baryzentrum')}
+          >
+            Mit dieser Mondmasse simulieren
+          </button>
+        )}
       </div>
     </div>
   );

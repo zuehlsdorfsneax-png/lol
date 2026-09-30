@@ -26,6 +26,11 @@ export const CHAPTERS: readonly ChapterMeta[] = [
  * und sind über ihre Adresse (#kapitel-3 …) weiter erreichbar – sie werden nur nicht angezeigt.
  */
 export const SHOWN_CHAPTERS = new Set([2, 7]);
+/**
+ * Werkzeuge (Simulator, Stabilitätskarte, Lagrange-Labor) in Menü und Startseite zeigen? Aus:
+ * Sie bleiben erhalten und über ihre Adresse erreichbar, werden nur nicht angezeigt.
+ */
+export const SHOW_TOOLS = false;
 export const VISIBLE_CHAPTERS: readonly ChapterMeta[] = CHAPTERS.filter((c) =>
   SHOWN_CHAPTERS.has(c.n),
 );
