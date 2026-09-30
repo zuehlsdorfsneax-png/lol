@@ -6,6 +6,7 @@ import { RocketAudio } from './audio';
 import { LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
 import { MissionPilot, missionTitle, type MissionSpec } from './mission';
 import { runPlan } from './planClient';
+import { PredictionService } from './predictClient';
 import type { Challenge, ChallengeResult, Memo } from './challenges';
 import { ComputerPanel } from './ComputerPanel';
 import { setPaint } from './draw';
@@ -65,6 +66,13 @@ import {
   type Body,
   type BodyId,
 } from './world';
+
+/**
+ * Auflösung des Spielbilds (Anteil der vollen Pixeldichte). Kommt ein Gerät nicht hinterher (etwa
+ * ein Tablet mit sehr vielen Pixeln), sinkt sie in Stufen bis zur Hälfte; läuft es wieder
+ * flüssig, steigt sie. Gilt für die ganze Sitzung, damit nicht jeder Flug neu einpendeln muss.
+ */
+let renderQuality = 1;
 
 const TARGETS: readonly { id: TargetId; label: string }[] = [
   { id: 'station', label: 'Raumstation Kepler' },
@@ -454,6 +462,14 @@ export function FlightScreen({
   const hits = useRef<MapHits>({ path: null, node: null, handles: [] });
   const lastView = useRef<View | null>(null);
   const pred = useRef<Prediction | null>(null);
+  const predictor = useRef<PredictionService>(null as unknown as PredictionService);
+  if (!predictor.current) {
+    predictor.current = new PredictionService();
+    predictor.current.onResult = (p) => {
+      pred.current = p;
+    };
+  }
+  useEffect(() => () => predictor.current.dispose(), []);
   const predDirty = useRef(true);
   const mapOpen = useRef(map);
   mapOpen.current = map;
@@ -504,6 +520,7 @@ export function FlightScreen({
       next ?? makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites);
     startT.current = flight.current.t;
     stopPilots();
+    predictor.current.reset();
     pred.current = null;
     zoom.current = 1;
     camScale.current = 0;
@@ -1099,9 +1116,33 @@ export function FlightScreen({
     let landings = flight.current.stats.landings;
     let status = flight.current.status;
     const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    // Bildrate beobachten (gleitender Mittelwert der Bildabstände) für die Auflösungsanpassung.
+    let frameMs = 16.7;
+    let slowFor = 0;
+    let fastFor = 0;
     const frame = (now: number): void => {
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const raw = now - last;
+      const dt = Math.min(0.1, raw / 1000);
       last = now;
+      if (raw < 120) {
+        frameMs += (raw - frameMs) * 0.08;
+        // Unter etwa 40 Bildern pro Sekunde eine Stufe weniger Pixel, über 55 wieder mehr.
+        if (frameMs > 25) {
+          slowFor += dt;
+          fastFor = 0;
+        } else if (frameMs < 18.5) {
+          fastFor += dt;
+          slowFor = 0;
+        } else slowFor = fastFor = 0;
+        if (slowFor > 1.2 && renderQuality > 0.5) {
+          renderQuality = Math.max(0.5, renderQuality - 0.15);
+          slowFor = 0;
+          frameMs = 20;
+        } else if (fastFor > 6 && renderQuality < 1) {
+          renderQuality = Math.min(1, renderQuality + 0.1);
+          fastFor = 0;
+        }
+      }
       const fl = flight.current;
       const k = keys.current;
 
@@ -1328,7 +1369,12 @@ export function FlightScreen({
         predFlight = fl;
         predSig = sig;
         predDv = fl.stats.dvUsed;
-        pred.current = fl.status === 'flying' ? fl.predict() : null;
+        // Im Hintergrund-Thread; bis sie fertig ist, gilt die bisherige Vorhersage.
+        if (fl.status === 'flying') predictor.current.request(fl);
+        else {
+          predictor.current.reset();
+          pred.current = null;
+        }
       }
 
       // Warnton, wenn dringend gebremst werden muss
@@ -1348,7 +1394,7 @@ export function FlightScreen({
       if (c && el) {
         const W = el.clientWidth;
         const H = el.clientHeight;
-        const ctx = prepareCanvas(c, W, H);
+        const ctx = prepareCanvas(c, W, H, renderQuality);
         if (ctx) {
           if (mapOpen.current) {
             const cam = mapCam.current;

@@ -516,8 +516,8 @@ svg {
     position: sticky;
     top: env(safe-area-inset-top, 0px);
     z-index: 40;
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter: blur(10px);
+    /* Ohne Unschärfe dahinter: die kostet beim Scrollen über bewegte Bilder auf Tablets viel. */
+    background: color-mix(in srgb, var(--surface) 97%, transparent);
     border-bottom: 1px solid var(--line);
     padding: 8px 16px 8px 10px;
   }

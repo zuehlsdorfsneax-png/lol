@@ -10,6 +10,7 @@ import { drawBody, drawStation } from './scene';
 import {
   beginLabels,
   circle,
+  LayerCache,
   drawStars,
   endLabels,
   label,
@@ -32,6 +33,8 @@ import {
   stationState,
   type Body,
 } from './world';
+
+const MAP_STARS = new LayerCache();
 
 export type MapFocus =
   | 'rocket'
@@ -146,7 +149,8 @@ export function drawMap(
   const { width: W, height: H } = v;
   ctx.fillStyle = '#04060d';
   ctx.fillRect(0, 0, W, H);
-  drawStars(ctx, v, 0.6, 0, opts.time);
+  // Sternenhimmel der Karte steht still: einmal zeichnen, danach nur kopieren.
+  MAP_STARS.draw(ctx, 'map', (g) => drawStars(g, v, 0.6, 0, 0));
   const t = f.t;
   const hits: MapHits = { path: null, node: null, handles: [] };
   // Beschriftungen weichen einander aus und lassen den Tipp oben in der Mitte frei.

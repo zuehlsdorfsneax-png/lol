@@ -584,6 +584,8 @@ export class Flight {
   /** Winkel des Landeplatzes auf dem Körper (bei Monden relativ zur Drehung). */
   private landAngle = Math.PI / 2;
   private emptyWarned = false;
+  /** Angesammelte Rauchwolken, die noch ausgestoßen werden (Bruchteile von Wolken). */
+  private smokeAcc = 0;
   private rng = 1;
 
   constructor(design: Design) {
@@ -1782,7 +1784,7 @@ export class Flight {
     this.updateParticles(realDt);
     this.shake = Math.max(0, this.shake - realDt * 1.4);
     this.flash = Math.max(0, this.flash - realDt * 1.8);
-    if (this.status !== 'crashed' && this.thrusting && this.warp <= 10) this.exhaust();
+    if (this.status !== 'crashed' && this.thrusting && this.warp <= 10) this.exhaust(realDt);
     if (this.status === 'flying' && this.warp <= 10) this.reentrySparks();
     this.checkGoals();
   }
@@ -2315,12 +2317,16 @@ export class Flight {
     return this.rng / 2147483647;
   }
 
-  private exhaust(): void {
+  private exhaust(realDt: number): void {
     const ax = Math.cos(this.angle);
     const ay = Math.sin(this.angle);
     const air = this.air();
     const thick = air.rho > 0.01;
-    const n = thick ? 3 : 1;
+    // Nach Zeit statt pro Bild: gleich dichter Rauch bei 30 wie bei 120 Bildern pro Sekunde –
+    // und nicht Hunderte große, halb durchsichtige Wolken übereinander (das bremst Tablets).
+    this.smokeAcc += realDt * (thick ? 45 : 30);
+    const n = Math.min(4, Math.floor(this.smokeAcc));
+    this.smokeAcc -= n;
     const f = part([...this.active.parts].reverse().find((id) => part(id).thrust > 0) ?? 'falke');
     if (f.flame === 'ionen') return;
     for (let i = 0; i < n; i++) {
@@ -2333,7 +2339,7 @@ export class Flight {
         vy: this.vy - ay * speed + ax * spread,
         life: 0,
         max: thick ? 3 + this.random() * 2.5 : 0.5,
-        size: 2.5 + this.random() * 2,
+        size: thick ? 3.5 + this.random() * 2.5 : 2.5 + this.random() * 2,
         kind: thick ? 'smoke' : 'spark',
       });
     }
@@ -2346,7 +2352,7 @@ export class Flight {
       const gx = c.x + ux * air.body.radius;
       const gy = c.y + uy * air.body.radius;
       const k = this.throttle * (1 - air.altitude / (60 + this.length));
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < n; i++) {
         if (this.random() > k) continue;
         const side = this.random() < 0.5 ? -1 : 1;
         const s = 15 + this.random() * 55;
@@ -2362,7 +2368,7 @@ export class Flight {
         });
       }
     }
-    if (this.particles.length > 900) this.particles.splice(0, this.particles.length - 900);
+    if (this.particles.length > 450) this.particles.splice(0, this.particles.length - 450);
   }
 
   /** Glühende Funken beim Wiedereintritt, die nach hinten wegfliegen. */

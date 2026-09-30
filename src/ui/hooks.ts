@@ -36,8 +36,12 @@ export function prepareCanvas(
   canvas: HTMLCanvasElement,
   width: number,
   height: number,
+  quality = 1,
 ): CanvasRenderingContext2D | null {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  // Mehr als doppelte Pixeldichte sieht man auf einem bewegten Bild nicht, kostet aber auf
+  // Handys (dreifache Dichte) mehr als doppelt so viel Grafikleistung. `quality` < 1 senkt die
+  // Auflösung weiter, wenn ein Gerät nicht hinterherkommt (nie unter 0,75 Pixel je CSS-Pixel).
+  const dpr = Math.max(0.75, Math.min(window.devicePixelRatio || 1, 2) * quality);
   const w = Math.max(1, Math.round(width * dpr));
   const h = Math.max(1, Math.round(height * dpr));
   if (canvas.width !== w || canvas.height !== h) {

@@ -65,22 +65,118 @@ export function hash(i: number, n = 0): number {
 
 // ------------------------------------------------------------------ Sterne
 
-const STARS = Array.from({ length: 320 }, (_, i) => ({
+const STARS = Array.from({ length: 460 }, (_, i) => ({
   x: hash(i, 1),
   y: hash(i, 2),
-  s: 0.4 + hash(i, 3) ** 2 * 1.8,
-  a: 0.3 + hash(i, 4) * 0.7,
+  s: 0.4 + hash(i, 3) ** 3 * 2.2,
+  a: 0.25 + hash(i, 4) * 0.75,
   tw: hash(i, 5) * 6.28,
   warm: hash(i, 6),
 }));
 
-/** Milchstraße: ein weiches Band quer über den Himmel. */
-const MILKY = Array.from({ length: 70 }, (_, i) => ({
+/** Milchstraße: ein weiches Band quer über den Himmel (dicht, mit dunklen Staubbändern). */
+const MILKY = Array.from({ length: 150 }, (_, i) => ({
   t: hash(i, 7),
-  off: (hash(i, 8) - 0.5) * 0.16,
-  r: 0.03 + hash(i, 9) * 0.07,
-  a: 0.03 + hash(i, 10) * 0.05,
+  off: (hash(i, 8) - 0.5) * 0.13,
+  r: 0.025 + hash(i, 9) * 0.07,
+  a: 0.035 + hash(i, 10) * 0.05,
+  hue: hash(i, 11),
 }));
+
+/** Farbige Nebel (Lichtjahre entfernt – sie drehen sich nur mit dem Himmel). */
+const NEBULAE: readonly [number, number, number, string][] = [
+  [0.22, 0.28, 0.16, '140,90,220'],
+  [0.74, 0.7, 0.19, '60,150,190'],
+  [0.63, 0.2, 0.11, '220,90,140'],
+  [0.3, 0.8, 0.13, '90,120,230'],
+];
+
+/**
+ * Hintergrund aus Milchstraße und Nebeln – einmal in ein eigenes Bild gezeichnet und dann nur noch
+ * gedreht eingeblendet. Vorher kostete er in jedem Bild 70 große Farbverläufe (auf Tablets der
+ * teuerste Teil des Himmels).
+ */
+let skyLayer: { canvas: HTMLCanvasElement; size: number } | null = null;
+let skyLayerFailed = false;
+
+function makeSkyLayer(): { canvas: HTMLCanvasElement; size: number } | null {
+  if (skyLayerFailed || typeof document === 'undefined') return null;
+  const size = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const g = canvas.getContext('2d');
+  if (!g) {
+    skyLayerFailed = true;
+    return null;
+  }
+  const R = size / 2;
+  for (const [nx, ny, nr, rgbStr] of NEBULAE) {
+    const x = nx * size;
+    const y = ny * size;
+    const rad = nr * size;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+    gr.addColorStop(0, `rgba(${rgbStr},0.13)`);
+    gr.addColorStop(0.5, `rgba(${rgbStr},0.05)`);
+    gr.addColorStop(1, `rgba(${rgbStr},0)`);
+    g.fillStyle = gr;
+    g.fillRect(x - rad, y - rad, 2 * rad, 2 * rad);
+  }
+  for (const m of MILKY) {
+    const px = (m.t - 0.5) * 2.2 * R;
+    const py = (m.off + (m.t - 0.5) * 0.5) * 2 * R;
+    const x = R + px;
+    const y = R + py;
+    const rad = m.r * R;
+    const col = m.hue > 0.8 ? '255,215,190' : m.hue < 0.2 ? '170,190,255' : '200,208,255';
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+    gr.addColorStop(0, `rgba(${col},${m.a})`);
+    gr.addColorStop(1, `rgba(${col},0)`);
+    g.fillStyle = gr;
+    g.fillRect(x - rad, y - rad, 2 * rad, 2 * rad);
+  }
+  // Dunkle Staubbahn mitten im Band
+  g.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 40; i++) {
+    const t = hash(i, 12);
+    const x = R + (t - 0.5) * 2.2 * R;
+    const y = R + ((t - 0.5) * 0.5 + (hash(i, 13) - 0.5) * 0.03) * 2 * R;
+    const rad = (0.012 + hash(i, 14) * 0.025) * R;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+    gr.addColorStop(0, 'rgba(0,0,0,0.5)');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr;
+    g.fillRect(x - rad, y - rad, 2 * rad, 2 * rad);
+  }
+  g.globalCompositeOperation = 'source-over';
+  // Viele winzige Sterne im Band
+  for (let i = 0; i < 900; i++) {
+    const t = hash(i, 15);
+    const x = R + (t - 0.5) * 2.2 * R;
+    const y = R + ((t - 0.5) * 0.5 + (hash(i, 16) - 0.5) * 0.12) * 2 * R;
+    g.fillStyle = `rgba(230,235,255,${0.15 + hash(i, 17) * 0.35})`;
+    g.fillRect(x, y, 1, 1);
+  }
+  return { canvas, size };
+}
+
+/** Kleines weiches Leuchten für helle Sterne (einmal gezeichnet). */
+let glowSprite: HTMLCanvasElement | null = null;
+function starGlow(): HTMLCanvasElement | null {
+  if (glowSprite || typeof document === 'undefined') return glowSprite;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  if (!g) return null;
+  const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,255,255,0.9)');
+  gr.addColorStop(0.2, 'rgba(210,225,255,0.35)');
+  gr.addColorStop(1, 'rgba(210,225,255,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 32, 32);
+  glowSprite = c;
+  return c;
+}
 
 export function drawStars(
   ctx: CanvasRenderingContext2D,
@@ -94,20 +190,16 @@ export function drawStars(
   const R = Math.hypot(W, H) / 2;
   const c = Math.cos(spin);
   const s = Math.sin(spin);
-  // Milchstraße zuerst, ganz schwach.
-  for (const m of MILKY) {
-    const px = (m.t - 0.5) * 2.2 * R;
-    const py = (m.off + (m.t - 0.5) * 0.5) * 2 * R;
-    const x = W / 2 + px * c - py * s;
-    const y = H / 2 + px * s + py * c;
-    const rad = m.r * R;
-    if (x < -rad || x > W + rad || y < -rad || y > H + rad) continue;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
-    g.addColorStop(0, `rgba(190,200,255,${m.a * alpha})`);
-    g.addColorStop(1, 'rgba(190,200,255,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - rad, y - rad, 2 * rad, 2 * rad);
+  skyLayer ??= makeSkyLayer();
+  if (skyLayer) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(W / 2, H / 2);
+    ctx.rotate(spin);
+    ctx.drawImage(skyLayer.canvas, -R, -R, 2 * R, 2 * R);
+    ctx.restore();
   }
+  const glow = starGlow();
   for (const st of STARS) {
     const px = (st.x - 0.5) * 2 * R;
     const py = (st.y - 0.5) * 2 * R;
@@ -118,8 +210,132 @@ export function drawStars(
     ctx.globalAlpha = st.a * alpha * twinkle;
     ctx.fillStyle = st.warm > 0.85 ? '#ffd9a8' : st.warm < 0.12 ? '#b9d4ff' : '#ffffff';
     ctx.fillRect(x, y, st.s, st.s);
+    // Die hellsten Sterne mit weichem Schein
+    if (glow && st.s > 1.9) {
+      const gs = st.s * 5;
+      ctx.globalAlpha *= 0.55;
+      ctx.drawImage(glow, x + st.s / 2 - gs / 2, y + st.s / 2 - gs / 2, gs, gs);
+    }
   }
   ctx.globalAlpha = 1;
+}
+
+// ------------------------------------------------------------------ Zwischengespeicherte Ebenen
+
+/**
+ * Eine Bildebene in Bildschirmgröße, die nur neu gezeichnet wird, wenn sich ihr Schlüssel ändert
+ * (Größe, Drehung, Helligkeit …) – sonst wird sie nur 1:1 kopiert. Für den Hintergrund aus
+ * Milchstraße, Sternen und Planetenkulisse: Er ändert sich im Flug nur langsam, kostete aber
+ * jedes Bild einige große Zeichenschritte.
+ */
+export class LayerCache {
+  private canvas: HTMLCanvasElement | null = null;
+  private key = '';
+  private failed = false;
+
+  /** Zeichnet die Ebene (über `paint`, mit derselben Transformation wie `ctx`) und blendet sie ein. */
+  draw(ctx: CanvasRenderingContext2D, key: string, paint: (g: CanvasRenderingContext2D) => void) {
+    const cw = ctx.canvas.width;
+    const ch = ctx.canvas.height;
+    if (this.failed || typeof document === 'undefined') {
+      paint(ctx);
+      return;
+    }
+    if (!this.canvas) this.canvas = document.createElement('canvas');
+    const c = this.canvas;
+    const g = c.getContext('2d');
+    if (!g) {
+      this.failed = true;
+      paint(ctx);
+      return;
+    }
+    const tr = ctx.getTransform();
+    const full = `${cw}x${ch}|${tr.a.toFixed(4)}|${key}`;
+    if (full !== this.key) {
+      if (c.width !== cw || c.height !== ch) {
+        c.width = cw;
+        c.height = ch;
+      }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, cw, ch);
+      g.setTransform(tr);
+      paint(g);
+      this.key = full;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(c, 0, 0);
+    ctx.restore();
+  }
+}
+
+// ------------------------------------------------------------------ Weiche Bildchen
+
+const sprites = new Map<string, HTMLCanvasElement | null>();
+
+/**
+ * Weicher runder Fleck in einer Farbe (für Rauch, Staub, Feuer, Leuchten) – einmal gezeichnet und
+ * danach nur noch skaliert eingeblendet. Viel schneller als ein Farbverlauf je Teilchen und
+ * weicher als eine harte Scheibe.
+ */
+export function softSprite(rgbStr: string, core = 0.35): HTMLCanvasElement | null {
+  const key = `soft|${rgbStr}|${core}`;
+  if (sprites.has(key)) return sprites.get(key)!;
+  let c: HTMLCanvasElement | null = null;
+  if (typeof document !== 'undefined') {
+    c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    if (g) {
+      const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, `rgba(${rgbStr},1)`);
+      gr.addColorStop(core, `rgba(${rgbStr},0.75)`);
+      gr.addColorStop(0.7, `rgba(${rgbStr},0.25)`);
+      gr.addColorStop(1, `rgba(${rgbStr},0)`);
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+    } else c = null;
+  }
+  sprites.set(key, c);
+  return c;
+}
+
+/** Wolkenbausch: oben hell, unten im Schatten, weicher Rand (zwei Farben als „r,g,b“). */
+export function cloudSprite(top: string, bottom: string): HTMLCanvasElement | null {
+  const key = `cloud|${top}|${bottom}`;
+  if (sprites.has(key)) return sprites.get(key)!;
+  let c: HTMLCanvasElement | null = null;
+  if (typeof document !== 'undefined') {
+    c = document.createElement('canvas');
+    c.width = c.height = 96;
+    const g = c.getContext('2d');
+    if (g) {
+      const shade = g.createLinearGradient(0, 8, 0, 88);
+      shade.addColorStop(0, `rgb(${top})`);
+      shade.addColorStop(0.55, `rgb(${top})`);
+      shade.addColorStop(1, `rgb(${bottom})`);
+      g.fillStyle = shade;
+      g.fillRect(0, 0, 96, 96);
+      // Weicher Rand: Alpha mit einem runden Verlauf ausstanzen
+      g.globalCompositeOperation = 'destination-in';
+      const mask = g.createRadialGradient(48, 48, 0, 48, 48, 48);
+      mask.addColorStop(0, 'rgba(0,0,0,1)');
+      mask.addColorStop(0.6, 'rgba(0,0,0,0.92)');
+      mask.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = mask;
+      g.fillRect(0, 0, 96, 96);
+      g.globalCompositeOperation = 'source-over';
+    } else c = null;
+  }
+  // Nur eine überschaubare Zahl Farbstufen merken (Tag, Dämmerung, Nacht).
+  if (sprites.size > 400) sprites.clear();
+  sprites.set(key, c);
+  return c;
+}
+
+/** „#rrggbb“ als „r,g,b“ (für die Bildchen). */
+export function rgbOf(hex: string): string {
+  return rgb(hex).join(',');
 }
 
 // ------------------------------------------------------------------ Farben

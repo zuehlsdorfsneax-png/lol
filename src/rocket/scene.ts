@@ -3,6 +3,7 @@
  * Startanlage, Stationen und Basen, Satelliten, Rauch, Rakete und Richtungsmarker.
  */
 import { drawRocket, drawSatellite, setLighting } from './draw';
+import { drawPlanetDisk } from './planets';
 import { bodySpin, satelliteState, type Flight, type LandingSite } from './flight';
 import {
   BODIES,
@@ -23,15 +24,19 @@ import {
   type Body,
 } from './world';
 import {
+  LayerCache,
   blob,
+  cloudSprite,
   drawStars,
   hash,
   label,
   local,
   mix,
   mixHex,
+  rgbOf,
   screenAngle,
   sectorPath,
+  softSprite,
   toScreen,
   type View,
 } from './view';
@@ -316,6 +321,30 @@ function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
   }
 }
 
+/**
+ * Fernansicht mit Oberflächenbild (siehe planets.ts). false, wenn der Körper zu groß, zu klein
+ * oder außerhalb des Bildes ist – oder es kein Bild gibt (dann die einfachen Formen).
+ */
+function drawFarDisk(ctx: CanvasRenderingContext2D, v: View, b: Body, t: number): boolean {
+  const [bx, by] = bodyState(b, t);
+  const [sx, sy] = toScreen(v, bx, by);
+  const rpx = b.radius * v.scale;
+  if (rpx < 3 || rpx >= 2_500) return false;
+  const glowPx =
+    b === SUN
+      ? Math.max(rpx * 1.4, 26 - rpx)
+      : b.atmosphere > 0
+        ? Math.max(4, b.atmosphere * 1.6 * v.scale, rpx * 0.03)
+        : 0;
+  const reach = rpx + glowPx;
+  if (sx < -reach || sx > v.width + reach || sy < -reach || sy > v.height + reach) return true;
+  const [sunX, sunY] = bodyState(SUN, t);
+  const [px, py] = toScreen(v, sunX, sunY);
+  const sunAngle = Math.atan2(py - sy, px - sx);
+  const spin = b === EARTH ? 0 : bodySpin(b, t) || orbitAngle(b, t);
+  return drawPlanetDisk(ctx, b, sx, sy, rpx, v.up - Math.PI / 2 - spin, sunAngle, glowPx);
+}
+
 /** Zeichnet einen Himmelskörper (die Erde hat ihre eigene Funktion). */
 export function drawBody(
   ctx: CanvasRenderingContext2D,
@@ -324,6 +353,7 @@ export function drawBody(
   t: number,
   minPx = 0,
 ): void {
+  if (drawFarDisk(ctx, v, b, t)) return;
   if (b === EARTH) {
     drawEarth(ctx, v, t);
     return;
@@ -444,6 +474,22 @@ function visibleArc(v: View, b: Body, t: number): { from: number; to: number; sp
   return { from: phi - half, to: phi + half, spin };
 }
 
+/** Wie stark Bodendetails gerade abgedunkelt werden (Nacht), 0 = voll beleuchtet. */
+let nightDim = 0;
+const litCache = new Map<string, string>();
+
+/** Farbe eines Bodendetails im aktuellen Licht. */
+function lit(hex: string): string {
+  if (nightDim < 0.01) return hex;
+  const key = `${hex}|${nightDim}`;
+  let c = litCache.get(key);
+  if (!c) {
+    c = mixHex(hex, '#05070f', nightDim);
+    litCache.set(key, c);
+  }
+  return c;
+}
+
 /** Bäume in der Nähe der Startrampe, Felsen und kleine Krater auf den anderen Körpern. */
 function drawSurfaceDetail(ctx: CanvasRenderingContext2D, v: View, b: Body, t: number): void {
   if (v.scale < 0.3 || !b.solid) return;
@@ -461,9 +507,9 @@ function drawSurfaceDetail(ctx: CanvasRenderingContext2D, v: View, b: Body, t: n
       const hgt = 8 + hash(i, 42) * 12;
       ctx.save();
       local(ctx, v, bx + R * Math.cos(a), by + R * Math.sin(a), a);
-      ctx.fillStyle = '#5b3a1e';
+      ctx.fillStyle = lit('#5b3a1e');
       ctx.fillRect(-0.4, 0, 0.8, hgt * 0.3);
-      ctx.fillStyle = hash(i, 43) < 0.5 ? '#2f6b3a' : '#3d7d3f';
+      ctx.fillStyle = hash(i, 43) < 0.5 ? lit('#2f6b3a') : lit('#3d7d3f');
       if (hash(i, 44) < 0.5) {
         ctx.beginPath();
         ctx.moveTo(-hgt * 0.28, hgt * 0.25);
@@ -481,7 +527,7 @@ function drawSurfaceDetail(ctx: CanvasRenderingContext2D, v: View, b: Body, t: n
     return;
   }
   const step = (b === PHOBOS ? 6 : 14) / R;
-  const rock = b === MARS ? '#7a3219' : b === EUROPA ? '#b9a78c' : '#5f646c';
+  const rock = b === MARS ? lit('#7a3219') : b === EUROPA ? lit('#b9a78c') : lit('#5f646c');
   for (let i = Math.floor(from / step); i <= Math.ceil(to / step); i++) {
     if (hash(i, 51) < 0.45) continue;
     const a = i * step;
@@ -559,8 +605,12 @@ const CLOUDS = Array.from({ length: 260 }, (_, i) => {
 function drawClouds(ctx: CanvasRenderingContext2D, v: View, light: SunLight): void {
   if (v.scale < 0.004 || v.scale > 6) return;
   const [ex, ey] = [0, 0];
-  const color = mixHex(mixHex('#1c2338', '#ffffff', light.day), '#ffb07a', light.twilight * 0.5);
-  const shadowC = mixHex(mixHex('#141a2c', '#c9d3e6', light.day), '#c77b5a', light.twilight * 0.4);
+  // Licht in Stufen (gemerkte Bildchen): oben die Sonnenseite, unten der Schatten.
+  const day = Math.round(light.day * 8) / 8;
+  const dusk = Math.round(light.twilight * 4) / 4;
+  const top = rgbOf(mixHex(mixHex('#1c2338', '#ffffff', day), '#ffb07a', dusk * 0.5));
+  const bottom = rgbOf(mixHex(mixHex('#10152a', '#b7c3d9', day), '#b86a4c', dusk * 0.4));
+  const img = cloudSprite(top, bottom);
   const rot = v.up - Math.PI / 2;
   for (const c of CLOUDS) {
     const r = EARTH.radius + c.alt;
@@ -571,24 +621,23 @@ function drawClouds(ctx: CanvasRenderingContext2D, v: View, light: SunLight): vo
       continue;
     // Die Wolke liegt waagerecht zur Oberfläche.
     const tang = -(c.a - Math.PI / 2 - rot);
-    const cos = Math.cos(tang);
-    const sin = Math.sin(tang);
-    ctx.globalAlpha = 0.85;
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(tang);
+    ctx.globalAlpha = 0.9;
     for (let k = 0; k < c.puffs; k++) {
       const off = (k / (c.puffs - 1) - 0.5) * sizePx * 1.4;
-      const pr = sizePx * (0.28 + hash(c.seed * 7 + k, 65) * 0.22);
-      const lift = hash(c.seed * 7 + k, 66) * pr * 0.4;
-      const px = sx + off * cos + lift * sin;
-      const py = sy + off * sin - lift * cos;
-      ctx.fillStyle = shadowC;
-      ctx.beginPath();
-      ctx.ellipse(px, py + pr * 0.18, pr, pr * 0.62, tang, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.ellipse(px, py, pr * 0.95, pr * 0.58, tang, 0, Math.PI * 2);
-      ctx.fill();
+      const pr = sizePx * (0.3 + hash(c.seed * 7 + k, 65) * 0.24);
+      const lift = hash(c.seed * 7 + k, 66) * pr * 0.45;
+      if (img) ctx.drawImage(img, off - pr * 1.25, -lift - pr * 0.85, pr * 2.5, pr * 1.6);
+      else {
+        ctx.fillStyle = `rgb(${top})`;
+        ctx.beginPath();
+        ctx.ellipse(off, -lift, pr, pr * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
 }
@@ -600,24 +649,24 @@ function drawLaunchPad(ctx: CanvasRenderingContext2D, v: View, time: number): vo
   ctx.save();
   local(ctx, v, 0, R, Math.PI / 2);
   // Montagehalle
-  ctx.fillStyle = '#d9dde3';
+  ctx.fillStyle = lit('#d9dde3');
   ctx.fillRect(-150, 0, 58, 62);
-  ctx.fillStyle = '#b9c0ca';
+  ctx.fillStyle = lit('#b9c0ca');
   ctx.fillRect(-150, 0, 8, 62);
-  ctx.fillStyle = '#6b7380';
+  ctx.fillStyle = lit('#6b7380');
   ctx.fillRect(-132, 0, 22, 48);
-  ctx.fillStyle = '#2f5fbf';
+  ctx.fillStyle = lit('#2f5fbf');
   ctx.fillRect(-150, 52, 58, 5);
-  ctx.fillStyle = '#e0503a';
+  ctx.fillStyle = lit('#e0503a');
   ctx.fillRect(-146, 38, 10, 7);
   // Tanks
   for (const x of [58, 76]) {
-    ctx.fillStyle = '#6b7380';
+    ctx.fillStyle = lit('#6b7380');
     ctx.fillRect(x - 4, 0, 1, 7);
     ctx.fillRect(x + 3, 0, 1, 7);
     ctx.beginPath();
     ctx.arc(x, 12, 6.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#eef1f5';
+    ctx.fillStyle = lit('#eef1f5');
     ctx.fill();
     ctx.fillStyle = 'rgba(0,0,0,0.12)';
     ctx.beginPath();
@@ -625,14 +674,14 @@ function drawLaunchPad(ctx: CanvasRenderingContext2D, v: View, time: number): vo
     ctx.fill();
   }
   if (v.scale >= 0.25) {
-    ctx.fillStyle = '#5c6470';
+    ctx.fillStyle = lit('#5c6470');
     ctx.fillRect(-9, -1.2, 18, 1.2);
-    ctx.fillStyle = '#3c434d';
+    ctx.fillStyle = lit('#3c434d');
     ctx.fillRect(-12, -3, 24, 1.8);
-    ctx.fillStyle = '#1a1d23';
+    ctx.fillStyle = lit('#1a1d23');
     ctx.fillRect(-3, -3, 6, 1.8);
     // Turm
-    ctx.strokeStyle = '#c0452f';
+    ctx.strokeStyle = lit('#c0452f');
     ctx.lineWidth = 0.35;
     ctx.strokeRect(5, 0, 2.2, 34);
     ctx.beginPath();
@@ -643,10 +692,10 @@ function drawLaunchPad(ctx: CanvasRenderingContext2D, v: View, time: number): vo
       ctx.lineTo(5, y + 2.2);
     }
     ctx.stroke();
-    ctx.fillStyle = '#f2c230';
+    ctx.fillStyle = lit('#f2c230');
     ctx.fillRect(4.6, 34, 3, 0.6);
     // Blitzableiter mit Blinklicht
-    ctx.fillStyle = '#9aa3b2';
+    ctx.fillStyle = lit('#9aa3b2');
     ctx.fillRect(5.9, 34.6, 0.3, 6);
     ctx.fillStyle = `rgba(255,60,60,${Math.sin(time * 4) > 0.3 ? 1 : 0.25})`;
     ctx.beginPath();
@@ -673,46 +722,46 @@ function drawSite(
   if (sx < -200 || sx > v.width + 200 || sy < -200 || sy > v.height + 200) return;
   if (v.scale < 0.15) {
     // Nur ein Fähnchen mit Namen
-    ctx.strokeStyle = '#fde68a';
+    ctx.strokeStyle = lit('#fde68a');
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(sx, sy - 18);
     ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
+    ctx.fillStyle = lit('#f59e0b');
     ctx.beginPath();
     ctx.moveTo(sx, sy - 18);
     ctx.lineTo(sx + 10, sy - 14);
     ctx.lineTo(sx, sy - 10);
     ctx.fill();
-    label(ctx, site.name, sx + 12, sy - 14, '#fde68a');
+    label(ctx, site.name, sx + 12, sy - 14, lit('#fde68a'));
     return;
   }
   ctx.save();
   local(ctx, v, x, y, a);
-  ctx.fillStyle = '#6b7280';
+  ctx.fillStyle = lit('#6b7280');
   ctx.fillRect(-12, -0.4, 24, 0.5);
-  ctx.strokeStyle = '#fde68a';
+  ctx.strokeStyle = lit('#fde68a');
   ctx.lineWidth = 0.35;
   ctx.beginPath();
   ctx.ellipse(0, 0.1, 9, 0.6, 0, 0, Math.PI * 2);
   ctx.stroke();
   // Kuppel
-  ctx.fillStyle = '#e5e7eb';
+  ctx.fillStyle = lit('#e5e7eb');
   ctx.beginPath();
   ctx.arc(-20, 0, 6, 0, Math.PI);
   ctx.fill();
-  ctx.fillStyle = '#60a5fa';
+  ctx.fillStyle = lit('#60a5fa');
   for (const wx of [-23, -20, -17]) ctx.fillRect(wx - 0.5, 2, 1, 1.2);
   // Antenne
-  ctx.fillStyle = '#9aa3b2';
+  ctx.fillStyle = lit('#9aa3b2');
   ctx.fillRect(17, 0, 0.5, 14);
   ctx.fillStyle = `rgba(252,211,77,${Math.sin(time * 3) > 0 ? 1 : 0.2})`;
   ctx.beginPath();
   ctx.arc(17.25, 14.4, 0.7, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-  if (v.scale < 1.5) label(ctx, site.name, sx + 14, sy - 20, '#fde68a');
+  if (v.scale < 1.5) label(ctx, site.name, sx + 14, sy - 20, lit('#fde68a'));
 }
 
 // ------------------------------------------------------------------ Raumstation
@@ -889,7 +938,20 @@ export function drawFlight(
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
   const starAlpha = inAir ? Math.max(Math.min(1, Math.max(0, (k - 0.3) / 0.6)), 1 - light.day) : 1;
-  drawStars(ctx, v, starAlpha, -v.up, time);
+  // Milchstraße, Sterne und der Planet als Kulisse: als eine Ebene, die nur neu gezeichnet wird,
+  // wenn sich der Blick merklich gedreht hat, die Höhe sich ändert oder das Licht.
+  const back = backdropFor(f, v, near.body, near.altitude, inAir ? k : 1);
+  const bgKey = `${Math.round(v.up / 0.0015)}|${Math.round(starAlpha * 20)}|${back?.key ?? ''}`;
+  BACKGROUND.draw(ctx, bgKey, (g) => {
+    drawStars(g, v, starAlpha, -v.up, 0);
+    if (back) {
+      g.save();
+      g.globalAlpha = back.fade;
+      drawBody(g, back.view, near.body, f.t, 0);
+      g.restore();
+    }
+  });
+  void time;
 
   // Ferne Körper zuerst, nahe zuletzt.
   const dist = (b: Body): number => {
@@ -909,16 +971,14 @@ export function drawFlight(
     }
   }
   drawGroundShade(ctx, v, near.body, f.t);
-  // Bäume, Felsen, Gebäude und Basen liegen nachts im Dunkeln.
-  // In 5-%-Schritten (der Filter wird dann seltener neu gesetzt); ohne Filter-Unterstützung
-  // (ältere Safari) bleiben die Details einfach hell.
-  const dim = near.body === SUN ? 1 : Math.round((0.3 + 0.7 * light.day) * 20) / 20;
-  const canFilter = typeof ctx.filter === 'string';
-  if (dim < 0.99 && canFilter) ctx.filter = `brightness(${dim})`;
+  // Bäume, Felsen, Gebäude und Basen liegen nachts im Dunkeln: ihre Farben werden abgedunkelt
+  // (in 5-%-Schritten, gemerkt). Früher per Helligkeitsfilter – der kostet auf vielen Geräten
+  // für jede einzelne Form eine eigene Bildebene.
+  nightDim = near.body === SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
   drawSurfaceDetail(ctx, v, near.body, f.t);
   if (near.body === EARTH) drawLaunchPad(ctx, v, time);
   if (f.site) drawSite(ctx, v, f.site, f.t, time);
-  if (canFilter) ctx.filter = 'none';
+  nightDim = 0;
   if (near.body === EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);
   drawStation(ctx, v, f.t, 6);
 
@@ -943,9 +1003,20 @@ export function drawFlight(
     ctx.restore();
   }
 
-  // Rauch, Staub und Feuer
-  const dustColor = DUST[near.body.id] ?? '#b4b8bf';
-  const smokeColor = mixHex('#5a5f6b', '#e4e8ef', 0.3 + 0.7 * light.day);
+  // Rauch, Staub und Feuer: weiche Bausche (gemerkte Bildchen, nur skaliert eingeblendet)
+  const dustRgb = rgbOf(DUST[near.body.id] ?? '#b4b8bf');
+  // Rauchfarbe in 10 Helligkeitsstufen – so bleiben es wenige gemerkte Bildchen.
+  const smokeRgb = rgbOf(
+    mixHex('#5a5f6b', '#e4e8ef', Math.round((0.3 + 0.7 * light.day) * 10) / 10),
+  );
+  const smokeImg = softSprite(smokeRgb, 0.25);
+  const dustImg = softSprite(dustRgb, 0.3);
+  const fireImg = [
+    softSprite('255,241,184', 0.45),
+    softSprite('255,179,71', 0.4),
+    softSprite('255,90,42', 0.35),
+  ];
+  const sparkImg = softSprite('255,207,115', 0.55);
   for (const p of f.particles) {
     const [sx, sy] = toScreen(v, p.x, p.y);
     if (sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue;
@@ -953,26 +1024,30 @@ export function drawFlight(
     const grow = p.kind === 'smoke' ? 1 + q * 5 : p.kind === 'dust' ? 1 + q * 3.5 : 1 + q * 2;
     const size = Math.max(
       1.2,
-      Math.min(p.kind === 'smoke' ? 70 : 45, p.size * grow * Math.min(3, v.scale)),
+      Math.min(p.kind === 'smoke' ? 80 : 50, p.size * grow * Math.min(3, v.scale)),
     );
-    ctx.globalAlpha =
+    const alpha =
       (1 - q) *
-      (p.kind === 'smoke' ? 0.32 : p.kind === 'dust' ? 0.45 : p.kind === 'spark' ? 0.9 : 0.85);
-    ctx.fillStyle =
+      (p.kind === 'smoke' ? 0.42 : p.kind === 'dust' ? 0.55 : p.kind === 'spark' ? 1 : 0.95);
+    if (alpha < 0.03) continue;
+    ctx.globalAlpha = alpha;
+    const img =
       p.kind === 'smoke'
-        ? smokeColor
+        ? smokeImg
         : p.kind === 'dust'
-          ? dustColor
+          ? dustImg
           : p.kind === 'fire'
-            ? q < 0.3
-              ? '#fff1b8'
-              : q < 0.6
-                ? '#ffb347'
-                : '#ff5a2a'
-            : '#ffcf73';
-    ctx.beginPath();
-    ctx.arc(sx, sy, size, 0, Math.PI * 2);
-    ctx.fill();
+            ? fireImg[q < 0.3 ? 0 : q < 0.6 ? 1 : 2]!
+            : sparkImg;
+    // Das Bildchen hat einen weichen Rand – etwas größer zeichnen als die alte Scheibe.
+    const d = size * 2.3;
+    if (img) ctx.drawImage(img, sx - d / 2, sy - d / 2, d, d);
+    else {
+      ctx.fillStyle = `rgb(${p.kind === 'smoke' ? smokeRgb : dustRgb})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.globalAlpha = 1;
 
@@ -1014,6 +1089,63 @@ export function drawFlight(
     ctx.fillStyle = `rgba(255,240,210,${flash * 0.65})`;
     ctx.fillRect(0, 0, W, H);
   }
+}
+
+/** Zwischengespeicherter Hintergrund der Flugansicht. */
+const BACKGROUND = new LayerCache();
+
+/**
+ * Der Planet unter der Rakete als Kulisse: Hoch über dem Boden (wenn der echte Boden längst unter
+ * dem Bildrand liegt) sieht man ihn wie aus dem Fenster – die Krümmung, Kontinente, Wolken, die
+ * Nachtseite und den Schein der Atmosphäre. Je höher, desto kleiner wird er. Liefert die Kamera
+ * dafür (gezeichnet mit derselben Fernansicht wie auf der Karte) und einen Schlüssel für den
+ * Zwischenspeicher – oder null, wenn der echte Boden zu sehen ist.
+ */
+function backdropFor(
+  f: Flight,
+  v: View,
+  body: Body,
+  altitude: number,
+  airFade: number,
+): { view: View; fade: number; key: string } | null {
+  if (body === SUN || altitude > body.radius * 40) return null;
+  const { width: W, height: H } = v;
+  // Erst, wenn der echte Boden unter dem Bild verschwunden ist – dann weich einblenden.
+  const groundPx = altitude * v.scale;
+  const fade = Math.min(1, Math.max(0, (groundPx - 0.6 * H) / (0.8 * H))) * airFade;
+  if (fade < 0.02) return null;
+  const [bx, by] = bodyState(body, f.t);
+  const [bsx, bsy] = toScreen(v, bx, by);
+  const dx = bsx - v.ox;
+  const dy = bsy - v.oy;
+  const d = Math.hypot(dx, dy) || 1;
+  // Scheinbare Größe wie von oben gesehen: sin des Blickwinkels auf den Rand.
+  const sinT = body.radius / (body.radius + altitude);
+  // Höchstens so groß, dass die Fernansicht mit Oberflächenbild greift.
+  const rPx = Math.min(2_400, (H * 0.9 * sinT) / (1 - sinT * 0.985));
+  const dist = H * 0.3 + rPx;
+  const view: View = {
+    ...v,
+    scale: rPx / body.radius,
+    cx: bx,
+    cy: by,
+    ox: v.ox + (dx / d) * dist,
+    oy: v.oy + (dy / d) * dist,
+  };
+  if (view.ox < -rPx * 1.2 - W || view.ox > W * 2 + rPx * 1.2) return null;
+  const [sunX, sunY] = bodyState(SUN, f.t);
+  const sun = Math.atan2(sunY - by, sunX - bx);
+  const spin = bodySpin(body, f.t) || orbitAngle(body, f.t);
+  const key = [
+    body.id,
+    Math.round(Math.log(altitude + 1) * 400),
+    Math.round(fade * 40),
+    Math.round(sun * 300),
+    Math.round(spin * 600),
+    Math.round(view.ox),
+    Math.round(view.oy),
+  ].join(',');
+  return { view, fade, key };
 }
 
 /**
