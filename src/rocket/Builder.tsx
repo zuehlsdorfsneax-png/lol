@@ -44,8 +44,11 @@ const MILESTONES = [
   { dv: 4400, label: 'Raumstation' },
   { dv: 5700, label: 'Mondlandung' },
   { dv: 6900, label: 'Mond hin & zurück' },
+  { dv: 7000, label: 'Ceres-Landung' },
   { dv: 7800, label: 'Marslandung' },
-  { dv: 9500, label: 'Europa-Landung' },
+  { dv: 9500, label: 'Europa- oder Ganymed-Landung' },
+  { dv: 10_500, label: 'Merkurlandung' },
+  { dv: 10_800, label: 'Mars: landen & zurück' },
 ];
 
 const fmt = (x: number, d = 0): string =>

@@ -8,6 +8,22 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Landung mit allen Raketen, Rückflug von Planeten, neue Teile
+
+Geplanter Auftrag: Landung im Autopiloten mit allen Raketen, Rückflug wenn möglich, neue Teile und
+Raketen, bessere Werft. Geprüft: Lande-Autopilot mit jeder Vorlage auf Mond, Erde und Mars;
+`scripts/missions.ts` fliegt jetzt 26 Missionen.
+
+| #   | Befund                                                                                          | Status | Lösung                                                                                                               |
+| --- | ----------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| 138 | Lande-Autopilot: Stufe lief mitten im Bremsen leer, die nächste war zu schwach (Pfeil: 243 m/s) | ✅     | Stufen, die nicht mehr zum Abbremsen reichen, werden vorher abgeworfen – nur, wenn die nächste Stufe landen kann     |
+| 139 | Erde: Schwere Raketen landeten am Schirm zu schnell                                             | ✅     | In dichter Luft wirft der Pilot untere Stufen ab, bis der Schirm die Kapsel sanft trägt                              |
+| 140 | Kein Rückflug von Planeten                                                                      | ✅     | Missions-Autopilot fliegt von Planeten und ihren Monden heim (z. B. Mars mit Landung und zurück)                     |
+| 141 | Fallschirm auf dem Mars verbraucht – bei der Heimkehr keiner mehr                               | ✅     | Kommt noch ein Wiedereintritt, landet der Pilot auf dem Mars mit dem Triebwerk und spart den Schirm                  |
+| 142 | Warten aufs Startfenster am Mars: Zusammenstoß mit Phobos                                       | ✅     | Vor dem Heimflug niedrige Kreisbahn statt langer Ellipse                                                             |
+| 143 | Neue Teile und Raketen                                                                          | ✅     | Triebwerk Orion, Kapsel Spatz, Stoßdämpfer-Beine (20 m/s); Vorlagen Odyssee, Pionier (Mars und zurück), Kurier       |
+| 144 | Werft: Reichweite nur bis Europa, keine Warnung bei zu schwacher Landestufe                     | ✅     | Mehr Ziele in der Reichweitenliste (Ceres, Merkur, Mars hin und zurück); Hinweis, wenn die Landestufe zu schwach ist |
+
 ## Missions-Autopilot, Bahnvorhersage, Fallschirm und Kamera
 
 Gemeldet: Der Bordcomputer ist noch nicht perfekt, die Flugbahn-Vorhersage wirkt komisch, der

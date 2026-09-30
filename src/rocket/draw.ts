@@ -292,6 +292,12 @@ export function drawPart(
         }
       } else {
         nozzle(ctx, 0, w, y0, h);
+        if (def.id === 'orion') {
+          // Orion: blaue Brennkammer mit zwei Ringen
+          ctx.fillStyle = shade('#1d4ed8');
+          ctx.fillRect(-w * 0.22, y0 + h * 0.7, w * 0.44, h * 0.08);
+          ctx.fillRect(-w * 0.3, y0 + h * 0.5, w * 0.6, h * 0.05);
+        }
         if (def.id === 'nova') {
           // Vakuumdüse: goldener Kühlring am Hals
           ctx.fillStyle = shade('#b45309');
@@ -379,6 +385,19 @@ export function drawPart(
       ctx.lineWidth = 0.22;
       ctx.lineCap = 'round';
       const foot = Math.min(footY, y0) - 0.1;
+      if (def.id === 'beine-xl') {
+        // Öldämpfer: dicke Zylinder an den Beinen
+        ctx.strokeStyle = shade('#f59e0b');
+        ctx.lineWidth = 0.34;
+        for (const sgn of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo((sgn * w) / 2, y0 + h * 0.5);
+          ctx.lineTo(sgn * (w / 2 + 0.8), foot + 0.9);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = shade('#3b414c');
+        ctx.lineWidth = 0.22;
+      }
       for (const sgn of [-1, 1]) {
         ctx.beginPath();
         ctx.moveTo((sgn * w) / 2, y0 + h * 0.6);

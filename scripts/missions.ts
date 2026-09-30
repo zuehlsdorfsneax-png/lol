@@ -75,6 +75,9 @@ fly('Odyssee: Merkurlandung', 'odyssee', { target: 'mercury', land: true, home: 
 fly('Odyssee: Ceres', 'odyssee', { target: 'ceres', land: true, home: false });
 fly('Odyssee: Mars und zurück', 'odyssee', { target: 'mars', land: false, home: true });
 fly('Odyssee: Marslandung und zurück', 'odyssee', { target: 'mars', land: true, home: true });
+fly('Pionier: Marslandung und zurück', 'pionier', { target: 'mars', land: true, home: true });
+fly('Pionier: Mond und zurück', 'pionier', { target: 'moon', land: true, home: true });
+fly('Kurier: Station', 'kurier', { target: 'station', land: false, home: false });
 fly('Odyssee: Europa', 'odyssee', { target: 'europa', land: true, home: false });
 
 console.log(`\n${problems ? `✗ ${problems} Missionen gescheitert` : '✓ alle Missionen erfüllt'}`);

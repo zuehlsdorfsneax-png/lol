@@ -291,6 +291,8 @@ const CHUTE_SEMI_SPEED = 450;
 
 const LAND_SPEED = 8;
 const LAND_SPEED_LEGS = 14;
+/** Mit Stoßdämpfer-Beinen. */
+const LAND_SPEED_LEGS_XL = 20;
 const LAND_TILT = 0.4;
 const LAND_TILT_LEGS = 0.65;
 /** Beschleunigung der Lagekontrolldüsen (RCS) in m/s². */
@@ -812,7 +814,12 @@ export class Flight {
   }
 
   get hasLegs(): boolean {
-    return this.active.parts.includes('beine');
+    return this.active.parts.includes('beine') || this.hasStrongLegs;
+  }
+
+  /** Stoßdämpfer-Beine: noch härtere Landungen möglich. */
+  get hasStrongLegs(): boolean {
+    return this.active.parts.includes('beine-xl');
   }
 
   /** Sitzt der Hitzeschild ganz unten? */
@@ -1384,7 +1391,7 @@ export class Flight {
 
   /** Mit diesem Tempo (m/s) übersteht die Rakete das Aufsetzen (Landebeine federn mehr ab). */
   get safeLandingSpeed(): number {
-    return this.hasLegs ? LAND_SPEED_LEGS : LAND_SPEED;
+    return this.hasStrongLegs ? LAND_SPEED_LEGS_XL : this.hasLegs ? LAND_SPEED_LEGS : LAND_SPEED;
   }
 
   /** Länge für Kamera und Bildmitte: Rakete plus offener Schirm darüber. */
@@ -2066,7 +2073,11 @@ export class Flight {
     const up = Math.atan2(this.y - c.y, this.x - c.x);
     const tilt = Math.abs(wrap(this.angle - up));
     const legs = this.hasLegs;
-    const speedLimit = legs ? LAND_SPEED_LEGS : LAND_SPEED;
+    const speedLimit = this.hasStrongLegs
+      ? LAND_SPEED_LEGS_XL
+      : legs
+        ? LAND_SPEED_LEGS
+        : LAND_SPEED;
     const tiltLimit = legs ? LAND_TILT_LEGS : LAND_TILT;
     // Auf die Oberfläche setzen.
     this.x = c.x + body.radius * Math.cos(up);

@@ -72,6 +72,19 @@ export const PARTS: readonly PartDef[] = [
     info: 'Große Kapsel für drei Personen mit eingebautem Hitzeschutz: Beim Wiedereintritt kommt nur die Hälfte der Hitze an.',
   },
   {
+    id: 'kapsel-mini',
+    name: 'Kapsel Spatz',
+    kind: 'capsule',
+    width: 1.8,
+    height: 1.7,
+    dry: 650,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    info: 'Enge Ein-Personen-Kapsel, halb so schwer wie die normale: mehr Δv für weite Reisen. Passt zum kleinen Fallschirm.',
+  },
+  {
     id: 'sonde',
     name: 'Sondenkern',
     kind: 'probe',
@@ -332,6 +345,19 @@ export const PARTS: readonly PartDef[] = [
     info: 'Ein Kernreaktor heizt Wasserstoff auf: fast dreimal so sparsam wie chemische Triebwerke, aber schwer und schwach. Für lange Reisen im All.',
   },
   {
+    id: 'orion',
+    name: 'Triebwerk Orion',
+    kind: 'engine',
+    width: 2.4,
+    height: 2.6,
+    dry: 1600,
+    fuel: 0,
+    thrust: 450_000,
+    isp: 340,
+    unlock: 300,
+    info: 'Kräftiges, sparsames Oberstufen-Triebwerk: startet auch in der Luft zuverlässig und schiebt schwere Transferstufen schnell aus der Erdbahn – kürzere Brennzeiten, genauere Manöver.',
+  },
+  {
     id: 'ionen',
     name: 'Ionentriebwerk',
     kind: 'engine',
@@ -381,6 +407,19 @@ export const PARTS: readonly PartDef[] = [
     isp: 280,
     unlock: 150,
     info: 'Doppelt so große Feststoff-Booster: 720 kN extra für schwere Raketen. Fallen mit ihrer Stufe ab.',
+  },
+  {
+    id: 'beine-xl',
+    name: 'Stoßdämpfer-Beine',
+    kind: 'legs',
+    width: 3.2,
+    height: 0.8,
+    dry: 450,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 300,
+    info: 'Lange Landebeine mit Öldämpfern: halten bis 20 m/s und mehr Schräglage aus – für schwere Lander und holprige Landungen. Direkt über das Triebwerk der untersten Stufe.',
   },
   {
     id: 'beine',
@@ -627,6 +666,46 @@ export const TEMPLATES: readonly Template[] = [
     ],
   },
   {
+    id: 'pionier',
+    name: 'Pionier (Mars und zurück)',
+    info: 'Leichter Ein-Personen-Lander mit Stoßdämpfer-Beinen, Hitzeschild und kräftiger Orion-Transferstufe: auf dem Mars landen, wieder starten und heim zur Erde.',
+    parts: [
+      'fallschirm',
+      'kapsel-mini',
+      'hitzeschild',
+      'trenner',
+      'tank-l',
+      'beine-xl',
+      'orion',
+      'trenner',
+      'tank-xl',
+      'tank-xl',
+      'orion',
+      'trenner',
+      'tank-xxl',
+      'tank-xxl',
+      'booster-xl',
+      'mammut',
+    ],
+  },
+  {
+    id: 'kurier',
+    name: 'Kurier',
+    info: 'Kleine, günstige Fähre zur Raumstation: Mini-Kapsel, RCS und genug Δv für Rendezvous, Andocken und Heimkehr.',
+    parts: [
+      'fallschirm',
+      'kapsel-mini',
+      'hitzeschild',
+      'trenner',
+      'rcs-block',
+      'tank-m',
+      'orion',
+      'trenner',
+      'tank-xl',
+      'titan',
+    ],
+  },
+  {
     id: 'pfeil',
     name: 'Pfeil',
     info: 'Schlanker Satellitenträger mit Nasenkegel (halber Luftwiderstand) und Vakuum-Oberstufe Nova.',
@@ -821,6 +900,22 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
       level: 'warn',
       text: 'Ohne Fallschirm ist eine Landung auf der Erde nur mit Triebwerk möglich.',
     });
+  // Landestufe (mit Beinen): Schafft ihr Triebwerk die Landung auf Mond oder Mars?
+  const lander = stats.find((st) => st.parts.some((id) => part(id).kind === 'legs'));
+  if (lander && lander.thrust > 0) {
+    const gMars = 3.72;
+    const twrMars = lander.thrust / (lander.startMass * gMars);
+    if (lander.twrMoon < 1.2)
+      problems.push({
+        level: 'warn',
+        text: `Die Landestufe ist selbst für den Mond zu schwach (Schub ${Math.round(lander.twrMoon * 100)} % des Gewichts dort) – ein stärkeres Triebwerk oder weniger Last darüber.`,
+      });
+    else if (twrMars < 1.3)
+      problems.push({
+        level: 'warn',
+        text: `Hinweis: Für eine Marslandung ist die Landestufe knapp (Schub ${Math.round(twrMars * 100)} % des Gewichts dort). Für den Mond reicht sie.`,
+      });
+  }
   if (design.length > MAX_PARTS)
     problems.push({ level: 'error', text: `Höchstens ${MAX_PARTS} Teile.` });
   // Jeder Hitzeschild braucht einen Stufentrenner direkt darunter (oder sitzt ganz unten).
