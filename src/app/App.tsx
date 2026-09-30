@@ -6,7 +6,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { usePersistentState } from '../ui/hooks';
 import { useTheme, type ThemeChoice } from '../ui/theme';
 import { findMission } from '../missions/missions';
-import { CHAPTERS, SHOW_TOOLS, VISIBLE_CHAPTERS } from './content';
+import { CHAPTERS, SHOW_SIMULATOR, SHOW_TOOLS, VISIBLE_CHAPTERS } from './content';
 import { useRoute, type Route } from './router';
 
 function BrandMark() {
@@ -169,29 +169,36 @@ function Navigation({ route }: { route: Route }) {
         <Icon name="home" />
         <span class="nav-label">Start</span>
       </a>
-      {GROUPS.filter((g) => SHOW_TOOLS || g.id !== 'werkzeuge').map((g) => {
-        const here = g.items.some((i) => i.active(route));
-        const expanded = !g.collapsible || here || open[g.id] === true;
-        return (
-          <div class="nav-group" key={g.id}>
-            {g.collapsible ? (
-              <button
-                type="button"
-                class="nav-group-title toggle"
-                aria-expanded={expanded}
-                disabled={here}
-                onClick={() => setOpen((o) => ({ ...o, [g.id]: !expanded }))}
-              >
-                {g.title}
-                <Icon name="chevron" />
-              </button>
-            ) : (
-              <div class="nav-group-title">{g.title}</div>
-            )}
-            {expanded && g.items.map((item) => <NavLink key={item.to} item={item} route={route} />)}
-          </div>
-        );
-      })}
+      {GROUPS.map((g) =>
+        g.id !== 'werkzeuge' || SHOW_TOOLS
+          ? g
+          : { ...g, items: g.items.filter((i) => SHOW_SIMULATOR && i.to === 'simulator') },
+      )
+        .filter((g) => g.items.length > 0)
+        .map((g) => {
+          const here = g.items.some((i) => i.active(route));
+          const expanded = !g.collapsible || here || open[g.id] === true;
+          return (
+            <div class="nav-group" key={g.id}>
+              {g.collapsible ? (
+                <button
+                  type="button"
+                  class="nav-group-title toggle"
+                  aria-expanded={expanded}
+                  disabled={here}
+                  onClick={() => setOpen((o) => ({ ...o, [g.id]: !expanded }))}
+                >
+                  {g.title}
+                  <Icon name="chevron" />
+                </button>
+              ) : (
+                <div class="nav-group-title">{g.title}</div>
+              )}
+              {expanded &&
+                g.items.map((item) => <NavLink key={item.to} item={item} route={route} />)}
+            </div>
+          );
+        })}
     </>
   );
 }

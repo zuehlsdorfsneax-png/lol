@@ -31,6 +31,8 @@ export const SHOWN_CHAPTERS = new Set([2, 7]);
  * Sie bleiben erhalten und über ihre Adresse erreichbar, werden nur nicht angezeigt.
  */
 export const SHOW_TOOLS = false;
+/** Der Simulator wird trotzdem gezeigt. */
+export const SHOW_SIMULATOR = true;
 export const VISIBLE_CHAPTERS: readonly ChapterMeta[] = CHAPTERS.filter((c) =>
   SHOWN_CHAPTERS.has(c.n),
 );

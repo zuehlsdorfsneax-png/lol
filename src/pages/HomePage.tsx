@@ -1,6 +1,12 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useRef } from 'preact/hooks';
-import { SHOW_TOOLS, SHOWN_CHAPTERS, VISIBLE_CHAPTERS, PROBLEM_QUESTION } from '../app/content';
+import {
+  SHOW_SIMULATOR,
+  SHOW_TOOLS,
+  SHOWN_CHAPTERS,
+  VISIBLE_CHAPTERS,
+  PROBLEM_QUESTION,
+} from '../app/content';
 import { MISSIONS } from '../missions/missions';
 import { progressStore } from '../missions/progress';
 import { REAL_PARAMS } from '../physics';
@@ -74,12 +80,12 @@ export function HomePage() {
             <p>„{PROBLEM_QUESTION}“</p>
           </blockquote>
           <div class="btn-row">
-            {SHOW_TOOLS && (
+            {(SHOW_TOOLS || SHOW_SIMULATOR) && (
               <LinkButton to="simulator" primary>
                 Simulator starten
               </LinkButton>
             )}
-            <LinkButton to="kapitel-2" primary={!SHOW_TOOLS}>
+            <LinkButton to="kapitel-2" primary={!(SHOW_TOOLS || SHOW_SIMULATOR)}>
               Mit Kapitel 2 beginnen
             </LinkButton>
           </div>
@@ -164,7 +170,7 @@ export function HomePage() {
         </ol>
       </section>
 
-      {SHOW_TOOLS && (
+      {(SHOW_TOOLS || SHOW_SIMULATOR) && (
         <section class="home-section" aria-labelledby="werkzeuge">
           <div class="section-head">
             <h2 id="werkzeuge">Selbst ausprobieren</h2>
@@ -173,12 +179,18 @@ export function HomePage() {
             <Tile to="simulator" icon="orbit" title="Simulator">
               Erde, Mond und Sonne mit allen Parametern, drei Bezugssystemen, Messwerten und Export.
             </Tile>
-            <Tile to="stabilitaetskarte" icon="grid" title="Stabilitätskarte">
-              Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt er?
-            </Tile>
-            <Tile to="lagrange-labor" icon="lagrange" title="Lagrange-Labor">
-              Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
-            </Tile>
+            {SHOW_TOOLS && (
+              <>
+                <Tile to="stabilitaetskarte" icon="grid" title="Stabilitätskarte">
+                  Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt
+                  er?
+                </Tile>
+                <Tile to="lagrange-labor" icon="lagrange" title="Lagrange-Labor">
+                  Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden
+                  System.
+                </Tile>
+              </>
+            )}
           </div>
         </section>
       )}

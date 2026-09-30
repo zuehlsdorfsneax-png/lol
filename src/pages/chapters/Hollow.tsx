@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { DAY, EARTH, G, KM, MOON, REAL_PARAMS, barycenterOffset } from '../../physics';
-import { SHOW_TOOLS } from '../../app/content';
+import { SHOW_SIMULATOR } from '../../app/content';
 import { openInSimulator } from '../../app/store';
 import { LineChart } from '../../ui/charts/LineChart';
 import { Callout, Equation, Figure, SectionTitle, StatusChip, Tex } from '../../ui/content';
@@ -250,7 +250,7 @@ export function Hollow() {
           Bahn keine Rolle.
         </p>
       </div>
-      {SHOW_TOOLS && (
+      {SHOW_SIMULATOR && (
         <Callout kind="seminar">
           Die Rechnung aus Abb. 7.2 lässt sich direkt mit dem Simulator bestätigen: Mit dem Knopf
           „Im Simulator ansehen“ wird ein Erde-Mond-System mit der Masse des hohlen Mondes
@@ -327,7 +327,7 @@ function HollowBarycenter() {
           <StatusChip status={ok ? 'ok' : 'fail'}>
             {ok ? 'passt zu den Messungen' : 'passt nicht zu den Messungen'}
           </StatusChip>
-          {SHOW_TOOLS && (
+          {SHOW_SIMULATOR && (
             <button
               type="button"
               class="btn small"
