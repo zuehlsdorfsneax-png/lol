@@ -6,6 +6,30 @@ Anthropic frontend-design, Vercel Web Interface Guidelines, Emil Kowalski (desig
 Listen typischer KI-Design-Muster (developersdigest, vibemole, daily.dev u. a.) und
 Game-HUD-Leitfäden; angepasst an dieses Projekt. Vor jeder Design-Arbeit ganz lesen.
 
+## Festgelegte Richtung (verbindlich, Stand Design-Überarbeitung)
+
+Leitbild: **Atlastafel**. Seiten wirken wie Tafeln eines Sternatlas bzw. einer gedruckten
+wissenschaftlichen Arbeit: Inhalt auf dem Papier, Gliederung durch Linien, Nummern und Abstände
+statt durch Kästen; Abbildungen und Versuche tragen Nummern („Abb. 1“, „Versuch 2.3“), Messwerte
+stehen in Monospace mit Einheit. Weltraum-Flächen (Simulation, Spielbanner) sind dunkle
+Bildtafeln. Das Spiel bleibt ein dunkles Cockpit.
+
+Alle Werte nur über diese Tokens (`src/styles/global.css` `:root`, Spiel zusätzlich `.game`):
+
+| Bereich  | Tokens                                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Schrift  | `--fs-1` 11 · `--fs-2` 13 · `--fs-3` 15 (Bedienung) · `--fs-4` 17 (Lesetext) · `--fs-5` 20 · `--fs-6` h2 · `--fs-7` h1 · `--fs-8` Titel · `--fs-9` Countdown |
+| Abstand  | `--sp-1…9` = 4, 8, 12, 16, 24, 32, 48, 64, 96 px; `--sp-0` 2 px nur für Feinheiten                                                                           |
+| Ecken    | `--r-sm` 6 (Eingaben, Marken) · `--r-md` 10 (Knöpfe) · `--r-lg` 14 (Flächen, Dialoge) · `--r-pill` · Kreise `50%`                                            |
+| Schatten | `--shadow-1` anliegend · `--shadow-2` schwebend (Menüs, Dialoge, Meldungen); sonst keine                                                                     |
+| Bewegung | `--dur-1` 120 ms Druck · `--dur-2` 200 ms Menüs · `--dur-3` 280 ms Dialoge · `--ease-out`                                                                    |
+| Farbe    | nur Tokens; Weltraum: `--space*`, `--brass*`; Spiel: `--g-*`. Kontrast aller Textpaare ≥ 4,5:1 (geprüft)                                                     |
+
+Knöpfe: App `.btn` (sekundär, Linie), `.btn.primary` (Messing), `.btn.ghost` (Text). Spiel:
+Höhe 40 px (`.gbtn`, `.hbtn`, `.abtn`, `.sas-btn`, `.cp-action`), Menüs 46 px (`.mbtn`), alle
+`--r-md`, Druck `scale(0.97)`; auf Touch-Geräten unsichtbare Tippfläche bis ≥ 44 px.
+Hover-Effekte stehen nur in `@media (hover: hover) and (pointer: fine)`.
+
 ## 0. Arbeitsweise
 
 1. Erst Bestandsaufnahme: Screenshots aller betroffenen Seiten (1366×900 hell+dunkel, Pixel 7

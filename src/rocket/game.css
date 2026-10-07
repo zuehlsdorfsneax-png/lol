@@ -22,7 +22,7 @@ html.game-open body {
   --g-line-2: rgb(255 255 255 / 17%);
   --g-ink: #eef2fa;
   --g-ink-2: #a8b2cb;
-  --g-ink-3: #717c98;
+  --g-ink-3: #8390ad;
   --g-accent: #e2a846;
   --g-accent-ink: #1a1305;
   --g-go: #3ccb86;
@@ -30,6 +30,31 @@ html.game-open body {
   --g-bad: #f07068;
   --g-blue: #6ea8ff;
   --g-star: #f5b301;
+  --g-accent-hover: #ecb95e;
+  --g-accent-light: #ffd98f;
+  --g-brass-deep: #c98a2a;
+  --g-brass-mid: #e9b457;
+  --g-brass-light: #f5c16c;
+  --g-warn-ink: #ffdcb3;
+  --g-bad-ink: #ffcdc8;
+  --g-white: #ffffff;
+  --g-black: #000000;
+  --g-go-deep: #1d9b64;
+  --g-blue-line: #4f86f7;
+  --g-blue-deep: #2556c9;
+  --g-yellow: #fde047;
+  --g-yellow-ink: #1b1206;
+  --g-sas-pro: #86efac;
+  --g-sas-radial: #67e8f9;
+  --g-sas-target: #d8b4fe;
+  --g-sas-node: #93c5fd;
+  --g-blueprint-1: #13284c;
+  --g-blueprint-2: #102140;
+  --g-blueprint-3: #0c1a33;
+  --g-edge: rgb(255 255 255 / 7%);
+  --g-scrim: rgb(3 6 14 / 50%);
+  --shadow-1: 0 2px 6px rgb(0 0 0 / 40%);
+  --shadow-2: 0 16px 40px rgb(0 0 0 / 50%);
 
   /* App-Tokens im Spiel immer dunkel */
   --bg: var(--g-bg);
@@ -60,7 +85,7 @@ html.game-open body {
   color: var(--g-ink);
   color-scheme: dark;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--fs-3);
   line-height: 1.4;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -82,15 +107,15 @@ html.game-open body {
   :is(.hud-card, .hbtn, .abtn, .engine, .sas-row, .warp, .round-btn, .dv-readout, .hselect-wrap) {
   background-image: linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 0%) 55%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 7%),
-    0 6px 20px rgb(0 0 0 / 22%);
+    inset 0 1px 0 var(--g-edge),
+    var(--shadow-1);
 }
 
 .game kbd {
   display: inline-block;
-  font: 500 0.66rem/1.4 var(--font-mono);
-  padding: 0 4px;
-  border-radius: 4px;
+  font: 500 var(--fs-1)/1.4 var(--font-mono);
+  padding: 0 var(--sp-1);
+  border-radius: var(--r-sm);
   border: 1px solid rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink-2);
@@ -106,29 +131,32 @@ html.game-open body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-2);
   height: 40px;
-  padding: 0 13px;
-  border-radius: 10px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: var(--g-btn);
   color: var(--g-ink);
-  font: 600 0.88rem var(--font-ui);
+  font: 600 var(--fs-3) var(--font-ui);
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
+    background var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
 }
 
 .hbtn {
   background: var(--g-panel);
 }
 
-.gbtn:hover:not(:disabled),
-.hbtn:hover:not(:disabled) {
-  background: var(--g-btn-hover);
-  border-color: var(--g-line-2);
+@media (hover: hover) and (pointer: fine) {
+  .gbtn:hover:not(:disabled),
+  .hbtn:hover:not(:disabled) {
+    background: var(--g-btn-hover);
+    border-color: var(--g-line-2);
+  }
 }
 
 .gbtn:disabled,
@@ -151,8 +179,8 @@ html.game-open body {
 
 .gbtn.small {
   height: 34px;
-  padding: 0 10px;
-  font-size: 0.82rem;
+  padding: 0 var(--sp-3);
+  font-size: var(--fs-2);
 }
 
 .gbtn.icon.small {
@@ -164,7 +192,7 @@ html.game-open body {
 .hbtn.on {
   background: rgb(226 168 70 / 18%);
   border-color: rgb(226 168 70 / 60%);
-  color: #ffd98f;
+  color: var(--g-accent-light);
 }
 
 .gbtn.primary {
@@ -173,9 +201,11 @@ html.game-open body {
   color: var(--g-accent-ink);
 }
 
-.gbtn.primary:hover:not(:disabled) {
-  background: #ecb95e;
-  border-color: #ecb95e;
+@media (hover: hover) and (pointer: fine) {
+  .gbtn.primary:hover:not(:disabled) {
+    background: var(--g-accent-hover);
+    border-color: var(--g-accent-hover);
+  }
 }
 
 .gmenu-row .gbtn.danger {
@@ -183,25 +213,29 @@ html.game-open body {
   border-color: rgb(240 112 104 / 50%);
 }
 
-.gbtn.danger:hover:not(:disabled) {
-  color: var(--g-bad);
-  border-color: rgb(240 112 104 / 50%);
+@media (hover: hover) and (pointer: fine) {
+  .gbtn.danger:hover:not(:disabled) {
+    color: var(--g-bad);
+    border-color: rgb(240 112 104 / 50%);
+  }
 }
 
 .gbtn.launch {
   height: 42px;
-  padding: 0 20px;
+  padding: 0 var(--sp-5);
   background: var(--g-accent);
   border-color: var(--g-accent);
   color: var(--g-accent-ink);
-  font-size: 0.98rem;
+  font-size: var(--fs-3);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
-.gbtn.launch:hover:not(:disabled) {
-  background: #ecb95e;
-  border-color: #ecb95e;
+@media (hover: hover) and (pointer: fine) {
+  .gbtn.launch:hover:not(:disabled) {
+    background: var(--g-accent-hover);
+    border-color: var(--g-accent-hover);
+  }
 }
 
 .gbtn.launch:disabled {
@@ -213,7 +247,7 @@ html.game-open body {
 
 /* App-Knöpfe in Dialogen des Spiels */
 .game .btn {
-  border-radius: 10px;
+  border-radius: var(--r-md);
   min-height: 42px;
 }
 
@@ -233,8 +267,8 @@ html.game-open body {
   display: grid;
   grid-template-columns: minmax(40px, 1fr) auto minmax(40px, 1fr);
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-3);
   background: var(--g-side);
   border-bottom: 1px solid var(--g-line);
 }
@@ -246,23 +280,23 @@ html.game-open body {
 
 .game-tabs {
   display: flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 12px;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  border-radius: var(--r-lg);
   background: rgb(255 255 255 / 5%);
 }
 
 .game-tabs button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   height: 36px;
-  padding: 0 14px;
+  padding: 0 var(--sp-4);
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-ink-2);
-  font: 600 0.88rem var(--font-ui);
+  font: 600 var(--fs-3) var(--font-ui);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -272,8 +306,10 @@ html.game-open body {
   height: 18px;
 }
 
-.game-tabs button:hover {
-  color: var(--g-ink);
+@media (hover: hover) and (pointer: fine) {
+  .game-tabs button:hover {
+    color: var(--g-ink);
+  }
 }
 
 .game-tabs button.on {
@@ -282,7 +318,7 @@ html.game-open body {
 }
 
 .tab-meta {
-  font: 500 0.72rem var(--font-mono);
+  font: 500 var(--fs-2) var(--font-mono);
   color: var(--g-accent);
 }
 
@@ -309,10 +345,10 @@ html.game-open body {
 .part-cats {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  margin: 10px;
-  padding: 3px;
-  border-radius: 10px;
+  gap: var(--sp-1);
+  margin: var(--sp-3);
+  padding: var(--sp-1);
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 5%);
 }
 
@@ -320,11 +356,11 @@ html.game-open body {
   flex: 1 0 auto;
   height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-ink-2);
-  font: 600 0.8rem var(--font-ui);
-  padding: 0 9px;
+  font: 600 var(--fs-2) var(--font-ui);
+  padding: 0 var(--sp-2);
   cursor: pointer;
 }
 
@@ -340,8 +376,8 @@ html.game-open body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
-  gap: 8px;
-  padding: 0 10px 10px;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-3);
   scrollbar-width: thin;
 }
 
@@ -350,22 +386,24 @@ html.game-open body {
   display: grid;
   justify-items: center;
   align-content: start;
-  gap: 3px;
-  padding: 12px 6px 10px;
-  border-radius: 12px;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-2) var(--sp-3);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 4%);
   color: var(--g-ink);
   text-align: center;
   cursor: pointer;
   transition:
-    border-color 0.12s ease,
-    background 0.12s ease;
+    border-color var(--dur-1) var(--ease-out),
+    background var(--dur-1) var(--ease-out);
 }
 
-.part-tile:hover {
-  border-color: rgb(226 168 70 / 70%);
-  background: rgb(255 255 255 / 7%);
+@media (hover: hover) and (pointer: fine) {
+  .part-tile:hover {
+    border-color: rgb(226 168 70 / 70%);
+    background: rgb(255 255 255 / 7%);
+  }
 }
 
 .part-tile:active {
@@ -378,29 +416,29 @@ html.game-open body {
 
 .part-icon {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: var(--sp-1);
 }
 
 .part-name {
   font-weight: 600;
-  font-size: 0.84rem;
+  font-size: var(--fs-2);
   line-height: 1.2;
 }
 
 .part-spec {
-  font: 0.7rem/1.3 var(--font-mono);
+  font: var(--fs-1)/1.3 var(--font-mono);
   color: var(--g-ink-2);
 }
 
 .parts-hint.msg {
-  color: #ffd98f;
+  color: var(--g-accent-light);
 }
 
 .parts-hint {
   margin: 0;
-  padding: 10px 14px 14px;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
   border-top: 1px solid var(--g-line);
-  font-size: 0.78rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
@@ -411,7 +449,12 @@ html.game-open body {
   min-height: 0;
   background:
     radial-gradient(ellipse at 50% 35%, rgb(70 120 210 / 28%) 0%, transparent 65%),
-    linear-gradient(180deg, #13284c 0%, #102140 60%, #0c1a33 100%);
+    linear-gradient(
+      180deg,
+      var(--g-blueprint-1) 0%,
+      var(--g-blueprint-2) 60%,
+      var(--g-blueprint-3) 100%
+    );
 }
 
 .blueprint-canvas {
@@ -435,7 +478,7 @@ html.game-open body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   pointer-events: none;
 }
 
@@ -460,9 +503,9 @@ html.game-open body {
   max-height: min(60vh, 460px);
   overflow-y: auto;
   display: grid;
-  gap: 2px;
-  padding: 6px;
-  border-radius: 14px;
+  gap: var(--sp-0);
+  padding: var(--sp-2);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line-2);
   /* Schatten oben/unten, solange es noch etwas zu scrollen gibt */
   background:
@@ -473,11 +516,11 @@ html.game-open body {
     radial-gradient(farthest-side at 50% 100%, rgb(255 255 255 / 16%), transparent) bottom / 100%
       14px no-repeat scroll,
     var(--g-panel-solid);
-  box-shadow: 0 18px 44px rgb(0 0 0 / 55%);
+  box-shadow: var(--shadow-2);
 }
 
 .gmenu-item .gmenu-meta {
-  font: 0.72rem var(--font-mono);
+  font: var(--fs-2) var(--font-mono);
   color: var(--g-ink-3);
 }
 
@@ -487,11 +530,11 @@ html.game-open body {
 
 .gmenu-item {
   display: grid;
-  gap: 2px;
+  gap: var(--sp-0);
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--sp-2) var(--sp-3);
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-ink);
   font: inherit;
@@ -499,37 +542,39 @@ html.game-open body {
   cursor: pointer;
 }
 
-.gmenu-item:hover {
-  background: rgb(255 255 255 / 8%);
+@media (hover: hover) and (pointer: fine) {
+  .gmenu-item:hover {
+    background: rgb(255 255 255 / 8%);
+  }
 }
 
 .gmenu-item strong {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-3);
 }
 
 .gmenu-item span {
-  font-size: 0.78rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 .gmenu-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .gmenu-note {
-  margin: 6px 10px 8px;
-  font-size: 0.82rem;
+  margin: var(--sp-2) var(--sp-3) var(--sp-2);
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 .gmenu-save {
   display: flex;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 8px 4px 4px;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  padding: var(--sp-2) var(--sp-1) var(--sp-1);
   border-top: 1px solid var(--g-line);
 }
 
@@ -537,26 +582,26 @@ html.game-open body {
   flex: 1;
   min-width: 0;
   height: 34px;
-  padding: 0 10px;
-  border-radius: 9px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line-2);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink);
   font: inherit;
-  font-size: 0.88rem;
+  font-size: var(--fs-3);
 }
 
 .gtoggle {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--sp-2);
   height: 40px;
-  padding: 0 13px;
-  border-radius: 10px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
-  font: 600 0.88rem var(--font-ui);
+  font: 600 var(--fs-3) var(--font-ui);
   cursor: pointer;
   user-select: none;
 }
@@ -572,9 +617,9 @@ html.game-open body {
   position: relative;
   width: 30px;
   height: 18px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 18%);
-  transition: background 0.15s ease;
+  transition: background var(--dur-2) var(--ease-out);
 }
 
 .gtoggle-knob::after {
@@ -585,8 +630,8 @@ html.game-open body {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #fff;
-  transition: transform 0.15s ease;
+  background: var(--g-white);
+  transition: transform var(--dur-2) var(--ease-out);
 }
 
 .gtoggle.on .gtoggle-knob {
@@ -610,10 +655,10 @@ html.game-open body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   width: min(560px, calc(100% - 24px));
-  padding: 6px 6px 6px 14px;
-  border-radius: 14px;
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line-2);
   background: var(--g-panel);
 }
@@ -622,15 +667,15 @@ html.game-open body {
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 1px;
+  gap: var(--sp-0);
 }
 
 .part-toolbar-text strong {
-  font-size: 0.92rem;
+  font-size: var(--fs-3);
 }
 
 .part-toolbar-text span {
-  font-size: 0.76rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -651,17 +696,17 @@ html.game-open body {
 
 .stats-body {
   display: grid;
-  gap: 14px;
-  padding: 16px;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
 }
 
 .dv-big {
   display: grid;
-  gap: 2px;
+  gap: var(--sp-0);
 }
 
 .dv-big span {
-  font-size: 0.7rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -669,12 +714,12 @@ html.game-open body {
 }
 
 .dv-big strong {
-  font: 600 2.1rem/1.1 var(--font-display);
+  font: 600 var(--fs-7)/1.1 var(--font-display);
   font-variant-numeric: tabular-nums;
 }
 
 .dv-big small {
-  font-size: 0.95rem;
+  font-size: var(--fs-3);
   color: var(--g-ink-2);
   font-weight: 500;
 }
@@ -682,14 +727,14 @@ html.game-open body {
 .dv-bar {
   position: relative;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: rgb(255 255 255 / 8%);
 }
 
 .dv-fill {
   height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #3b82f6, var(--g-go));
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg, var(--g-blue), var(--g-go));
 }
 
 .dv-mark {
@@ -697,8 +742,8 @@ html.game-open body {
   top: -3px;
   width: 2px;
   height: 14px;
-  margin-left: -1px;
-  border-radius: 1px;
+  margin-left: calc(var(--sp-0) * -1);
+  border-radius: var(--r-sm);
   background: rgb(255 255 255 / 30%);
 }
 
@@ -711,14 +756,14 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 3px;
-  font-size: 0.82rem;
+  gap: var(--sp-1);
+  font-size: var(--fs-2);
   color: var(--g-ink-3);
 }
 
 .dv-list li {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .dv-list li > span:first-child {
@@ -736,25 +781,25 @@ html.game-open body {
 
 .dv-need {
   margin-left: auto;
-  font: 0.74rem var(--font-mono);
+  font: var(--fs-2) var(--font-mono);
   color: var(--g-ink-3);
 }
 
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--sp-2);
   margin: 0;
 }
 
 .stat-grid div {
-  padding: 7px 10px;
-  border-radius: 9px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 4%);
 }
 
 .stat-grid dt {
-  font-size: 0.66rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -763,7 +808,7 @@ html.game-open body {
 
 .stat-grid dd {
   margin: 0;
-  font: 600 1rem var(--font-mono);
+  font: 600 var(--fs-4) var(--font-mono);
 }
 
 .stat-grid dd.weak,
@@ -774,13 +819,13 @@ html.game-open body {
 .stage-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
 }
 
 .stage-table th {
-  padding: 4px 0;
+  padding: var(--sp-1) 0;
   border-bottom: 1px solid var(--g-line);
-  font-size: 0.66rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -789,7 +834,7 @@ html.game-open body {
 }
 
 .stage-table td {
-  padding: 5px 0;
+  padding: var(--sp-1) 0;
   border-bottom: 1px solid var(--g-line);
   font-family: var(--font-mono);
 }
@@ -799,42 +844,42 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
-  font-size: 0.82rem;
+  gap: var(--sp-2);
+  font-size: var(--fs-2);
 }
 
 .build-problems li {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   align-items: flex-start;
-  padding: 8px 10px;
-  border-radius: 9px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
 }
 
 .build-problems svg {
   width: 16px;
   height: 16px;
-  margin-top: 1px;
+  margin-top: var(--sp-0);
 }
 
 .build-problems .error {
   background: rgb(240 112 104 / 14%);
-  color: #ffcdc8;
+  color: var(--g-bad-ink);
 }
 
 .build-problems .warn {
   background: rgb(240 162 75 / 12%);
-  color: #ffdcb3;
+  color: var(--g-warn-ink);
 }
 
 .build-problems-note {
   margin: 0;
-  font-size: 0.8rem;
-  color: #ffdcb3;
+  font-size: var(--fs-2);
+  color: var(--g-warn-ink);
 }
 
 .rocket-eq {
-  font-size: 0.82rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
@@ -845,7 +890,7 @@ html.game-open body {
 }
 
 .rocket-eq p {
-  margin: 8px 0;
+  margin: var(--sp-2) 0;
 }
 
 /* Seiten im Spiel (Herausforderungen, Karriere) */
@@ -858,14 +903,14 @@ html.game-open body {
 .game-page-inner {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 24px 20px 56px;
+  padding: var(--sp-5) var(--sp-5) var(--sp-8);
   display: grid;
-  gap: 24px;
+  gap: var(--sp-5);
 }
 
 .challenge-list {
   display: grid;
-  gap: 22px;
+  gap: var(--sp-5);
 }
 
 .challenge-list > p {
@@ -876,15 +921,15 @@ html.game-open body {
 
 .challenge-group {
   display: grid;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .challenge-group h3 {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 12px;
-  font-size: 1.15rem;
+  gap: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-5);
 }
 
 .challenge-group h3 .small {
@@ -896,7 +941,7 @@ html.game-open body {
 .challenge-cards {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .challenge-cards > .challenge-card {
@@ -904,18 +949,18 @@ html.game-open body {
 }
 
 .challenge-best {
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
   border-left: 2px solid rgb(245 179 1 / 45%);
-  padding-left: 8px;
+  padding-left: var(--sp-2);
 }
 
 .challenge-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  border-radius: 14px;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 4%);
 }
@@ -925,7 +970,7 @@ html.game-open body {
 }
 
 .challenge-card h4 {
-  font: 600 1.08rem var(--font-display);
+  font: 600 var(--fs-4) var(--font-display);
 }
 
 .challenge-card p {
@@ -939,7 +984,7 @@ html.game-open body {
 }
 
 .challenge-stars span {
-  font-size: 1.25rem;
+  font-size: var(--fs-5);
   letter-spacing: 2px;
   color: rgb(255 255 255 / 16%);
 }
@@ -951,73 +996,73 @@ html.game-open body {
 /* Karriere */
 .mission-control {
   display: grid;
-  gap: 20px;
+  gap: var(--sp-5);
 }
 
 .mc-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
-  gap: 20px;
+  gap: var(--sp-5);
   align-items: start;
 }
 
 .mc-head h3 {
-  font-size: 1.4rem;
-  margin-bottom: 6px;
+  font-size: var(--fs-6);
+  margin-bottom: var(--sp-2);
 }
 
 .mc-rank {
   display: grid;
-  gap: 6px;
-  padding: 16px;
-  border-radius: 14px;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
   border: 1px solid rgb(226 168 70 / 35%);
   background: rgb(226 168 70 / 8%);
 }
 
 .mc-rank strong {
-  font: 600 1.3rem var(--font-display);
-  color: #ffd98f;
+  font: 600 var(--fs-5) var(--font-display);
+  color: var(--g-accent-light);
 }
 
 .mc-rank span {
-  font-size: 0.82rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 /* Spalten wie in einer Zeitung: lange und kurze Gruppen füllen die Fläche ohne Lücken. */
 .mc-goals {
   columns: 3 250px;
-  column-gap: 12px;
+  column-gap: var(--sp-3);
 }
 
 .mc-goals > .mc-group {
   break-inside: avoid;
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-3);
 }
 
 .mc-goal {
   display: grid;
-  gap: 1px;
+  gap: var(--sp-0);
 }
 
 .mc-goal small {
-  font-size: 0.74rem;
+  font-size: var(--fs-2);
   line-height: 1.35;
   color: var(--g-ink-3);
 }
 
 .mc-group {
-  padding: 14px;
-  border-radius: 14px;
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 3%);
 }
 
 .mc-group h4,
 .mc-sats h4 {
-  margin-bottom: 8px;
-  font: 600 0.7rem var(--font-ui);
+  margin-bottom: var(--sp-2);
+  font: 600 var(--fs-1) var(--font-ui);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--g-ink-3);
@@ -1029,14 +1074,14 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
-  font-size: 0.86rem;
+  gap: var(--sp-1);
+  font-size: var(--fs-2);
 }
 
 .mc-group li {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--sp-2);
   color: var(--g-ink-2);
 }
 
@@ -1050,34 +1095,34 @@ html.game-open body {
 
 .game .pts {
   margin-left: auto;
-  font: 500 0.74rem var(--font-mono);
+  font: 500 var(--fs-2) var(--font-mono);
   color: var(--g-accent);
 }
 
 .mc-sats li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .mc-paints {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .paint {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   height: 36px;
-  padding: 0 12px 0 6px;
-  border-radius: 999px;
+  padding: 0 var(--sp-3) 0 var(--sp-2);
+  border-radius: var(--r-pill);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 5%);
   color: var(--g-ink);
-  font: 500 0.84rem var(--font-ui);
+  font: 500 var(--fs-2) var(--font-ui);
   cursor: pointer;
 }
 
@@ -1105,7 +1150,7 @@ html.game-open body {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: #000;
+  background: var(--g-black);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -1146,7 +1191,7 @@ html.game-open body {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .game .hud-row span {
@@ -1160,7 +1205,7 @@ html.game-open body {
   width: 212px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .game .hud-tl .hud-row {
@@ -1170,9 +1215,9 @@ html.game-open body {
 .telemetry,
 .hud-card {
   display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-3);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
   font-variant-numeric: tabular-nums;
@@ -1180,7 +1225,7 @@ html.game-open body {
 
 .tele-head,
 .hud-card-title {
-  font-size: 0.68rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -1191,21 +1236,21 @@ html.game-open body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .tele-big span {
-  font-size: 0.78rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 .tele-big strong {
-  font: 600 1.28rem/1.15 var(--font-mono);
+  font: 600 var(--fs-5)/1.15 var(--font-mono);
   white-space: nowrap;
 }
 
 .tele-big small {
-  font-size: 0.74rem;
+  font-size: var(--fs-2);
   font-weight: 500;
   color: var(--g-ink-2);
 }
@@ -1213,11 +1258,11 @@ html.game-open body {
 .tele-rows {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 2px 10px;
-  margin: 4px 0 0;
-  padding-top: 6px;
+  gap: var(--sp-0) var(--sp-3);
+  margin: var(--sp-1) 0 0;
+  padding-top: var(--sp-2);
   border-top: 1px solid var(--g-line);
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
 }
 
 .tele-rows dt {
@@ -1232,8 +1277,8 @@ html.game-open body {
 }
 
 .tele-rows dd small {
-  margin-left: 6px;
-  font-size: 0.7rem;
+  margin-left: var(--sp-2);
+  font-size: var(--fs-1);
   color: var(--g-ink-3);
 }
 
@@ -1246,8 +1291,8 @@ html.game-open body {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 2px 10px;
-  font: 0.72rem var(--font-mono);
+  gap: var(--sp-0) var(--sp-3);
+  font: var(--fs-2) var(--font-mono);
   color: var(--g-ink-3);
 }
 
@@ -1255,7 +1300,7 @@ html.game-open body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .hud-pills:empty {
@@ -1265,13 +1310,13 @@ html.game-open body {
 .hud-pill {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 10px;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   border-left: 3px solid var(--g-blue);
   background: var(--g-panel);
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
 }
 
 .hud-pill span {
@@ -1288,22 +1333,22 @@ html.game-open body {
 }
 
 .hud-pill.node {
-  border-left-color: #93c5fd;
+  border-left-color: var(--g-sas-node);
 }
 
 .hselect,
 .hselect-wrap {
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
   color: var(--g-ink);
-  font: 600 0.86rem var(--font-ui);
+  font: 600 var(--fs-2) var(--font-ui);
 }
 
 .hselect {
   min-width: 0;
-  padding: 0 8px;
+  padding: 0 var(--sp-2);
   cursor: pointer;
 }
 
@@ -1316,8 +1361,8 @@ html.game-open body {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-left: 10px;
+  gap: var(--sp-1);
+  padding-left: var(--sp-3);
 }
 
 .hselect-wrap svg {
@@ -1349,16 +1394,16 @@ html.game-open body {
   width: min(460px, calc(100% - 520px));
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   pointer-events: none;
 }
 
 .warp {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
+  gap: var(--sp-0);
+  padding: var(--sp-1);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
 }
@@ -1369,7 +1414,7 @@ html.game-open body {
   width: 36px;
   height: 32px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-ink);
   cursor: pointer;
@@ -1384,8 +1429,10 @@ html.game-open body {
   transform: rotate(180deg);
 }
 
-.warp button:hover:not(:disabled) {
-  background: rgb(255 255 255 / 10%);
+@media (hover: hover) and (pointer: fine) {
+  .warp button:hover:not(:disabled) {
+    background: rgb(255 255 255 / 10%);
+  }
 }
 
 .warp button:disabled {
@@ -1396,13 +1443,13 @@ html.game-open body {
 .warp-val {
   min-width: 78px;
   text-align: center;
-  font: 600 0.95rem var(--font-mono);
+  font: 600 var(--fs-3) var(--font-mono);
 }
 
 .warp-menu-wrap {
   position: relative;
-  margin-left: 2px;
-  padding-left: 3px;
+  margin-left: var(--sp-0);
+  padding-left: var(--sp-1);
   border-left: 1px solid var(--g-line);
 }
 
@@ -1417,17 +1464,17 @@ html.game-open body {
   z-index: 6;
   min-width: 260px;
   display: grid;
-  gap: 2px;
-  padding: 6px;
-  border-radius: 14px;
+  gap: var(--sp-0);
+  padding: var(--sp-2);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line-2);
   background: var(--g-panel-solid);
-  box-shadow: 0 18px 44px rgb(0 0 0 / 55%);
+  box-shadow: var(--shadow-2);
 }
 
 .warp-menu-title {
-  padding: 4px 10px 6px;
-  font-size: 0.68rem;
+  padding: var(--sp-1) var(--sp-3) var(--sp-2);
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1437,25 +1484,25 @@ html.game-open body {
 .warp-menu button {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
   width: 100%;
   height: auto;
-  padding: 8px 10px;
+  padding: var(--sp-2) var(--sp-3);
   text-align: left;
-  font: 500 0.86rem var(--font-ui);
+  font: 500 var(--fs-2) var(--font-ui);
 }
 
 .warp-menu button span {
-  font: 0.78rem var(--font-mono);
+  font: var(--fs-2) var(--font-mono);
   color: var(--g-ink-2);
 }
 
 .hud-tip {
   max-width: 100%;
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   background: rgb(8 12 22 / 72%);
-  font-size: 0.84rem;
+  font-size: var(--fs-2);
   text-align: center;
   pointer-events: none;
 }
@@ -1476,22 +1523,22 @@ html.game-open body {
 
 .toasts {
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
   width: 100%;
   pointer-events: none;
 }
 
 .rocket-toast {
   display: grid;
-  gap: 2px;
-  padding: 8px 12px;
-  border-radius: 11px;
+  gap: var(--sp-0);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line-2);
   border-left: 3px solid var(--g-blue);
   background: var(--g-panel-solid);
-  font-size: 0.84rem;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
-  animation: g-toast-in 0.25s ease-out;
+  font-size: var(--fs-2);
+  box-shadow: var(--shadow-2);
+  animation: g-toast-in var(--dur-3) var(--ease-out);
   pointer-events: auto;
   cursor: pointer;
 }
@@ -1526,16 +1573,16 @@ html.game-open body {
   width: 300px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .hud-card {
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
 }
 
 .target-info {
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 2px 10px;
+  gap: var(--sp-0) var(--sp-3);
   margin: 0;
 }
 
@@ -1554,13 +1601,13 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 3px;
+  gap: var(--sp-1);
   color: var(--g-ink-2);
 }
 
 .goal-list li {
   display: flex;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .goal-list li.done {
@@ -1569,7 +1616,7 @@ html.game-open body {
 
 .challenge-box p {
   margin: 0;
-  font: 0.8rem var(--font-mono);
+  font: var(--fs-2) var(--font-mono);
 }
 
 .challenge-box ol {
@@ -1577,8 +1624,8 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 2px;
-  font-size: 0.75rem;
+  gap: var(--sp-0);
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
@@ -1591,7 +1638,7 @@ html.game-open body {
   right: 12px;
   transform: translateY(-50%);
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 /* Unten links: drehen */
@@ -1600,12 +1647,12 @@ html.game-open body {
   bottom: 12px;
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .turn-pad {
   display: flex;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .round-btn {
@@ -1619,6 +1666,7 @@ html.game-open body {
   color: var(--g-ink);
   cursor: pointer;
   touch-action: none;
+  transition: transform var(--dur-1) var(--ease-out);
 }
 
 .round-btn svg {
@@ -1635,7 +1683,7 @@ html.game-open body {
   display: grid;
   grid-template-columns: repeat(3, 40px);
   grid-template-rows: repeat(3, 40px);
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .rcs-pad .hbtn {
@@ -1676,7 +1724,7 @@ html.game-open body {
 .navball {
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .navball-dial {
@@ -1684,7 +1732,7 @@ html.game-open body {
   border-radius: 50%;
   box-shadow:
     0 0 0 3px rgb(10 14 24 / 85%),
-    0 8px 24px rgb(0 0 0 / 50%);
+    var(--shadow-2);
 }
 
 .navball-dial canvas {
@@ -1697,11 +1745,11 @@ html.game-open body {
   position: absolute;
   right: -14px;
   bottom: -4px;
-  padding: 1px 6px;
-  border-radius: 6px;
+  padding: var(--sp-0) var(--sp-2);
+  border-radius: var(--r-sm);
   border: 1px solid var(--g-line-2);
   background: var(--g-panel-solid);
-  font: 600 0.72rem var(--font-mono);
+  font: 600 var(--fs-2) var(--font-mono);
 }
 
 .navball-pitch:empty {
@@ -1710,9 +1758,9 @@ html.game-open body {
 
 .sas-row {
   display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
+  gap: var(--sp-0);
+  padding: var(--sp-1);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
 }
@@ -1721,16 +1769,17 @@ html.game-open body {
   display: inline-grid;
   place-items: center;
   align-content: center;
-  gap: 1px;
+  gap: var(--sp-0);
   width: 40px;
-  height: 38px;
+  height: 40px;
   padding: 0;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-ink);
-  font: 600 0.95rem var(--font-ui);
+  font: 600 var(--fs-3) var(--font-ui);
   cursor: pointer;
+  transition: transform var(--dur-1) var(--ease-out);
 }
 
 .sas-icon {
@@ -1738,13 +1787,15 @@ html.game-open body {
 }
 
 .sas-short {
-  font: 600 0.56rem/1 var(--font-ui);
+  font: 600 var(--fs-1)/1 var(--font-ui);
   letter-spacing: 0.01em;
   opacity: 0.85;
 }
 
-.sas-btn:hover:not(:disabled) {
-  background: rgb(255 255 255 / 10%);
+@media (hover: hover) and (pointer: fine) {
+  .sas-btn:hover:not(:disabled) {
+    background: rgb(255 255 255 / 10%);
+  }
 }
 
 .sas-btn:disabled {
@@ -1754,25 +1805,25 @@ html.game-open body {
 
 .sas-prograde,
 .sas-retrograde {
-  color: #86efac;
+  color: var(--g-sas-pro);
 }
 
 .sas-radialOut,
 .sas-radialIn {
-  color: #67e8f9;
+  color: var(--g-sas-radial);
 }
 
 .sas-target {
-  color: #d8b4fe;
+  color: var(--g-sas-target);
 }
 
 .sas-maneuver {
-  color: #93c5fd;
+  color: var(--g-sas-node);
 }
 
 .sas-btn.on {
-  background: #fde047;
-  color: #1b1206;
+  background: var(--g-yellow);
+  color: var(--g-yellow-ink);
 }
 
 .sas-btn.sas-off.on {
@@ -1791,7 +1842,7 @@ html.game-open body {
     'act eng';
   align-items: end;
   justify-items: end;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .action-col {
@@ -1799,16 +1850,16 @@ html.game-open body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .dv-readout {
   grid-area: dv;
-  padding: 4px 10px;
-  border-radius: 10px;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
@@ -1821,22 +1872,22 @@ html.game-open body {
   grid-area: eng;
   display: flex;
   align-items: stretch;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 16px;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
 }
 
 .gauges {
   display: flex;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .vgauge {
   position: relative;
   width: 20px;
-  border-radius: 7px;
+  border-radius: var(--r-sm);
   background: rgb(255 255 255 / 8%);
   overflow: hidden;
 }
@@ -1846,7 +1897,7 @@ html.game-open body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(0deg, #1d9b64, var(--g-go));
+  background: linear-gradient(0deg, var(--g-go-deep), var(--g-go));
 }
 
 .vgauge.low .vgauge-fill {
@@ -1863,7 +1914,7 @@ html.game-open body {
   bottom: 8px;
   transform: translateX(-50%) rotate(180deg);
   writing-mode: vertical-rl;
-  font: 700 0.6rem var(--font-ui);
+  font: 700 var(--fs-1) var(--font-ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgb(255 255 255 / 88%);
@@ -1874,7 +1925,7 @@ html.game-open body {
   display: grid;
   grid-template-rows: auto 1fr auto;
   justify-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   width: 58px;
   cursor: ns-resize;
   touch-action: none;
@@ -1883,18 +1934,18 @@ html.game-open body {
 .throttle:focus-visible {
   outline: 2px solid var(--g-accent);
   outline-offset: 4px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
 }
 
 .throttle-val {
-  font: 600 0.9rem var(--font-mono);
+  font: 600 var(--fs-3) var(--font-mono);
 }
 
 .throttle-track {
   position: relative;
   width: 22px;
   height: 168px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 8%);
 }
@@ -1904,8 +1955,8 @@ html.game-open body {
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 11px;
-  background: linear-gradient(0deg, #c98a2a, #f5c16c);
+  border-radius: var(--r-md);
+  background: linear-gradient(0deg, var(--g-brass-deep), var(--g-brass-light));
 }
 
 .throttle-knob {
@@ -1913,14 +1964,14 @@ html.game-open body {
   left: 50%;
   width: 42px;
   height: 14px;
-  border-radius: 7px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 55%);
+  border-radius: var(--r-sm);
+  background: var(--g-white);
+  box-shadow: var(--shadow-1);
   transform: translate(-50%, 50%);
 }
 
 .throttle-label {
-  font-size: 0.64rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1930,7 +1981,7 @@ html.game-open body {
 .engine-btns {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-2);
   width: 108px;
 }
 
@@ -1938,31 +1989,32 @@ html.game-open body {
   flex: 1;
   display: grid;
   place-content: center;
-  gap: 2px;
+  gap: var(--sp-0);
   min-height: 84px;
   border: 0;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #e9b457, #c98a2a);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--g-brass-mid), var(--g-brass-deep));
   color: var(--g-accent-ink);
   font-family: var(--font-ui);
   cursor: pointer;
   box-shadow: inset 0 -3px 0 rgb(0 0 0 / 18%);
+  transition: transform var(--dur-1) var(--ease-out);
 }
 
 .stage-btn strong {
-  font-size: 1.02rem;
+  font-size: var(--fs-4);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .stage-btn span {
-  font-size: 0.72rem;
+  font-size: var(--fs-2);
   font-weight: 500;
 }
 
 .stage-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: scale(0.97);
   box-shadow: none;
 }
 
@@ -1977,24 +2029,27 @@ html.game-open body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
+  gap: var(--sp-2);
+  height: 40px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: var(--g-panel);
   color: var(--g-ink);
-  font: 600 0.84rem var(--font-ui);
+  font: 600 var(--fs-2) var(--font-ui);
   white-space: nowrap;
   cursor: pointer;
+  transition: transform var(--dur-1) var(--ease-out);
 }
 
 .engine .abtn {
   background: rgb(255 255 255 / 6%);
 }
 
-.abtn:hover {
-  border-color: var(--g-line-2);
+@media (hover: hover) and (pointer: fine) {
+  .abtn:hover {
+    border-color: var(--g-line-2);
+  }
 }
 
 .abtn.go {
@@ -2005,15 +2060,15 @@ html.game-open body {
 .abtn.on {
   border-color: var(--g-accent);
   background: rgb(226 168 70 / 24%);
-  color: #ffd98f;
+  color: var(--g-accent-light);
 }
 
 .abtn-note {
-  padding: 5px 10px;
-  border-radius: 9px;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-md);
   background: rgb(240 162 75 / 18%);
-  color: #ffdcb3;
-  font-size: 0.76rem;
+  color: var(--g-warn-ink);
+  font-size: var(--fs-2);
   text-align: center;
 }
 
@@ -2024,11 +2079,11 @@ html.game-open body {
   left: 50%;
   z-index: 4;
   transform: translateX(-50%);
-  padding: 8px 16px;
-  border-radius: 12px;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-lg);
   border: 1px solid rgb(240 162 75 / 60%);
   background: rgb(58 39 16 / 88%);
-  color: #ffdcb3;
+  color: var(--g-warn-ink);
   font-weight: 600;
   text-align: center;
   pointer-events: none;
@@ -2037,7 +2092,7 @@ html.game-open body {
 .landing-alert.urgent {
   border-color: var(--g-bad);
   background: rgb(80 20 18 / 90%);
-  color: #fff;
+  color: var(--g-white);
   animation: g-pulse 0.8s ease-in-out infinite alternate;
 }
 
@@ -2053,8 +2108,8 @@ html.game-open body {
   left: 50%;
   z-index: 4;
   transform: translate(-50%, -50%);
-  font: 700 clamp(4rem, 14vw, 9rem) var(--font-display);
-  color: #fff;
+  font: 700 var(--fs-9) var(--font-display);
+  color: var(--g-white);
   text-shadow: 0 0 30px rgb(255 160 60 / 80%);
   pointer-events: none;
   animation: g-count 1s ease-out infinite;
@@ -2081,13 +2136,13 @@ html.game-open body {
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 16px;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line-2);
   background: rgb(19 26 44);
-  box-shadow: 0 18px 44px rgb(0 0 0 / 45%);
-  font-size: 0.85rem;
+  box-shadow: var(--shadow-2);
+  font-size: var(--fs-2);
   scrollbar-width: thin;
 }
 
@@ -2100,7 +2155,7 @@ html.game-open body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -2108,48 +2163,50 @@ html.game-open body {
 }
 
 .cp-close {
-  padding: 2px 8px;
+  padding: var(--sp-0) var(--sp-2);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: none;
   color: var(--g-ink);
-  font-size: 1.3rem;
+  font-size: var(--fs-5);
   line-height: 1;
   cursor: pointer;
 }
 
-.cp-close:hover {
-  background: rgb(255 255 255 / 10%);
+@media (hover: hover) and (pointer: fine) {
+  .cp-close:hover {
+    background: rgb(255 255 255 / 10%);
+  }
 }
 
 /* Das Ziel wählt man oben rechts; nur im Handy-Layout steht die Auswahl hier. */
 .cp-target {
   display: none;
-  gap: 4px;
+  gap: var(--sp-1);
   color: var(--g-ink-2);
-  font-size: 0.78rem;
+  font-size: var(--fs-2);
 }
 
 .cp-target select {
   height: 36px;
-  padding: 0 8px;
-  border-radius: 9px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line-2);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink);
-  font: 600 0.86rem var(--font-ui);
+  font: 600 var(--fs-2) var(--font-ui);
 }
 
 .cp-plans {
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .cp-plan {
   display: grid;
-  gap: 2px;
-  padding: 8px 11px;
-  border-radius: 10px;
+  gap: var(--sp-0);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 5%);
   color: var(--g-ink);
@@ -2158,10 +2215,16 @@ html.game-open body {
   cursor: pointer;
 }
 
-.cp-plan:hover:not(:disabled),
 .cp-plan:focus-visible {
   border-color: rgb(110 168 255 / 70%);
   background: rgb(110 168 255 / 10%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cp-plan:hover:not(:disabled) {
+    border-color: rgb(110 168 255 / 70%);
+    background: rgb(110 168 255 / 10%);
+  }
 }
 
 .cp-plan.rec {
@@ -2170,12 +2233,12 @@ html.game-open body {
 }
 
 .cp-plan strong em {
-  margin-left: 8px;
-  padding: 1px 6px;
-  border-radius: 6px;
+  margin-left: var(--sp-2);
+  padding: var(--sp-0) var(--sp-2);
+  border-radius: var(--r-sm);
   background: var(--g-accent);
   color: var(--g-accent-ink);
-  font-size: 0.66rem;
+  font-size: var(--fs-1);
   font-style: normal;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2183,14 +2246,14 @@ html.game-open body {
 }
 
 .cp-plan span {
-  font-size: 0.76rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 .cp-result {
   margin: 0;
-  padding: 8px 10px;
-  border-radius: 9px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   border-left: 3px solid var(--g-go);
   background: rgb(60 203 134 / 12%);
 }
@@ -2202,15 +2265,15 @@ html.game-open body {
 
 .cp-node {
   display: grid;
-  gap: 7px;
-  padding-top: 8px;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
   border-top: 1px solid var(--g-line);
 }
 
 .cp-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .cp-row span {
@@ -2223,23 +2286,23 @@ html.game-open body {
 }
 
 .cp-row strong.soon {
-  color: #fde047;
+  color: var(--g-yellow);
 }
 
 .cp-edit {
   display: grid;
-  gap: 3px;
+  gap: var(--sp-1);
 }
 
 .cp-edit > span {
-  font-size: 0.76rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 .cp-steps {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--sp-1);
 }
 
 .cp-steps output {
@@ -2252,52 +2315,54 @@ html.game-open body {
 .step-btn {
   min-width: 34px;
   height: 32px;
-  padding: 0 5px;
-  border-radius: 8px;
+  padding: 0 var(--sp-1);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink);
-  font: 600 0.76rem var(--font-mono);
+  font: 600 var(--fs-2) var(--font-mono);
   cursor: pointer;
   touch-action: none;
 }
 
 .step-btn:active {
-  background: #2563eb;
+  background: var(--g-blue-deep);
 }
 
 .cp-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .cp-action {
   flex: 1 1 auto;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
+  min-height: 40px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line-2);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink);
-  font: 600 0.82rem var(--font-ui);
+  font: 600 var(--fs-2) var(--font-ui);
   cursor: pointer;
 }
 
 .cp-action svg {
   width: 15px;
   height: 15px;
-  margin-right: 4px;
+  margin-right: var(--sp-1);
   vertical-align: -3px;
 }
 
-.cp-action:hover {
-  background: rgb(255 255 255 / 11%);
+@media (hover: hover) and (pointer: fine) {
+  .cp-action:hover {
+    background: rgb(255 255 255 / 11%);
+  }
 }
 
 .cp-action.go {
-  border-color: #4f86f7;
-  background: #2556c9;
+  border-color: var(--g-blue-line);
+  background: var(--g-blue-deep);
 }
 
 .cp-action.on,
@@ -2309,12 +2374,12 @@ html.game-open body {
 
 .cp-progress {
   display: grid;
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .cp-progress .bar {
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: rgb(255 255 255 / 12%);
   overflow: hidden;
 }
@@ -2328,19 +2393,19 @@ html.game-open body {
 .cp-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 11px;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 6%);
 }
 
 .cp-tabs button {
   min-height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: none;
   color: var(--g-ink-2);
-  font: 600 0.8rem var(--font-ui);
+  font: 600 var(--fs-2) var(--font-ui);
   cursor: pointer;
 }
 
@@ -2351,7 +2416,7 @@ html.game-open body {
 
 .cp-mission {
   display: grid;
-  gap: 9px;
+  gap: var(--sp-2);
 }
 
 .cp-mission > p {
@@ -2362,41 +2427,41 @@ html.game-open body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .cp-mission-title span {
-  font-size: 0.74rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
   white-space: nowrap;
 }
 
 .cp-field {
   display: grid;
-  gap: 4px;
+  gap: var(--sp-1);
   color: var(--g-ink-2);
 }
 
 .cp-field select {
   height: 36px;
-  padding: 0 8px;
-  border-radius: 9px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line-2);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink);
-  font: 600 0.86rem var(--font-ui);
+  font: 600 var(--fs-2) var(--font-ui);
 }
 
 .cp-checks {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
+  gap: var(--sp-2) var(--sp-4);
 }
 
 .cp-checks label {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   cursor: pointer;
 }
 
@@ -2408,7 +2473,7 @@ html.game-open body {
 
 .cp-steplist {
   display: grid;
-  gap: 3px;
+  gap: var(--sp-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2417,10 +2482,10 @@ html.game-open body {
 
 .cp-steplist li {
   display: flex;
-  gap: 7px;
+  gap: var(--sp-2);
   align-items: baseline;
-  padding: 3px 8px;
-  border-radius: 7px;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-sm);
   color: var(--g-ink-2);
 }
 
@@ -2442,8 +2507,8 @@ html.game-open body {
 
 .cp-steplist.preview li {
   counter-increment: step;
-  padding-block: 1px;
-  font-size: 0.8rem;
+  padding-block: var(--sp-0);
+  font-size: var(--fs-2);
 }
 
 .cp-steplist.preview li::before {
@@ -2474,19 +2539,19 @@ html.game-open body {
   overflow-y: auto;
   display: grid;
   justify-items: center;
-  gap: 12px;
-  padding: 24px;
-  border-radius: 20px;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line-2);
   background: var(--g-panel-solid);
   box-shadow:
-    0 0 0 100vmax rgb(3 6 14 / 50%),
-    0 24px 60px rgb(0 0 0 / 60%);
+    0 0 0 100vmax var(--g-scrim),
+    var(--shadow-2);
   text-align: center;
 }
 
 .rocket-overlay h3 {
-  font: 600 1.5rem var(--font-display);
+  font: 600 var(--fs-6) var(--font-display);
 }
 
 .rocket-overlay p {
@@ -2534,23 +2599,24 @@ html.game-open body {
 
 .menu-list {
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
   width: 100%;
 }
 
 .mbtn {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   height: 46px;
-  padding: 0 14px;
-  border-radius: 12px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
   background: rgb(255 255 255 / 5%);
   color: var(--g-ink);
-  font: 600 0.94rem var(--font-ui);
+  font: 600 var(--fs-3) var(--font-ui);
   text-align: left;
   cursor: pointer;
+  transition: transform var(--dur-1) var(--ease-out);
 }
 
 .mbtn svg {
@@ -2566,19 +2632,21 @@ html.game-open body {
 .mbtn-note {
   color: var(--g-ink-2);
   font-weight: 500;
-  font-size: 0.8rem;
+  font-size: var(--fs-2);
 }
 
 .mbtn-note + kbd {
-  margin-left: 8px;
+  margin-left: var(--sp-2);
 }
 
 .mbtn:has(.mbtn-note) .mbtn-note {
   margin-left: auto;
 }
 
-.mbtn:hover:not(:disabled) {
-  background: rgb(255 255 255 / 10%);
+@media (hover: hover) and (pointer: fine) {
+  .mbtn:hover:not(:disabled) {
+    background: rgb(255 255 255 / 10%);
+  }
 }
 
 .mbtn.warn {
@@ -2604,39 +2672,41 @@ html.game-open body {
   background: transparent;
 }
 
-.mbtn.primary:hover {
-  background: #ecb95e;
+@media (hover: hover) and (pointer: fine) {
+  .mbtn.primary:hover {
+    background: var(--g-accent-hover);
+  }
 }
 
 .menu-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .report-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
-  gap: 6px;
+  gap: var(--sp-2);
   width: 100%;
   margin: 0;
   text-align: left;
 }
 
 .report-grid div {
-  padding: 7px 10px;
-  border-radius: 9px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 5%);
 }
 
 .report-grid dt {
-  font-size: 0.7rem;
+  font-size: var(--fs-1);
   color: var(--g-ink-3);
 }
 
 .report-grid dd {
   margin: 0;
-  font: 600 0.95rem var(--font-mono);
+  font: 600 var(--fs-3) var(--font-mono);
 }
 
 .report-goals {
@@ -2644,15 +2714,15 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 3px;
+  gap: var(--sp-1);
   width: 100%;
   text-align: left;
 }
 
 .report-goals li {
   display: flex;
-  gap: 6px;
-  color: #ffd98f;
+  gap: var(--sp-2);
+  color: var(--g-accent-light);
   font-weight: 600;
 }
 
@@ -2662,8 +2732,8 @@ html.game-open body {
 }
 
 .report-more summary {
-  margin-bottom: 6px;
-  font-size: 0.85rem;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-2);
   color: var(--g-ink-3);
   cursor: pointer;
 }
@@ -2671,11 +2741,11 @@ html.game-open body {
 .game .stars {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .game .stars span {
-  font-size: 2.6rem;
+  font-size: var(--fs-7);
   line-height: 1;
   color: rgb(255 255 255 / 14%);
 }
@@ -2699,7 +2769,7 @@ html.game-open body {
 .star-goals,
 .brief-tips {
   display: grid;
-  gap: 3px;
+  gap: var(--sp-1);
   width: 100%;
   margin: 0;
   text-align: left;
@@ -2724,7 +2794,7 @@ html.game-open body {
 
 .brief-tips {
   padding-left: 1.2em;
-  font-size: 0.9rem;
+  font-size: var(--fs-3);
   color: var(--g-ink-2);
 }
 
@@ -2752,7 +2822,7 @@ html.game-open body {
     display: none;
   }
   .tele-big strong {
-    font-size: 1.12rem;
+    font-size: var(--fs-4);
   }
   .throttle-track {
     height: 140px;
@@ -2769,14 +2839,14 @@ html.game-open body {
 @media (max-width: 760px) {
   .game-bar {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    padding: 8px;
-    gap: 6px;
+    padding: var(--sp-2);
+    gap: var(--sp-2);
   }
   .game-tabs {
     justify-self: center;
   }
   .game-tabs button {
-    padding: 0 10px;
+    padding: 0 var(--sp-3);
   }
   .game-tabs .gbtn-label,
   .game-tabs .tab-meta {
@@ -2786,13 +2856,13 @@ html.game-open body {
   .blueprint-tools .gbtn {
     flex-direction: column;
     justify-content: center;
-    gap: 1px;
+    gap: var(--sp-0);
     height: 48px;
     min-width: 52px;
-    padding: 2px 6px;
+    padding: var(--sp-0) var(--sp-2);
   }
   .blueprint-tools .gbtn-label {
-    font-size: 0.6rem;
+    font-size: var(--fs-1);
     font-weight: 600;
     line-height: 1.1;
   }
@@ -2800,7 +2870,7 @@ html.game-open body {
     display: inline;
   }
   .gbtn.launch {
-    padding: 0 14px;
+    padding: 0 var(--sp-4);
   }
   .werft {
     grid-template-columns: minmax(0, 1fr);
@@ -2815,7 +2885,7 @@ html.game-open body {
     border-top: 1px solid var(--g-line);
   }
   .part-cats {
-    margin: 8px 8px 6px;
+    margin: var(--sp-2) var(--sp-2) var(--sp-2);
   }
   .part-grid {
     grid-template-columns: none;
@@ -2823,16 +2893,16 @@ html.game-open body {
     grid-auto-columns: 104px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0 8px 8px;
+    padding: 0 var(--sp-2) var(--sp-2);
   }
   .part-tile {
-    padding: 8px 4px;
+    padding: var(--sp-2) var(--sp-1);
   }
   .parts-hint:not(.msg) {
     display: none;
   }
   .parts-hint {
-    padding: 6px 10px 8px;
+    padding: var(--sp-2) var(--sp-3) var(--sp-2);
     border-top: 0;
   }
   .stats-panel {
@@ -2843,21 +2913,21 @@ html.game-open body {
     z-index: 4;
     max-height: calc(100% - 300px);
     border: 1px solid var(--g-line-2);
-    border-radius: 14px;
+    border-radius: var(--r-lg);
     background: var(--g-panel-solid);
-    box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+    box-shadow: var(--shadow-2);
   }
   .stats-summary {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--sp-4);
     width: 100%;
     height: 42px;
-    padding: 0 12px;
+    padding: 0 var(--sp-3);
     border: 0;
     background: transparent;
     color: var(--g-ink-2);
-    font: 500 0.84rem var(--font-ui);
+    font: 500 var(--fs-2) var(--font-ui);
     cursor: pointer;
   }
   .stats-summary strong {
@@ -2873,7 +2943,7 @@ html.game-open body {
     height: 16px;
     margin-left: auto;
     transform: rotate(90deg);
-    transition: transform 0.15s ease;
+    transition: transform var(--dur-2) var(--ease-out);
   }
   .stats-panel.open .stats-summary svg {
     transform: rotate(-90deg);
@@ -2885,15 +2955,15 @@ html.game-open body {
     height: 18px;
     border-radius: 50%;
     background: var(--g-bad);
-    color: #fff;
+    color: var(--g-white);
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: var(--fs-2);
   }
   .stats-panel:not(.open) .stats-body {
     display: none;
   }
   .stats-body {
-    padding: 4px 12px 14px;
+    padding: var(--sp-1) var(--sp-3) var(--sp-4);
   }
   .blueprint-tools {
     top: 60px;
@@ -2923,34 +2993,34 @@ html.game-open body {
     top: 8px;
     left: 8px;
     width: calc(56% - 12px);
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .game .hud-tr {
     top: 56px;
     right: 8px;
     width: calc(44% - 8px);
-    gap: 6px;
+    gap: var(--sp-2);
   }
   /* Ziel-Auswahl und Bordcomputer als erste Zeile der rechten Spalte */
   .hud-tr .hselect-wrap {
-    padding-left: 8px;
+    padding-left: var(--sp-2);
   }
   .hud-tr .hselect-wrap svg {
     display: none;
   }
   .hud-tr .hselect {
-    padding: 0 2px;
-    font-size: 0.78rem;
+    padding: 0 var(--sp-0);
+    font-size: var(--fs-2);
   }
   .target-info {
-    column-gap: 6px;
+    column-gap: var(--sp-2);
   }
   .target-info dt {
-    font-size: 0.68rem;
+    font-size: var(--fs-1);
   }
   .target-info dd {
     white-space: nowrap;
-    font-size: 0.7rem;
+    font-size: var(--fs-1);
   }
   .hud-tr .goals,
   .challenge-box ol {
@@ -2966,7 +3036,7 @@ html.game-open body {
   }
   .warp-val {
     min-width: 46px;
-    font-size: 0.82rem;
+    font-size: var(--fs-2);
   }
   .warp-menu {
     right: auto;
@@ -2974,16 +3044,16 @@ html.game-open body {
   }
   .telemetry,
   .hud-card {
-    padding: 7px 10px;
-    gap: 2px;
+    padding: var(--sp-2) var(--sp-3);
+    gap: var(--sp-0);
   }
   .tele-big strong {
-    font-size: 1rem;
+    font-size: var(--fs-4);
   }
   .tele-rows {
-    margin-top: 2px;
-    padding-top: 4px;
-    font-size: 0.74rem;
+    margin-top: var(--sp-0);
+    padding-top: var(--sp-1);
+    font-size: var(--fs-2);
   }
   .tele-rows dt:nth-of-type(3),
   .tele-rows dd:nth-of-type(3),
@@ -2998,7 +3068,7 @@ html.game-open body {
     right: 8px;
     width: auto;
     transform: none;
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .rocket-stage.is-map .hud-tip {
     display: none;
@@ -3010,7 +3080,7 @@ html.game-open body {
   .hud-pill,
   .hud-tip,
   .rocket-toast {
-    font-size: 0.76rem;
+    font-size: var(--fs-2);
   }
   /* Auf dem Handy nur die Überschrift – Meldungen ohne Überschrift behalten ihren Text. */
   .rocket-toast strong + span,
@@ -3024,7 +3094,7 @@ html.game-open body {
   .hud-bl {
     left: 8px;
     bottom: 8px;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   .round-btn {
     width: 50px;
@@ -3036,12 +3106,12 @@ html.game-open body {
   }
   .turn-pad {
     order: -1;
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .rcs-pad {
     grid-template-columns: repeat(3, 40px);
     grid-template-rows: repeat(3, 40px);
-    gap: 3px;
+    gap: var(--sp-1);
   }
   .rcs-pad .hbtn {
     width: 40px;
@@ -3059,12 +3129,12 @@ html.game-open body {
   .sas-row {
     display: grid;
     grid-template-columns: repeat(4, 42px);
-    gap: 3px;
+    gap: var(--sp-1);
   }
   .sas-btn {
     width: 42px;
     height: 40px;
-    font-size: 0.9rem;
+    font-size: var(--fs-3);
   }
   /* Unten rechts: Aktionen über Schub und Stufe */
   .hud-br {
@@ -3075,11 +3145,11 @@ html.game-open body {
       'act'
       'dv'
       'eng';
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .engine {
-    gap: 6px;
-    padding: 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
   }
   .vgauge {
     width: 14px;
@@ -3089,7 +3159,7 @@ html.game-open body {
   }
   .throttle {
     width: 44px;
-    gap: 10px;
+    gap: var(--sp-3);
   }
   .throttle-track {
     height: 104px;
@@ -3107,12 +3177,12 @@ html.game-open body {
     min-height: 56px;
   }
   .stage-btn strong {
-    font-size: 0.86rem;
+    font-size: var(--fs-2);
   }
   .abtn {
-    height: 32px;
-    padding: 0 10px;
-    font-size: 0.78rem;
+    height: 36px;
+    padding: 0 var(--sp-3);
+    font-size: var(--fs-2);
   }
   .cp-target {
     display: grid;
@@ -3126,7 +3196,7 @@ html.game-open body {
     width: auto;
     max-height: calc(100% - 380px);
     min-height: 200px;
-    border-radius: 16px;
+    border-radius: var(--r-lg);
     z-index: 6;
   }
   .landing-alert {
@@ -3138,25 +3208,25 @@ html.game-open body {
 /* Sandkasten-Einstellungen */
 .sandbox-panel {
   display: grid;
-  gap: 10px;
-  padding: 6px 4px 4px;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-1) var(--sp-1);
 }
 
 .sb-field {
   display: grid;
-  gap: 5px;
-  font-size: 0.78rem;
+  gap: var(--sp-1);
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
 .sb-field select {
   height: 36px;
-  padding: 0 8px;
-  border-radius: 9px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line-2);
   background: rgb(255 255 255 / 6%);
   color: var(--g-ink);
-  font: 600 0.88rem var(--font-ui);
+  font: 600 var(--fs-3) var(--font-ui);
 }
 
 .sb-field option,
@@ -3167,19 +3237,19 @@ html.game-open body {
 .sb-seg {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 3px;
-  padding: 3px;
-  border-radius: 10px;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 5%);
 }
 
 .sb-seg button {
   height: 30px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-ink-2);
-  font: 600 0.85rem var(--font-mono);
+  font: 600 var(--fs-2) var(--font-mono);
   cursor: pointer;
 }
 
@@ -3192,9 +3262,9 @@ html.game-open body {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 4%);
   cursor: pointer;
 }
@@ -3209,15 +3279,15 @@ html.game-open body {
 .gswitch-text {
   flex: 1;
   display: grid;
-  gap: 1px;
+  gap: var(--sp-0);
 }
 
 .gswitch-text strong {
-  font-size: 0.88rem;
+  font-size: var(--fs-3);
 }
 
 .gswitch-text span {
-  font-size: 0.74rem;
+  font-size: var(--fs-2);
   color: var(--g-ink-2);
 }
 
@@ -3242,14 +3312,14 @@ html.game-open body {
 
 .rocket-overlay.help td.keys kbd {
   min-width: 1.7em;
-  font: 600 0.8rem/1.5 var(--font-ui);
+  font: 600 var(--fs-2)/1.5 var(--font-ui);
   text-align: center;
 }
 
 .key-join {
-  margin: 0 4px;
+  margin: 0 var(--sp-1);
   color: var(--g-ink-3);
-  font-size: 0.82rem;
+  font-size: var(--fs-2);
 }
 
 .key-word {
@@ -3260,8 +3330,8 @@ html.game-open body {
 /* Herausforderungen auf dem Handy kompakter: Beschreibung höchstens drei Zeilen */
 @media (max-width: 760px) {
   .challenge-card {
-    padding: 12px 14px;
-    gap: 4px;
+    padding: var(--sp-3) var(--sp-4);
+    gap: var(--sp-1);
   }
   .challenge-brief {
     display: -webkit-box;
@@ -3276,8 +3346,8 @@ html.game-open body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
-  padding-top: 14px;
+  gap: var(--sp-2) var(--sp-4);
+  padding-top: var(--sp-4);
   border-top: 1px solid var(--g-line);
 }
 
@@ -3290,7 +3360,7 @@ html.game-open body {
   width: 34%;
   text-align: left;
   font-weight: 600;
-  padding-right: 12px;
+  padding-right: var(--sp-3);
 }
 
 .help-keys {
@@ -3300,7 +3370,7 @@ html.game-open body {
 
 .help-keys summary {
   cursor: pointer;
-  padding: 6px 0;
+  padding: var(--sp-2) 0;
   color: var(--g-ink-2);
 }
 
@@ -3339,7 +3409,7 @@ html.game-open body {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-size: 0.74rem;
+    font-size: var(--fs-2);
   }
   .rocket-stage.is-map .hud-tip {
     display: none;
@@ -3373,11 +3443,11 @@ html.game-open body {
   .hud-br {
     right: 8px;
     bottom: 8px;
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .engine {
-    gap: 8px;
-    padding: 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
   }
   .throttle-track {
     height: 96px;
@@ -3389,12 +3459,12 @@ html.game-open body {
     min-height: 54px;
   }
   .abtn {
-    height: 32px;
-    padding: 0 10px;
-    font-size: 0.76rem;
+    height: 36px;
+    padding: 0 var(--sp-3);
+    font-size: var(--fs-2);
   }
   .dv-readout {
-    font-size: 0.72rem;
+    font-size: var(--fs-2);
   }
   .computer-panel {
     max-height: calc(100% - 70px);
@@ -3416,22 +3486,22 @@ html.game-open body {
 @media (pointer: coarse) and (min-width: 761px) and (min-height: 700px) {
   .abtn {
     height: 44px;
-    padding: 0 16px;
-    font-size: 0.95rem;
+    padding: 0 var(--sp-4);
+    font-size: var(--fs-3);
   }
   /* Zwei Reihen, damit die Knöpfe nicht unter den Schubregler rutschen */
   .sas-row {
     display: grid;
     grid-template-columns: repeat(4, 50px);
-    gap: 3px;
+    gap: var(--sp-1);
   }
   .sas-btn {
     width: 50px;
     height: 48px;
-    font-size: 1.1rem;
+    font-size: var(--fs-4);
   }
   .sas-short {
-    font-size: 0.64rem;
+    font-size: var(--fs-1);
   }
   .round-btn {
     width: 76px;
@@ -3439,7 +3509,7 @@ html.game-open body {
   }
   .hud-card,
   .tele-rows {
-    font-size: 0.9rem;
+    font-size: var(--fs-3);
   }
   .throttle-track {
     width: 28px;
@@ -3459,11 +3529,11 @@ html.game-open body {
 
 /* Einführung beim ersten Flug */
 .rocket-overlay.guide {
-  gap: 10px;
+  gap: var(--sp-3);
   /* Nicht abdunkeln: Man soll die erklärten Knöpfe dahinter sehen. */
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 8%),
-    0 24px 60px rgb(0 0 0 / 60%);
+    inset 0 1px 0 var(--g-edge),
+    var(--shadow-2);
 }
 
 .rocket-overlay.guide p {
@@ -3473,7 +3543,7 @@ html.game-open body {
 }
 
 .guide-step {
-  font-size: 0.72rem;
+  font-size: var(--fs-2);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3482,7 +3552,7 @@ html.game-open body {
 
 .guide-dots {
   display: flex;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .guide-dots span {
@@ -3494,7 +3564,7 @@ html.game-open body {
 
 .guide-dots span.on {
   width: 20px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: var(--g-accent);
 }
 
@@ -3502,12 +3572,43 @@ html.game-open body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 /* Schmale Handys: In der Werft-Leiste ist „wie weit“ wichtiger als die Masse. */
 @media (max-width: 480px) {
   .stats-summary .stats-mass {
     display: none;
+  }
+}
+
+/* Druck-Rückmeldung für alle Knöpfe (Emil-Kowalski-Wert 0,97) */
+.gbtn:active:not(:disabled),
+.hbtn:active:not(:disabled),
+.abtn:active:not(:disabled),
+.mbtn:active:not(:disabled),
+.sas-btn:active:not(:disabled),
+.round-btn:active,
+.part-tile:active {
+  transform: scale(0.97);
+}
+
+/* Tippfläche mindestens 44 px auch bei kompakten Knöpfen: unsichtbarer Rand um den Knopf */
+@media (pointer: coarse) {
+  .gbtn,
+  .hbtn,
+  .abtn,
+  .sas-btn,
+  .cp-action {
+    position: relative;
+  }
+  .gbtn::after,
+  .hbtn::after,
+  .abtn::after,
+  .sas-btn::after,
+  .cp-action::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--sp-1) * -1);
   }
 }
