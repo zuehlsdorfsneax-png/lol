@@ -115,7 +115,7 @@ const GROUPS: NavGroup[] = [
       { to: 'begriffe', label: 'Begriffe A–Z', icon: 'list', active: (r) => r.page === 'begriffe' },
       {
         to: 'download',
-        label: 'Download für Windows',
+        label: 'Download',
         icon: 'download',
         active: (r) => r.page === 'download',
       },
@@ -291,7 +291,7 @@ const PAGE_TITLES: Record<Route['page'], string> = {
   quiz: 'Quiz',
   spiel: 'Lunas Sternenreise',
   rakete: 'Raketenwerft',
-  download: 'Download für Windows',
+  download: 'Download',
   begriffe: 'Begriffe A–Z',
   methodik: 'Methodik & Validierung',
   quellen: 'Quellen & Formeln',

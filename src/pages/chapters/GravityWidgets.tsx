@@ -30,7 +30,7 @@ export function MoonTest() {
   const factor = predicted / measured;
   const barMax = Math.max(measured, predicted) * 1.1;
   return (
-    <div class="stack" style={{ gap: '16px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <div class="grid-2">
         <div class="stack">
           <Slider
@@ -63,19 +63,17 @@ export function MoonTest() {
             { label: 'gemessen (Bahn)', v: measured, slot: 0 },
             { label: `vorhergesagt (n = ${sig(n, 3)})`, v: predicted, slot: 1 },
           ].map((b) => (
-            <div key={b.label} class="stack" style={{ gap: '4px' }}>
+            <div key={b.label} class="stack" style={{ gap: 'var(--sp-1)' }}>
               <div class="small muted">{b.label}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div class="bar-row">
                 <div
+                  class="bar"
                   style={{
-                    height: '18px',
                     width: `${Math.max(0.5, (b.v / barMax) * 100)}%`,
                     background: `var(--series-${b.slot + 1})`,
-                    borderRadius: '0 4px 4px 0',
-                    maxWidth: '85%',
                   }}
                 />
-                <span class="num small">{sig(b.v * 1000, 3)} mm/s²</span>
+                <span class="num small bar-value">{sig(b.v * 1000, 3)} mm/s²</span>
               </div>
             </div>
           ))}
@@ -175,7 +173,7 @@ export function KeplerLab() {
   }, []);
 
   return (
-    <div class="stack" style={{ gap: '16px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <Slider
         id="kepler-e"
         label="Exzentrizität der Bahn"
@@ -251,7 +249,7 @@ export function KeplerLab() {
               </tr>
             </tbody>
           </table>
-          <p class="small muted" style={{ marginTop: '8px' }}>
+          <p class="small muted" style={{ marginTop: 'var(--sp-2)' }}>
             Aus M = 4π²a³/(G T²). Letzte Zeile: Erde + Mond ({sci(EARTH.mass + MOON.mass, 3)} kg).
             Sonne: {sci(SUN.mass, 3)} kg.
           </p>

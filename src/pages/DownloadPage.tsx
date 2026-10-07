@@ -12,12 +12,36 @@ function insideExe(): boolean {
   return location.hostname === '127.0.0.1' && location.port === '47173';
 }
 
+const PLATFORMS = [
+  {
+    name: 'Windows',
+    file: 'Orbitlabor.exe',
+    needs: 'Windows 10 oder 11, 64 Bit',
+    size: 'etwa 8 MB',
+    url: EXE_URL,
+  },
+  {
+    name: 'Mac mit Apple-Chip',
+    file: 'Orbitlabor-Mac-Apple-Chip.zip',
+    needs: 'macOS auf M1 oder neuer',
+    size: 'etwa 4 MB',
+    url: MAC_URL,
+  },
+  {
+    name: 'Android',
+    file: 'Orbitlabor.apk',
+    needs: 'Android 7 oder neuer, Handy und Tablet',
+    size: 'etwa 4 MB',
+    url: APK_URL,
+  },
+];
+
 export function DownloadPage() {
   return (
-    <div class="stack download-page" style={{ gap: '18px', maxWidth: '860px' }}>
-      <PageHead eyebrow="Anhang · Windows" title="Orbitlabor für Windows">
-        Die ganze App als eine einzige Datei: herunterladen, doppelklicken, loslegen – ohne
-        Installation und ohne Internet.
+    <div class="stack download-page">
+      <PageHead eyebrow="Anhang" title="Orbitlabor herunterladen">
+        Die ganze App als eine Datei für Windows, Mac oder Android: ohne Internet nutzbar,
+        Fortschritt und Raketen bleiben gespeichert.
       </PageHead>
 
       {insideExe() && (
@@ -27,71 +51,85 @@ export function DownloadPage() {
         </Callout>
       )}
 
-      <div class="download-hero panel">
-        <div>
-          <h2>Orbitlabor.exe</h2>
-          <p class="small muted">
-            Windows 10 und 11 (64 Bit) · etwa 8 MB · Fortschritt und Raketen werden gespeichert
-          </p>
-        </div>
-        <a class="btn primary download-btn" href={EXE_URL} target="_blank" rel="noopener">
-          <Icon name="download" /> Herunterladen
-        </a>
-        <a class="btn download-btn" href={MAC_URL} target="_blank" rel="noopener">
-          <Icon name="download" /> Für Mac (Apple-Chip)
-        </a>
-        <a class="btn download-btn" href={APK_URL} target="_blank" rel="noopener">
-          <Icon name="download" /> Für Android (APK)
-        </a>
-        <p class="small muted">
-          Mac: ZIP öffnen, Orbitlabor.app in „Programme“ ziehen. Beim ersten Start unter
-          Systemeinstellungen → Datenschutz &amp; Sicherheit „Trotzdem öffnen“ wählen. Android: APK
-          auf dem Gerät öffnen und „Unbekannte Apps installieren“ für den Browser erlauben.
-        </p>
-        <a class="small" href={RELEASES_URL} target="_blank" rel="noopener">
+      <ul class="platforms">
+        {PLATFORMS.map((p) => (
+          <li key={p.name}>
+            <div class="platform-text">
+              <strong>{p.name}</strong>
+              <span>{p.needs}</span>
+              <span class="platform-file">
+                {p.file} · {p.size}
+              </span>
+            </div>
+            <a class="btn primary" href={p.url} target="_blank" rel="noopener">
+              <Icon name="download" /> Herunterladen
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="small">
+        <a href={RELEASES_URL} target="_blank" rel="noopener">
           Alle Versionen auf GitHub
         </a>
-      </div>
+      </p>
 
-      <section class="panel panel-pad">
-        <h3>In drei Schritten starten</h3>
-        <ol class="steps">
-          <li>
-            Auf <strong>Herunterladen</strong> klicken. Fragt der Browser nach, ob die Datei
-            behalten werden soll, <strong>Behalten</strong> wählen (in Edge unter „…“).
-          </li>
-          <li>
-            <strong>Orbitlabor.exe</strong> im Download-Ordner doppelklicken. Erscheint das blaue
-            Fenster „Der Computer wurde durch Windows geschützt“, auf{' '}
-            <strong>Weitere Informationen</strong> und dann auf <strong>Trotzdem ausführen</strong>{' '}
-            klicken. Das ist nur beim ersten Start nötig.
-          </li>
-          <li>
-            Das Orbitlabor öffnet sich in einem eigenen Fenster. Schließt man das Fenster, beendet
-            sich das Programm nach kurzer Zeit von selbst.
-          </li>
-        </ol>
+      <section class="install-steps">
+        <h2>Erster Start</h2>
+        <div class="install-grid">
+          <div>
+            <h3>Windows</h3>
+            <ol class="steps">
+              <li>
+                Datei herunterladen. Fragt der Browser, ob sie behalten werden soll,{' '}
+                <strong>Behalten</strong> wählen (in Edge unter „…“).
+              </li>
+              <li>
+                <strong>Orbitlabor.exe</strong> doppelklicken. Bei „Der Computer wurde durch Windows
+                geschützt“ auf <strong>Weitere Informationen</strong> und{' '}
+                <strong>Trotzdem ausführen</strong> klicken – nur beim ersten Start.
+              </li>
+              <li>Die App öffnet sich in einem eigenen Fenster.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Mac</h3>
+            <ol class="steps">
+              <li>ZIP öffnen und Orbitlabor.app in den Ordner „Programme“ ziehen.</li>
+              <li>
+                Beim ersten Start unter Systemeinstellungen → Datenschutz &amp; Sicherheit{' '}
+                <strong>Trotzdem öffnen</strong> wählen.
+              </li>
+            </ol>
+          </div>
+          <div>
+            <h3>Android</h3>
+            <ol class="steps">
+              <li>APK auf dem Handy oder Tablet herunterladen und öffnen.</li>
+              <li>
+                Wenn gefragt, <strong>Unbekannte Apps installieren</strong> für den Browser
+                erlauben, dann <strong>Installieren</strong>.
+              </li>
+            </ol>
+          </div>
+        </div>
       </section>
 
-      <Callout kind="merke" title="Warum warnt Windows?">
-        Windows vertraut Programmen erst, wenn sie mit einem gekauften Zertifikat signiert sind, das
-        auf eine geprüfte Person oder Firma ausgestellt ist, oder wenn sie schon sehr oft
-        heruntergeladen wurden. Beides hat ein Schulprojekt nicht. Die Warnung heißt nur
-        „unbekannter Herausgeber“, nicht „gefährlich“. Der komplette Quelltext liegt offen auf
-        GitHub, und die Datei wird dort automatisch aus genau diesem Quelltext gebaut.
+      <Callout kind="merke" title="Warum warnen Windows und Mac?">
+        Beide vertrauen Programmen erst, wenn sie mit einem gekauften Zertifikat signiert sind, das
+        auf eine geprüfte Person oder Firma ausgestellt ist. Das hat ein Schulprojekt nicht. Die
+        Warnung heißt nur „unbekannter Herausgeber“, nicht „gefährlich“. Der Quelltext liegt offen
+        auf GitHub, und alle drei Dateien werden dort automatisch aus genau diesem Quelltext gebaut.
       </Callout>
 
-      <section class="panel panel-pad">
-        <h3>Wie funktioniert die EXE?</h3>
+      <section class="prose download-how">
+        <h2>Wie funktioniert das?</h2>
         <p>
-          Die Datei enthält die komplette Web-App. Beim Start öffnet sie einen kleinen Server nur
-          auf dem eigenen Rechner (127.0.0.1) und zeigt die App in einem App-Fenster von Microsoft
-          Edge, das auf jedem Windows 10 und 11 vorhanden ist. Fehlt Edge, öffnet sich der
-          Standardbrowser. Es werden keine Daten ins Internet geschickt.
+          Windows- und Mac-Version enthalten die komplette Web-App. Beim Start öffnen sie einen
+          kleinen Server nur auf dem eigenen Rechner (127.0.0.1) und zeigen die App in einem
+          App-Fenster von Edge oder Chrome, sonst im Standardbrowser. Die Android-App zeigt dieselbe
+          Web-App in einer eigenen Oberfläche. Es werden keine Daten ins Internet geschickt.
         </p>
-        <p class="small muted">
-          Ohne Windows? Die App läuft auch direkt im Browser – auf Handy, Tablet, Mac oder Linux.
-        </p>
+        <p>Die App läuft auch direkt im Browser – auf jedem Gerät.</p>
       </section>
     </div>
   );

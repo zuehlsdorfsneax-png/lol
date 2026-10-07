@@ -129,7 +129,11 @@ export function GlossaryPage() {
       </PageHead>
       <dl class="glossary">
         {TERMS.map((t) => (
-          <div key={t.term} class="glossary-item">
+          <div
+            key={t.term}
+            class="glossary-item"
+            id={`begriff-${t.term.toLowerCase().replace(/[^a-z0-9äöüß]+/g, '-')}`}
+          >
             <dt>{t.term}</dt>
             <dd>
               {t.text}

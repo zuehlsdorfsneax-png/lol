@@ -15,38 +15,38 @@ import { Simulation } from '../sim/Simulation';
 import { SpaceCanvas } from '../sim/SpaceCanvas';
 import { DEFAULT_VIEW } from '../sim/view';
 import { LinkButton } from '../ui/LinkButton';
-import { Icon, type IconName } from '../ui/Icon';
+import { Icon } from '../ui/Icon';
 import { CHALLENGE_COUNT, GOAL_COUNT } from '../rocket/counts';
 import { QUESTIONS } from '../quiz/questions';
 
 const HERO_VIEW = { ...DEFAULT_VIEW, frame: 'rotating' as const, labels: true, trailSpan: 0 };
 
-function Tile({
+/** Zeile im Inhaltsverzeichnis der Startseite: Marke links, Titel und Leitfrage, Pfeil rechts. */
+function TocRow({
   to,
-  icon,
+  mark,
   title,
   meta,
   children,
 }: {
   to: string;
-  icon: IconName;
+  mark: ComponentChildren;
   title: string;
   meta?: string;
   children: ComponentChildren;
 }) {
   return (
-    <a class="tile" href={`#${to}`}>
-      <span class="tile-icon">
-        <Icon name={icon} />
-      </span>
-      <span class="tile-text">
-        <strong>
-          {title}
-          {meta && <span class="tile-meta">{meta}</span>}
-        </strong>
-        <span>{children}</span>
-      </span>
-    </a>
+    <li>
+      <a class="toc-row" href={`#${to}`}>
+        <span class="toc-mark">{mark}</span>
+        <span class="toc-text">
+          <strong>{title}</strong>
+          <span>{children}</span>
+        </span>
+        {meta && <span class="toc-meta">{meta}</span>}
+        <Icon name="arrow" />
+      </a>
+    </li>
   );
 }
 
@@ -73,10 +73,10 @@ export function HomePage() {
     <div class="home">
       <section class="hero">
         <div class="hero-text">
-          <div class="eyebrow">Seminararbeit Astronomie · Bahnstabilität</div>
+          <div class="eyebrow">Seminararbeit Astronomie</div>
           <h1 class="hero-title">Orbitlabor</h1>
           <blockquote class="problem">
-            <span class="small muted">Problemfrage</span>
+            <span class="problem-label">Problemfrage</span>
             <p>„{PROBLEM_QUESTION}“</p>
           </blockquote>
           <div class="btn-row">
@@ -90,115 +90,115 @@ export function HomePage() {
             </LinkButton>
           </div>
         </div>
-        <div class="hero-visual">
-          <span class="hero-day" ref={dayLabel} aria-hidden="true">
-            Tag 0
-          </span>
-          <SpaceCanvas
-            sim={sim}
-            view={HERO_VIEW}
-            radius={2.1e9}
-            cameraKey={0}
-            onFrame={onFrame}
-            shape="square"
-            ariaLabel="Erde und Mond im mitrotierenden System mit einer Wolke aus Testteilchen"
-          />
-          <p class="small muted">
-            Live-Simulation (1 Tag pro Sekunde): 160 Testteilchen um die Erde. Die Sonne (links,
-            außerhalb des Bildes) entreißt alle jenseits von etwa 0,48 Hill-Radien – der Mond kreist
-            weit innerhalb.
-          </p>
-        </div>
+        <figure class="plate hero-visual">
+          <div class="plate-canvas">
+            <span class="hero-day" ref={dayLabel} aria-hidden="true">
+              Tag 0
+            </span>
+            <SpaceCanvas
+              sim={sim}
+              view={HERO_VIEW}
+              radius={2.1e9}
+              cameraKey={0}
+              onFrame={onFrame}
+              shape="square"
+              ariaLabel="Erde und Mond im mitrotierenden System mit einer Wolke aus Testteilchen"
+            />
+          </div>
+          <figcaption>
+            <span class="fig-num">Abb. 1</span> Live-Simulation, 1 Tag pro Sekunde: 160 Testteilchen
+            um die Erde. Die Sonne (links, außerhalb des Bildes) entreißt alle jenseits von etwa
+            0,48 Hill-Radien; der Mond kreist bei 0,26.
+          </figcaption>
+        </figure>
       </section>
 
-      <section class="answer" aria-labelledby="kurzantwort">
+      <section class="home-section" aria-labelledby="kurzantwort">
         <h2 id="kurzantwort">Die Antwort in drei Sätzen</h2>
-        <div class="answer-grid">
-          <div class="answer-card">
-            <span class="chip ok">
-              <Icon name="check" /> stabil
+        <ol class="theses">
+          <li class="ok">
+            <span class="thesis-label">
+              <Icon name="check" /> Stabil
             </span>
             <p>
               Ein Mond bleibt, solange er innerhalb von etwa <strong>0,48 Hill-Radien</strong>{' '}
               kreist (rückläufig 0,92). Unser Mond liegt bei 0,26 – das Jacobi-Kriterium beweist,
               dass er die Erdumgebung nie verlassen kann.
+              {SHOWN_CHAPTERS.has(5) && (
+                <>
+                  {' '}
+                  <a href="#kapitel-5">Kapitel 5</a>
+                </>
+              )}
             </p>
-            {SHOWN_CHAPTERS.has(5) && <a href="#kapitel-5">Kapitel 5 · Hill-Sphäre</a>}
-          </div>
-          <div class="answer-card">
-            <span class="chip fail">
+          </li>
+          <li class="fail">
+            <span class="thesis-label">
               <Icon name="fail" /> Absturz
             </span>
             <p>
               Erst wenn er über <strong>70 % seiner Geschwindigkeit</strong> verlöre, käme er der
               Erde näher als die Roche-Grenze und würde zerrissen; bei 80 % schlüge er ein.
+              {SHOWN_CHAPTERS.has(8) && (
+                <>
+                  {' '}
+                  <a href="#kapitel-8">Kapitel 8</a>
+                </>
+              )}
             </p>
-            {SHOWN_CHAPTERS.has(8) && <a href="#kapitel-8">Kapitel 8 · Stabilitätsfälle</a>}
-          </div>
-          <div class="answer-card">
-            <span class="chip warn">
+          </li>
+          <li class="warn">
+            <span class="thesis-label">
               <Icon name="warn" /> Flucht
             </span>
             <p>
               Entkommen würde er mit <strong>19 % mehr Tempo</strong>, auf der halben Entfernung zur
               Sonne oder bei 6,5-facher Sonnenmasse – dann öffnet sich das Tor bei L1/L2.
+              {SHOW_TOOLS && (
+                <>
+                  {' '}
+                  <a href="#stabilitaetskarte">Stabilitätskarte</a>
+                </>
+              )}
             </p>
-            {SHOW_TOOLS && <a href="#stabilitaetskarte">Zur Stabilitätskarte</a>}
-          </div>
-        </div>
+          </li>
+        </ol>
       </section>
 
-      <section class="home-section" aria-labelledby="kapitel">
+      <section class="home-section" aria-labelledby="inhalt">
         <div class="section-head">
-          <h2 id="kapitel">Der Weg durch die Arbeit</h2>
+          <h2 id="inhalt">Inhalt</h2>
           <a class="more" href="#kapitel-2">
             Von vorn lesen <Icon name="arrow" />
           </a>
         </div>
-        <ol class="chapter-list">
+        <ol class="toc">
           {VISIBLE_CHAPTERS.map((c) => (
-            <li key={c.n}>
-              <a href={`#kapitel-${c.n}`}>
-                <span class="chapter-num">{c.n}</span>
-                <span>
-                  <strong>{c.title}</strong>
-                  <span class="small muted">{c.question}</span>
-                </span>
-              </a>
-            </li>
+            <TocRow key={c.n} to={`kapitel-${c.n}`} mark={c.n} title={c.title}>
+              {c.question}
+            </TocRow>
           ))}
+          {(SHOW_TOOLS || SHOW_SIMULATOR) && (
+            <TocRow to="simulator" mark={<Icon name="orbit" />} title="Drei-Körper-Simulator">
+              Erde, Mond und Sonne mit allen Parametern, drei Bezugssystemen, Messwerten und Export.
+            </TocRow>
+          )}
+          {SHOW_TOOLS && (
+            <>
+              <TocRow to="stabilitaetskarte" mark={<Icon name="grid" />} title="Stabilitätskarte">
+                Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt
+                er?
+              </TocRow>
+              <TocRow to="lagrange-labor" mark={<Icon name="lagrange" />} title="Lagrange-Labor">
+                Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden System.
+              </TocRow>
+            </>
+          )}
         </ol>
       </section>
 
-      {(SHOW_TOOLS || SHOW_SIMULATOR) && (
-        <section class="home-section" aria-labelledby="werkzeuge">
-          <div class="section-head">
-            <h2 id="werkzeuge">Selbst ausprobieren</h2>
-          </div>
-          <div class="tile-grid">
-            <Tile to="simulator" icon="orbit" title="Simulator">
-              Erde, Mond und Sonne mit allen Parametern, drei Bezugssystemen, Messwerten und Export.
-            </Tile>
-            {SHOW_TOOLS && (
-              <>
-                <Tile to="stabilitaetskarte" icon="grid" title="Stabilitätskarte">
-                  Tausende Simulationen als Karte: Wo bleibt der Mond, wo stürzt er ab, wo entkommt
-                  er?
-                </Tile>
-                <Tile to="lagrange-labor" icon="lagrange" title="Lagrange-Labor">
-                  Potentiallandschaft, Nullgeschwindigkeitskurven und Teilchen im rotierenden
-                  System.
-                </Tile>
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
       <section class="home-section" aria-labelledby="spielen">
-        <div class="section-head">
-          <h2 id="spielen">Spielen und üben</h2>
-        </div>
+        <h2 id="spielen">Spielen und üben</h2>
         <a class="rocket-banner" href="#rakete">
           <div class="rocket-banner-text">
             <div class="eyebrow">Raketenwerft</div>
@@ -208,28 +208,33 @@ export function HomePage() {
               echter Schwerkraft, Bordcomputer, {CHALLENGE_COUNT} Herausforderungen und {GOAL_COUNT}{' '}
               Zielen.
             </p>
-            <span class="btn primary">
-              Jetzt spielen <Icon name="arrow" />
+            <span class="rocket-banner-cta">
+              Raketenwerft öffnen <Icon name="arrow" />
             </span>
           </div>
           <RocketArt />
         </a>
-        <div class="tile-grid">
-          <Tile to="spiel" icon="moon" title="Lunas Sternenreise">
+        <ol class="toc">
+          <TocRow to="spiel" mark={<Icon name="moon" />} title="Lunas Sternenreise">
             Für Jüngere: Schleudere den Mond Luna in eine Umlaufbahn und sammle Sterne.
-          </Tile>
-          <Tile
+          </TocRow>
+          <TocRow
             to="missionen"
-            icon="flag"
+            mark={<Icon name="flag" />}
             title="Missionen"
             meta={`${stars} / ${MISSIONS.length * 3} ★`}
           >
             Neun Aufträge an den Grenzen der Stabilität, bis zu drei Sterne pro Auftrag.
-          </Tile>
-          <Tile to="quiz" icon="quiz" title="Quiz">
-            {QUESTIONS.length} Fragen zu allen Kapiteln, jede mit Erklärung.
-          </Tile>
-        </div>
+          </TocRow>
+          <TocRow
+            to="quiz"
+            mark={<Icon name="quiz" />}
+            title="Quiz"
+            meta={`${QUESTIONS.length} Fragen`}
+          >
+            Fragen zu allen Kapiteln, jede mit Erklärung.
+          </TocRow>
+        </ol>
       </section>
     </div>
   );

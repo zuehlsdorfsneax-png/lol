@@ -246,19 +246,21 @@ export function SourcesPage() {
         Daten beruhen.
       </PageHead>
       <SectionTitle n="B.1">Formelsammlung</SectionTitle>
-      <div class="grid-2">
+      <dl class="formula-list">
         {FORMULAS.map((f) => (
-          <section class="panel panel-pad" key={f.title} style={{ gap: '4px' }}>
-            <h3 style={{ fontSize: '0.95rem' }}>{f.title}</h3>
-            <Equation tex={f.tex} />
-            {f.note && <p class="small muted">{f.note}</p>}
-          </section>
+          <div class="formula-row" key={f.title}>
+            <dt>{f.title}</dt>
+            <dd>
+              <Equation tex={f.tex} />
+              {f.note && <p class="small muted">{f.note}</p>}
+            </dd>
+          </div>
         ))}
-      </div>
+      </dl>
       <SectionTitle n="B.2">Literatur</SectionTitle>
       <div class="prose">
         {SOURCES.map((g) => (
-          <section key={g.group} class="stack" style={{ gap: '8px' }}>
+          <section key={g.group} class="stack" style={{ gap: 'var(--sp-2)' }}>
             <h3>{g.group}</h3>
             <ul>
               {g.items.map((i) => (
@@ -271,7 +273,7 @@ export function SourcesPage() {
         ))}
         <SectionTitle n="B.3">Quellen der Seminararbeit</SectionTitle>
         {unique(OWN_SOURCES, SOURCES).map((g) => (
-          <section key={g.group} class="stack" style={{ gap: '8px' }}>
+          <section key={g.group} class="stack" style={{ gap: 'var(--sp-2)' }}>
             <h3>{g.group}</h3>
             <ul class="source-list">
               {g.items.map((i) => (

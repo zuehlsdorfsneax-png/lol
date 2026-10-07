@@ -72,7 +72,7 @@ export function ShellCalculator() {
   }, []);
 
   return (
-    <div class="stack" style={{ gap: '18px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <Slider
         id="shell-thickness"
         label="Dicke der Mondschale"
@@ -142,9 +142,9 @@ function ResultCard({
   verdict: string;
 }) {
   return (
-    <div class="panel panel-pad" style={{ gap: '6px' }}>
+    <div class="panel panel-pad" style={{ gap: 'var(--sp-2)' }}>
       <div class="small muted">{title}</div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>{value}</div>
+      <div style={{ fontSize: 'var(--fs-6)', fontWeight: 500 }}>{value}</div>
       <StatusChip status={status}>{verdict}</StatusChip>
     </div>
   );
@@ -159,7 +159,7 @@ function DensityScale({ needed }: { needed: number }) {
   const items = [...MATERIALS];
   return (
     <div>
-      <div class="small muted" style={{ marginBottom: '8px' }}>
+      <div class="small muted" style={{ marginBottom: 'var(--sp-2)' }}>
         Dichte im Vergleich (logarithmische Skala, g/cm³)
       </div>
       <div style={{ position: 'relative', height: '96px' }}>
@@ -203,7 +203,7 @@ function DensityScale({ needed }: { needed: number }) {
           >
             <span
               class="small"
-              style={{ whiteSpace: 'nowrap', color: 'var(--ink-2)', fontSize: '0.72rem' }}
+              style={{ whiteSpace: 'nowrap', color: 'var(--ink-2)', fontSize: 'var(--fs-1)' }}
             >
               {m.name.split(' ')[0]}
             </span>
@@ -237,7 +237,10 @@ function DensityScale({ needed }: { needed: number }) {
               border: '2px solid var(--surface)',
             }}
           />
-          <span class="small" style={{ fontWeight: 600, whiteSpace: 'nowrap', marginTop: '20px' }}>
+          <span
+            class="small"
+            style={{ fontWeight: 600, whiteSpace: 'nowrap', marginTop: 'var(--sp-5)' }}
+          >
             benötigt: {sig(needed / 1000, 3)}
           </span>
         </div>

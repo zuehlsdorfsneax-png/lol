@@ -643,7 +643,7 @@ function Werft({
                 >
                   <PartIcon def={p} />
                   <span class="part-name">{p.name}</span>
-                  <span class="part-spec">{open ? spec(p) : `🔒 ab ${p.unlock} P.`}</span>
+                  <span class="part-spec">{open ? spec(p) : `ab ${p.unlock} P.`}</span>
                 </button>
               );
             },
@@ -679,8 +679,8 @@ function Werft({
                     }}
                   >
                     <strong>
-                      {lockedIds.length ? '🔒 ' : ''}
                       {t.name}
+                      {lockedIds.length ? ' · gesperrt' : ''}
                     </strong>
                     <span>{t.info}</span>
                     <span class="gmenu-meta">
@@ -996,8 +996,8 @@ function Werft({
           )}
           {lockedParts.length > 0 && (
             <p class="build-problems-note">
-              🔒 Noch gesperrt: {[...new Set(lockedParts)].map((id) => part(id).name).join(', ')}.
-              Mehr Punkte sammeln – oder im Sandkasten fliegen.
+              Noch gesperrt: {[...new Set(lockedParts)].map((id) => part(id).name).join(', ')}. Mehr
+              Punkte sammeln – oder im Sandkasten fliegen.
             </p>
           )}
           <details class="rocket-eq">
@@ -1266,7 +1266,7 @@ function MissionControl({
                 const { peri, apo } = apsides(s.el);
                 return (
                   <li key={s.id}>
-                    🛰 {s.name} · um {b.name} · {km(peri - b.radius)} – {km(apo - b.radius)}
+                    {s.name} · um {b.name} · {km(peri - b.radius)} – {km(apo - b.radius)}
                     <ConfirmButton
                       class="btn small ghost"
                       label="Abschalten"
@@ -1301,7 +1301,7 @@ function MissionControl({
                   background: `linear-gradient(90deg, ${p.metal[0]}, ${p.metal[1]} 45%, ${p.stripe} 46%, ${p.stripe} 60%, ${p.band} 61%)`,
                 }}
               />
-              {locked ? `🔒 ${p.name} · ab ${p.points} Punkten` : p.name}
+              {locked ? `${p.name} · gesperrt bis ${p.points} Punkte` : p.name}
             </button>
           );
         })}

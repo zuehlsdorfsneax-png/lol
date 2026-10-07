@@ -52,6 +52,8 @@ html.game-open body {
   --g-blueprint-2: #102140;
   --g-blueprint-3: #0c1a33;
   --g-edge: rgb(255 255 255 / 7%);
+  --g-fill: rgb(255 255 255 / 4%);
+  --g-tip: rgb(8 12 22 / 72%);
   --g-scrim: rgb(3 6 14 / 50%);
   --shadow-1: 0 2px 6px rgb(0 0 0 / 40%);
   --shadow-2: 0 16px 40px rgb(0 0 0 / 50%);
@@ -390,7 +392,7 @@ html.game-open body {
   padding: var(--sp-3) var(--sp-2) var(--sp-3);
   border-radius: var(--r-lg);
   border: 1px solid var(--g-line);
-  background: rgb(255 255 255 / 4%);
+  background: var(--g-fill);
   color: var(--g-ink);
   text-align: center;
   cursor: pointer;
@@ -401,13 +403,9 @@ html.game-open body {
 
 @media (hover: hover) and (pointer: fine) {
   .part-tile:hover {
-    border-color: rgb(226 168 70 / 70%);
-    background: rgb(255 255 255 / 7%);
+    border-color: var(--g-accent);
+    background: var(--g-btn);
   }
-}
-
-.part-tile:active {
-  transform: scale(0.98);
 }
 
 .part-tile.locked {
@@ -1501,7 +1499,7 @@ html.game-open body {
   max-width: 100%;
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
-  background: rgb(8 12 22 / 72%);
+  background: var(--g-tip);
   font-size: var(--fs-2);
   text-align: center;
   pointer-events: none;
@@ -2199,37 +2197,50 @@ html.game-open body {
 
 .cp-plans {
   display: grid;
-  gap: var(--sp-2);
+  border-top: 1px solid var(--g-line);
 }
 
+/* Planbare Manöver als Liste mit Trennlinien; die Empfehlung trägt eine Messing-Marke */
 .cp-plan {
+  position: relative;
   display: grid;
   gap: var(--sp-0);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-md);
-  border: 1px solid var(--g-line);
-  background: rgb(255 255 255 / 5%);
+  min-height: 48px;
+  padding: var(--sp-3) var(--sp-2);
+  border: 0;
+  border-bottom: 1px solid var(--g-line);
+  border-radius: 0;
+  background: none;
   color: var(--g-ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease-out);
 }
 
 .cp-plan:focus-visible {
-  border-color: rgb(110 168 255 / 70%);
-  background: rgb(110 168 255 / 10%);
+  background: var(--g-btn);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .cp-plan:hover:not(:disabled) {
-    border-color: rgb(110 168 255 / 70%);
-    background: rgb(110 168 255 / 10%);
+    background: var(--g-btn);
   }
 }
 
+.cp-plan.rec::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--sp-3);
+  bottom: var(--sp-3);
+  width: 3px;
+  border-radius: var(--r-sm);
+  background: var(--g-accent);
+}
+
 .cp-plan.rec {
-  border-color: rgb(226 168 70 / 70%);
-  background: rgb(226 168 70 / 10%);
+  padding-left: var(--sp-4);
 }
 
 .cp-plan strong em {
@@ -2609,9 +2620,9 @@ html.game-open body {
   gap: var(--sp-3);
   height: 46px;
   padding: 0 var(--sp-4);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   border: 1px solid var(--g-line);
-  background: rgb(255 255 255 / 5%);
+  background: var(--g-fill);
   color: var(--g-ink);
   font: 600 var(--fs-3) var(--font-ui);
   text-align: left;
@@ -3404,11 +3415,15 @@ html.game-open body {
   .tele-foot {
     display: none;
   }
+  /* Abstand als durchsichtiger Rand statt Innenabstand: Die Kürzung schneidet am Innenrand ab,
+     sonst schaut die dritte Zeile im Innenabstand hervor. */
   .hud-tip {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    padding-block: 0;
+    border-block: var(--sp-2) solid transparent;
     font-size: var(--fs-2);
   }
   .rocket-stage.is-map .hud-tip {
@@ -3473,11 +3488,12 @@ html.game-open body {
 
 /* ------------------------------ Touch-Geräte ------------------------------ */
 /* Ohne Tastatur helfen die Tasten-Hinweise auf den Knöpfen nicht. */
-@media (hover: none) and (pointer: coarse) {
+@media (hover: none), (pointer: coarse) {
   .abtn kbd,
   .hbtn kbd,
   .stage-btn kbd,
-  .gbtn kbd {
+  .gbtn kbd,
+  .mbtn kbd {
     display: none;
   }
 }
@@ -3610,5 +3626,23 @@ html.game-open body {
     content: '';
     position: absolute;
     inset: calc(var(--sp-1) * -1);
+  }
+}
+
+/* Dialoge erscheinen aus 97 % Größe mit Deckkraft (Mitte bleibt Ursprung) */
+.rocket-overlay {
+  animation: g-dialog-in var(--dur-3) var(--ease-out);
+}
+
+@keyframes g-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rocket-overlay {
+    animation: none;
   }
 }

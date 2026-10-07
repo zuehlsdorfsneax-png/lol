@@ -282,7 +282,7 @@ function HollowBarycenter() {
   }, [rho]);
   const ok = Math.abs(bary - REAL_BARY) / REAL_BARY < 0.05;
   return (
-    <div class="stack" style={{ gap: '14px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <div class="grid-2">
         <div class="stack">
           <Slider
