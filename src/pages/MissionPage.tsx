@@ -15,7 +15,7 @@ export function MissionPage({ id }: { id: string }) {
     );
   }
   return (
-    <div class="stack" style={{ gap: '18px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <PageHead eyebrow={`Mission · Kapitel ${m.chapter}`} title={m.title}>
         {m.briefing}
       </PageHead>

@@ -437,7 +437,7 @@ export function LunaGame() {
   const total = LEVELS.reduce((s, l) => s + (earned[l.id] ?? 0), 0);
 
   return (
-    <div class="stack" style={{ gap: '14px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <div class="level-row" role="tablist" aria-label="Level">
         {LEVELS.map((l, i) => (
           <button

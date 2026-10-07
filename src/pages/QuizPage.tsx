@@ -48,7 +48,7 @@ export function QuizPage() {
   };
 
   return (
-    <div class="stack" style={{ gap: '20px', maxWidth: '760px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-5)', maxWidth: '760px' }}>
       <PageHead eyebrow="Spielen" title="Quiz">
         {QUESTIONS.length} Fragen zu allen neun Kapiteln und den Spielen, geordnet nach Kapiteln.
         Nach jeder Antwort gibt es die Erklärung.
@@ -87,7 +87,7 @@ export function QuizPage() {
               <span class="small muted">{score} richtig</span>
             </div>
             <h2 class="quiz-question">{q.text}</h2>
-            <div class="stack" style={{ gap: '8px' }}>
+            <div class="stack" style={{ gap: 'var(--sp-2)' }}>
               {order.map((i) => {
                 const o = q.options[i]!;
                 const state =
@@ -106,7 +106,7 @@ export function QuizPage() {
               })}
             </div>
             {chosen !== null && (
-              <div class="stack" style={{ gap: '10px' }}>
+              <div class="stack" style={{ gap: 'var(--sp-3)' }}>
                 <StatusChip status={chosen === q.answer ? 'ok' : 'fail'}>
                   {chosen === q.answer ? 'Richtig' : 'Nicht ganz'}
                 </StatusChip>

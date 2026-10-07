@@ -80,7 +80,7 @@ export function LagrangePage({ preset }: { preset: string | null }) {
   const timeUnit = system?.time ?? null;
 
   return (
-    <div class="stack" style={{ gap: '18px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <PageHead eyebrow="Werkzeug" title="Lagrange-Labor">
         Das eingeschränkte Drei-Körper-Problem im mitrotierenden System: Zwei Körper kreisen
         umeinander, ein dritter, masseloser bewegt sich in ihrem Feld. Ziehe mit der Maus, um

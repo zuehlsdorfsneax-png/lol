@@ -122,7 +122,7 @@ const TERMS: readonly Term[] = [
 
 export function GlossaryPage() {
   return (
-    <div class="stack" style={{ gap: '18px', maxWidth: '900px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)', maxWidth: '900px' }}>
       <PageHead eyebrow="Anhang" title="Begriffe von A bis Z">
         Die wichtigsten Fachwörter aus der Seminararbeit und den Spielen – kurz erklärt, mit Link
         zur passenden Stelle.

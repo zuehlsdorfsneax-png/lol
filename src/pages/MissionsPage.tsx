@@ -11,7 +11,7 @@ export function MissionsPage() {
   const [progress, setProgress] = useState(() => progressStore.load());
   const total = MISSIONS.reduce((s, m) => s + (progress.stars[m.id] ?? 0), 0);
   return (
-    <div class="stack" style={{ gap: '22px', maxWidth: '1100px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-5)', maxWidth: '1100px' }}>
       <PageHead eyebrow="Spielen" title="Missionen">
         Neun Aufträge, in denen du die Grenzen der Stabilität selbst findest. Jede Mission gibt bis
         zu drei Sterne – der dritte verlangt, dass du die Grenze fast genau triffst.

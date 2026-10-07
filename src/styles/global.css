@@ -1629,58 +1629,6 @@ details.section .section-body {
   color: var(--accent);
 }
 
-.mission-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: var(--sp-4);
-}
-
-.mission-card {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: var(--sp-2);
-  padding: var(--sp-4);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  text-decoration: none;
-  color: var(--ink);
-  transition:
-    border-color var(--dur-2),
-    transform var(--dur-2);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .mission-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-}
-
-.mission-card h3 {
-  font-size: var(--fs-4);
-}
-
-.mission-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-2);
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.mission-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-2);
-  color: var(--ink-2);
-}
-
 .result-card {
   position: absolute;
   inset: auto 12px 12px 12px;
@@ -2803,4 +2751,71 @@ table.data.compact td {
 .formula-row .katex-display,
 .formula-row .katex-display > .katex {
   text-align: left;
+}
+
+/* --------------------- Missionen: Liste mit Linien --------------------- */
+.mission-grid {
+  border-top: 1px solid var(--line-strong);
+  max-width: 920px;
+}
+
+.mission-card {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'meta title foot'
+    'meta goal foot';
+  gap: var(--sp-0) var(--sp-5);
+  align-items: baseline;
+  padding: var(--sp-4) var(--sp-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.mission-card h3 {
+  grid-area: title;
+  font-size: var(--fs-4);
+  font-weight: 600;
+}
+
+.mission-card > p {
+  grid-area: goal;
+}
+
+.mission-meta {
+  grid-area: meta;
+  display: grid;
+  gap: var(--sp-0);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+}
+
+.mission-foot {
+  grid-area: foot;
+  display: grid;
+  justify-items: end;
+  gap: var(--sp-1);
+  font-size: var(--fs-2);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mission-card:hover {
+    background: var(--surface-2);
+  }
+}
+
+@media (max-width: 700px) {
+  .mission-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'meta foot'
+      'title foot'
+      'goal goal';
+    padding-inline: 0;
+  }
 }

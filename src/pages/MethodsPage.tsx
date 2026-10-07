@@ -175,7 +175,7 @@ export function MethodsPage() {
             Diskussion: Vergleich mit Theorie (Hill, Jacobi, Domingos et al.) und Grenzen (A.4).
           </li>
         </ol>
-        <p style={{ marginTop: '8px' }}>
+        <p style={{ marginTop: 'var(--sp-2)' }}>
           Alle Diagramme lassen sich als Bild und als CSV-Datei exportieren. Die Grenzwerte in
           Kapitel 8 reproduziert das Skript <code>npm run calibrate</code>.
         </p>
@@ -188,7 +188,7 @@ function IntegratorComparison() {
   const [dt, setDt] = useState<string>('21600');
   const runs = useMemo(() => compareIntegrators(Number(dt), 10), [dt]);
   return (
-    <div class="stack" style={{ gap: '14px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-4)' }}>
       <div class="row">
         <span class="small muted">Feste Schrittweite</span>
         <Segmented label="Schrittweite" value={dt} options={STEPS} onChange={setDt} />
@@ -243,7 +243,7 @@ export function ValidationTable() {
   }, []);
   if (!data) return <p class="small muted">Simulation läuft …</p>;
   return (
-    <div class="stack" style={{ gap: '10px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-3)' }}>
       <div class="table-wrap">
         <table class="data">
           <thead>
