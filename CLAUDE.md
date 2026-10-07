@@ -9,3 +9,5 @@
 - Android-Projekt: `android/` (Capacitor). Symbole neu erzeugen mit
   `python3 scripts/android-icons.py`.
 - Texte für Nutzer auf Deutsch.
+- Vor jeder Design-, Oberflächen- oder Grafik-Arbeit `docs/DESIGN-REGELN.md` vollständig lesen
+  und befolgen (kein KI-Einheitslook; Abnahme-Checkliste am Ende).
