@@ -4,3 +4,4 @@ package-lock.json
 dist-artifact
 release
 desktop/launcher/app
+android

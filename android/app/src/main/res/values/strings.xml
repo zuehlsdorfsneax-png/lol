@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Orbitlabor</string>
+    <string name="title_activity_main">Orbitlabor</string>
+    <string name="package_name">de.seminararbeit.orbitlabor</string>
+    <string name="custom_url_scheme">de.seminararbeit.orbitlabor</string>
+</resources>

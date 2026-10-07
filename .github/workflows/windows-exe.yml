@@ -1,4 +1,4 @@
-name: Windows-EXE und Mac-App
+name: Windows-EXE, Mac-App und Android-APK
 
 on:
   push:
@@ -107,8 +107,42 @@ jobs:
           path: release/Orbitlabor-Mac-Apple-Chip.zip
           if-no-files-found: error
 
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Versionsnummer der APK = Anzahl der Commits
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Android-SDK ergänzen
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+      - run: npm ci
+      - name: APK bauen
+        run: npm run apk
+
+      - name: Test – Signatur und Inhalt
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs release/Orbitlabor.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging release/Orbitlabor.apk | grep -E "^package|launchable-activity"
+          unzip -l release/Orbitlabor.apk | grep -q "assets/public/index.html"
+          unzip -l release/Orbitlabor.apk | grep -q "assets/public/assets/predict.worker"
+          echo "APK-Test bestanden"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Orbitlabor-Android
+          path: release/Orbitlabor.apk
+          if-no-files-found: error
+
   release:
-    needs: [exe, mac]
+    needs: [exe, mac, apk]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -126,10 +160,12 @@ jobs:
 
           **Windows 10 und 11:** Orbitlabor.exe herunterladen und doppelklicken. Zeigt Windows „Der Computer wurde durch Windows geschützt“, auf „Weitere Informationen“ und „Trotzdem ausführen“ klicken.
 
+          **Android (Handy und Tablet, ab Android 7):** Orbitlabor.apk auf dem Gerät herunterladen und öffnen. Fragt Android nach, die Installation aus dieser Quelle erlauben („Unbekannte Apps installieren“). Neuere Versionen lassen sich einfach darüber installieren – Fortschritt bleibt erhalten.
+
           **MacBook mit Apple-Chip (M1 bis M4):** Orbitlabor-Mac-Apple-Chip.zip herunterladen, doppelklicken und Orbitlabor.app in „Programme“ ziehen. Beim ersten Start: Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“.
 
           Die App öffnet sich in einem eigenen Fenster (Chrome oder Edge) oder im Standardbrowser.
 
           Gebaut aus Commit $GITHUB_SHA.
           EOF
-          gh release create app dl/Orbitlabor.exe dl/Orbitlabor-Mac-Apple-Chip.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Orbitlabor für Windows und Mac' --notes-file notes.md --latest
+          gh release create app dl/Orbitlabor.exe dl/Orbitlabor-Mac-Apple-Chip.zip dl/Orbitlabor.apk --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Orbitlabor für Windows, Mac und Android' --notes-file notes.md --latest

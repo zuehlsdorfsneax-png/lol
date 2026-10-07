@@ -4,6 +4,7 @@ import { Icon } from '../ui/Icon';
 export const REPO_URL = 'https://github.com/zuehlsdorfsneax-png/lol';
 export const EXE_URL = `${REPO_URL}/releases/latest/download/Orbitlabor.exe`;
 export const MAC_URL = `${REPO_URL}/releases/latest/download/Orbitlabor-Mac-Apple-Chip.zip`;
+export const APK_URL = `${REPO_URL}/releases/latest/download/Orbitlabor.apk`;
 const RELEASES_URL = `${REPO_URL}/releases/latest`;
 
 /** Läuft die App gerade in der Windows-EXE? (Der Starter nutzt diesen festen Anschluss.) */
@@ -39,9 +40,13 @@ export function DownloadPage() {
         <a class="btn download-btn" href={MAC_URL} target="_blank" rel="noopener">
           <Icon name="download" /> Für Mac (Apple-Chip)
         </a>
+        <a class="btn download-btn" href={APK_URL} target="_blank" rel="noopener">
+          <Icon name="download" /> Für Android (APK)
+        </a>
         <p class="small muted">
           Mac: ZIP öffnen, Orbitlabor.app in „Programme“ ziehen. Beim ersten Start unter
-          Systemeinstellungen → Datenschutz &amp; Sicherheit „Trotzdem öffnen“ wählen.
+          Systemeinstellungen → Datenschutz &amp; Sicherheit „Trotzdem öffnen“ wählen. Android: APK
+          auf dem Gerät öffnen und „Unbekannte Apps installieren“ für den Browser erlauben.
         </p>
         <a class="small" href={RELEASES_URL} target="_blank" rel="noopener">
           Alle Versionen auf GitHub

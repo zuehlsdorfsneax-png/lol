@@ -1,0 +1,8 @@
+{
+  "appId": "de.seminararbeit.orbitlabor",
+  "appName": "Orbitlabor",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0b1026"
+  }
+}

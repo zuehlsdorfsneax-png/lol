@@ -38,6 +38,7 @@ npm run dev          # http://localhost:5173
 | `npx tsx scripts/bench-autopilot.ts` | Rechenzeiten von Planung, Vorhersage und Autopilot messen                                                   |
 | `npm run exe`                        | Windows-EXE nach `release/Orbitlabor.exe` bauen (braucht zusätzlich Go ≥ 1.22)                              |
 | `npm run mac`                        | Mac-App nach `release/Orbitlabor-Mac-Apple-Chip.zip` und `…-Intel.zip` bauen (Go ≥ 1.22, Python mit Pillow) |
+| `npm run apk`                        | Android-App nach `release/Orbitlabor.apk` bauen (Java 21 und Android-SDK, `ANDROID_HOME`)                   |
 
 ## Was die App enthält
 

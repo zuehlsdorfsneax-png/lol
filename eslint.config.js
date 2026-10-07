@@ -4,7 +4,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['desktop', 'dist', 'dist-artifact', 'release', 'coverage']),
+  globalIgnores(['desktop', 'android', 'dist', 'dist-artifact', 'release', 'coverage']),
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   {

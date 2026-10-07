@@ -21,9 +21,13 @@
     "calibrate": "tsx scripts/calibrate.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "exe": "node scripts/build-exe.mjs",
-    "mac": "node scripts/build-mac.mjs"
+    "mac": "node scripts/build-mac.mjs",
+    "apk": "node scripts/build-apk.mjs"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "@eslint/js": "^10.0.1",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/jost": "^5.3.0",
