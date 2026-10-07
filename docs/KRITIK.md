@@ -8,6 +8,23 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Design-Überarbeitung gegen KI-Einheitslook
+
+Ausgeführt nach `docs/AUFTRAG-DESIGN.md` und `docs/DESIGN-REGELN.md`; Einzelbefunde mit
+Messwerten in `docs/DESIGN-BEFUND.md`.
+
+| #   | Befund                                                                            | Status | Lösung                                                                                                                 |
+| --- | --------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 174 | 34/30 Schriftgrößen, 18/14 Radien, 66 feste Farben, freie Abstände                | ✅     | Gestaltungssystem aus Tokens (Typ-Skala, 4-px-Raster, vier Radien, zwei Schatten, drei Dauern); alle Farben als Tokens |
+| 175 | Einzelne Textfarben unter 4,5:1 Kontrast                                          | ✅     | Vier Tokens angepasst, alle Paare geprüft                                                                              |
+| 176 | Startseite mit typischen KI-Mustern (drei gleiche Karten, Icon-Kacheln, Kästen)   | ✅     | Atlastafel: Abb. 1, nummerierte Thesen, Inhaltsverzeichnis mit Linien, Spiele als Liste                                |
+| 177 | Versuche als schwebende Karten, Nummer klein unten                                | ✅     | Versuchstafeln ohne Schatten, „Abb. 2.1“ oben; Lesespalte 65 Zeichen; Regler mit 24-px-Griff                           |
+| 178 | Simulator: jede Gruppe eine eigene Karte                                          | ✅     | Eine Seitenleiste mit Trennlinien                                                                                      |
+| 179 | Download nannte nur Windows                                                       | ✅     | Windows, Mac und Android gleichrangig mit Anleitung je Gerät                                                           |
+| 180 | Begriffe und Formeln je in eigenem Kasten                                         | ✅     | Definitionslisten mit Linien; Literatur mit hängendem Einzug                                                           |
+| 181 | Spiel: Kacheln für Rang/Punkte/Sterne, Emojis in der Werft, uneinheitliche Knöpfe | ✅     | Instrumentenzeile, Text statt Emoji, Knöpfe 40 px mit Tippfläche ≥ 44 px, Druck-Rückmeldung, Dialoge blenden weich ein |
+| 182 | Hover-Effekte blieben auf Touch-Geräten nach dem Tippen hängen                    | ✅     | Hover nur noch bei Maus (`hover: hover` und feiner Zeiger)                                                             |
+
 ## Handy und Tablet (APK): Leistung, Design, verständlicher, Fehler
 
 Gewünscht: Leistung für die APK auf Handys und Tablets, ein Design-Upgrade für App und Spiel,
