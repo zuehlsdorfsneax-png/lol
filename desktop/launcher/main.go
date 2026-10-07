@@ -202,6 +202,15 @@ func findBrowser() string {
 				filepath.Join(base, "Google", "Chrome", "Application", "chrome.exe"),
 			)
 		}
+	} else if runtime.GOOS == "darwin" {
+		// Mac: Chrome oder Edge öffnen ein eigenes App-Fenster; sonst der Standardbrowser (Safari).
+		home, _ := os.UserHomeDir()
+		for _, base := range []string{"/Applications", filepath.Join(home, "Applications")} {
+			candidates = append(candidates,
+				filepath.Join(base, "Google Chrome.app", "Contents", "MacOS", "Google Chrome"),
+				filepath.Join(base, "Microsoft Edge.app", "Contents", "MacOS", "Microsoft Edge"),
+			)
+		}
 	} else {
 		candidates = []string{"/usr/bin/microsoft-edge", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"}
 	}
