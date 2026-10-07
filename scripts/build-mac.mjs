@@ -81,6 +81,10 @@ for (const [arch, label] of [
     },
   );
   chmodSync(bin, 0o755);
+  // Auf einem Mac (z. B. in GitHub Actions) das ganze Paket ad-hoc signieren: Dann meldet macOS
+  // nicht „beschädigt“, sondern nur „nicht verifizierter Entwickler“.
+  if (process.platform === 'darwin')
+    execFileSync('codesign', ['--force', '--deep', '--sign', '-', app], { stdio: 'inherit' });
   const zip = join(release, `Orbitlabor-Mac-${label}.zip`);
   rmSync(zip, { force: true });
   execFileSync('zip', ['-qry', zip, 'Orbitlabor.app'], { cwd: join(work, label) });

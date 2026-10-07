@@ -1,4 +1,4 @@
-name: Windows-EXE
+name: Windows-EXE und Mac-App
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: windows-exe-${{ github.ref }}
+  group: desktop-apps-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -71,22 +71,65 @@ jobs:
           path: release/Orbitlabor.exe
           if-no-files-found: error
 
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - run: npm ci
+      - run: python3 -m pip install --break-system-packages pillow || python3 -m pip install pillow
+      - name: Mac-App bauen
+        run: npm run mac
+
+      - name: Test – Signatur, Server und Dateitypen
+        run: |
+          app=release/mac/Apple-Chip/Orbitlabor.app
+          codesign --verify --deep --strict "$app"
+          ORBITLABOR_BROWSER=none "$app/Contents/MacOS/Orbitlabor" &
+          pid=$!
+          sleep 3
+          curl -sf http://127.0.0.1:47173/ | grep -q Orbitlabor
+          js=$(curl -sf http://127.0.0.1:47173/ | grep -o 'assets/index-[^"]*\.js' | head -1)
+          curl -sfI "http://127.0.0.1:47173/$js" | grep -qi 'content-type: .*javascript'
+          kill $pid
+          echo "Mac-Test bestanden"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Orbitlabor-Mac-Apple-Chip
+          path: release/Orbitlabor-Mac-Apple-Chip.zip
+          if-no-files-found: error
+
+  release:
+    needs: [exe, mac]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: dl
+          merge-multiple: true
       - name: Download-Link aktualisieren (GitHub-Release)
-        if: github.event_name != 'pull_request'
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $ErrorActionPreference = 'Continue'
-          gh release delete app --repo $env:GITHUB_REPOSITORY --cleanup-tag --yes 2>$null
-          $notes = @"
-          Orbitlabor für Windows 10 und 11 – eine einzige Datei, ohne Installation.
+          gh release delete app --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes 2>/dev/null || true
+          cat > notes.md <<EOF
+          Orbitlabor – ohne Installation.
 
-          1. Orbitlabor.exe herunterladen.
-          2. Doppelklicken. Zeigt Windows „Der Computer wurde durch Windows geschützt“, auf „Weitere Informationen“ und „Trotzdem ausführen“ klicken.
-          3. Die App öffnet sich in einem eigenen Fenster.
+          **Windows 10 und 11:** Orbitlabor.exe herunterladen und doppelklicken. Zeigt Windows „Der Computer wurde durch Windows geschützt“, auf „Weitere Informationen“ und „Trotzdem ausführen“ klicken.
 
-          Gebaut aus Commit $env:GITHUB_SHA.
-          "@
-          gh release create app release/Orbitlabor.exe --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'Orbitlabor für Windows' --notes $notes --latest
-          if ($LASTEXITCODE -ne 0) { throw 'Release konnte nicht erstellt werden.' }
+          **MacBook mit Apple-Chip (M1 bis M4):** Orbitlabor-Mac-Apple-Chip.zip herunterladen, doppelklicken und Orbitlabor.app in „Programme“ ziehen. Beim ersten Start: Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“.
+
+          Die App öffnet sich in einem eigenen Fenster (Chrome oder Edge) oder im Standardbrowser.
+
+          Gebaut aus Commit $GITHUB_SHA.
+          EOF
+          gh release create app dl/Orbitlabor.exe dl/Orbitlabor-Mac-Apple-Chip.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Orbitlabor für Windows und Mac' --notes-file notes.md --latest

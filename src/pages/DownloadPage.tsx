@@ -3,6 +3,7 @@ import { Icon } from '../ui/Icon';
 
 export const REPO_URL = 'https://github.com/zuehlsdorfsneax-png/lol';
 export const EXE_URL = `${REPO_URL}/releases/latest/download/Orbitlabor.exe`;
+export const MAC_URL = `${REPO_URL}/releases/latest/download/Orbitlabor-Mac-Apple-Chip.zip`;
 const RELEASES_URL = `${REPO_URL}/releases/latest`;
 
 /** Läuft die App gerade in der Windows-EXE? (Der Starter nutzt diesen festen Anschluss.) */
@@ -35,6 +36,13 @@ export function DownloadPage() {
         <a class="btn primary download-btn" href={EXE_URL} target="_blank" rel="noopener">
           <Icon name="download" /> Herunterladen
         </a>
+        <a class="btn download-btn" href={MAC_URL} target="_blank" rel="noopener">
+          <Icon name="download" /> Für Mac (Apple-Chip)
+        </a>
+        <p class="small muted">
+          Mac: ZIP öffnen, Orbitlabor.app in „Programme“ ziehen. Beim ersten Start unter
+          Systemeinstellungen → Datenschutz &amp; Sicherheit „Trotzdem öffnen“ wählen.
+        </p>
         <a class="small" href={RELEASES_URL} target="_blank" rel="noopener">
           Alle Versionen auf GitHub
         </a>
