@@ -11,3 +11,5 @@
 - Texte für Nutzer auf Deutsch.
 - Vor jeder Design-, Oberflächen- oder Grafik-Arbeit `docs/DESIGN-REGELN.md` vollständig lesen
   und befolgen (kein KI-Einheitslook; Abnahme-Checkliste am Ende).
+- Für jede Arbeit (Code, Texte, Antworten) `docs/KI-REGELN.md` befolgen: Arbeitsweise mit
+  eigener Prüfschleife, sparsamer Verbrauch, kein KI-typischer Code- oder Schreibstil.
