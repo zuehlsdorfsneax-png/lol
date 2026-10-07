@@ -237,6 +237,7 @@ export function drawLaunchComplex(
   lit: (hex: string) => string,
   night: number,
   launched: boolean,
+  rocket: { length: number; width: number } = { length: 30, width: 3 },
 ): void {
   if (v.scale < 0.03) return;
   const detail = v.scale >= 0.25;
@@ -397,27 +398,33 @@ export function drawLaunchComplex(
     ctx.fillRect(-30, -0.5, 60, 0.5);
     ctx.fillStyle = lit('#6e737b');
     ctx.fillRect(-30, -3.2, 60, 0.4);
+    // Flammenschacht so breit wie die Rakete (nicht wie ein schwarzes Loch unter dem Hüpfer)
+    const half = rocket.width / 2;
+    const pit = Math.max(1.2, Math.min(4.5, half * 0.9));
     const trench = ctx.createLinearGradient(0, 0, 0, -3.2);
-    trench.addColorStop(0, '#15171b');
-    trench.addColorStop(1, '#2a2d33');
+    trench.addColorStop(0, lit('#3a3e45'));
+    trench.addColorStop(1, lit('#5a5f67'));
     ctx.fillStyle = trench;
-    ctx.fillRect(-4.5, -3.2, 9, 3.2);
-    ctx.fillStyle = lit('#4b5059');
+    ctx.fillRect(-pit, -3.2, pit * 2, 3.2);
+    ctx.fillStyle = lit('#767b84');
     ctx.beginPath();
-    ctx.moveTo(-4.5, -3.2);
-    ctx.lineTo(0, -1.2);
-    ctx.lineTo(4.5, -3.2);
+    ctx.moveTo(-pit, -3.2);
+    ctx.lineTo(0, -1.4);
+    ctx.lineTo(pit, -3.2);
     ctx.closePath();
     ctx.fill();
-    // Haltearme links und rechts
+    ctx.fillStyle = lit('#9a9ea5');
+    ctx.fillRect(-pit - 0.3, -0.35, 0.3, 0.35);
+    ctx.fillRect(pit, -0.35, 0.3, 0.35);
+    // Haltearme links und rechts, direkt an der Rakete
     ctx.fillStyle = lit('#3c434d');
-    ctx.fillRect(-6.5, 0, 1.2, 1.4);
-    ctx.fillRect(5.3, 0, 1.2, 1.4);
+    ctx.fillRect(-half - 1.4, 0, 1.2, 1.4);
+    ctx.fillRect(half + 0.2, 0, 1.2, 1.4);
 
-    // Startturm: Gitter, Plattformen, Kran und Versorgungsarme
-    const tx = 8;
+    // Startturm: Gitter, Plattformen, Kran und Versorgungsarme – so hoch wie die Rakete
+    const tx = half + 2.4;
     const tw = 3.6;
-    const th = 48;
+    const th = Math.max(16, Math.min(112, Math.ceil((rocket.length + 2) / 8) * 8));
     ctx.fillStyle = lit('#9a3322');
     ctx.fillRect(tx, 0, 0.35, th);
     ctx.fillRect(tx + tw - 0.35, 0, 0.35, th);
@@ -445,14 +452,15 @@ export function drawLaunchComplex(
     ctx.lineTo(tx + tw, th + 1.2);
     ctx.stroke();
     // Versorgungsarme: vor dem Start an der Rakete, danach hochgeklappt
-    for (const y of [16, 30]) {
+    const reach = tx - half - 0.1;
+    for (const y of [rocket.length * 0.38, rocket.length * 0.78]) {
       ctx.save();
-      ctx.translate(tx, y);
+      ctx.translate(tx, Math.min(th - 1, Math.max(2, y)));
       ctx.rotate(launched ? -1.1 : 0);
       ctx.fillStyle = lit('#6b7380');
-      ctx.fillRect(-(tx - 3.2), -0.35, tx - 3.2, 0.7);
+      ctx.fillRect(-reach, -0.35, reach, 0.7);
       ctx.fillStyle = lit('#f2c230');
-      ctx.fillRect(-(tx - 3.2), -0.35, 0.8, 0.7);
+      ctx.fillRect(-reach, -0.35, 0.8, 0.7);
       ctx.restore();
     }
     // Blinklicht auf dem Turm

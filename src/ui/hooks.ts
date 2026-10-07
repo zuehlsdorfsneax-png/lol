@@ -37,6 +37,8 @@ export function prepareCanvas(
   width: number,
   height: number,
   quality = 1,
+  /** Deckend (malt jedes Bild ganz aus): Der Browser muss die Fläche dann nicht überblenden. */
+  opaque = false,
 ): CanvasRenderingContext2D | null {
   // Mehr als doppelte Pixeldichte sieht man auf einem bewegten Bild nicht, kostet aber auf
   // Handys (dreifache Dichte) mehr als doppelt so viel Grafikleistung. `quality` < 1 senkt die
@@ -48,7 +50,7 @@ export function prepareCanvas(
     canvas.width = w;
     canvas.height = h;
   }
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', opaque ? { alpha: false } : undefined);
   if (!ctx) return null;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return ctx;

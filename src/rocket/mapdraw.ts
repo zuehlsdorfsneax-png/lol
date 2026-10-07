@@ -157,20 +157,31 @@ export function drawMap(
   // Breite der Tipp-Spalte wie im CSS (.hud-msg), etwas Rand dazu.
   const tipW = (W > 1000 ? Math.min(460, W - 520) : W - 440) + 24;
   beginLabels(
-    W >= 760
+    H < 480 && W >= 600
       ? [
-          // Tipp oben, Flugdaten links, Ziel rechts, Schub und Lageanzeige unten
-          { x: W / 2 - tipW / 2, y: 48, w: tipW, h: 124 },
-          { x: 0, y: 0, w: 250, h: 310 },
-          { x: W - 320, y: 0, w: 320, h: 260 },
-          { x: W - 250, y: H - 270, w: 250, h: 270 },
-          { x: W / 2 - 140, y: H - 200, w: 280, h: 200 },
+          // Handy quer: Leiste oben, Flugdaten links, Drehknöpfe/SAS unten links, Schub rechts
+          { x: 0, y: 0, w: W, h: 60 },
+          { x: W / 2 - tipW / 2, y: 48, w: tipW, h: 96 },
+          { x: 0, y: 0, w: 240, h: 300 },
+          { x: 0, y: H - 150, w: 480, h: 150 },
+          { x: W - 420, y: H - 230, w: 420, h: 230 },
         ]
-      : [
-          // Handy: oben Flugdaten und Ziel, unten Lageanzeige und Schub
-          { x: 0, y: 0, w: W, h: 232 },
-          { x: 0, y: H - 250, w: W, h: 250 },
-        ],
+      : W >= 760
+        ? [
+            // Leiste oben (Menü, Zeitraffer, Ziel)
+            { x: 0, y: 0, w: W, h: 56 },
+            // Tipp oben, Flugdaten links, Ziel rechts, Schub und Lageanzeige unten
+            { x: W / 2 - tipW / 2, y: 48, w: tipW, h: 124 },
+            { x: 0, y: 0, w: 250, h: 310 },
+            { x: W - 320, y: 0, w: 320, h: 260 },
+            { x: W - 250, y: H - 270, w: 250, h: 270 },
+            { x: W / 2 - 140, y: H - 200, w: 280, h: 200 },
+          ]
+        : [
+            // Handy: oben Flugdaten und Ziel, unten Lageanzeige und Schub
+            { x: 0, y: 0, w: W, h: 232 },
+            { x: 0, y: H - 250, w: W, h: 250 },
+          ],
   );
   if (f.status !== 'crashed') {
     const [rx, ry] = toScreen(v, f.x, f.y);
@@ -288,7 +299,7 @@ export function drawMap(
   ctx.beginPath();
   const narrow = W < 640;
   // Links unten über den Drehknöpfen: dort verdeckt der Maßstab weder Lageanzeige noch Schubregler.
-  const by = narrow ? H - 236 : H - 102;
+  const by = narrow ? H - 236 : H < 480 ? H - 72 : H - 102;
   const x0 = 16;
   const x1 = x0 + px;
   ctx.moveTo(x0, by);

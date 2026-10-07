@@ -154,6 +154,56 @@ export class OrbitPilot {
   }
 }
 
+export type HopPhase = 'climb' | 'coast' | 'descent' | 'done';
+
+/**
+ * Hilfe-Pilot „Hüpfer“ für Raketen, deren Δv nicht für eine Umlaufbahn reicht: senkrecht so hoch
+ * wie möglich, leere Stufen abwerfen und auf dem Rückweg den Fallschirm scharf machen. Mit Schirm
+ * und Luft endet das in einer sanften Landung – ein echter Ausflug ins Weltall, ganz ohne Bahn.
+ */
+export class HopPilot {
+  phase: HopPhase = 'climb';
+  readonly body: Body;
+  /** Höchster erreichter Punkt über dem Boden (m). */
+  peak = 0;
+
+  constructor(body: Body = EARTH) {
+    this.body = body;
+  }
+
+  update(f: Flight): HopPhase {
+    if (f.status === 'crashed' || (f.status === 'landed' && this.phase !== 'climb'))
+      return (this.phase = 'done');
+    if (this.phase === 'done') return this.phase;
+    f.sas = 'off';
+    const rel = f.relative(this.body);
+    const up = Math.atan2(rel.ry, rel.rx);
+    const radial = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
+    this.peak = Math.max(this.peak, rel.altitude);
+    if (this.phase === 'climb') {
+      if (f.status === 'flying' && f.active.fuel <= 0 && f.segs.length > 1) f.stage();
+      steerTo(f, up);
+      f.throttle = 1;
+      if (f.status === 'flying' && !f.infiniteFuel && f.deltaV() < 1) this.phase = 'coast';
+      // Mit unbegrenztem Treibstoff nicht ewig steigen: über der Luft ist Schluss.
+      if (f.infiniteFuel && rel.altitude > Math.max(this.body.atmosphere, 20_000) + 20_000)
+        this.phase = 'coast';
+    }
+    if (this.phase === 'coast') {
+      f.throttle = 0;
+      steerTo(f, up);
+      if (radial < 0) this.phase = 'descent';
+    }
+    if (this.phase === 'descent') {
+      f.throttle = 0;
+      // Hitzeschild bzw. Triebwerk voran fallen: entgegen der Bewegung ausrichten.
+      steerTo(f, Math.atan2(-rel.vy, -rel.vx));
+      if (f.chute === 'stowed') f.deployChute();
+    }
+    return this.phase;
+  }
+}
+
 export type ExecPhase = 'align' | 'wait' | 'burn' | 'done' | 'failed';
 
 /**

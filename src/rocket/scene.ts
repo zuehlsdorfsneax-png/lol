@@ -2,8 +2,9 @@
  * Flugansicht: Himmel mit Tag, Nacht und Dämmerung, Himmelskörper, Wolken, Bäume und Felsen,
  * Startanlage, Stationen und Basen, Satelliten, Rauch, Rakete und Richtungsmarker.
  */
-import { drawRocket, drawSatellite, setLighting } from './draw';
+import { drawRocket, drawSatellite, setLighting, visualWidth } from './draw';
 import { drawPlanetDisk } from './planets';
+import { part } from './parts';
 import { drawLaunchComplex, drawRidges, drawSkySun } from './landscape';
 import { bodySpin, satelliteState, type Flight, type LandingSite } from './flight';
 import {
@@ -63,6 +64,18 @@ function smooth(a: number, b: number, x: number): number {
 }
 
 /** Sonnenstand an einem Punkt über einem Körper. */
+/** Maße der Rakete für Startturm und Flammenschacht (gemerkt, solange sich der Bau nicht ändert). */
+let padCache: { segs: unknown; n: number; size: { length: number; width: number } } | null = null;
+function padRocket(f: Flight): { length: number; width: number } {
+  if (padCache?.segs !== f.segs || padCache.n !== f.segs.length) {
+    let width = 1;
+    for (const seg of f.segs)
+      for (const id of seg.parts) width = Math.max(width, visualWidth(part(id)));
+    padCache = { segs: f.segs, n: f.segs.length, size: { length: f.length, width } };
+  }
+  return padCache.size;
+}
+
 export function sunLight(x: number, y: number, body: Body, t: number): SunLight {
   const [sx, sy] = bodyState(SUN, t);
   const [bx, by] = bodyState(body, t);
@@ -1021,7 +1034,8 @@ export function drawFlight(
   // für jede einzelne Form eine eigene Bildebene.
   nightDim = near.body === SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
   drawSurfaceDetail(ctx, v, near.body, f.t);
-  if (near.body === EARTH) drawLaunchComplex(ctx, v, time, lit, nightDim, f.status === 'flying');
+  if (near.body === EARTH)
+    drawLaunchComplex(ctx, v, time, lit, nightDim, f.status === 'flying', padRocket(f));
   if (f.site) drawSite(ctx, v, f.site, f.t, time);
   nightDim = 0;
   if (near.body === EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);

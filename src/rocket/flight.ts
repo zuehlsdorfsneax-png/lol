@@ -322,6 +322,12 @@ const RADII = BODIES.map((b) => b.radius);
 /** Höchstens so viele Satelliten bleiben gespeichert. */
 export const MAX_SATELLITES = 24;
 
+/**
+ * Darstellungs-Einstellungen, die die Spielansicht an langsame Geräte anpasst. Die Physik hängt
+ * nicht davon ab – nur, wie viele Rauch- und Funkenteilchen gleichzeitig leben.
+ */
+export const effects = { particleCap: 450 };
+
 function wrap(a: number): number {
   return Math.atan2(Math.sin(a), Math.cos(a));
 }
@@ -2407,7 +2413,8 @@ export class Flight {
         });
       }
     }
-    if (this.particles.length > 450) this.particles.splice(0, this.particles.length - 450);
+    const cap = effects.particleCap;
+    if (this.particles.length > cap) this.particles.splice(0, this.particles.length - cap);
   }
 
   /** Glühende Funken beim Wiedereintritt, die nach hinten wegfliegen. */

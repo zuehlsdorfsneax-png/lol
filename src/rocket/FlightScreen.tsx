@@ -3,7 +3,7 @@ import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { FILE_EXPORT, downloadCanvas } from '../ui/download';
 import { Icon } from '../ui/Icon';
 import { RocketAudio } from './audio';
-import { LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
+import { HopPilot, LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
 import { MissionPilot, missionTitle, type MissionSpec } from './mission';
 import { runPlan } from './planClient';
 import { PredictionService } from './predictClient';
@@ -13,6 +13,7 @@ import { setPaint } from './draw';
 import {
   Flight,
   GOALS,
+  effects,
   careerPoints,
   rankFor,
   type FlightEvent,
@@ -294,6 +295,50 @@ function writeMuted(muted: boolean): void {
   }
 }
 
+const GUIDE_KEY = 'orbitlabor/rakete-einfuehrung-gesehen';
+
+function guideSeen(): boolean {
+  try {
+    return localStorage.getItem(GUIDE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markGuideSeen(): void {
+  try {
+    localStorage.setItem(GUIDE_KEY, '1');
+  } catch {
+    // Ohne Speicher erscheint die Einführung beim nächsten Besuch wieder – nicht schlimm.
+  }
+}
+
+/** Einführung beim ersten Flug: vier Schritte, je nach Gerät mit Knöpfen oder Tasten erklärt. */
+const GUIDE: readonly { title: string; text: (touch: boolean) => string }[] = [
+  {
+    title: 'Abheben',
+    text: (touch) =>
+      touch
+        ? 'Tippe auf START oder schiebe den Schubregler rechts unten nach oben. Die Rakete hebt ab, sobald ihr Schub größer ist als ihr Gewicht.'
+        : 'Z gibt Vollgas, W und S (oder ↑ ↓) regeln den Schub fein. Die Rakete hebt ab, sobald ihr Schub größer ist als ihr Gewicht.',
+  },
+  {
+    title: 'Lenken',
+    text: (touch) =>
+      `${touch ? 'Mit den runden Pfeilen links unten' : 'Mit A und D (oder ← →)'} neigst du die Rakete. Für eine Umlaufbahn ab etwa 1 km Höhe langsam zur Seite kippen. Die Lageanzeige zeigt dir mit dem grünen Kreis, wohin du gerade fliegst.`,
+  },
+  {
+    title: 'Stufen abwerfen',
+    text: (touch) =>
+      `Ist ein Tank leer, wirf ihn ab (${touch ? 'Knopf STUFE' : 'Leertaste'}): Die Rakete wird leichter und fliegt mit der nächsten Stufe weiter. Zum Schluss bringt dich der Fallschirm sicher zurück.`,
+  },
+  {
+    title: 'Karte und Hilfe-Pilot',
+    text: (touch) =>
+      `Die Karte (${touch ? 'oben links' : 'M'}) zeigt deine Bahn. Der Hilfe-Pilot (${touch ? 'Knopf rechts' : 'T'}) fliegt für dich – in eine Umlaufbahn oder, wenn das Δv nicht reicht, einen Hüpfer. Δv ist dein Treibstoffvorrat in m/s: Für eine Umlaufbahn braucht es etwa 3.900 m/s.`,
+  },
+];
+
 /** Höchstens so viele Meldungen gleichzeitig, jede so lange sichtbar. */
 const MAX_TOASTS = 2;
 const TOAST_MS = 5000;
@@ -364,7 +409,7 @@ function modeSats(sats: readonly Satellite[], sandbox: boolean): Satellite[] {
   return sats.filter((s) => !!s.sandbox === sandbox).map((s) => ({ ...s, el: { ...s.el } }));
 }
 
-type Pilot = 'orbit' | 'node' | 'land' | 'mission' | null;
+type Pilot = 'orbit' | 'hop' | 'node' | 'land' | 'mission' | null;
 
 interface Drag {
   id: number;
@@ -409,6 +454,14 @@ export function FlightScreen({
   const [computer, setComputer] = useState(false);
   const [warpMenu, setWarpMenu] = useState(false);
   const [briefing, setBriefing] = useState(challenge !== null);
+  /** Schritt der Einführung beim ersten Flug (null = nicht sichtbar). */
+  const [guide, setGuide] = useState<number | null>(() =>
+    challenge === null && !guideSeen() ? 0 : null,
+  );
+  const closeGuide = (): void => {
+    markGuideSeen();
+    setGuide(null);
+  };
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [report, setReport] = useState(false);
   /** Welche Menü-Aktion auf ein zweites Tippen wartet („Wirklich …?“). */
@@ -419,12 +472,57 @@ export function FlightScreen({
   const [toasts, setToasts] = useState<FlightEvent[]>([]);
   const [box, size] = useElementSize<HTMLDivElement>();
   const stage = useRef<HTMLDivElement>(null);
+  // Größe der Zeichenfläche, gemerkt statt in jedem Bild abgefragt (das erzwingt sonst ein Layout).
+  const stageSize = useRef({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const update = (): void => {
+      stageSize.current = { w: el.clientWidth, h: el.clientHeight };
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Bildschirm während des Flugs anlassen (lange Zeitsprünge, Autopilot): Auf Handys und Tablets
+  // ginge er sonst nach einer Weile ohne Berührung aus. Wird die App verdeckt, gibt der Browser
+  // die Sperre frei – beim Zurückkehren neu anfordern.
+  useEffect(() => {
+    type Lock = { release: () => Promise<void> };
+    const wake = (
+      navigator as Navigator & {
+        wakeLock?: { request: (type: 'screen') => Promise<Lock> };
+      }
+    ).wakeLock;
+    if (!wake) return;
+    let lock: Lock | null = null;
+    let alive = true;
+    const request = (): void => {
+      if (document.visibilityState !== 'visible') return;
+      wake
+        .request('screen')
+        .then((l) => {
+          if (alive) lock = l;
+          else void l.release().catch(() => undefined);
+        })
+        .catch(() => undefined);
+    };
+    request();
+    document.addEventListener('visibilitychange', request);
+    return () => {
+      alive = false;
+      document.removeEventListener('visibilitychange', request);
+      void lock?.release().catch(() => undefined);
+    };
+  }, []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const keys = useRef(new Set<string>());
   const touchTurn = useRef(0);
   const touchMove = useRef({ x: 0, y: 0 });
   const pilot = useRef<Pilot>(null);
   const orbitPilot = useRef<OrbitPilot | null>(null);
+  const hopPilot = useRef<HopPilot | null>(null);
   const executor = useRef<NodeExecutor | null>(null);
   const lander = useRef<LandingPilot | null>(null);
   const mission = useRef<MissionPilot | null>(null);
@@ -510,6 +608,7 @@ export function FlightScreen({
   const stopPilots = (): void => {
     pilot.current = null;
     orbitPilot.current = null;
+    hopPilot.current = null;
     executor.current = null;
     lander.current = null;
     mission.current = null;
@@ -653,6 +752,8 @@ export function FlightScreen({
     }
     fl.sas = mode;
     audio.current.beep();
+    const info = SAS_MODES.find((m) => m.mode === mode);
+    if (info) toast(mode === 'off' ? info.label : `SAS ${info.label}`);
     refresh();
   };
 
@@ -671,7 +772,7 @@ export function FlightScreen({
   const togglePilot = (): void => {
     const fl = flight.current;
     audio.current.unlock();
-    if (pilot.current === 'orbit') {
+    if (pilot.current === 'orbit' || pilot.current === 'hop') {
       stopPilots();
       fl.throttle = 0;
       fl.turn = 0;
@@ -690,6 +791,17 @@ export function FlightScreen({
     const next = new OrbitPilot(ref);
     const dv = fl.deltaV();
     if (fl.status === 'landed' && !fl.infiniteFuel && dv < next.needed * 0.95) {
+      // Für eine Bahn reicht es nicht – mit Schirm und Luft fliegt der Pilot einen Hüpfer.
+      if (fl.chute !== 'none' && ref.density0 > 0) {
+        stopPilots();
+        hopPilot.current = new HopPilot(ref);
+        pilot.current = 'hop';
+        toast(
+          `Für eine Umlaufbahn fehlt Δv (${fmt(dv)} von etwa ${fmt(next.needed)} m/s). Der Hilfe-Pilot fliegt einen Hüpfer: senkrecht hoch, dann am Fallschirm zurück.`,
+        );
+        setTick((t) => t + 1);
+        return;
+      }
       toast(
         `Zu wenig Treibstoff für eine Umlaufbahn: ${fmt(dv)} m/s Δv, nötig sind etwa ${fmt(next.needed)} m/s. Mehr Tanks oder eine zweite Stufe anbauen.`,
         'warn',
@@ -700,6 +812,18 @@ export function FlightScreen({
     orbitPilot.current = next;
     pilot.current = 'orbit';
     setTick((t) => t + 1);
+  };
+
+  /** Hüpfer-Pilot beenden; nach einer Landung erklären, was zur Umlaufbahn noch fehlt. */
+  const finishHop = (fl: Flight): void => {
+    const peak = hopPilot.current?.peak ?? 0;
+    stopPilots();
+    fl.throttle = 0;
+    if (fl.status === 'landed')
+      toast(
+        `Hüpfer geschafft: ${fmt(peak / 1000, 1)} km hoch und sicher gelandet. Für eine Umlaufbahn braucht es etwa 3,9 km/s Δv – also mehr Tanks oder eine zweite Stufe.`,
+        'goal',
+      );
   };
 
   const toggleExecute = (on: boolean): void => {
@@ -1120,11 +1244,21 @@ export function FlightScreen({
     let frameMs = 16.7;
     let slowFor = 0;
     let fastFor = 0;
+    // Handys und Tablets mit 90–120-Hz-Bildschirm: höchstens etwa 60 (bei 90 Hz alle) Bilder pro
+    // Sekunde – halbiert dort die Arbeit, schont Akku und verhindert Drosseln durch Hitze. In der
+    // Pause reichen 20 Bilder pro Sekunde.
+    const touchDevice = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     const frame = (now: number): void => {
       const raw = now - last;
+      const minGap = pausedRef.current && !drag.current ? 48 : touchDevice ? 10.5 : 0;
+      if (raw < minGap) {
+        id = requestAnimationFrame(frame);
+        return;
+      }
       const dt = Math.min(0.1, raw / 1000);
       last = now;
-      if (raw < 120) {
+      // In der Pause (absichtlich nur 20 Bilder pro Sekunde) nicht als „Gerät zu langsam“ werten.
+      if (raw < 120 && !pausedRef.current) {
         frameMs += (raw - frameMs) * 0.08;
         // Unter etwa 40 Bildern pro Sekunde eine Stufe weniger Pixel, über 55 wieder mehr.
         if (frameMs > 25) {
@@ -1142,6 +1276,8 @@ export function FlightScreen({
           renderQuality = Math.min(1, renderQuality + 0.1);
           fastFor = 0;
         }
+        // Langsame Geräte: kürzere Rauchfahne (weniger Teilchen zu zeichnen)
+        effects.particleCap = renderQuality < 0.85 ? 240 : 450;
       }
       const fl = flight.current;
       const k = keys.current;
@@ -1220,6 +1356,8 @@ export function FlightScreen({
             if (fl.status !== 'crashed')
               toast('Hilfe-Pilot: Umlaufbahn erreicht. Jetzt übernimmst du!');
           }
+        } else if (pilot.current === 'hop' && hopPilot.current) {
+          if (hopPilot.current.update(fl) === 'done') finishHop(fl);
         } else if (pilot.current === 'node' && executor.current) {
           const phase = executor.current.update(fl);
           if (phase === 'done' || phase === 'failed') {
@@ -1313,6 +1451,8 @@ export function FlightScreen({
       }
       if (fl.stats.landings !== landings) {
         landings = fl.stats.landings;
+        // Gleich hier, bevor der Flugbericht das Spiel anhält.
+        if (pilot.current === 'hop') finishHop(fl);
         const far = fl.maxAltitude > 1_500 || fl.stats.lastLanding?.body !== 'earth';
         if (!challenge && fl.stats.liftoff !== null && far) setReport(true);
       }
@@ -1392,9 +1532,9 @@ export function FlightScreen({
       const c = canvas.current;
       const el = stage.current;
       if (c && el) {
-        const W = el.clientWidth;
-        const H = el.clientHeight;
-        const ctx = prepareCanvas(c, W, H, renderQuality);
+        const W = stageSize.current.w || el.clientWidth;
+        const H = stageSize.current.h || el.clientHeight;
+        const ctx = prepareCanvas(c, W, H, renderQuality, true);
         if (ctx) {
           if (mapOpen.current) {
             const cam = mapCam.current;
@@ -1592,17 +1732,20 @@ export function FlightScreen({
   const pilotLabel =
     pilot.current === 'orbit'
       ? 'Der Hilfe-Pilot fliegt in eine Umlaufbahn. Jede Steuertaste übernimmt wieder.'
-      : pilot.current === 'node'
-        ? `Autopilot führt das Manöver aus (${executor.current?.phase === 'burn' ? 'brennt' : executor.current?.phase === 'wait' ? 'wartet auf den Zündzeitpunkt' : 'richtet aus'}).`
-        : pilot.current === 'land'
-          ? `Lande-Autopilot: ${{ approach: 'Anflug an den kleinen Mond.', aero: 'die Luft bremst.', chute: 'am Fallschirm.', brake: 'Bahngeschwindigkeit abbauen.', fall: 'freier Fall.', suicide: 'Bremsen!', done: 'gelandet.', failed: 'abgebrochen.' }[lander.current?.phase ?? 'brake']}`
-          : pilot.current === 'mission' && mission.current
-            ? `Missions-Autopilot (Schritt ${Math.min(mission.current.index + 1, mission.current.steps.length)}/${mission.current.steps.length}): ${mission.current.detail || mission.current.stepLabel}`
-            : null;
+      : pilot.current === 'hop'
+        ? `Hilfe-Pilot (Hüpfer): ${{ climb: 'Vollgas senkrecht nach oben.', coast: 'Treibstoff leer – die Rakete fliegt noch weiter hoch.', descent: 'Rückweg – der Fallschirm ist scharf.', done: 'gelandet.' }[hopPilot.current?.phase ?? 'climb']} Jede Steuertaste übernimmt wieder.`
+        : pilot.current === 'node'
+          ? `Autopilot führt das Manöver aus (${executor.current?.phase === 'burn' ? 'brennt' : executor.current?.phase === 'wait' ? 'wartet auf den Zündzeitpunkt' : 'richtet aus'}).`
+          : pilot.current === 'land'
+            ? `Lande-Autopilot: ${{ approach: 'Anflug an den kleinen Mond.', aero: 'die Luft bremst.', chute: 'am Fallschirm.', brake: 'Bahngeschwindigkeit abbauen.', fall: 'freier Fall.', suicide: 'Bremsen!', done: 'gelandet.', failed: 'abgebrochen.' }[lander.current?.phase ?? 'brake']}`
+            : pilot.current === 'mission' && mission.current
+              ? `Missions-Autopilot (Schritt ${Math.min(mission.current.index + 1, mission.current.steps.length)}/${mission.current.steps.length}): ${mission.current.detail || mission.current.stepLabel}`
+              : null;
   // Ein laufender Flug, den ein Fehlklick nicht beenden soll.
   const inProgress = f.stats.liftoff !== null && f.status !== 'crashed' && result === null;
   const orbitPilotAvailable =
     pilot.current !== 'orbit' &&
+    pilot.current !== 'hop' &&
     (f.status === 'landed' || f.status === 'flying') &&
     ref.solid &&
     ref !== SUN &&
@@ -1619,7 +1762,8 @@ export function FlightScreen({
           ? 112
           : 128;
   // Auf dem Handy stehen Meldungen unter dem Tipp, sonst links unter den Flugdaten.
-  const phoneLayout = size.width > 0 && size.width < 760;
+  // Handy (auch quer): Meldungen unter dem Tipp im selben Block, damit sie sich nie überdecken.
+  const phoneLayout = size.width > 0 && (size.width < 760 || size.height < 480);
   const toastList = (
     <div class="toasts" aria-live="polite">
       {toasts.map((t) => (
@@ -2087,16 +2231,20 @@ export function FlightScreen({
                   {countdown !== null ? 'Abbrechen' : 'Countdown'} <kbd>C</kbd>
                 </button>
               )}
-              {(orbitPilotAvailable || pilot.current === 'orbit') && (
+              {(orbitPilotAvailable || pilot.current === 'orbit' || pilot.current === 'hop') && (
                 <button
                   type="button"
-                  class={`abtn ${pilot.current === 'orbit' ? 'on' : ''}`}
+                  class={`abtn ${pilot.current === 'orbit' || pilot.current === 'hop' ? 'on' : ''}`}
                   onClick={togglePilot}
+                  title="Der Hilfe-Pilot fliegt für dich in eine Umlaufbahn – oder, wenn das Δv nicht reicht, einen Hüpfer mit Fallschirmlandung."
                 >
-                  {pilot.current === 'orbit' ? 'Hilfe-Pilot aus' : 'Hilfe-Pilot'} <kbd>T</kbd>
+                  {pilot.current === 'orbit' || pilot.current === 'hop'
+                    ? 'Hilfe-Pilot aus'
+                    : 'Hilfe-Pilot'}{' '}
+                  <kbd>T</kbd>
                 </button>
               )}
-              {pilot.current && pilot.current !== 'orbit' && (
+              {pilot.current && pilot.current !== 'orbit' && pilot.current !== 'hop' && (
                 <button type="button" class="abtn on" onClick={() => stopPilots()}>
                   Autopilot aus
                 </button>
@@ -2376,9 +2524,48 @@ export function FlightScreen({
           ) : (
             <KeyTable />
           )}
-          <button type="button" class="btn primary" onClick={() => setHelp(false)}>
-            Verstanden
-          </button>
+          <div class="guide-actions">
+            <button
+              type="button"
+              class="btn"
+              onClick={() => {
+                setHelp(false);
+                setGuide(0);
+              }}
+            >
+              Einführung ansehen
+            </button>
+            <button type="button" class="btn primary" onClick={() => setHelp(false)}>
+              Verstanden
+            </button>
+          </div>
+        </div>
+      )}
+
+      {guide !== null && !help && !briefing && (
+        <div class="rocket-overlay guide" role="dialog" aria-label="Einführung: dein erster Flug">
+          <span class="guide-step">
+            Erster Flug · {guide + 1} von {GUIDE.length}
+          </span>
+          <h3>{GUIDE[guide]!.title}</h3>
+          <p>{GUIDE[guide]!.text(touch)}</p>
+          <div class="guide-dots" aria-hidden="true">
+            {GUIDE.map((_, i) => (
+              <span key={i} class={i === guide ? 'on' : ''} />
+            ))}
+          </div>
+          <div class="guide-actions">
+            <button type="button" class="btn ghost" onClick={closeGuide}>
+              Überspringen
+            </button>
+            <button
+              type="button"
+              class="btn primary"
+              onClick={() => (guide + 1 < GUIDE.length ? setGuide(guide + 1) : closeGuide())}
+            >
+              {guide + 1 < GUIDE.length ? 'Weiter' : 'Los geht’s!'}
+            </button>
+          </div>
         </div>
       )}
 

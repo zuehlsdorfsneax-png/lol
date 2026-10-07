@@ -8,6 +8,30 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Handy und Tablet (APK): Leistung, Design, verständlicher, Fehler
+
+Gewünscht: Leistung für die APK auf Handys und Tablets, ein Design-Upgrade für App und Spiel,
+gefundene Fehler beheben, das Spiel verständlicher machen. Geprüft auf Pixel 7 hoch und quer,
+Tablet hochkant (800 × 1.280) und PC, CPU vierfach gedrosselt.
+
+| #   | Befund                                                                                                  | Status | Lösung                                                                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 159 | Hilfe-Pilot mit der Start-Rakete „Hüpfer“ tat nichts – nur eine Meldung, das Δv reiche nicht            | ✅     | Reicht das Δv nicht für eine Umlaufbahn, fliegt der Hilfe-Pilot einen Hüpfer: senkrecht hoch, leere Stufen ab, Schirm scharf, sichere Landung – danach eine Erklärung, was zur Umlaufbahn fehlt                                      |
+| 160 | Startturm und Versorgungsarme schwebten über kleinen Raketen, der Flammenschacht war ein schwarzes Loch | ✅     | Turm, Arme und Halteklammern richten sich nach Höhe und Breite der Rakete; der Schacht ist so breit wie die Rakete und grau statt schwarz                                                                                            |
+| 161 | Bordcomputer halb durchsichtig: Schub und Knöpfe schienen durch                                         | ✅     | Deckender Hintergrund                                                                                                                                                                                                                |
+| 162 | Handy quer: Meldung „Umlaufbahn +20 Punkte“ lag über dem Tipp                                           | ✅     | Meldungen stehen im Querformat unter dem Tipp im selben Block                                                                                                                                                                        |
+| 163 | Karte quer: Beschriftungen unter der Zeitraffer-Leiste, Maßstab unter den Flugdaten                     | ✅     | Beschriftungen weichen allen Bedienfeldern aus; Maßstab sitzt frei über den Drehknöpfen                                                                                                                                              |
+| 164 | SAS-Knöpfe nur mit Symbolen – auf dem Handy gibt es keinen Tooltip                                      | ✅     | Kurze Namen unter den Symbolen (Frei, Flug, Gegen, Hoch, Runter, Ziel, Plan); beim Wählen erklärt eine Meldung den Modus                                                                                                             |
+| 165 | Tablet: SAS-Leiste rutschte unter den Schubregler, der Tipp verschwand unter dem Bordcomputer           | ✅     | Größere Knöpfe in zwei Reihen; der Tipp rückt bei offenem Bordcomputer in die freie Lücke                                                                                                                                            |
+| 166 | Tasten-Hinweise (Z, X, T …) auf Geräten ohne Tastatur                                                   | ✅     | Auf Touch-Geräten ausgeblendet                                                                                                                                                                                                       |
+| 167 | Einsteiger wussten nicht, was zu tun ist                                                                | ✅     | Einführung beim ersten Flug in vier Schritten (Abheben, Lenken, Stufen, Karte und Hilfe-Pilot), jederzeit über die Hilfe wieder aufrufbar; in der Werft zeigt die Leiste, wie weit die Rakete kommt („→ Weltraum“, „→ Umlaufbahn“ …) |
+| 168 | 90/120-Hz-Handys zeichneten doppelt so viele Bilder wie nötig                                           | ✅     | Auf Touch-Geräten höchstens etwa 60 Bilder pro Sekunde (bei 90 Hz alle), in der Pause 20 – halbiert dort Arbeit, Hitze und Akkuverbrauch                                                                                             |
+| 169 | Lageanzeige wurde jedes Bild neu gezeichnet, auch wenn sich nichts bewegte                              | ✅     | Nur noch bei sichtbarer Änderung                                                                                                                                                                                                     |
+| 170 | Spielbild wurde mit dem Hintergrund überblendet und die Größe jedes Bild abgefragt                      | ✅     | Deckende Zeichenfläche; Größe über einen Beobachter gemerkt                                                                                                                                                                          |
+| 171 | Langsame Geräte zeichneten trotzdem die volle Rauchfahne                                                | ✅     | Bei gesenkter Bildqualität höchstens 240 statt 450 Rauchteilchen                                                                                                                                                                     |
+| 172 | Bildschirm ging bei langen Zeitsprüngen oder Autopilot-Flügen aus                                       | ✅     | Während des Flugs bleibt er an (wo der Browser es erlaubt)                                                                                                                                                                           |
+| 173 | Design                                                                                                  | ✅     | Spiel: Bedienfelder mit Glanzkante und Schatten; App: weiche Übergänge, Karten heben sich beim Zeigen, Hauptknöpfe mit Tiefe, Seiten blenden sanft ein                                                                               |
+
 ## Flüssig auf Handy und iPad, neue Grafik, Sandkasten überall, 16 neue Teile
 
 Gemeldet: Auf Handy und iPad ruckelt es noch. Gewünscht: viel bessere Grafik, im Sandkasten auf
@@ -289,7 +313,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **244 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **245 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,

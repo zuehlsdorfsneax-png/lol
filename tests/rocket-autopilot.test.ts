@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LandingPilot, NodeExecutor, OrbitPilot } from '../src/rocket/autopilot';
+import { HopPilot, LandingPilot, NodeExecutor, OrbitPilot } from '../src/rocket/autopilot';
 import { Flight } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import { runPlan } from '../src/rocket/planClient';
@@ -141,6 +141,16 @@ describe('Rendezvous mit der Station', () => {
       expect(ti.speed).toBeLessThan(5);
     });
   }
+});
+
+describe('Hilfe-Pilot Hüpfer', () => {
+  it('fliegt den Hüpfer senkrecht ins All und landet ihn sicher am Fallschirm', () => {
+    const f = new Flight(template('huepfer'));
+    const pilot = new HopPilot(EARTH);
+    loop(f, () => pilot.update(f) === 'done');
+    expect(f.status).toBe('landed');
+    expect(pilot.peak).toBeGreaterThan(EARTH.atmosphere);
+  });
 });
 
 describe('Lande-Autopilot', () => {

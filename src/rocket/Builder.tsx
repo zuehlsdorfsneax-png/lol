@@ -544,6 +544,11 @@ function Werft({
   const stats = stageStats(design.length ? design : ['kapsel'], rules);
   const dv = design.length ? totalDeltaV(design, rules) : 0;
   const earthStart = !sandbox || settings.start === 'rampe';
+  // Kurz gesagt, wie weit die Rakete kommt (nur für Starts von der Erde mit echtem Treibstoff).
+  const reach =
+    earthStart && !rules?.infiniteFuel
+      ? (MILESTONES.filter((m) => dv >= m.dv).pop()?.label ?? 'kurzer Hüpfer')
+      : null;
   const mass = totalMass(design);
   const first = design.length ? stats[0] : undefined;
 
@@ -874,10 +879,15 @@ function Werft({
           <span>
             Δv <strong>{fmt(dv)} m/s</strong>
           </span>
+          {reach && (
+            <span class="stats-reach" title="So weit reicht das Δv bei einem Start von der Erde">
+              → <strong>{reach}</strong>
+            </span>
+          )}
           <span>
             TWR <strong>{first && first.thrust > 0 ? fmt(first.twrStart, 2) : '–'}</strong>
           </span>
-          <span>
+          <span class="stats-mass">
             <strong>{fmt(mass / 1000, 1)} t</strong>
           </span>
           {problems.some((p) => p.level === 'error') && <span class="stats-alert">!</span>}
