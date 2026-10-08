@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { OrbitPilot } from '../src/rocket/autopilot';
 import { Flight } from '../src/rocket/flight';
-import { PARTS, PART_CATEGORIES, TEMPLATES, part, stageStats } from '../src/rocket/parts';
-import { GAME_EARTH, G0, GAME_MOON, stationPort, stationState } from '../src/rocket/world';
+import { PARTS, PART_CATEGORIES, TEMPLATES, ispAt, part, stageStats } from '../src/rocket/parts';
+import {
+  GAME_EARTH,
+  G0,
+  GAME_MOON,
+  VENUS,
+  enginePressure,
+  stationPort,
+  stationState,
+} from '../src/rocket/world';
 
 function run(f: Flight, seconds: number, until: () => boolean = () => false): void {
   for (let i = 0; i < seconds * 60 && f.status !== 'crashed' && !until(); i++) f.update(1 / 60);
@@ -44,6 +52,24 @@ describe('Triebwerke und Luftdruck', () => {
     expect(s.twrEarth * s.startMass * gEarth).toBeCloseTo(s.flow * G0 * s.ispSea, 3);
     expect(s.twrMoon * s.startMass * gMoon).toBeCloseTo(s.thrust, 3);
     expect(s.flow).toBeCloseTo(part('falke').thrust / (part('falke').isp * G0), 6);
+  });
+
+  it('Nova und Herkules liefern auch am Venusboden Schub', () => {
+    const ground = enginePressure(VENUS.density0);
+    for (const id of ['nova', 'herkules']) {
+      const p = part(id);
+      expect(ispAt(p, ground)).toBeCloseTo(p.ispSea!, 6);
+      const start = stageStats(['sonde', 'tank-l', id], {
+        thrust: 1,
+        infiniteFuel: false,
+        body: VENUS,
+      })[0]!;
+      expect(start.twrStart).toBeGreaterThan(0);
+      const f = new Flight(['sonde', 'tank-l', id]);
+      f.placeLanded(VENUS, 0);
+      run(f, 0.1);
+      expect(f.engine().thrust).toBeGreaterThan(0);
+    }
   });
 });
 

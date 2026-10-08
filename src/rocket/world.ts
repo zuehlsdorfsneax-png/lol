@@ -538,11 +538,12 @@ export function densityAt(b: Body, altitude: number): number {
 
 /**
  * Luftdruck für die Triebwerke in bar, gemessen an der Dichte auf Meereshöhe der Erde (1,2 kg/m³).
- * Am Venusboden wären es über 90 bar, dort käme kein Triebwerk hoch; begrenzt auf 2 bar, damit
- * Starts im Sandkasten möglich bleiben.
+ * ispAt (parts.ts) interpoliert linear zwischen Vakuum- und Bodenwert. Über 1 bar läge der Isp
+ * unter dem Bodenwert, bei Nova und Herkules sogar unter null. Deshalb auf 1 bar gedeckelt; der
+ * Venusboden hätte 25 bar und arbeitet mit dem Bodenwert.
  */
 export function enginePressure(rho: number): number {
-  return Math.min(2, rho / 1.2);
+  return Math.min(1, rho / 1.2);
 }
 
 /** Luftdichte der Erde (Skalenhöhe 7 km). */
