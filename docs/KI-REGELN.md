@@ -123,4 +123,4 @@ writing“, Code-Slop-Katalogen (asyrafhussin/code-slop u. a.) und Erfahrungen a
 
 Quellen: Anthropic, „Claude Code: Best practices for agentic coding“; Wikipedia,
 „Signs of AI writing“ (WikiProject AI Cleanup); asyrafhussin/agent-skills „code-slop“;
-kitemetric „Spotting AI-generated code“; Erfahrungen aus diesem Repository (`docs/KRITIK.md`).
+kitemetric „Spotting AI-generated code“; Erfahrungen aus diesem Repository (`docs/archiv/KRITIK-verlauf.md`).

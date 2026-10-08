@@ -213,7 +213,7 @@ function Preview({
     ctx.font = '500 11px Jost, system-ui, sans-serif';
     ctx.textAlign = 'right';
     for (let m = step; base - m * scale > 14; m += step)
-      if (base - m * scale < height) ctx.fillText(`${m} m`, width - 10, base - m * scale - 4);
+      if (base - m * scale < height) ctx.fillText(`${m} m`, width - 52, base - m * scale - 4);
     ctx.textAlign = 'left';
 
     // Startplattform
