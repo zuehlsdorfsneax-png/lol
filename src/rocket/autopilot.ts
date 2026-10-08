@@ -1,4 +1,4 @@
-import type { Flight } from './flight';
+import { surfaceVelocity, type Flight } from './flight';
 import { part } from './parts';
 import { GAME_EARTH, bodyById, tinyBody, type Body } from './world';
 
@@ -412,7 +412,10 @@ export class LandingPilot {
       return (this.phase = 'failed');
     }
     if (f.active.fuel <= 0 && f.segs.length > 1 && f.engine().thrust > 0) f.stage();
-    const r = f.relative(body);
+    // Gemessen wird gegen den Boden, der sich mit dem Körper dreht – so wie touchdown es prüft.
+    const rel = f.relative(body);
+    const [sx, sy] = surfaceVelocity(body, rel.rx, rel.ry);
+    const r = { ...rel, vx: rel.vx - sx, vy: rel.vy - sy };
     const ux = r.rx / r.r;
     const uy = r.ry / r.r;
     const radial = r.vx * ux + r.vy * uy;

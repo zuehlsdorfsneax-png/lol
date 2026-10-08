@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NodeExecutor, OrbitPilot, steerTo } from '../src/rocket/autopilot';
 import { arrivalPeriapsis, makePlan } from '../src/rocket/planner';
-import { Flight, WARPS } from '../src/rocket/flight';
+import { Flight, WARPS, surfaceVelocity } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import {
   GAME_EARTH,
@@ -117,7 +117,9 @@ describe('Raketenwerft – vollständige Mondmission', () => {
     run(f, 1000, () => false, 300);
     const after = f.relative(GAME_MOON);
     expect(Math.abs(after.altitude)).toBeLessThan(1);
-    expect(Math.abs(Math.hypot(after.vx, after.vy))).toBeLessThan(1e-6);
+    // Gegenüber der Oberfläche steht sie still; der Mond dreht sich mit seiner Bahn.
+    const [sx, sy] = surfaceVelocity(GAME_MOON, after.rx, after.ry);
+    expect(Math.hypot(after.vx - sx, after.vy - sy)).toBeLessThan(1e-6);
     expect(Math.atan2(after.ry, after.rx)).not.toBeCloseTo(Math.atan2(before.ry, before.rx), 3);
 
     // 5. Rückflug: mit dem Hilfe-Piloten in eine niedrige Mondbahn, dann plant der Bordcomputer

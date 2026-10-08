@@ -37,6 +37,7 @@ import {
   STATION,
   GAME_SUN,
   VENUS,
+  angularRate,
   bodyById,
   bodyState,
   bodyStates,
@@ -379,6 +380,16 @@ function clamp(x: number, lo: number, hi: number): number {
 /** Monde drehen sich gebunden mit ihrer Bahn (zeigen dem Planeten immer dieselbe Seite). */
 export function bodySpin(b: Body, t: number): number {
   return b.parent && b.parent !== 'sun' ? orbitAngle(b, t) : 0;
+}
+
+/**
+ * Geschwindigkeit des Bodens an einem Punkt (rx, ry) vom Körpermittelpunkt aus, gemessen gegen
+ * den Mittelpunkt. Der Boden dreht sich mit dem Körper (ω × r); wer dort steht, hat genau diese
+ * Geschwindigkeit.
+ */
+export function surfaceVelocity(b: Body, rx: number, ry: number): [number, number] {
+  const w = b.parent && b.parent !== 'sun' ? angularRate(b) : 0;
+  return [w * ry, -w * rx];
 }
 
 /** Ort eines Satelliten zur Zeit t (Weltkoordinaten). */
@@ -762,10 +773,13 @@ export class Flight {
     this.landAngle = angle;
     const [bx, by, bvx, bvy] = bodyState(body, this.t);
     const local = bodySpin(body, this.t) + angle;
-    this.x = bx + body.radius * Math.cos(local);
-    this.y = by + body.radius * Math.sin(local);
-    this.vx = bvx;
-    this.vy = bvy;
+    const rx = body.radius * Math.cos(local);
+    const ry = body.radius * Math.sin(local);
+    const [sx, sy] = surfaceVelocity(body, rx, ry);
+    this.x = bx + rx;
+    this.y = by + ry;
+    this.vx = bvx + sx;
+    this.vy = bvy + sy;
     this.angle = local;
     this.angVel = 0;
   }
@@ -792,14 +806,18 @@ export class Flight {
     return this.segs.reduce((s, seg) => s + seg.parts.reduce((a, id) => a + stackHeight(id), 0), 0);
   }
 
-  /** Schub (N) und Massenstrom (kg/s) einer Stufe bei Vollgas im Vakuum. */
+  /**
+   * Schub (N) und Massenstrom (kg/s) einer Stufe bei Vollgas im Vakuum. Ionentriebwerke brauchen
+   * denselben Stromfaktor wie in engine(), sonst wird ihre Brenndauer um dessen Faktor zu lang.
+   */
   private stageEngine(parts: readonly string[]): { thrust: number; flow: number } {
     let thrust = 0;
     let flow = 0;
     for (const id of parts) {
       const p = part(id);
       if (p.thrust > 0) {
-        const t = p.thrust * this.thrustScale * copies(id);
+        const t =
+          p.thrust * this.thrustScale * copies(id) * (p.flame === 'ionen' ? this.ionPower() : 1);
         thrust += t;
         flow += t / (p.isp * G0);
       }
@@ -2042,10 +2060,13 @@ export class Flight {
         this.t += dt;
         const local = bodySpin(body, this.t) + this.landAngle;
         const c = this.state(body);
-        this.x = c.x + body.radius * Math.cos(local);
-        this.y = c.y + body.radius * Math.sin(local);
-        this.vx = c.vx;
-        this.vy = c.vy;
+        const rx = body.radius * Math.cos(local);
+        const ry = body.radius * Math.sin(local);
+        const [sx, sy] = surfaceVelocity(body, rx, ry);
+        this.x = c.x + rx;
+        this.y = c.y + ry;
+        this.vx = c.vx + sx;
+        this.vy = c.vy + sy;
         this.angle = local;
         return dt;
       }
@@ -2261,8 +2282,9 @@ export class Flight {
   }
 
   private touchdown(body: Body, c: { x: number; y: number; vx: number; vy: number }): void {
-    const speed = Math.hypot(this.vx - c.vx, this.vy - c.vy);
     const up = Math.atan2(this.y - c.y, this.x - c.x);
+    const [sx, sy] = surfaceVelocity(body, body.radius * Math.cos(up), body.radius * Math.sin(up));
+    const speed = Math.hypot(this.vx - c.vx - sx, this.vy - c.vy - sy);
     const tilt = Math.abs(wrap(this.angle - up));
     const legs = this.hasLegs;
     const speedLimit = this.safeLandingSpeed;
@@ -2277,8 +2299,8 @@ export class Flight {
       // Unzerstörbar (Sandkasten): an Gashüllen und der Sonne abprallen statt „landen“.
       const rx = Math.cos(up);
       const ry = Math.sin(up);
-      const rvx = this.vx - c.vx;
-      const rvy = this.vy - c.vy;
+      const rvx = this.vx - c.vx - sx;
+      const rvy = this.vy - c.vy - sy;
       const inward = rvx * rx + rvy * ry;
       if (inward < 0) {
         this.vx -= inward * rx * 1.2;
@@ -2299,8 +2321,8 @@ export class Flight {
       this.status = 'landed';
       this.landedOn = body;
       this.landAngle = up - bodySpin(body, this.t);
-      this.vx = c.vx;
-      this.vy = c.vy;
+      this.vx = c.vx + sx;
+      this.vy = c.vy + sy;
       this.angle = up;
       this.angVel = 0;
       this.warpIndex = 0;
