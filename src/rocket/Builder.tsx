@@ -1,4 +1,4 @@
-import type { ComponentChildren } from 'preact';
+import { Fragment, type ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
@@ -6,7 +6,7 @@ import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { ConfirmButton } from '../ui/ConfirmButton';
 import { Icon, type IconName } from '../ui/Icon';
 import { CHALLENGES, type Challenge, type ChallengeGroup } from './challenges';
-import { PAINTS, boosterPod, drawPart, drawRocket, setPaint, visualWidth } from './draw';
+import { PAINTS, drawPart, drawRocket, setPaint, visualWidth } from './draw';
 import {
   START_GROUPS,
   START_OPTIONS,
@@ -20,11 +20,13 @@ import { km } from './format';
 import { GOALS, GOAL_GROUPS, RANKS, STAR_POINTS, careerPoints, rankFor } from './goals';
 import {
   MAX_PARTS,
-  PARTS,
+  PART_CATEGORIES,
   TEMPLATES,
   checkDesign,
   designHeight,
   part,
+  boosterPod,
+  ispAt,
   segments,
   stageStats,
   totalDeltaV,
@@ -36,7 +38,7 @@ import {
   type PartDef,
 } from './parts';
 import type { Tab } from './RocketGame';
-import { bodyById } from './world';
+import { G0, bodyById } from './world';
 
 /** Grobe Δv-Bedarfe im Spiel (aus Testflügen mit Hilfe-Pilot und Bordcomputer). */
 const MILESTONES = [
@@ -325,18 +327,6 @@ function Menu({
   );
 }
 
-const CATEGORIES: { id: string; label: string; kinds: PartDef['kind'][] }[] = [
-  { id: 'kopf', label: 'Kapseln', kinds: ['capsule', 'probe', 'payload'] },
-  { id: 'tank', label: 'Tanks', kinds: ['tank'] },
-  { id: 'antrieb', label: 'Antrieb', kinds: ['engine', 'booster'] },
-  { id: 'aero', label: 'Aero', kinds: ['nose', 'chute', 'airbrake', 'shield'] },
-  {
-    id: 'technik',
-    label: 'Technik',
-    kinds: ['decoupler', 'legs', 'wheel', 'rcs', 'solar', 'light'],
-  },
-];
-
 /** Gespeicherte Raketen prüfen: unbekannte Teile oder kaputte Einträge fallen weg. */
 function loadHangar(): Record<string, string[]> {
   const raw: unknown = progressStore.load().rocketHangar;
@@ -351,7 +341,22 @@ function loadHangar(): Record<string, string[]> {
 function spec(p: PartDef): string {
   if (p.thrust > 0) return `${fmt(p.thrust / 1000)} kN · ${p.isp} s`;
   if (p.fuel > 0) return `${fmt(p.fuel / 1000, 1)} t Treibstoff`;
-  return `${fmt(p.dry / 1000, 1)} t`;
+  return `${fmt(p.dry / 1000, p.dry < 100 ? 2 : 1)} t`;
+}
+
+const kN = (n: number): string => `${fmt(n / 1000, n < 10_000 ? 1 : 0)} kN`;
+
+/** Kennwerte für die Leiste des markierten Teils: Schub und Isp am Boden und im Vakuum, Verbrauch. */
+function figures(p: PartDef): string {
+  const tons = (kg: number): string => `${fmt(kg / 1000, kg < 1000 ? 2 : 1)} t`;
+  if (p.thrust > 0) {
+    const flow = p.thrust / (p.isp * G0);
+    const fuel = p.fuel > 0 ? ` · ${tons(p.fuel)} Treibstoff` : '';
+    return `Schub ${kN(flow * G0 * ispAt(p, 1))} / ${kN(p.thrust)} · Isp ${fmt(ispAt(p, 1))} / ${p.isp} s (Boden / Vakuum) · ${fmt(flow, 1)} kg/s · leer ${tons(p.dry)}${fuel}`;
+  }
+  if (p.fuel > 0)
+    return `${tons(p.fuel)} Treibstoff · leer ${tons(p.dry)} · Ø ${fmt(p.width, 1)} m`;
+  return `${tons(p.dry)} · Ø ${fmt(p.width, 1)} m`;
 }
 
 export function Builder({
@@ -513,7 +518,7 @@ function Werft({
   onSettings: (s: SandboxSettings) => void;
 }) {
   const [selected, setSelected] = useState(-1);
-  const [cat, setCat] = useState(CATEGORIES[0]!.id);
+  const [cat, setCat] = useState(PART_CATEGORIES[0]!.id);
   const [statsOpen, setStatsOpen] = useState(false);
   const [hangar, setHangar] = useState<Record<string, string[]>>(loadHangar);
   const [name, setName] = useState('');
@@ -616,7 +621,7 @@ function Werft({
     <div class="werft">
       <aside class="parts-panel" aria-label="Bauteile">
         <div class="part-cats" role="tablist" aria-label="Art der Bauteile">
-          {CATEGORIES.map((c) => (
+          {PART_CATEGORIES.map((c) => (
             <button
               key={c.id}
               type="button"
@@ -630,23 +635,29 @@ function Werft({
           ))}
         </div>
         <div class="part-grid">
-          {PARTS.filter((p) => CATEGORIES.find((c) => c.id === cat)!.kinds.includes(p.kind)).map(
-            (p) => {
-              const open = unlocked(p.id, points, sandbox);
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  class={`part-tile ${open ? '' : 'locked'}`}
-                  onClick={() => add(p.id)}
-                  title={open ? p.info : `Ab ${p.unlock} Punkten: ${p.info}`}
-                >
-                  <PartIcon def={p} />
-                  <span class="part-name">{p.name}</span>
-                  <span class="part-spec">{open ? spec(p) : `ab ${p.unlock} P.`}</span>
-                </button>
-              );
-            },
+          {(PART_CATEGORIES.find((c) => c.id === cat) ?? PART_CATEGORIES[0]!).groups.map(
+            (g) =>
+              g.parts.length > 0 && (
+                <Fragment key={g.label}>
+                  <h3 class="part-group">{g.label}</h3>
+                  {g.parts.map((p) => {
+                    const open = unlocked(p.id, points, sandbox);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        class={`part-tile ${open ? '' : 'locked'}`}
+                        onClick={() => add(p.id)}
+                        title={open ? p.info : `Ab ${p.unlock} Punkten: ${p.info}`}
+                      >
+                        <PartIcon def={p} />
+                        <span class="part-name">{p.name}</span>
+                        <span class="part-spec">{open ? spec(p) : `ab ${p.unlock} P.`}</span>
+                      </button>
+                    );
+                  })}
+                </Fragment>
+              ),
           )}
         </div>
         <p class={`parts-hint ${lockHint ? 'msg' : ''}`} aria-live="polite">
@@ -835,6 +846,7 @@ function Werft({
             <div class="part-toolbar-text">
               <strong>{sel.name}</strong>
               <span>{sel.info}</span>
+              <span class="part-figures">{figures(sel)}</span>
             </div>
             <button
               type="button"

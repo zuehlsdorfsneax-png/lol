@@ -9,7 +9,16 @@ import {
   timeToRadius,
   type Elements,
 } from './kepler';
-import { CHUTE_SEMI, chuteExtent, part, segments, type Design, type PartDef } from './parts';
+import {
+  CHUTE_SEMI,
+  boosterPod,
+  chuteExtent,
+  ispAt,
+  part,
+  segments,
+  type Design,
+  type PartDef,
+} from './parts';
 import {
   BODIES,
   EARTH,
@@ -30,6 +39,7 @@ import {
   bodyStates,
   forms,
   densityAt,
+  enginePressure,
   dominantBody,
   gravity,
   orbitAngle,
@@ -139,6 +149,11 @@ export interface LandingSite {
 export interface FlightStats {
   maxSpeed: number;
   maxG: number;
+  /** Größter Staudruck ½·ρ·v² (Pa), „Max Q“, und ob er beim Aufstieg schon gemeldet wurde. */
+  maxQ: number;
+  maxQPassed: boolean;
+  /** Verbrannter Treibstoff (kg). */
+  fuelUsed: number;
   dvUsed: number;
   distance: number;
   burnSeconds: number;
@@ -221,6 +236,8 @@ export interface Debris {
   spin: number;
   parts: string[];
   age: number;
+  /** Nur eine Hälfte zeichnen (Verkleidung): −1 links, 1 rechts. */
+  half?: -1 | 1;
 }
 
 export interface Particle {
@@ -284,7 +301,20 @@ export interface Prediction {
 
 const TURN_RATE = 1.1;
 const TURN_ACCEL = 3.5;
-const ROCKET_CDA = 4;
+/** Widerstandsbeiwert cw unter Mach 0,8: stumpfe Spitze bzw. Nasenkegel oder Verkleidung oben. */
+const CD_BLUNT = 0.8;
+const CD_POINTED = 0.4;
+/**
+ * Faktor auf cw über der Machzahl: Anstieg zur Schallmauer (Verdichtungsstöße), danach langsam
+ * fallend – der typische Verlauf schlanker Raketen.
+ */
+const MACH_DRAG: readonly (readonly [number, number])[] = [
+  [0.8, 1],
+  [1.1, 1.7],
+  [2, 1.35],
+  [4, 1.1],
+  [8, 1],
+];
 const CHUTE_CDA = 1_800;
 /** Ganz öffnet sich der Schirm erst unter diesem Tempo (m/s) … */
 const CHUTE_MAX_SPEED = 300;
@@ -298,10 +328,6 @@ const LAND_TILT_LEGS = 0.65;
 const RCS_ACCEL = 0.6;
 /** Zusätzliche Bremsfläche (m²) je ausgefahrener Luftbremse. */
 const AIRBRAKE_CDA = 30;
-/** Schubverlust eines Vakuumtriebwerks auf Meereshöhe der Erde. */
-const VACUUM_LOSS = 0.55;
-/** Luftdichte, ab der ein Vakuumtriebwerk den vollen Verlust hat (kg/m³). */
-const SEA_RHO = 1.2;
 const DOCK_DISTANCE = 20;
 /**
  * Hitze nach Sutton-Graves (∝ √ρ·v³). Kalibriert: Rückkehr vom Mond mit Pe um 20 km erreicht
@@ -312,6 +338,17 @@ const HEAT_COOLING = 0.08;
 /** Anteil der Hitze, der mit dem Hitzeschild voran noch ankommt. */
 const SHIELD_FACTOR = 0.25;
 const DOCK_SPEED = 2;
+function machDrag(mach: number): number {
+  if (mach <= MACH_DRAG[0]![0]) return 1;
+  for (let i = 1; i < MACH_DRAG.length; i++) {
+    const [m1, k1] = MACH_DRAG[i]!;
+    if (mach < m1) {
+      const [m0, k0] = MACH_DRAG[i - 1]!;
+      return k0 + ((k1 - k0) * (mach - m0)) / (m1 - m0);
+    }
+  }
+  return MACH_DRAG[MACH_DRAG.length - 1]![1];
+}
 const YEAR = 2 * Math.PI * Math.sqrt(EARTH.distance ** 3 / SUN.mu);
 /** Körper mit Lufthülle (für das Ende der Vorhersage beim Wiedereintritt). */
 const AIR_BODIES = BODIES.filter((b) => b.atmosphere > 0);
@@ -564,6 +601,9 @@ export class Flight {
   readonly stats: FlightStats = {
     maxSpeed: 0,
     maxG: 0,
+    maxQ: 0,
+    maxQPassed: false,
+    fuelUsed: 0,
     dvUsed: 0,
     distance: 0,
     burnSeconds: 0,
@@ -764,8 +804,8 @@ export class Flight {
   }
 
   /**
-   * Schub (N) und Massenstrom (kg/s) der aktiven Stufe bei Vollgas. Vakuumtriebwerke verlieren
-   * in dichter Luft Schub (der Verbrauch bleibt).
+   * Schub (N) und Massenstrom (kg/s) der aktiven Stufe bei Vollgas. Die Pumpen fördern überall
+   * gleich viel; in Luft drückt der Umgebungsdruck gegen den Düsenaustritt, Isp und Schub sinken.
    */
   engine(): { thrust: number; flow: number } {
     let thrust = 0;
@@ -774,8 +814,9 @@ export class Flight {
       const p = part(id);
       if (p.thrust > 0) {
         const t = p.thrust * this.thrustScale * (p.flame === 'ionen' ? this.ionPower() : 1);
-        thrust += p.vacuum ? t * (1 - VACUUM_LOSS * this.pressure) : t;
-        flow += t / (p.isp * G0);
+        const f = t / (p.isp * G0);
+        thrust += f * G0 * ispAt(p, this.pressure);
+        flow += f;
       }
     }
     return { thrust, flow };
@@ -830,10 +871,57 @@ export class Flight {
     return this.count('airbrake') > 0;
   }
 
-  /** Sitzt ein Nasenkegel ganz oben? */
+  /** Sitzt ein Nasenkegel oder eine Verkleidung ganz oben? */
   get streamlined(): boolean {
     const top = this.segs[0]?.parts[0];
-    return top !== undefined && part(top).kind === 'nose';
+    return top !== undefined && (part(top).kind === 'nose' || part(top).kind === 'fairing');
+  }
+
+  /** Machzahl und Staudruck ½·ρ·v² (Pa) in der Luft des nächsten Körpers; null ohne Luft. */
+  airData(): { mach: number; q: number } | null {
+    const air = this.air();
+    if (air.rho <= 0) return null;
+    const bv = this.state(air.body);
+    const v = Math.hypot(this.vx - bv.vx, this.vy - bv.vy);
+    return { mach: v / (air.body.soundSpeed ?? 340), q: 0.5 * air.rho * v * v };
+  }
+
+  /** Wirkung der Gitterflossen (0–1): voll ab 20 kPa Staudruck. */
+  finAuthority(): number {
+    return Math.min(1, (this.airData()?.q ?? 0) / 20_000);
+  }
+
+  /** Andockstutzen ganz oben? */
+  get dockingPort(): boolean {
+    const top = this.segs[0]?.parts[0];
+    return top !== undefined && part(top).kind === 'dock';
+  }
+
+  /** Nutzlastverkleidung oben abwerfen: zwei Hälften fliegen seitlich weg. */
+  private dropFairing(): void {
+    const seg = this.segs[0]!;
+    const id = seg.parts[0]!;
+    if (seg.parts.length > 1) seg.parts = seg.parts.slice(1);
+    else if (this.segs.length > 1) this.segs.shift();
+    else return;
+    const ax = Math.cos(this.angle);
+    const ay = Math.sin(this.angle);
+    const len = this.length;
+    for (const side of [-1, 1] as const) {
+      this.debris.push({
+        x: this.x + ax * len,
+        y: this.y + ay * len,
+        vx: this.vx + side * ay * 3 + ax,
+        vy: this.vy - side * ax * 3 + ay,
+        angle: this.angle,
+        spin: side * (0.4 + this.random() * 0.3),
+        parts: [id],
+        age: 0,
+        half: side,
+      });
+    }
+    this.puff(this.x + ax * len, this.y + ay * len, 8);
+    this.emit('info', `Verkleidung abgesprengt – ${fmt(part(id).dry)} kg leichter.`);
   }
 
   /** Luftbremsen aus- oder einfahren. */
@@ -1205,11 +1293,29 @@ export class Flight {
    */
   terminalSpeed(g: number, rho: number, chute = false): number {
     if (!this.dragOn) return Infinity;
-    const cda =
-      ROCKET_CDA * (this.streamlined ? 0.5 : 1) +
-      (this.airbrakes ? AIRBRAKE_CDA * this.count('airbrake') : 0) +
-      (chute ? CHUTE_CDA * this.chuteArea : 0);
+    const cda = this.hullDrag(0) + (chute ? CHUTE_CDA * this.chuteArea : 0);
     return rho > 0 ? Math.sqrt((2 * this.mass * g) / (rho * cda)) : Infinity;
+  }
+
+  /**
+   * Widerstandsfläche cw·A (m²) von Rumpf und Luftbremsen bei dieser Machzahl. A ist die
+   * Stirnfläche des dicksten Teils plus der Booster-Röhren.
+   */
+  hullDrag(mach: number): number {
+    if (!this.dragOn) return 0;
+    let width = 0;
+    let pods = 0;
+    for (const seg of this.segs)
+      for (const id of seg.parts) {
+        const p = part(id);
+        width = Math.max(width, p.width);
+        if (p.kind === 'booster') pods += 2 * boosterPod(p).width ** 2;
+      }
+    const area = (Math.PI / 4) * (width * width + pods);
+    return (
+      (this.streamlined ? CD_POINTED : CD_BLUNT) * machDrag(mach) * area +
+      (this.airbrakes ? AIRBRAKE_CDA * this.count('airbrake') : 0)
+    );
   }
 
   /** Größter erlaubter Zeitraffer in der momentanen Lage. */
@@ -1885,10 +1991,10 @@ export class Flight {
     }
     if (this.turn !== 0 && this.sas === 'point') this.sas = 'off';
     // Reaktionsräder: schneller drehen und schneller abbremsen (höchstens zwei zählen).
-    const wheels = Math.min(
-      2,
-      this.count('wheel') + this.allParts().filter((id) => part(id).wheel).length,
-    );
+    // Gitterflossen wirken wie bis zu zwei weitere, je nach Staudruck (voll ab 20 kPa).
+    const wheels =
+      Math.min(2, this.count('wheel') + this.allParts().filter((id) => part(id).wheel).length) +
+      (rotates && this.count('fins') > 0 ? 2 * this.finAuthority() : 0);
     const target = rotates ? cmd * TURN_RATE * (1 + 0.45 * wheels) : 0;
     const dv = target - this.angVel;
     const maxStep = TURN_ACCEL * (1 + 0.75 * wheels) * realDt;
@@ -1897,6 +2003,9 @@ export class Flight {
   }
 
   private substep(maxDt: number): number {
+    // Am Boden zählt der Luftdruck dort (sonst setzt ihn erst der Flug unten).
+    if (this.status === 'landed' && this.landedOn)
+      this.pressure = enginePressure(densityAt(this.landedOn, 0));
     const { thrust, flow } = this.engine();
     const burning = this.throttle > 0 && this.active.fuel > 0 && thrust > 0;
 
@@ -2047,16 +2156,36 @@ export class Flight {
       );
       return dt;
     }
-    this.pressure = Math.min(1, air.rho / SEA_RHO);
+    this.pressure = enginePressure(air.rho);
+    // Über der dichten Luft braucht die Nutzlast keinen Schutz mehr (Erde: ab 30 km).
+    const top = this.segs[0]!.parts[0];
+    if (
+      top !== undefined &&
+      part(top).kind === 'fairing' &&
+      air.altitude > Math.max(1_000, 0.75 * air.body.atmosphere)
+    )
+      this.dropFairing();
     this.hopHeight = Math.max(this.hopHeight, air.altitude);
     let drag = 0;
     if (air.rho > 0) {
-      // Nasenkegel halbiert den Widerstand, Luftbremsen und Fallschirme vergrößern ihn.
-      const body = this.dragOn
-        ? ROCKET_CDA * (this.streamlined ? 0.5 : 1) +
-          (this.airbrakes ? AIRBRAKE_CDA * this.count('airbrake') : 0)
-        : 0;
-      const cda = body + (this.chuteDeployed ? CHUTE_CDA * this.chuteArea * this.chuteOpen : 0);
+      const mach = rv / (air.body.soundSpeed ?? 340);
+      const cda =
+        this.hullDrag(mach) +
+        (this.chuteDeployed ? CHUTE_CDA * this.chuteArea * this.chuteOpen : 0);
+      const q = 0.5 * air.rho * rv * rv;
+      if (q > this.stats.maxQ) this.stats.maxQ = q;
+      else if (
+        burning &&
+        !this.stats.maxQPassed &&
+        this.stats.maxQ > 10_000 &&
+        q < 0.85 * this.stats.maxQ
+      ) {
+        this.stats.maxQPassed = true;
+        this.emit(
+          'info',
+          `Max Q überstanden: ${fmt(this.stats.maxQ / 1000, 1)} kPa – ab jetzt drückt der Fahrtwind weniger.`,
+        );
+      }
       const k = (0.5 * air.rho * cda) / mass;
       const f = 1 / (1 + k * rv * dt);
       this.vx = bodyV.vx + rvx * f;
@@ -2097,6 +2226,7 @@ export class Flight {
   private burn(amount: number): void {
     const seg = this.active;
     if (this.infiniteFuel) return;
+    this.stats.fuelUsed += Math.min(seg.fuel, amount);
     seg.fuel = Math.max(0, seg.fuel - amount);
     if (seg.fuel === 0 && !this.emptyWarned) {
       this.emptyWarned = true;
@@ -2125,7 +2255,10 @@ export class Flight {
     const tilt = Math.abs(wrap(this.angle - up));
     const legs = this.hasLegs;
     const speedLimit = this.safeLandingSpeed;
-    const tiltLimit = legs ? LAND_TILT_LEGS : LAND_TILT;
+    const tiltLimit = this.active.parts.reduce(
+      (m, id) => Math.max(m, part(id).landTilt ?? 0),
+      legs ? LAND_TILT_LEGS : LAND_TILT,
+    );
     // Auf die Oberfläche setzen.
     this.x = c.x + body.radius * Math.cos(up);
     this.y = c.y + body.radius * Math.sin(up);
@@ -2169,6 +2302,12 @@ export class Flight {
       if (this.chuteDeployed) {
         this.chuteCollapse = { open: Math.max(this.chuteOpen, 0.3), area: this.chuteArea, age: 0 };
         this.dropChutes();
+      }
+      // Airbags auch: Nach dem Aufprall lassen sie die Luft ab.
+      const seg = this.active;
+      if (seg.parts.some((id) => part(id).kind === 'airbag')) {
+        seg.parts = seg.parts.filter((id) => part(id).kind !== 'airbag');
+        if (speed > LAND_SPEED) this.emit('info', 'Airbags haben den Aufprall abgefangen.');
       }
       // „Butterweich“ zählt nur nach einem echten Flug, nicht nach einem Hüpfer auf der Rampe.
       if (speed < 2 && this.hopHeight > 100) this.goal('soft');
@@ -2264,7 +2403,9 @@ export class Flight {
       if (!ti || ti.distance > DOCK_DISTANCE * 2) this.dockLock = false;
       return;
     }
-    if (!ti || ti.distance > DOCK_DISTANCE || ti.speed > DOCK_SPEED) return;
+    const port = this.dockingPort;
+    const reach = port ? DOCK_DISTANCE * 1.5 : DOCK_DISTANCE;
+    if (!ti || ti.distance > reach || ti.speed > (port ? DOCK_SPEED * 2 : DOCK_SPEED)) return;
     // Angedockt ist die Station das Ziel (für Anzeige und Abdocken).
     this.target = 'station';
     this.status = 'docked';

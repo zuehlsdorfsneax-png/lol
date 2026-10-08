@@ -345,8 +345,8 @@ html.game-open body {
 }
 
 .part-cats {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-1);
   margin: var(--sp-3);
   padding: var(--sp-1);
@@ -355,7 +355,6 @@ html.game-open body {
 }
 
 .part-cats button {
-  flex: 1 0 auto;
   height: 32px;
   border: 0;
   border-radius: var(--r-md);
@@ -381,6 +380,29 @@ html.game-open body {
   gap: var(--sp-2);
   padding: 0 var(--sp-3) var(--sp-3);
   scrollbar-width: thin;
+}
+
+.part-group {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  font: 600 var(--fs-1) / 1.2 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g-ink-2);
+}
+
+.part-group:first-child {
+  margin-top: 0;
+}
+
+.part-group::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--g-line);
 }
 
 .part-tile {
@@ -418,6 +440,7 @@ html.game-open body {
 }
 
 .part-name {
+  hyphens: auto;
   font-weight: 600;
   font-size: var(--fs-2);
   line-height: 1.2;
@@ -670,6 +693,13 @@ html.game-open body {
 
 .part-toolbar-text strong {
   font-size: var(--fs-3);
+}
+
+.part-toolbar-text .part-figures {
+  display: block;
+  font: var(--fs-1) / 1.35 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--g-ink-2);
 }
 
 .part-toolbar-text span {
@@ -2896,18 +2926,33 @@ html.game-open body {
     border-top: 1px solid var(--g-line);
   }
   .part-cats {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     margin: var(--sp-2) var(--sp-2) var(--sp-2);
   }
+  .part-cats button {
+    padding: 0;
+  }
   .part-grid {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 104px;
+    display: flex;
     overflow-x: auto;
     overflow-y: hidden;
     padding: 0 var(--sp-2) var(--sp-2);
   }
   .part-tile {
+    flex: 0 0 104px;
     padding: var(--sp-2) var(--sp-1);
+  }
+  /* In der waagerechten Leiste stehen die Gruppennamen senkrecht zwischen den Teilen. */
+  .part-group {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: var(--sp-1) 0;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+  .part-group::after {
+    width: 1px;
+    height: auto;
   }
   .parts-hint:not(.msg) {
     display: none;
@@ -3066,8 +3111,8 @@ html.game-open body {
     padding-top: var(--sp-1);
     font-size: var(--fs-2);
   }
-  .tele-rows dt:nth-of-type(3),
-  .tele-rows dd:nth-of-type(3),
+  .tele-rows dt:nth-of-type(n + 3),
+  .tele-rows dd:nth-of-type(n + 3),
   .tele-foot,
   .tele-rows dd small {
     display: none;

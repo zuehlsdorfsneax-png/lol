@@ -1,4 +1,4 @@
-import { EARTH, G0, MOON, type Body } from './world';
+import { EARTH, G0, MOON, enginePressure, type Body } from './world';
 
 export type PartKind =
   | 'capsule'
@@ -16,7 +16,12 @@ export type PartKind =
   | 'wheel'
   | 'rcs'
   | 'solar'
-  | 'light';
+  | 'light'
+  | 'fairing'
+  | 'fins'
+  | 'structure'
+  | 'airbag'
+  | 'dock';
 
 /** Aussehen der Triebwerksflamme. */
 export type FlameKind = 'chemisch' | 'atom' | 'ionen';
@@ -31,14 +36,19 @@ export interface PartDef {
   /** Leermasse und Treibstoff in kg. */
   dry: number;
   fuel: number;
-  /** Schub in N (Vakuum) und spezifischer Impuls in s. */
+  /** Schub in N und spezifischer Impuls in s, beides im Vakuum. */
   thrust: number;
   isp: number;
+  /**
+   * Spezifischer Impuls bei 1 bar (Meereshöhe der Erde). Der Massenstrom bleibt gleich, also sinkt
+   * der Schub in dichter Luft im selben Verhältnis. Vakuumdüsen verlieren dort mehr als die Hälfte.
+   */
+  ispSea?: number;
   info: string;
   /** Ab so vielen Punkten freigeschaltet (im Sandkasten immer). */
   unlock?: number;
   flame?: FlameKind;
-  /** Vakuumtriebwerk: in dichter Luft sinkt der Schub. */
+  /** Vakuumtriebwerk: große Düse, für den Start vom Boden kaum geeignet. */
   vacuum?: boolean;
   /** Fallschirm: Bremsfläche im Vergleich zum normalen Schirm. */
   chuteArea?: number;
@@ -48,6 +58,8 @@ export interface PartDef {
   shieldFactor?: number;
   /** Landebeine: so schnell (m/s) darf die Rakete aufsetzen. */
   landSpeed?: number;
+  /** So schräg (rad) darf die Rakete aufsetzen, wenn das Teil in der aktiven Stufe ist. */
+  landTilt?: number;
   /** Tankadapter: Breite der Oberkante (die Unterkante hat `width`). */
   topWidth?: number;
   /** Eingebautes Reaktionsrad (Sondenkern). */
@@ -194,6 +206,56 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     info: 'Spitze Verkleidung für ganz oben (z. B. auf Satelliten oder Sonden): halbiert den Luftwiderstand beim Aufstieg.',
+  },
+  {
+    id: 'verkleidung-s',
+    name: 'Sondenverkleidung',
+    kind: 'fairing',
+    width: 1.4,
+    height: 2.2,
+    dry: 60,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Nutzlastverkleidung für 1,4-m-Sonden, ganz oben: so schlank wie ein Nasenkegel. Sobald die Luft dünn ist (Erde: 30 km), sprengt sie sich ab – ihre 60 kg fliegen nicht mit in die Bahn.',
+  },
+  {
+    id: 'verkleidung',
+    name: 'Nutzlastverkleidung',
+    kind: 'fairing',
+    width: 2.4,
+    height: 3.4,
+    dry: 220,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Ganz oben über Satellit oder Sonde: halber Luftwiderstand wie mit Nasenkegel. Über der dichten Luft (Erde: 30 km) sprengt sie sich in zwei Hälften ab und spart so 220 kg.',
+  },
+  {
+    id: 'verkleidung-xl',
+    name: 'Große Verkleidung',
+    kind: 'fairing',
+    width: 3.2,
+    height: 4.4,
+    dry: 420,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    info: 'Verkleidung für 3,2-m-Raketen: schützt große Nutzlasten beim Aufstieg und wird über der dichten Luft abgeworfen (420 kg).',
+  },
+  {
+    id: 'gitterflossen',
+    name: 'Gitterflossen',
+    kind: 'fins',
+    width: 2.4,
+    height: 0.6,
+    dry: 160,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 50,
+    info: 'Vier Gitterflossen wie bei wiederverwendbaren Erststufen: lenken mit dem Fahrtwind. Je höher der Staudruck, desto schneller dreht die Rakete (bis doppelt so schnell). Im Vakuum ohne Wirkung.',
   },
   {
     id: 'luftbremse',
@@ -356,6 +418,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 16_000,
     isp: 325,
+    ispSea: 280,
     info: 'Das kleinste Triebwerk: leicht und sparsam für Sonden und Mini-Lander auf Mond, Phobos oder Europa.',
   },
   {
@@ -368,6 +431,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 45_000,
     isp: 330,
+    ispSea: 285,
     info: 'Klein und sparsam – ideal zum Landen auf dem Mond. Zu schwach für den Start von der Erde.',
   },
   {
@@ -380,6 +444,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 95_000,
     isp: 322,
+    ispSea: 290,
     unlock: 150,
     info: 'Doppelt so stark wie der Kolibri und fast so sparsam: das Landetriebwerk für schwere Lander auf Mond und Mars.',
   },
@@ -393,7 +458,8 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 180_000,
     isp: 310,
-    info: 'Das Allround-Triebwerk für Oberstufen.',
+    ispSea: 280,
+    info: 'Das Allround-Triebwerk: Isp 280 s am Boden und 310 s im Vakuum – taugt für Erst- und Oberstufen.',
   },
   {
     id: 'adler',
@@ -405,6 +471,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 360_000,
     isp: 300,
+    ispSea: 275,
     unlock: 50,
     info: 'Zwischen Falke und Titan: kräftig genug für mittlere Erststufen, sparsamer als der Titan.',
   },
@@ -418,6 +485,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 220_000,
     isp: 365,
+    ispSea: 165,
     vacuum: true,
     unlock: 150,
     info: 'Riesige Düse für den Weltraum: sehr sparsam im Vakuum, aber in dichter Luft verliert es über die Hälfte seines Schubs. Für Oberstufen.',
@@ -432,6 +500,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 55_000,
     isp: 375,
+    ispSea: 160,
     vacuum: true,
     unlock: 150,
     info: 'Kleine Vakuumdüse für Sonden: sparsamer als jedes andere chemische Triebwerk, aber nur im Weltraum mit vollem Schub.',
@@ -446,6 +515,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 620_000,
     isp: 285,
+    ispSea: 262,
     info: 'Sehr viel Schub für die erste Stufe, aber durstig.',
   },
   {
@@ -458,6 +528,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 1_500_000,
     isp: 290,
+    ispSea: 268,
     unlock: 150,
     info: 'Das stärkste Triebwerk: 1.500 kN hebt auch die schwersten Raketen von der Rampe.',
   },
@@ -471,6 +542,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 900_000,
     isp: 358,
+    ispSea: 150,
     vacuum: true,
     unlock: 550,
     info: 'Die größte Vakuumdüse: 900 kN für schwere Oberstufen und Transferstufen zu Mars und Jupiter. In dichter Luft verliert sie über die Hälfte des Schubs.',
@@ -485,6 +557,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 60_000,
     isp: 800,
+    ispSea: 240,
     unlock: 300,
     flame: 'atom',
     info: 'Ein Kernreaktor heizt Wasserstoff auf: fast dreimal so sparsam wie chemische Triebwerke, aber schwer und schwach. Für lange Reisen im All.',
@@ -499,6 +572,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 450_000,
     isp: 340,
+    ispSea: 311,
     unlock: 300,
     info: 'Kräftiges, sparsames Oberstufen-Triebwerk: startet auch in der Luft zuverlässig und schiebt schwere Transferstufen schnell aus der Erdbahn – kürzere Brennzeiten, genauere Manöver.',
   },
@@ -512,6 +586,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 0,
     thrust: 4_000,
     isp: 4200,
+    ispSea: 100,
     unlock: 550,
     flame: 'ionen',
     info: 'Beschleunigt geladene Teilchen mit Strom: extrem sparsam, aber mit winzigem Schub. Brennt dafür stundenlang – bei schwachem Schub ist Zeitraffer bis 100× erlaubt.',
@@ -541,6 +616,45 @@ export const PARTS: readonly PartDef[] = [
     info: 'Leichter Stufentrenner mit 1,4 m Durchmesser – passt zu Sondenkern und Sondentanks.',
   },
   {
+    id: 'zwischenstufe-s',
+    name: 'Zwischenstufe 2,4 → 1,4',
+    kind: 'structure',
+    width: 2.4,
+    height: 1.0,
+    topWidth: 1.4,
+    dry: 70,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Leerer Kegelstumpf aus Kohlefaser: setzt eine schlanke Sondenstufe sauber auf eine 2,4-m-Stufe. Kein Treibstoff, nur 70 kg.',
+  },
+  {
+    id: 'zwischenstufe',
+    name: 'Zwischenstufe 3,2 → 2,4',
+    kind: 'structure',
+    width: 3.2,
+    height: 1.4,
+    topWidth: 2.4,
+    dry: 200,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    info: 'Leichter Übergang von der dicken Erststufe zur 2,4-m-Oberstufe: 200 kg statt 420 kg wie der Tankadapter, dafür ohne Treibstoff.',
+  },
+  {
+    id: 'andockstutzen',
+    name: 'Andockstutzen',
+    kind: 'dock',
+    width: 1.4,
+    height: 0.5,
+    dry: 90,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    info: 'Ganz oben auf Kapsel oder Sonde: Fangring mit Federn. Er greift die Station schon aus 30 m Abstand und verträgt 4 m/s statt 2 m/s Annäherung.',
+  },
+  {
     id: 'booster',
     name: 'Seitenbooster (Paar)',
     kind: 'booster',
@@ -550,6 +664,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 9000,
     thrust: 360_000,
     isp: 275,
+    ispSea: 245,
     info: 'Zwei Feststoff-Booster links und rechts. Sie zünden mit ihrer Stufe und fallen mit ihr ab – ideal als Starthilfe unten an der ersten Stufe.',
   },
   {
@@ -562,6 +677,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 18_000,
     thrust: 720_000,
     isp: 280,
+    ispSea: 250,
     unlock: 150,
     info: 'Doppelt so große Feststoff-Booster: 720 kN extra für schwere Raketen. Fallen mit ihrer Stufe ab.',
   },
@@ -575,6 +691,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 4500,
     thrust: 170_000,
     isp: 270,
+    ispSea: 240,
     info: 'Zwei schlanke Feststoff-Booster: 170 kN Starthilfe für leichte Raketen. Fallen mit ihrer Stufe ab.',
   },
   {
@@ -587,6 +704,7 @@ export const PARTS: readonly PartDef[] = [
     fuel: 26_000,
     thrust: 1_000_000,
     isp: 305,
+    ispSea: 280,
     unlock: 550,
     info: 'Zwei riesige Flüssig-Booster mit eigenen Triebwerken: 1.000 kN extra und sparsamer als Feststoff. Für die schwersten Raketen.',
   },
@@ -629,6 +747,21 @@ export const PARTS: readonly PartDef[] = [
     isp: 0,
     landSpeed: 11,
     info: 'Leichte Landebeine für Sonden: erlauben bis 11 m/s beim Aufsetzen. Direkt über das Triebwerk der untersten Stufe.',
+  },
+  {
+    id: 'airbags',
+    name: 'Lande-Airbags',
+    kind: 'airbag',
+    width: 2.4,
+    height: 0.5,
+    dry: 220,
+    fuel: 0,
+    thrust: 0,
+    isp: 0,
+    unlock: 150,
+    landSpeed: 20,
+    landTilt: 1.3,
+    info: 'Wie bei Mars Pathfinder: Kurz vor dem Boden blasen sich Luftkissen auf. Aufsetzen mit bis zu 20 m/s, auch schräg. Danach sind sie leer – nur für eine Landung.',
   },
   {
     id: 'rad',
@@ -691,6 +824,107 @@ export function part(id: string): PartDef {
 
 export function isPart(id: string): boolean {
   return BY_ID.has(id);
+}
+
+/** Seitenbooster: Breite, Überstand nach oben und Abstand der Röhren. */
+export function boosterPod(def: PartDef): { width: number; rise: number; offset: number } {
+  switch (def.id) {
+    case 'booster-xl':
+      return { width: 1.5, rise: 3.4, offset: 0.82 };
+    case 'booster-fl':
+      return { width: 1.9, rise: 5.6, offset: 1.0 };
+    case 'booster-s':
+      return { width: 0.8, rise: 0.4, offset: 0.5 };
+    default:
+      return { width: 1.1, rise: 1.4, offset: 0.62 };
+  }
+}
+
+/** Reiter der Werft mit Untergruppen; jedes Teil steht in genau einer Gruppe. */
+export interface PartCategory {
+  id: string;
+  label: string;
+  groups: { label: string; parts: PartDef[] }[];
+}
+
+const CATEGORY_RULES: {
+  id: string;
+  label: string;
+  groups: [string, (p: PartDef) => boolean][];
+}[] = [
+  {
+    id: 'kopf',
+    label: 'Kapseln',
+    groups: [
+      ['Mit Crew', (p) => p.kind === 'capsule'],
+      ['Sondenkerne', (p) => p.kind === 'probe'],
+      ['Nutzlast', (p) => p.kind === 'payload'],
+    ],
+  },
+  {
+    id: 'tank',
+    label: 'Tanks',
+    groups: [
+      ['Ø 1,4 m', (p) => p.kind === 'tank' && p.width < 2],
+      ['Ø 2,4 m', (p) => p.kind === 'tank' && p.width >= 2 && p.width < 3],
+      ['Ø 3,2 m', (p) => p.kind === 'tank' && p.width >= 3],
+    ],
+  },
+  {
+    id: 'antrieb',
+    label: 'Antrieb',
+    groups: [
+      ['Für den Start', (p) => p.kind === 'engine' && !p.vacuum && !p.flame],
+      ['Für das Vakuum', (p) => p.kind === 'engine' && !!p.vacuum],
+      ['Atom und Ionen', (p) => p.kind === 'engine' && !!p.flame],
+      ['Seitenbooster', (p) => p.kind === 'booster'],
+    ],
+  },
+  {
+    id: 'aero',
+    label: 'Aero',
+    groups: [
+      ['Spitze', (p) => p.kind === 'nose' || p.kind === 'fairing'],
+      ['Lenken und Bremsen', (p) => p.kind === 'fins' || p.kind === 'airbrake'],
+    ],
+  },
+  {
+    id: 'landung',
+    label: 'Landung',
+    groups: [
+      ['Fallschirme', (p) => p.kind === 'chute'],
+      ['Hitzeschilde', (p) => p.kind === 'shield'],
+      ['Aufsetzen', (p) => p.kind === 'legs' || p.kind === 'airbag'],
+    ],
+  },
+  {
+    id: 'technik',
+    label: 'Technik',
+    groups: [
+      ['Stufentrenner', (p) => p.kind === 'decoupler'],
+      ['Zwischenstufen', (p) => p.kind === 'structure'],
+      ['Andocken', (p) => p.kind === 'dock'],
+      ['Lage', (p) => p.kind === 'wheel' || p.kind === 'rcs'],
+      ['Strom und Licht', (p) => p.kind === 'solar' || p.kind === 'light'],
+    ],
+  },
+];
+
+/** Innerhalb einer Gruppe: vom Kleinsten zum Größten (Schub, sonst Treibstoff, sonst Masse). */
+const size = (p: PartDef): number => p.thrust || p.fuel || p.dry;
+
+export const PART_CATEGORIES: readonly PartCategory[] = CATEGORY_RULES.map((c) => ({
+  id: c.id,
+  label: c.label,
+  groups: c.groups.map(([label, has]) => ({
+    label,
+    parts: PARTS.filter(has).sort((a, b) => size(a) - size(b)),
+  })),
+}));
+
+/** Spezifischer Impuls bei `pressure` bar: linear zwischen Vakuum- und Bodenwert, nie negativ. */
+export function ispAt(p: PartDef, pressure: number): number {
+  return Math.max(0, p.isp - (p.isp - (p.ispSea ?? p.isp)) * pressure);
 }
 
 /** Ist das Teil bei so vielen Punkten schon freigeschaltet? */
@@ -880,7 +1114,7 @@ export const TEMPLATES: readonly Template[] = [
       'tank-xl',
       'mammut',
       'trenner',
-      'tank-xxl',
+      'tank-xl',
       'booster-xl',
       'tank-xxl',
       'booster-xl',
@@ -951,7 +1185,7 @@ export const TEMPLATES: readonly Template[] = [
       'tank-m',
       'nova',
       'trenner',
-      'tank-xl',
+      'tank-xxl',
       'mammut',
       'booster-xl',
     ],
@@ -1129,13 +1363,17 @@ export interface StageStats {
   parts: Design;
   dry: number;
   fuel: number;
+  /** Schub im Vakuum (N). */
   thrust: number;
-  /** Mittlerer spezifischer Impuls aller Triebwerke der Stufe. */
+  /** Mittlerer spezifischer Impuls aller Triebwerke der Stufe (Vakuum und Meereshöhe). */
   isp: number;
+  ispSea: number;
+  /** Treibstoffverbrauch bei Vollgas (kg/s). */
+  flow: number;
   /** Masse beim Zünden (inklusive aller Stufen darüber). */
   startMass: number;
   deltaV: number;
-  /** Schub-Gewichts-Verhältnis beim Zünden auf Erde und Mond. */
+  /** Schub-Gewichts-Verhältnis beim Zünden auf der Erde (Boden), dem Mond … */
   twrEarth: number;
   twrMoon: number;
   /** … und auf dem Startkörper (ohne Sandkasten: die Erde). */
@@ -1172,9 +1410,15 @@ export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
     const dry = defs.reduce((s, p) => s + p.dry, 0);
     const fuel = defs.reduce((s, p) => s + p.fuel, 0);
     const thrust = k * defs.reduce((s, p) => s + p.thrust * power(p), 0);
-    const flow =
-      k * defs.reduce((s, p) => s + (p.thrust > 0 ? (p.thrust * power(p)) / (p.isp * G0) : 0), 0);
+    const flowOf = (p: PartDef): number =>
+      p.thrust > 0 ? (k * p.thrust * power(p)) / (p.isp * G0) : 0;
+    // Schub bei Druck p: gleicher Massenstrom, kleinerer Isp.
+    const thrustAt = (pressure: number): number =>
+      defs.reduce((s, p) => s + flowOf(p) * G0 * ispAt(p, pressure), 0);
+    const flow = defs.reduce((s, p) => s + flowOf(p), 0);
     const isp = flow > 0 ? thrust / (flow * G0) : 0;
+    const thrustSea = thrustAt(1);
+    const thrustHome = thrustAt(enginePressure(home.density0));
     const startMass = above + dry + fuel;
     const endMass = startMass - fuel;
     const gEarth = EARTH.mu / EARTH.radius ** 2;
@@ -1186,6 +1430,8 @@ export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
       fuel,
       thrust,
       isp,
+      ispSea: flow > 0 ? thrustSea / (flow * G0) : 0,
+      flow,
       startMass,
       deltaV:
         thrust > 0 && fuel > 0
@@ -1193,9 +1439,9 @@ export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
             ? Infinity
             : isp * G0 * Math.log(startMass / endMass)
           : 0,
-      twrEarth: thrust / (startMass * gEarth),
+      twrEarth: thrustSea / (startMass * gEarth),
       twrMoon: thrust / (startMass * gMoon),
-      twrStart: thrust / (startMass * gStart),
+      twrStart: thrustHome / (startMass * gStart),
       burnTime: flow > 0 && fuel > 0 ? (endless ? Infinity : fuel / flow) : 0,
     });
     above += dry + fuel;
@@ -1240,10 +1486,13 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
       level: 'warn',
       text: `Zu schwer: Der Schub der ersten Stufe trägt ${home === EARTH ? '' : `am Startort (${home.name}) `}nur ${Math.round(first.twrStart * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
     });
-  if (design.slice(1).some((id) => part(id).kind === 'nose'))
+  const buriedTop = design
+    .slice(1)
+    .find((id) => ['nose', 'fairing', 'dock'].includes(part(id).kind));
+  if (buriedTop)
     problems.push({
       level: 'warn',
-      text: 'Ein Nasenkegel wirkt nur ganz oben – weiter unten ist er nur Ballast.',
+      text: `${part(buriedTop).name} wirkt nur ganz oben – weiter unten ist das Teil nur Ballast.`,
     });
   if (design[design.length - 1] && part(design[design.length - 1]!).kind === 'decoupler')
     problems.push({ level: 'warn', text: 'Ganz unten hängt ein Stufentrenner ohne Stufe.' });

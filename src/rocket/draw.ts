@@ -1,4 +1,4 @@
-import { CHUTE_SEMI, part, segments, type FlameKind, type PartDef } from './parts';
+import { CHUTE_SEMI, boosterPod, part, segments, type FlameKind, type PartDef } from './parts';
 import { softSprite } from './view';
 
 // ------------------------------------------------------------------ Lackierungen
@@ -85,6 +85,8 @@ let brakeOpen = 0;
 let solarOpen = 0;
 /** Helligkeit der Landescheinwerfer (0…1). */
 let lampsOn = 0;
+/** Wie weit die Lande-Airbags aufgeblasen sind (0…1). */
+let bagsOpen = 0;
 
 /** Lackierung für alle folgenden Zeichnungen wählen. */
 export function setPaint(id: string): void {
@@ -612,6 +614,144 @@ export function drawPart(
       ctx.fill();
       break;
     }
+    case 'fairing': {
+      // Nutzlastverkleidung: Zylinder mit stumpfer Ogive, senkrechte Trennfuge der zwei Hälften
+      const body = h * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(-w / 2, y0);
+      ctx.lineTo(-w / 2, y0 + body);
+      ctx.bezierCurveTo(-w / 2, y0 + body + (h - body) * 0.62, -w * 0.18, y0 + h, 0, y0 + h);
+      ctx.bezierCurveTo(w * 0.18, y0 + h, w / 2, y0 + body + (h - body) * 0.62, w / 2, y0 + body);
+      ctx.lineTo(w / 2, y0);
+      ctx.closePath();
+      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = shade(paint.stripe);
+      ctx.fillRect(-w / 2, y0, w, 0.22);
+      ctx.fillStyle = shade(paint.band);
+      ctx.fillRect(-w / 2, y0 + body - 0.16, w, 0.32);
+      ctx.fillStyle = 'rgba(20,26,40,0.4)';
+      ctx.fillRect(-0.025, y0, 0.05, h);
+      // Entlüftungsklappen nahe der Fuge
+      for (const sgn of [-1, 1]) ctx.fillRect(sgn * w * 0.22 - 0.09, y0 + body * 0.45, 0.18, 0.1);
+      sheen(ctx, w, y0, h);
+      ctx.restore();
+      ctx.stroke();
+      break;
+    }
+    case 'structure': {
+      // Zwischenstufe: leerer Kegelstumpf aus Kohlefaser mit Versteifungsringen
+      const t = def.topWidth ?? w;
+      ctx.beginPath();
+      ctx.moveTo(-w / 2, y0);
+      ctx.lineTo(w / 2, y0);
+      ctx.lineTo(t / 2, y0 + h);
+      ctx.lineTo(-t / 2, y0 + h);
+      ctx.closePath();
+      ctx.fillStyle = hGrad(ctx, w, ['#3a3f4a', '#8a93a3', '#2c3038']);
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      for (let yy = y0 + 0.25; yy < y0 + h - 0.1; yy += 0.35) ctx.fillRect(-w / 2, yy, w, 0.05);
+      ctx.fillStyle = shade(paint.stripe);
+      ctx.fillRect(-w / 2, y0 + h - 0.12, w, 0.12);
+      sheen(ctx, (w + t) / 2, y0, h);
+      ctx.restore();
+      ctx.stroke();
+      break;
+    }
+    case 'fins': {
+      ctx.fillStyle = hGrad(ctx, w, ['#2f343c', '#7d8594', '#24282f']);
+      ctx.fillRect(-w / 2, y0, w, h);
+      ctx.strokeRect(-w / 2, y0, w, h);
+      // Gitterflossen links und rechts: Rahmen mit Gitter, an einem kurzen Arm
+      for (const sgn of [-1, 1]) {
+        const x0 = sgn > 0 ? w / 2 + 0.08 : -w / 2 - 0.98;
+        ctx.fillStyle = shade('#3b414c');
+        ctx.fillRect(sgn > 0 ? w / 2 : -w / 2 - 0.08, y0 + h * 0.35, 0.08, h * 0.3);
+        ctx.fillStyle = 'rgba(30,34,42,0.55)';
+        ctx.fillRect(x0, y0 + 0.02, 0.9, h - 0.04);
+        ctx.strokeStyle = shade('#aeb6c4');
+        ctx.lineWidth = 0.05;
+        ctx.strokeRect(x0, y0 + 0.02, 0.9, h - 0.04);
+        ctx.lineWidth = 0.025;
+        ctx.beginPath();
+        for (let k = 1; k < 5; k++) {
+          ctx.moveTo(x0 + k * 0.18, y0 + 0.02);
+          ctx.lineTo(x0 + k * 0.18, y0 + h - 0.02);
+        }
+        for (let k = 1; k < 3; k++) {
+          ctx.moveTo(x0, y0 + (k * h) / 3);
+          ctx.lineTo(x0 + 0.9, y0 + (k * h) / 3);
+        }
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+      ctx.lineWidth = 0.06;
+      break;
+    }
+    case 'airbag': {
+      if (bagsOpen > 0) {
+        // Aufgeblasen: drei Kissen aus Vectran-Gewebe mit Nähten
+        const r = 0.35 + 0.45 * bagsOpen;
+        for (const x of [-w * 0.36, w * 0.36, 0]) {
+          ctx.beginPath();
+          ctx.arc(x, y0 + 0.15, r, 0, Math.PI * 2);
+          ctx.fillStyle = shade('#e9e3d2');
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(120,105,80,0.6)';
+          ctx.lineWidth = 0.04;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - r * 0.7, y0 + 0.15);
+          ctx.quadraticCurveTo(x, y0 + 0.15 - r * 0.25, x + r * 0.7, y0 + 0.15);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+        ctx.lineWidth = 0.06;
+      }
+      ctx.fillStyle = hGrad(ctx, w, ['#8f8a7c', '#d9d3c2', '#77736a']);
+      ctx.fillRect(-w / 2, y0, w, h);
+      ctx.strokeRect(-w / 2, y0, w, h);
+      // Gefaltetes Gewebe: Steppnähte
+      ctx.strokeStyle = 'rgba(80,70,50,0.45)';
+      ctx.lineWidth = 0.03;
+      ctx.beginPath();
+      for (let x = -w / 2 + 0.3; x < w / 2; x += 0.3) {
+        ctx.moveTo(x, y0 + 0.06);
+        ctx.lineTo(x, y0 + h - 0.06);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+      ctx.lineWidth = 0.06;
+      break;
+    }
+    case 'dock': {
+      // Andockstutzen: Tunnel, oben breiterer Fangring mit drei Führungsblättern
+      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fillRect(-w * 0.36, y0, w * 0.72, h * 0.6);
+      ctx.strokeRect(-w * 0.36, y0, w * 0.72, h * 0.6);
+      ctx.fillStyle = hGrad(ctx, w, ['#4b5563', '#c9ced6', '#3c4350']);
+      ctx.fillRect(-w / 2, y0 + h * 0.6, w, h * 0.22);
+      ctx.strokeRect(-w / 2, y0 + h * 0.6, w, h * 0.22);
+      ctx.fillStyle = shade('#c9ced6');
+      for (const x of [-w * 0.32, 0, w * 0.32]) {
+        ctx.beginPath();
+        ctx.moveTo(x - 0.14, y0 + h * 0.82);
+        ctx.lineTo(x + 0.14, y0 + h * 0.82);
+        ctx.lineTo(x + 0.06, y0 + h);
+        ctx.lineTo(x - 0.06, y0 + h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.fillStyle = shade('#f5b301');
+      ctx.fillRect(-w * 0.36, y0 + h * 0.25, 0.1, 0.1);
+      break;
+    }
     case 'airbrake': {
       ctx.fillStyle = hGrad(ctx, w, ['#4b5563', '#9ca3af', '#374151']);
       ctx.fillRect(-w / 2, y0, w, h);
@@ -696,20 +836,6 @@ export function drawPart(
   }
 }
 
-/** Seitenbooster: Breite, Überstand nach oben und Abstand der Röhren. */
-export function boosterPod(def: PartDef): { width: number; rise: number; offset: number } {
-  switch (def.id) {
-    case 'booster-xl':
-      return { width: 1.5, rise: 3.4, offset: 0.82 };
-    case 'booster-fl':
-      return { width: 1.9, rise: 5.6, offset: 1.0 };
-    case 'booster-s':
-      return { width: 0.8, rise: 0.4, offset: 0.5 };
-    default:
-      return { width: 1.1, rise: 1.4, offset: 0.62 };
-  }
-}
-
 /** Wie weit die Landebeine seitlich ausgreifen (m). */
 function legReach(def: PartDef): number {
   return def.id === 'beine-s' ? 0.8 : 1.4;
@@ -723,6 +849,7 @@ export function visualWidth(def: PartDef): number {
   }
   if (def.kind === 'legs') return def.width + 2 * legReach(def) + 0.2;
   if (def.kind === 'airbrake' || def.kind === 'rcs' || def.kind === 'solar') return def.width + 1;
+  if (def.kind === 'fins') return def.width + 1.8;
   return def.width;
 }
 
@@ -882,6 +1009,8 @@ export interface RocketLook {
   solar?: number;
   /** Landescheinwerfer an (0…1). */
   lights?: number;
+  /** Lande-Airbags aufgeblasen (0…1). */
+  bags?: number;
 }
 
 /** Zeichnet eine Rakete (Teile von oben nach unten); Ursprung = Unterkante, y nach oben. */
@@ -909,6 +1038,7 @@ export function drawRocket(
   brakeOpen = look?.brakes ?? 0;
   solarOpen = look?.solar ?? 0;
   lampsOn = look?.lights ?? 0;
+  bagsOpen = look?.bags ?? 0;
   if (lampsOn > 0) drawLightCones(ctx, parts, lampsOn);
   if (look && look.throttle > 0) {
     const engineId = [...parts].reverse().find((id) => part(id).kind === 'engine');

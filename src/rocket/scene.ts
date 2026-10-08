@@ -525,6 +525,8 @@ let nightDim = 0;
 /** Ausklappen der Solarflügel (0…1) und Zeitpunkt des letzten Bilds. */
 let solarAnim = 0;
 let solarClock = 0;
+/** Aufblasen der Lande-Airbags (0…1). */
+let bagsAnim = 0;
 
 /** Lichtfleck auf dem Boden unter der Rakete (Scheinwerfer oder Triebwerksstrahl). */
 function drawLampPool(
@@ -1058,6 +1060,11 @@ export function drawFlight(
   for (const d of f.debris) {
     ctx.save();
     local(ctx, v, d.x, d.y, d.angle, Math.max(v.scale, 0.02));
+    if (d.half) {
+      ctx.beginPath();
+      ctx.rect(d.half > 0 ? 0 : -20, -1, 20, 30);
+      ctx.clip();
+    }
     drawRocket(ctx, d.parts);
     ctx.restore();
   }
@@ -1145,6 +1152,18 @@ export function drawFlight(
     solarClock = time;
     solarAnim += ((f.solarOpen ? 1 : 0) - solarAnim) * Math.min(1, dtAnim * 1.2);
     if (solarAnim < 0.01) solarAnim = f.solarOpen ? 0.01 : 0;
+    // Lande-Airbags blasen sich in den letzten 200 m eines Sinkflugs auf.
+    let bagsWanted = 0;
+    if (
+      f.status === 'flying' &&
+      near.body.solid &&
+      near.altitude < 200 &&
+      parts.some((id) => part(id).kind === 'airbag')
+    ) {
+      const rel = f.relative(near.body);
+      if (rel.rx * rel.vx + rel.ry * rel.vy < -2 * rel.r) bagsWanted = 1;
+    }
+    bagsAnim += (bagsWanted - bagsAnim) * Math.min(1, dtAnim * 4);
     const dark = light.shadow || light.day < 0.45;
     const lamps = f.hasLights && dark && near.body !== SUN ? 1 : 0;
     if (lamps && near.altitude < 90 && near.body.solid)
@@ -1171,6 +1190,7 @@ export function drawFlight(
       brakes: f.airbrakes ? 1 : 0,
       solar: solarAnim,
       lights: lamps,
+      bags: bagsAnim > 0.02 ? bagsAnim : 0,
       time,
     });
     if (f.rcs && (f.translate.x || f.translate.y) && f.status === 'flying')
@@ -1365,7 +1385,8 @@ function drawHeating(
   const rvx = f.vx - bv.vx;
   const rvy = f.vy - bv.vy;
   const speed = Math.hypot(rvx, rvy);
-  if (rho <= 0 || speed < 280 || f.status !== 'flying') return;
+  const sound = air.body.soundSpeed ?? 340;
+  if (rho <= 0 || speed < 0.8 * sound || f.status !== 'flying') return;
   const [rx, ry] = toScreen(v, f.x, f.y);
   const [ax, ay] = toScreen(v, f.x + rvx, f.y + rvy);
   const len = Math.hypot(ax - rx, ay - ry) || 1;
@@ -1374,13 +1395,34 @@ function drawHeating(
   const [cx, cy] = toScreen(v, v.cx, v.cy);
   const r = Math.max(18, rocketPx * 0.45);
   ctx.save();
-  const mach = Math.max(0, 1 - Math.abs(speed - 345) / 70) * Math.min(1, rho / 0.2);
-  if (mach > 0.02) {
-    ctx.globalAlpha = 0.5 * mach;
-    ctx.fillStyle = '#ffffff';
+  // Kondensationskegel: Knapp um Mach 1 fällt der Druck hinter der Stoßfront so stark, dass der
+  // Wasserdampf der Luft kondensiert – eine weiße Glocke um die Schulter der Rakete. Nur in
+  // feuchter Erdluft; auf Mars und Venus fehlt das Wasser.
+  const vapor =
+    air.body === EARTH
+      ? Math.max(0, 1 - Math.abs(speed / sound - 1) / 0.12) * Math.min(1, rho / 0.3)
+      : 0;
+  if (vapor > 0.02) {
+    let width = 0;
+    for (const seg of f.segs) for (const id of seg.parts) width = Math.max(width, part(id).width);
+    const half = Math.max(5, ((rocketPx * width) / Math.max(f.length, 1)) * 1.7);
+    const apex = rocketPx * 0.3;
+    const base = apex - half * 1.1;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.atan2(uy, ux));
+    const g = ctx.createLinearGradient(apex, 0, base - half * 0.4, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.45, `rgba(255,255,255,${0.6 * vapor})`);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, r * 1.1, r * 0.45, Math.atan2(uy, ux) + Math.PI / 2, 0, Math.PI * 2);
+    ctx.moveTo(apex, 0);
+    ctx.quadraticCurveTo(apex - half * 0.25, -half * 0.95, base, -half);
+    ctx.ellipse(base, 0, half * 0.35, half, 0, -Math.PI / 2, Math.PI / 2, true);
+    ctx.quadraticCurveTo(apex - half * 0.25, half * 0.95, apex, 0);
     ctx.fill();
+    ctx.restore();
   }
   const heat = Math.min(1, (speed - 700) / 1400) * Math.min(1, rho / 0.02);
   if (heat > 0.02) {

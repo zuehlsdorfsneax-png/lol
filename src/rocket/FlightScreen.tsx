@@ -52,6 +52,7 @@ import {
   MERCURY,
   MOON,
   MOON_DISTANCE,
+  G0,
   MOON_RATE,
   PHOBOS,
   SUN,
@@ -1713,6 +1714,8 @@ export function FlightScreen({
   const sf = f.speedFrame();
   const speed = Math.hypot(sf.vx, sf.vy);
   const vertical = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
+  const airData = f.airData();
+  const engineNow = f.engine();
   const fuel = f.fuelCapacity > 0 ? f.active.fuel / f.fuelCapacity : 0;
   // In Herausforderungen nur, wenn ein Ziel gewählt ist – sonst lenkt das Fenster ab.
   const win = challenge && !f.target ? null : transferInfo(f);
@@ -1916,6 +1919,24 @@ export function FlightScreen({
             </dd>
             <dt>Steigen</dt>
             <dd>{fmt(vertical)} m/s</dd>
+            {airData && f.status === 'flying' && (
+              <>
+                <dt>Mach</dt>
+                <dd>
+                  {fmt(airData.mach, airData.mach < 10 ? 2 : 1)}
+                  <small>{fmt(airData.q / 1000, 1)} kPa</small>
+                </dd>
+              </>
+            )}
+            {f.thrusting && engineNow.flow > 0 && (
+              <>
+                <dt>Isp</dt>
+                <dd>
+                  {fmt(engineNow.thrust / (engineNow.flow * G0))} s
+                  <small>{fmt(engineNow.flow * f.throttle, 1)} kg/s</small>
+                </dd>
+              </>
+            )}
           </dl>
           <div class="tele-foot">
             <span title="Missionszeit seit dem Start">

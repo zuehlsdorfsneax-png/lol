@@ -85,10 +85,19 @@ export class OrbitPilot {
     }
 
     if (this.phase === 'ascent') {
-      const pitch = Math.min(
+      let pitch = Math.min(
         1.35,
         (Math.PI / 2) * Math.pow(Math.max(0, h - this.turnStart) / this.turnEnd, 0.55),
       );
+      // Schwache Oberstufe in der Luft: nur so weit kippen, wie der Schub sie noch steigen lässt
+      // (mindestens 60 m/s nach oben), sonst sinkt sie zurück in dichte Luft.
+      const radial = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
+      const accel = f.engine().thrust / f.mass;
+      if (h > this.turnStart && h < safe && radial < 60 && accel > 0) {
+        const side = Math.hypot(rel.vx, rel.vy) ** 2 - radial ** 2;
+        const lift = b.mu / rel.r ** 2 - side / rel.r + (60 - radial) / 10;
+        pitch = Math.min(pitch, Math.acos(Math.min(1, Math.max(0, lift / accel))));
+      }
       steerTo(f, up - pitch);
       f.throttle = 1;
       if (o.apoapsis >= this.apoapsis) {

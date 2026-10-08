@@ -705,110 +705,113 @@ export function planCorrection(f: Flight): Plan {
   const title =
     f.refBody() === target ? `Anflug auf ${forms(target).acc}` : `Kurskorrektur zu: ${target.name}`;
   if (f.status !== 'flying') return fail(title, 'Erst abheben.');
-  const t = f.t + Math.max(60, Math.min(f.burnTime(20), 600) / 2 + 30);
-  const miss = (pro: number, rad: number): number | null => {
-    f.setNode(t, pro, rad);
-    return signedMiss(f.predict(1600, true), target, 0);
-  };
-  const base = miss(0, 0);
-  if (base === null) {
-    f.clearNode();
-    return fail(title, 'Keine Vorhersage möglich.');
-  }
-  const natural = base >= 0 ? 1 : -1;
-  // Zu einem Planeten mit Monden möglichst im Uhrzeigersinn ankommen (so laufen die Monde) – dann
-  // ist der Weiterflug zu einem Mond billig. Nur, solange das Ziel noch weit weg ist und der
-  // Seitenwechsel wenig kostet.
-  const moony =
-    f.refBody() !== target && target !== EARTH && BODIES.some((b) => b.parent === target.id);
-  const prefer = moony ? -1 : natural;
-  const radius = target.radius + arrivalAltitude(target);
-  const fine =
-    Math.abs(base - natural * radius) < Math.max(2_000, 0.05 * arrivalAltitude(target)) &&
-    Math.abs(base) < target.hill;
-  const fits = (): Plan => {
-    f.clearNode();
-    return fail(
-      title,
-      `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${forms(target).dat}.`,
-    );
-  };
-  if (fine && prefer === natural) return fits();
-  // Wirksamste Richtung aus kleinen Probeschüben (in Flugrichtung und radial).
-  const gp = (miss(1, 0) ?? base) - base;
-  const gr = (miss(0, 1) ?? base) - base;
-  const norm = Math.hypot(gp, gr);
-  if (!(norm > 0)) {
-    f.clearNode();
-    return fail(title, 'Die Bahn reagiert nicht auf kleine Schübe.');
-  }
-  const dp = gp / norm;
-  const dr = gr / norm;
-  /** Schub entlang der wirksamsten Richtung, nach dem der Vorbeiflug bei `want` liegt. */
-  const solve = (want: number): { x: number; end: number } | null => {
-    const g0 = base - want;
-    const g = (x: number): number => {
-      const m = miss(x * dp, x * dr);
-      return m === null ? NaN : m - want;
+  const first = f.t + Math.max(60, Math.min(f.burnTime(20), 600) / 2 + 30);
+  // Kurz nach einem Abflug reagiert der Vorbeiflug oft sprunghaft auf kleine Schübe; dann taugt
+  // ein Schub eine oder sechs Stunden später.
+  for (const t of [first, first + 3_600, first + 6 * 3_600]) {
+    const miss = (pro: number, rad: number): number | null => {
+      f.setNode(t, pro, rad);
+      return signedMiss(f.predict(1600, true), target, 0);
     };
-    // Schätzung aus der Steigung, dann einschachteln und halbieren.
-    const est = -g0 / norm;
-    let lo = 0;
-    let hi = NaN;
-    for (let k = 0; k < 14; k++) {
-      const x = est * 0.25 * 1.6 ** k;
-      if (Math.abs(x) > 3_000) break;
-      const gx = g(x);
-      if (!Number.isFinite(gx)) continue;
-      if (gx * g0 <= 0) {
-        hi = x;
-        break;
+    const base = miss(0, 0);
+    if (base === null) {
+      f.clearNode();
+      return fail(title, 'Keine Vorhersage möglich.');
+    }
+    const natural = base >= 0 ? 1 : -1;
+    // Zu einem Planeten mit Monden möglichst im Uhrzeigersinn ankommen (so laufen die Monde) – dann
+    // ist der Weiterflug zu einem Mond billig. Nur, solange das Ziel noch weit weg ist und der
+    // Seitenwechsel wenig kostet.
+    const moony =
+      f.refBody() !== target && target !== EARTH && BODIES.some((b) => b.parent === target.id);
+    const prefer = moony ? -1 : natural;
+    const radius = target.radius + arrivalAltitude(target);
+    const fine =
+      Math.abs(base - natural * radius) < Math.max(2_000, 0.05 * arrivalAltitude(target)) &&
+      Math.abs(base) < target.hill;
+    const fits = (): Plan => {
+      f.clearNode();
+      return fail(
+        title,
+        `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${forms(target).dat}.`,
+      );
+    };
+    if (fine && prefer === natural) return fits();
+    // Wirksamste Richtung aus kleinen Probeschüben (in Flugrichtung und radial).
+    const gp = (miss(1, 0) ?? base) - base;
+    const gr = (miss(0, 1) ?? base) - base;
+    const norm = Math.hypot(gp, gr);
+    if (!(norm > 0)) {
+      f.clearNode();
+      return fail(title, 'Die Bahn reagiert nicht auf kleine Schübe.');
+    }
+    const dp = gp / norm;
+    const dr = gr / norm;
+    /** Schub entlang der wirksamsten Richtung, nach dem der Vorbeiflug bei `want` liegt. */
+    const solve = (want: number): { x: number; end: number } | null => {
+      const g0 = base - want;
+      const g = (x: number): number => {
+        const m = miss(x * dp, x * dr);
+        return m === null ? NaN : m - want;
+      };
+      // Schätzung aus der Steigung, dann einschachteln und halbieren.
+      const est = -g0 / norm;
+      let lo = 0;
+      let hi = NaN;
+      for (let k = 0; k < 14; k++) {
+        const x = est * 0.25 * 1.6 ** k;
+        if (Math.abs(x) > 3_000) break;
+        const gx = g(x);
+        if (!Number.isFinite(gx)) continue;
+        if (gx * g0 <= 0) {
+          hi = x;
+          break;
+        }
+        lo = x;
       }
-      lo = x;
-    }
-    if (Number.isNaN(hi)) return null;
-    for (let k = 0; k < 40 && Math.abs(hi - lo) > 0.002; k++) {
-      const mid = (lo + hi) / 2;
-      const gm = g(mid);
-      if (!Number.isFinite(gm)) break;
-      if (gm * g0 > 0) lo = mid;
-      else hi = mid;
-    }
-    const x = (lo + hi) / 2;
-    const end = miss(x * dp, x * dr);
-    // Hat die Halbierung an einer Sprungstelle geendet (Treffer ↔ Vorbeiflug), passt das
-    // Ergebnis nicht: dann lieber keinen Plan als einen falschen.
-    if (end === null || Math.abs(end - want) > Math.max(20_000, 0.25 * arrivalAltitude(target)))
-      return null;
-    return { x, end };
-  };
-  let sol = prefer !== natural ? solve(prefer * radius) : null;
-  if (sol && Math.abs(sol.x) > 40) sol = null;
-  if (!sol && fine) return fits();
-  sol ??= solve(natural * radius);
-  if (!sol) {
-    f.clearNode();
-    return fail(
+      if (Number.isNaN(hi)) return null;
+      for (let k = 0; k < 40 && Math.abs(hi - lo) > 0.002; k++) {
+        const mid = (lo + hi) / 2;
+        const gm = g(mid);
+        if (!Number.isFinite(gm)) break;
+        if (gm * g0 > 0) lo = mid;
+        else hi = mid;
+      }
+      const x = (lo + hi) / 2;
+      const end = miss(x * dp, x * dr);
+      // Hat die Halbierung an einer Sprungstelle geendet (Treffer ↔ Vorbeiflug), passt das
+      // Ergebnis nicht: dann lieber keinen Plan als einen falschen.
+      if (end === null || Math.abs(end - want) > Math.max(20_000, 0.25 * arrivalAltitude(target)))
+        return null;
+      return { x, end };
+    };
+    let sol = prefer !== natural ? solve(prefer * radius) : null;
+    if (sol && Math.abs(sol.x) > 40) sol = null;
+    if (!sol && fine) return fits();
+    sol ??= solve(natural * radius);
+    if (!sol) continue;
+    const { x, end } = sol;
+    const pro = x * dp;
+    const rad = x * dr;
+    const dir =
+      Math.abs(rad) > Math.abs(pro)
+        ? rad >= 0
+          ? 'nach außen'
+          : 'nach innen'
+        : pro >= 0
+          ? 'in Flugrichtung'
+          : 'gegen die Flugrichtung';
+    return {
+      ok: true,
       title,
-      `Mit einem kleinen Schub ist ${forms(target).nom} gerade nicht genau zu treffen – etwas später noch einmal versuchen.`,
-    );
+      text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end) - target.radius)} über ${forms(target).dat}${moony && end < 0 ? ' (im Uhrzeigersinn, wie die Monde)' : ''}.`,
+    };
   }
-  const { x, end } = sol;
-  const pro = x * dp;
-  const rad = x * dr;
-  const dir =
-    Math.abs(rad) > Math.abs(pro)
-      ? rad >= 0
-        ? 'nach außen'
-        : 'nach innen'
-      : pro >= 0
-        ? 'in Flugrichtung'
-        : 'gegen die Flugrichtung';
-  return {
-    ok: true,
+  f.clearNode();
+  return fail(
     title,
-    text: `${fmt(Math.abs(x), Math.abs(x) < 10 ? 2 : 0)} m/s (vor allem ${dir}) in ${clockIn(t - f.t)}. Ankunft dann ${km(Math.abs(end) - target.radius)} über ${forms(target).dat}${moony && end < 0 ? ' (im Uhrzeigersinn, wie die Monde)' : ''}.`,
-  };
+    `Mit einem kleinen Schub ist ${forms(target).nom} gerade nicht genau zu treffen – etwas später noch einmal versuchen.`,
+  );
 }
 
 /** Winkel eines Punkts um den Mittelpunkt des Bezugskörpers. */

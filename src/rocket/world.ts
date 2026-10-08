@@ -37,6 +37,8 @@ export interface Body {
   atmosphere: number;
   density0: number;
   scaleHeight: number;
+  /** Schallgeschwindigkeit in der unteren Luft (m/s), für den Widerstand an der Schallmauer. */
+  soundSpeed?: number;
   /** Kann man hier landen? (Sonne und Jupiter haben keine feste Oberfläche.) */
   solid: boolean;
   /** Um welchen Körper er kreist, mit Bahnradius und Startwinkel. */
@@ -221,6 +223,7 @@ export const VENUS = body({
   atmosphere: 60_000,
   density0: 30,
   scaleHeight: 9_000,
+  soundSpeed: 410,
   solid: true,
   parent: 'sun',
   distance: 0.723 * AU,
@@ -237,6 +240,7 @@ export const EARTH = body({
   atmosphere: 40_000,
   density0: 1.2,
   scaleHeight: 7_000,
+  soundSpeed: 340,
   solid: true,
   parent: 'sun',
   distance: AU,
@@ -270,6 +274,7 @@ export const MARS = body({
   atmosphere: 30_000,
   density0: 0.02,
   scaleHeight: 8_000,
+  soundSpeed: 240,
   solid: true,
   parent: 'sun',
   distance: 1.524 * AU,
@@ -527,6 +532,15 @@ export function moonVelocity(t: number): [number, number] {
 export function densityAt(b: Body, altitude: number): number {
   if (altitude >= b.atmosphere || b.density0 === 0) return 0;
   return b.density0 * Math.exp(-Math.max(0, altitude) / b.scaleHeight);
+}
+
+/**
+ * Luftdruck für die Triebwerke in bar, gemessen an der Dichte auf Meereshöhe der Erde (1,2 kg/m³).
+ * Am Venusboden wären es über 90 bar, dort käme kein Triebwerk hoch; begrenzt auf 2 bar, damit
+ * Starts im Sandkasten möglich bleiben.
+ */
+export function enginePressure(rho: number): number {
+  return Math.min(2, rho / 1.2);
 }
 
 /** Luftdichte der Erde (Skalenhöhe 7 km). */
