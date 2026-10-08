@@ -69,3 +69,37 @@ Status: offen · ✅ erledigt · 🔶 bewusst belassen
 - Keine Konsolenfehler, kein seitliches Scrollen in fünf Ansichten auf allen sichtbaren Seiten
 - `npm run check` grün (245 Tests), Missionen und Szenarien grün
 - Hinweis: In der Playwright-Emulation meldet „Pixel 7 quer“ keinen Touch-Zeiger; Tastenhinweise erscheinen dort noch, auf echten Touch-Geräten nicht.
+
+# Runde 2: Spiel, Raketenbau und Rest der App
+
+Grundlage: Screenshots aller Seiten und Spielzustände in fünf Ansichten (Stand f860ba2), dazu
+Werft-Menüs (Vorlagen, Hangar), Herausforderungen und Karriere auf PC und Handy.
+
+## Raketenbau (Werft)
+
+| #   | Befund                                                                                                                                  | Regel | Lösung                                                                                                                             | Status |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| B23 | Teile lassen sich nur antippen (kommen unten bzw. unter das markierte Teil an); kein Ziehen in den Bauplan, kein Umsortieren per Ziehen | 7     | Teile aus der Liste in den Bauplan ziehen, Einfügemarke zeigt die Stelle; Teile im Bauplan ziehen zum Umsortieren (Maus und Touch) | ✅     |
+| B24 | Gleiche Teile mehrfach (z. B. drei Tanks) heißt jedes Mal Reiter wechseln und Kachel suchen                                             | 7     | „Doppeln“ in der Leiste des markierten Teils (Taste D)                                                                             | ✅     |
+| B25 | Hangar: Speichern-Knopf unsichtbar (dunkle Schrift auf dunklem Grund) und ragt aus dem Menü                                             | 4, 7  | Regel der Werkzeugleiste nur noch auf deren eigene Knöpfe                                                                          | ✅     |
+| B26 | Daten der Rakete als vier Kacheln (Masse, TWR, Höhe, Teile)                                                                             | 2     | Messwert-Liste mit Linien wie ein Datenblatt                                                                                       | ✅     |
+| B27 | Teile-Liste: Raster gleicher umrahmter Karten                                                                                           | 2, 5  | Teile ohne Rahmen auf der Fläche, Rahmen nur bei Hover/Fokus; Name ohne doppeltes „Triebwerk“ in der Gruppe                        | ✅     |
+| B28 | Handy quer: große Werkzeugknöpfe verdecken den Bauplan, nur zwei Teile sichtbar                                                         | 9     | Werkzeuge nur als Symbole, Teile kompakter                                                                                         | ✅     |
+
+## Spiel
+
+| #   | Befund                                                                                                                   | Regel | Lösung                                                                                     | Status |
+| --- | ------------------------------------------------------------------------------------------------------------------------ | ----- | ------------------------------------------------------------------------------------------ | ------ |
+| B29 | Herausforderungen: Raster gleicher Karten (Sterne oben, Titel, Text, Knopf), letzte Karte allein in einer Reihe          | 2     | Liste mit Linien wie die Missionsliste: Sterne und Titel links, Bedingung und Start rechts | ✅     |
+| B30 | Karriere: Ziele in fünf umrahmten Kästen, Rang als Karte mit Balken                                                      | 2, 5  | Spalten mit Überschrift und Linie, Rang als Instrumentenzeile                              | ✅     |
+| B31 | Handy quer: Bordcomputer überdeckt Tank und „Aus“                                                                        | 9     | Höhe des Bordcomputers über der Schubsteuerung begrenzen                                   | ✅     |
+| B32 | Spielseite „Physik im Spiel“: fünf Kästen in zwei Spalten (einer allein), neue Physik (Isp, Luftwiderstand, Max Q) fehlt | 2, 8  | Nummerierte Liste mit Linien, Abschnitt zu Triebwerken und Luft ergänzt                    | ✅     |
+| B33 | Spielseite: Anleitung im umrahmten weißen Kasten                                                                         | 2     | Ohne Kasten, Linien zwischen den Schritten                                                 | ✅     |
+| B34 | Spielseite Tablet: „0 / 36“ bricht in zwei Zeilen                                                                        | 5     | Kein Umbruch in Messwerten                                                                 | ✅     |
+
+## App
+
+| #   | Befund                                                                  | Regel | Lösung                                                           | Status |
+| --- | ----------------------------------------------------------------------- | ----- | ---------------------------------------------------------------- | ------ |
+| B35 | Handy: Auf kurzen Seiten (Quiz) wird die Kopfzeile fast doppelt so hoch | 5     | Zeilen des Seitenrasters festlegen (Kopfzeile auto, Inhalt Rest) | ✅     |
+| B36 | Simulator: Prognose, Messwerte und Diagramm je als umrahmter Kasten     | 2, 5  | Tafeln mit Linie oben statt Rahmen und Schatten                  | ✅     |

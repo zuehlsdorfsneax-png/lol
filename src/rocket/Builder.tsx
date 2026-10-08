@@ -81,15 +81,29 @@ function PartIcon({ def }: { def: PartDef }) {
   return <canvas ref={ref} class="part-icon" style={{ width: '44px', height: '44px' }} />;
 }
 
+/** Abfragen an den Bauplan während des Ziehens (Bildschirmkoordinaten). */
+interface PreviewApi {
+  /** Einfügestelle unter dem Zeiger, null außerhalb des Bauplans. */
+  indexAt: (x: number, y: number) => number | null;
+}
+
 function Preview({
   design,
   selected,
   onSelect,
+  onPress,
+  drop,
+  api,
   rules,
 }: {
   design: Design;
   selected: number;
   onSelect: (i: number) => void;
+  /** Zeiger auf einem Teil gedrückt (Beginn eines möglichen Ziehens). */
+  onPress: (i: number, e: PointerEvent) => void;
+  /** Beim Ziehen: Einfügestelle und gezogenes Teil. */
+  drop: { at: number; id: string } | null;
+  api: { current: PreviewApi | null };
   rules?: BuildRules;
 }) {
   const [box, size] = useElementSize<HTMLDivElement>();
@@ -220,7 +234,35 @@ function Preview({
       });
       ctx.textAlign = 'left';
     }
-    if (selected >= 0 && spans[selected]) {
+    if (drop) {
+      // Einfügemarke: gestrichelte Linie an der Fuge, an der das gezogene Teil landet
+      const hb = drop.at < design.length ? spans[drop.at]![1] : 0;
+      const y = Math.round(base - hb * scale) + 0.5;
+      const widest = Math.max(
+        visualWidth(part(drop.id)),
+        ...design.map((id) => visualWidth(part(id))),
+      );
+      const half = Math.max(36, (widest / 2 + 0.8) * scale);
+      ctx.strokeStyle = '#e2a846';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx - half, y);
+      ctx.lineTo(cx + half, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#e2a846';
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + s * half, y);
+        ctx.lineTo(cx + s * (half + 8), y - 5);
+        ctx.lineTo(cx + s * (half + 8), y + 5);
+        ctx.fill();
+      }
+      ctx.font = '600 12px Jost, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(part(drop.id).name, cx + half + 14, y + 4);
+    } else if (selected >= 0 && spans[selected]) {
       const [a, b] = spans[selected];
       // Wie gezeichnet: Booster sitzen seitlich und sind breiter als ihr Rumpfmaß.
       const w = visualWidth(part(design[selected]!));
@@ -254,28 +296,52 @@ function Preview({
       ctx.fillText('Wähle ein Bauteil aus der Liste –', cx, height / 2 - 12);
       ctx.fillText('oder oben eine Vorlage.', cx, height / 2 + 12);
     }
-  }, [design, selected, size, rules?.thrust, rules?.infiniteFuel]);
+  }, [design, selected, size, rules?.thrust, rules?.infiniteFuel, drop?.at, drop?.id]);
 
-  const click = (e: MouseEvent): void => {
+  /** Teil unter dem Zeiger (−1: keins). */
+  const partAt = (x: number, y: number): number => {
     const c = canvas.current;
-    if (!c) return;
+    if (!c) return -1;
     const r = c.getBoundingClientRect();
     const { scale, base, spans } = layout.current;
-    const m = (base - (e.clientY - r.top)) / scale;
-    const x = Math.abs(e.clientX - r.left - r.width / 2) / scale;
-    const hit = spans.findIndex(
-      (s, i) => s && m >= s[0] && m <= s[1] && x <= visualWidth(part(design[i]!)) / 2 + 1.5,
+    const m = (base - (y - r.top)) / scale;
+    const dx = Math.abs(x - r.left - r.width / 2) / scale;
+    return spans.findIndex(
+      (s, i) => s && m >= s[0] && m <= s[1] && dx <= visualWidth(part(design[i]!)) / 2 + 1.5,
     );
-    onSelect(hit);
+  };
+  api.current = {
+    indexAt: (x, y) => {
+      const c = canvas.current;
+      if (!c) return null;
+      const r = c.getBoundingClientRect();
+      if (x < r.left || x > r.right || y < r.top || y > r.bottom) return null;
+      const { scale, base, spans } = layout.current;
+      const m = (base - (y - r.top)) / scale;
+      // Nächste Fuge: über Teil k (Index k) oder ganz unten (Index = Anzahl der Teile).
+      let best = design.length;
+      let gap = Math.abs(m);
+      spans.forEach((s, k) => {
+        if (s && Math.abs(m - s[1]) < gap) {
+          gap = Math.abs(m - s[1]);
+          best = k;
+        }
+      });
+      return best;
+    },
   };
 
   return (
     <div class="blueprint-canvas" ref={box}>
       <canvas
         ref={canvas}
-        onClick={click}
+        onClick={(e) => onSelect(partAt(e.clientX, e.clientY))}
+        onPointerDown={(e) => {
+          const hit = partAt(e.clientX, e.clientY);
+          if (hit >= 0) onPress(hit, e);
+        }}
         role="img"
-        aria-label="Bauplan der Rakete; ein Klick wählt ein Bauteil aus"
+        aria-label="Bauplan der Rakete; ein Klick wählt ein Bauteil aus, Ziehen verschiebt es"
       />
     </div>
   );
@@ -343,6 +409,9 @@ function spec(p: PartDef): string {
   if (p.fuel > 0) return `${fmt(p.fuel / 1000, 1)} t Treibstoff`;
   return `${fmt(p.dry / 1000, p.dry < 100 ? 2 : 1)} t`;
 }
+
+/** Name auf der Kachel: In der Gruppe „Antrieb“ ist „Triebwerk“ doppelt. */
+const tileName = (p: PartDef): string => p.name.replace(/^(Vakuum)?triebwerk /i, '');
 
 const kN = (n: number): string => `${fmt(n / 1000, n < 10_000 ? 1 : 0)} kN`;
 
@@ -558,7 +627,7 @@ function Werft({
   const first = design.length ? stats[0] : undefined;
 
   const [lockHint, setLockHint] = useState('');
-  const add = (id: string): void => {
+  const add = (id: string, pos?: number): void => {
     if (!unlocked(id, points, sandbox)) {
       setLockHint(
         `${part(id).name} gibt es ab ${part(id).unlock} Punkten (du hast ${points}). Im Sandkasten kannst du es schon ausprobieren.`,
@@ -570,7 +639,7 @@ function Werft({
       return;
     }
     setLockHint('');
-    const at = selected >= 0 ? selected + 1 : design.length;
+    const at = pos ?? (selected >= 0 ? selected + 1 : design.length);
     const next = [...design.slice(0, at), id, ...design.slice(at)];
     commit(next);
     setSelected(at);
@@ -588,6 +657,99 @@ function Werft({
     commit(design.filter((_, i) => i !== selected));
     setSelected(Math.min(selected, design.length - 2));
   };
+  const duplicate = (): void => {
+    if (selected >= 0) add(design[selected]!, selected + 1);
+  };
+
+  // Ziehen: aus der Teileliste in den Bauplan oder innerhalb der Rakete. Erst ab 8 px Weg wird
+  // aus einem Druck ein Ziehen – ein kurzes Tippen bleibt ein Klick.
+  const [drag, setDrag] = useState<{
+    id: string;
+    from: number | null;
+    x: number;
+    y: number;
+    at: number | null;
+  } | null>(null);
+  const previewApi = useRef<PreviewApi | null>(null);
+  const dragEnded = useRef(false);
+  // Der Browser entscheidet schon beim Aufsetzen, ob er eine Wischgeste selbst übernimmt; das
+  // lässt sich nur mit einem dauerhaft angemeldeten, nicht-passiven Listener verhindern.
+  const werft = useRef<HTMLDivElement>(null);
+  const touchClaim = useRef<((ev: TouchEvent) => void) | null>(null);
+  useEffect(() => {
+    const el = werft.current;
+    if (!el) return;
+    const onMove = (ev: TouchEvent): void => touchClaim.current?.(ev);
+    el.addEventListener('touchmove', onMove, { passive: false });
+    return () => el.removeEventListener('touchmove', onMove);
+  }, []);
+  const press = (id: string, from: number | null, e: PointerEvent): void => {
+    if (e.button !== 0) return;
+    const { pointerId, clientX: x0, clientY: y0 } = e;
+    let active = false;
+    // Auf Touch-Geräten scrollt die Teileliste in einer Richtung (CSS touch-action); eine
+    // Bewegung quer dazu ist ein Ziehen – dann darf der Browser die Geste nicht übernehmen.
+    const scrolls = getComputedStyle(e.currentTarget as Element).touchAction;
+    const claim = (ev: TouchEvent): void => {
+      const t = ev.touches[0];
+      if (!t) return;
+      const dx = Math.abs(t.clientX - x0);
+      const dy = Math.abs(t.clientY - y0);
+      const across = scrolls === 'pan-x' ? dy > dx : scrolls === 'pan-y' ? dx > dy : true;
+      if (active || across) ev.preventDefault();
+    };
+    const where = (ev: PointerEvent): number | null =>
+      previewApi.current?.indexAt(ev.clientX, ev.clientY) ?? null;
+    const stop = (): void => {
+      touchClaim.current = null;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+    };
+    const move = (ev: PointerEvent): void => {
+      if (ev.pointerId !== pointerId) return;
+      if (!active) {
+        const dx = Math.abs(ev.clientX - x0);
+        const dy = Math.abs(ev.clientY - y0);
+        if (Math.hypot(dx, dy) < 8) return;
+        // Längs der Scrollrichtung gehört die Geste der Liste.
+        const along = scrolls === 'pan-x' ? dx >= dy : scrolls === 'pan-y' ? dy >= dx : false;
+        if (ev.pointerType === 'touch' && along) {
+          stop();
+          return;
+        }
+      }
+      active = true;
+      setDrag({ id, from, x: ev.clientX, y: ev.clientY, at: where(ev) });
+    };
+    const up = (ev: PointerEvent): void => {
+      if (ev.pointerId !== pointerId) return;
+      stop();
+      if (!active) return;
+      setDrag(null);
+      // Der Klick nach dem Loslassen soll nichts mehr auswählen oder anbauen.
+      dragEnded.current = true;
+      setTimeout(() => (dragEnded.current = false), 0);
+      const at = where(ev);
+      if (at === null) return;
+      if (from === null) {
+        add(id, at);
+        return;
+      }
+      const rest = design.filter((_, i) => i !== from);
+      commit([...rest.slice(0, at), id, ...rest.slice(at)]);
+      setSelected(at);
+    };
+    const cancel = (ev: PointerEvent): void => {
+      if (ev.pointerId !== pointerId) return;
+      stop();
+      setDrag(null);
+    };
+    if (e.pointerType === 'touch') touchClaim.current = claim;
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+  };
   const load = (d: readonly string[]): void => {
     commit([...d]);
     setSelected(-1);
@@ -601,7 +763,8 @@ function Werft({
         undo();
         return;
       }
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const dup = e.key === 'd' || e.key === 'D';
+      if (e.key !== 'Delete' && e.key !== 'Backspace' && !dup) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       // Nur, wenn nichts Bestimmtes den Fokus hat (oder die Bauansicht selbst).
       const el = e.target as HTMLElement | null;
@@ -609,7 +772,8 @@ function Werft({
       if (!free && !el.closest('.blueprint')) return;
       if (el?.closest('button, a, input, select, textarea, [role="menu"], .gmenu')) return;
       e.preventDefault();
-      remove();
+      if (dup) duplicate();
+      else remove();
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
@@ -618,7 +782,7 @@ function Werft({
   const maxBar = 12_000;
   const sel = selected >= 0 && design[selected] ? part(design[selected]) : null;
   return (
-    <div class="werft">
+    <div class={`werft ${drag ? 'dragging' : ''}`} ref={werft}>
       <aside class="parts-panel" aria-label="Bauteile">
         <div class="part-cats" role="tablist" aria-label="Art der Bauteile">
           {PART_CATEGORIES.map((c) => (
@@ -647,11 +811,14 @@ function Werft({
                         key={p.id}
                         type="button"
                         class={`part-tile ${open ? '' : 'locked'}`}
-                        onClick={() => add(p.id)}
+                        onClick={() => {
+                          if (!dragEnded.current) add(p.id);
+                        }}
+                        onPointerDown={(e) => press(p.id, null, e)}
                         title={open ? p.info : `Ab ${p.unlock} Punkten: ${p.info}`}
                       >
                         <PartIcon def={p} />
-                        <span class="part-name">{p.name}</span>
+                        <span class="part-name">{tileName(p)}</span>
                         <span class="part-spec">{open ? spec(p) : `ab ${p.unlock} P.`}</span>
                       </button>
                     );
@@ -666,7 +833,7 @@ function Werft({
               ? 'Sandkasten: alle Teile, Vorlagen und Lackierungen frei – dafür keine Punkte.'
               : selected >= 0
                 ? 'Neue Teile kommen unter das markierte Teil.'
-                : 'Ein Teil antippen oder anklicken – es kommt unten an die Rakete.')}
+                : 'Antippen: kommt unten an die Rakete. Ziehen: an jede Stelle im Bauplan.')}
         </p>
       </aside>
 
@@ -839,7 +1006,17 @@ function Werft({
           )}
         </div>
 
-        <Preview design={design} selected={selected} onSelect={setSelected} rules={rules} />
+        <Preview
+          design={drag && drag.from !== null ? design.filter((_, i) => i !== drag.from) : design}
+          selected={drag ? -1 : selected}
+          onSelect={(i) => {
+            if (!dragEnded.current) setSelected(i);
+          }}
+          onPress={(i, e) => press(design[i]!, i, e)}
+          drop={drag && drag.at !== null ? { at: drag.at, id: drag.id } : null}
+          api={previewApi}
+          rules={rules}
+        />
 
         {sel && (
           <div class="part-toolbar" role="toolbar" aria-label={`Bauteil ${sel.name}`}>
@@ -848,6 +1025,15 @@ function Werft({
               <span>{sel.info}</span>
               <span class="part-figures">{figures(sel)}</span>
             </div>
+            <button
+              type="button"
+              class="gbtn icon"
+              onClick={duplicate}
+              aria-label="Doppeln"
+              title="Doppeln: gleiches Teil darunter (D)"
+            >
+              <Icon name="copy" />
+            </button>
             <button
               type="button"
               class="gbtn icon"
@@ -945,7 +1131,7 @@ function Werft({
               <dd>{fmt(mass / 1000, 1)} t</dd>
             </div>
             <div>
-              <dt title={`Schub-Gewichts-Verhältnis beim Start (${home.name})`}>TWR</dt>
+              <dt title={`Schub-Gewichts-Verhältnis beim Start (${home.name})`}>TWR am Start</dt>
               <dd class={first && first.thrust > 0 && first.twrStart < 1 ? 'weak' : ''}>
                 {first && first.thrust > 0 ? fmt(first.twrStart, 2) : '–'}
               </dd>
@@ -1028,6 +1214,16 @@ function Werft({
           </details>
         </div>
       </aside>
+      {/* Am Ende: davor eingefügt, würde es die Teileliste unter dem Finger neu aufbauen */}
+      {drag && (
+        <div
+          class={`drag-ghost ${drag.at === null ? 'away' : ''}`}
+          style={{ transform: `translate(${drag.x}px, ${drag.y}px)` }}
+          aria-hidden="true"
+        >
+          <PartIcon def={part(drag.id)} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1159,33 +1355,38 @@ function ChallengeList({
           <h3>
             {g} <span class="small muted">{GROUP_INFO[g]}</span>
           </h3>
-          <div class="challenge-cards">
+          <ol class="challenge-rows">
             {CHALLENGES.filter((c) => c.group === g).map((c) => {
               const n = stars[c.id] ?? 0;
               return (
-                <article key={c.id} class={`challenge-card ${n > 0 ? 'done' : ''}`}>
-                  <div class="challenge-stars" role="img" aria-label={`${n} von 3 Sternen`}>
-                    {[0, 1, 2].map((i) => (
-                      <span key={i} class={i < n ? 'on' : ''}>
-                        ★
-                      </span>
-                    ))}
+                <li key={c.id} class={`challenge-row ${n > 0 ? 'done' : ''}`}>
+                  <span class="challenge-no" aria-hidden="true">
+                    {String(CHALLENGES.indexOf(c) + 1).padStart(2, '0')}
+                  </span>
+                  <div class="challenge-text">
+                    <h4>{c.title}</h4>
+                    <p class="challenge-brief">{c.brief}</p>
+                    <p class="challenge-meta">
+                      {c.computer ? 'Bordcomputer erlaubt' : 'Ohne Bordcomputer'}
+                      {records[c.id]?.text && <> · Bestes Ergebnis: {records[c.id]!.text}</>}
+                    </p>
                   </div>
-                  <h4>{c.title}</h4>
-                  <p class="small challenge-brief">{c.brief}</p>
-                  <p class="small muted">
-                    {c.computer ? 'Bordcomputer erlaubt' : 'Ohne Bordcomputer'}
-                  </p>
-                  {records[c.id]?.text && (
-                    <p class="challenge-best">Bestes Ergebnis: {records[c.id]!.text}</p>
-                  )}
-                  <button type="button" class="btn primary small" onClick={() => onStart(c)}>
-                    {n > 0 ? 'Nochmal' : 'Starten'} <Icon name="arrow" />
-                  </button>
-                </article>
+                  <div class="challenge-side">
+                    <span class="challenge-stars" role="img" aria-label={`${n} von 3 Sternen`}>
+                      {[0, 1, 2].map((i) => (
+                        <span key={i} class={i < n ? 'on' : ''}>
+                          ★
+                        </span>
+                      ))}
+                    </span>
+                    <button type="button" class="gbtn small" onClick={() => onStart(c)}>
+                      {n > 0 ? 'Nochmal' : 'Starten'} <Icon name="arrow" />
+                    </button>
+                  </div>
+                </li>
               );
             })}
-          </div>
+          </ol>
         </div>
       ))}
     </section>

@@ -541,6 +541,8 @@ svg {
 @media (max-width: 980px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
+    /* Sonst streckt sich auf kurzen Seiten die Kopfzeile mit */
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .sidebar {
@@ -1914,7 +1916,8 @@ details.section .section-body {
 }
 
 .launcher-stats div {
-  padding: var(--sp-3) var(--sp-4);
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-3);
 }
 
 .launcher-stats div:first-child {
@@ -1937,6 +1940,7 @@ details.section .section-body {
   margin: var(--sp-1) 0 0;
   font: 500 var(--fs-4) var(--font-mono);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--space-ink);
 }
 
@@ -2058,8 +2062,45 @@ details.section .section-body {
   }
 }
 
-.doc-panel .steps {
+/* Simulator: Prognose, Messwerte, Diagramme als Abschnitte unter der Bildtafel – Linie statt Kasten */
+.sim-sheet {
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line-strong);
+}
+
+/* Nummerierte Liste mit Linien (Anleitung und Physik der Raketenwerft) */
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   max-width: 72ch;
+  counter-reset: rule;
+  border-top: 1px solid var(--line-strong);
+}
+
+.rule-list > li {
+  counter-increment: rule;
+  display: grid;
+  grid-template-columns: 3ch minmax(0, 1fr);
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.rule-list > li::before {
+  content: counter(rule, decimal-leading-zero);
+  align-self: start;
+  font: var(--fs-2) / 1.7 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.rule-list h3 {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-4);
+}
+
+.rule-list p {
+  margin: 0;
 }
 
 kbd {

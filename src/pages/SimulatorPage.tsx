@@ -322,7 +322,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
           </SpaceCanvas>
 
           <div class="info-grid">
-            <section class="panel panel-pad" aria-labelledby="prognose">
+            <section class="sim-sheet" aria-labelledby="prognose">
               <div class="panel-title">
                 <h3 id="prognose">Prognose aus den Startwerten</h3>
                 <StatusChip
@@ -344,7 +344,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
               <CheckList checks={assessment.checks} />
             </section>
 
-            <section class="panel panel-pad" aria-labelledby="messwerte">
+            <section class="sim-sheet" aria-labelledby="messwerte">
               <div class="panel-title">
                 <h3 id="messwerte">Messwerte</h3>
                 {sim && <span class="small muted">{fmt(sim.steps)} Schritte</span>}
@@ -399,7 +399,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
             </section>
           </div>
 
-          <section class="panel panel-pad" aria-label="Diagramme">
+          <section class="sim-sheet" aria-label="Diagramme">
             <div class="panel-title">
               <Segmented label="Diagramm" value={chart} options={CHARTS} onChange={setChart} />
               <div class="btn-row">

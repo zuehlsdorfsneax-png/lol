@@ -406,26 +406,26 @@ html.game-open body {
 }
 
 .part-tile {
+  /* Senkrecht scrollt die Liste, waagerecht zieht man das Teil in den Bauplan */
+  touch-action: pan-y;
   position: relative;
   display: grid;
   justify-items: center;
   align-content: start;
   gap: var(--sp-1);
-  padding: var(--sp-3) var(--sp-2) var(--sp-3);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--g-line);
-  background: var(--g-fill);
+  /* Teile liegen frei in der Schublade; erst beim Zeigen hebt sich die Fläche ab */
+  padding: var(--sp-2) var(--sp-1) var(--sp-3);
+  border-radius: var(--r-md);
+  border: 0;
+  background: transparent;
   color: var(--g-ink);
   text-align: center;
-  cursor: pointer;
-  transition:
-    border-color var(--dur-1) var(--ease-out),
-    background var(--dur-1) var(--ease-out);
+  cursor: grab;
+  transition: background var(--dur-1) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .part-tile:hover {
-    border-color: var(--g-accent);
     background: var(--g-btn);
   }
 }
@@ -488,6 +488,38 @@ html.game-open body {
   width: 100%;
   height: 100%;
   cursor: pointer;
+  /* Teile im Bauplan werden gezogen, nicht die Seite */
+  touch-action: none;
+}
+
+.werft.dragging,
+.werft.dragging * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* Gezogenes Teil folgt dem Zeiger, etwas darüber, damit der Finger es nicht verdeckt */
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  margin: -64px 0 0 -26px;
+  padding: var(--sp-1);
+  border-radius: var(--r-md);
+  border: 1px solid var(--g-accent);
+  background: var(--g-panel);
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+}
+
+.drag-ghost.away {
+  border-color: var(--g-line-2);
+  opacity: 0.7;
+}
+
+.drag-ghost .part-icon {
+  margin: 0;
 }
 
 .blueprint-tools {
@@ -507,7 +539,8 @@ html.game-open body {
   pointer-events: auto;
 }
 
-.blueprint-tools .gbtn {
+.blueprint-tools > .gbtn,
+.blueprint-tools > .gmenu > .gbtn {
   background: var(--g-panel);
 }
 
@@ -592,6 +625,8 @@ html.game-open body {
 }
 
 .gmenu-save {
+  /* Als Rasterkind sonst so breit wie das Eingabefeld von Natur aus – der Knopf ragte hinaus */
+  min-width: 0;
   display: flex;
   gap: var(--sp-2);
   margin-top: var(--sp-1);
@@ -813,30 +848,31 @@ html.game-open body {
   color: var(--g-ink-3);
 }
 
+/* Datenblatt der Rakete: Zeilen mit Linien statt Kacheln */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-2);
   margin: 0;
+  border-top: 1px solid var(--g-line);
 }
 
 .stat-grid div {
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-md);
-  background: rgb(255 255 255 / 4%);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--g-line);
 }
 
 .stat-grid dt {
-  font-size: var(--fs-1);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--g-ink-3);
+  font-size: var(--fs-2);
+  color: var(--g-ink-2);
 }
 
 .stat-grid dd {
   margin: 0;
-  font: 600 var(--fs-4) var(--font-mono);
+  font: 600 var(--fs-3) var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-grid dd.weak,
@@ -965,50 +1001,61 @@ html.game-open body {
   font-weight: 400;
 }
 
-/* Karten füllen jede Reihe: drei Karten teilen sich die Breite, keine bleibt allein übrig. */
-.challenge-cards {
-  display: flex;
-  flex-wrap: wrap;
+/* Flugbuch: eine Zeile je Herausforderung, getrennt durch Linien */
+.challenge-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--g-line);
+}
+
+.challenge-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
   gap: var(--sp-3);
+  align-items: start;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--g-line);
 }
 
-.challenge-cards > .challenge-card {
-  flex: 1 1 240px;
+.challenge-no {
+  padding-top: var(--sp-0);
+  font: 600 var(--fs-3) var(--font-mono);
+  color: var(--g-ink-3);
 }
 
-.challenge-best {
-  font-size: var(--fs-2);
-  color: var(--g-ink-2);
-  border-left: 2px solid rgb(245 179 1 / 45%);
-  padding-left: var(--sp-2);
+.challenge-row.done .challenge-no {
+  color: var(--g-accent-light);
 }
 
-.challenge-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--g-line);
-  background: rgb(255 255 255 / 4%);
+.challenge-text {
+  display: grid;
+  gap: var(--sp-1);
 }
 
-.challenge-card.done {
-  border-color: rgb(245 179 1 / 35%);
-}
-
-.challenge-card h4 {
+.challenge-text h4 {
   font: 600 var(--fs-4) var(--font-display);
 }
 
-.challenge-card p {
+.challenge-text p {
   margin: 0;
+  max-width: 62ch;
 }
 
-.challenge-card .btn {
-  align-self: flex-start;
-  margin-top: auto;
-  min-height: 38px;
+.challenge-brief {
+  color: var(--g-ink);
+  font-size: var(--fs-3);
+}
+
+.challenge-meta {
+  font-size: var(--fs-2);
+  color: var(--g-ink-2);
+}
+
+.challenge-side {
+  display: grid;
+  justify-items: end;
+  gap: var(--sp-2);
 }
 
 .challenge-stars span {
@@ -1042,10 +1089,8 @@ html.game-open body {
 .mc-rank {
   display: grid;
   gap: var(--sp-2);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  border: 1px solid rgb(226 168 70 / 35%);
-  background: rgb(226 168 70 / 8%);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--g-line-2);
 }
 
 .mc-rank strong {
@@ -1081,10 +1126,8 @@ html.game-open body {
 }
 
 .mc-group {
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--g-line);
-  background: rgb(255 255 255 / 3%);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--g-line-2);
 }
 
 .mc-group h4,
@@ -1102,7 +1145,6 @@ html.game-open body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--sp-1);
   font-size: var(--fs-2);
 }
 
@@ -1110,6 +1152,8 @@ html.game-open body {
   display: flex;
   align-items: baseline;
   gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--g-line);
   color: var(--g-ink-2);
 }
 
@@ -2894,7 +2938,8 @@ html.game-open body {
     display: none;
   }
   /* Werkzeuge: kleine Beschriftung unter dem Symbol statt nur Symbole */
-  .blueprint-tools .gbtn {
+  .blueprint-tools > .gbtn,
+  .blueprint-tools > .gmenu > .gbtn {
     flex-direction: column;
     justify-content: center;
     gap: var(--sp-0);
@@ -2939,6 +2984,7 @@ html.game-open body {
     padding: 0 var(--sp-2) var(--sp-2);
   }
   .part-tile {
+    touch-action: pan-x;
     flex: 0 0 104px;
     padding: var(--sp-2) var(--sp-1);
   }
@@ -3383,11 +3429,16 @@ html.game-open body {
   font-style: italic;
 }
 
-/* Herausforderungen auf dem Handy kompakter: Beschreibung höchstens drei Zeilen */
+/* Herausforderungen auf dem Handy: Sterne und Start unter den Text, Beschreibung kürzer */
 @media (max-width: 760px) {
-  .challenge-card {
-    padding: var(--sp-3) var(--sp-4);
-    gap: var(--sp-1);
+  .challenge-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+  .challenge-side {
+    grid-column: 2;
+    grid-auto-flow: column;
+    justify-content: space-between;
+    align-items: center;
   }
   .challenge-brief {
     display: -webkit-box;
@@ -3451,6 +3502,37 @@ html.game-open body {
 
 /* ------------------------------ Handy quer ------------------------------ */
 /* Wenig Höhe: Lageanzeige links neben den Drehknöpfen, kompakter Schub, Tipp gekürzt. */
+/* Handy quer in der Werft: Werkzeuge nur als Symbole, Teile dichter – sonst verdecken die
+   Knöpfe den Bauplan und die Liste zeigt nur zwei Teile. */
+@media (max-height: 480px) and (min-width: 761px) {
+  .blueprint-tools .gbtn-label {
+    display: none;
+  }
+  .blueprint-tools > .gbtn,
+  .blueprint-tools > .gmenu > .gbtn {
+    width: 40px;
+    padding: 0;
+  }
+  .part-cats {
+    margin: var(--sp-2);
+  }
+  .part-cats button {
+    height: 28px;
+  }
+  .part-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-1);
+    padding: 0 var(--sp-2) var(--sp-2);
+  }
+  .part-tile {
+    padding: var(--sp-1) 0 var(--sp-2);
+  }
+  .part-spec,
+  .parts-hint:not(.msg) {
+    display: none;
+  }
+}
+
 @media (max-height: 480px) and (min-width: 600px) {
   .hud-zoom {
     display: none;
@@ -3528,6 +3610,11 @@ html.game-open body {
   }
   .computer-panel {
     max-height: calc(100% - 70px);
+  }
+  /* Über der Schubsteuerung bleiben nur gut 90 px: Solange der Bordcomputer offen ist, steuert
+     er selbst (Ausführen, Autopilot); Schließen holt Schub und Stufe zurück. */
+  .rocket-stage.has-computer .hud-br {
+    display: none;
   }
 }
 

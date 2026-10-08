@@ -53,6 +53,7 @@ const PATHS: Record<string, string> = {
   save: 'M5 4.5h11l3.5 3.5v11.5h-14.5zM8 4.5v5h7v-5M8 19.5v-5h8v5',
   folder: 'M3.5 6.5h6l2 2h9v10.5h-17z',
   plus: 'M12 5v14M5 12h14',
+  copy: 'M8.5 8.5h11v11h-11zM15.5 8.5v-4h-11v11h4',
   minus: 'M5 12h14',
   trophy:
     'M8 4.5h8v5a4 4 0 0 1-8 0zM8 6.5H4.5a3.5 3.5 0 0 0 3.8 3.5M16 6.5h3.5a3.5 3.5 0 0 1-3.8 3.5M12 13.5v3.5M8.5 20h7M9.5 17h5v3h-5z',

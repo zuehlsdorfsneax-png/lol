@@ -2,6 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { CHALLENGES } from '../rocket/challenges';
 import { careerPoints, rankFor } from '../rocket/goals';
+import { ispAt, part } from '../rocket/parts';
 import { RocketArt } from '../rocket/RocketArt';
 import { RocketGame, type Tab } from '../rocket/RocketGame';
 import {
@@ -19,7 +20,7 @@ import {
   orbitalPeriod,
   type Body,
 } from '../rocket/world';
-import { Callout, PageHead } from '../ui/content';
+import { PageHead } from '../ui/content';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Icon } from '../ui/Icon';
 
@@ -176,45 +177,61 @@ export function RocketPage() {
 
 function Guide() {
   return (
-    <div class="panel panel-pad doc-panel">
-      <ol class="steps">
+    <div class="doc-panel">
+      <ol class="rule-list">
         <li>
-          <strong>Bauen:</strong> Nimm eine Vorlage oder baue selbst. Ganz unten gehört ein
-          kräftiges Triebwerk hin, oben die Kapsel mit Fallschirm. Die Werft zeigt, ob das Δv
-          reicht.
+          <p>
+            <strong>Bauen:</strong> Nimm eine Vorlage oder baue selbst. Ganz unten gehört ein
+            kräftiges Triebwerk hin, oben die Kapsel mit Fallschirm. Die Werft zeigt, ob das Δv
+            reicht.
+          </p>
         </li>
         <li>
-          <strong>Umlaufbahn:</strong> Countdown (C) oder Vollgas, senkrecht hoch, ab 3 km langsam
-          nach rechts neigen. Liegt der höchste Punkt (Ap) über 70 km, Schub aus – der Bordcomputer
-          (B) plant mit „Kreisbahn am Ap“ den Rest.
+          <p>
+            <strong>Umlaufbahn:</strong> Countdown (C) oder Vollgas, senkrecht hoch, ab 3 km langsam
+            nach rechts neigen. Liegt der höchste Punkt (Ap) über 70 km, Schub aus – der
+            Bordcomputer (B) plant mit „Kreisbahn am Ap“ den Rest.
+          </p>
         </li>
         <li>
-          <strong>Manöver:</strong> Auf der Karte (M) auf die Bahn klicken und die Anfasser ziehen:
-          grün in oder gegen die Flugrichtung, türkis radial. Die rosa Linie zeigt die neue Bahn.
-          „Automatisch ausführen“ zündet genau zur richtigen Zeit.
+          <p>
+            <strong>Manöver:</strong> Auf der Karte (M) auf die Bahn klicken und die Anfasser
+            ziehen: grün in oder gegen die Flugrichtung, türkis radial. Die rosa Linie zeigt die
+            neue Bahn. „Automatisch ausführen“ zündet genau zur richtigen Zeit.
+          </p>
         </li>
         <li>
-          <strong>Raumstation:</strong> Ziel „Raumstation Kepler“, Bordcomputer „Rendezvous“ und
-          „Geschwindigkeit angleichen“. Die letzten Meter mit RCS (R) langsamer als 2 m/s –
-          angedockt gibt es kostenlos Treibstoff.
+          <p>
+            <strong>Raumstation:</strong> Ziel „Raumstation Kepler“, Bordcomputer „Rendezvous“ und
+            „Geschwindigkeit angleichen“. Die letzten Meter mit RCS (R) langsamer als 2 m/s –
+            angedockt gibt es kostenlos Treibstoff.
+          </p>
         </li>
         <li>
-          <strong>Mond und Planeten:</strong> Ziel wählen, „Transfer“ planen (bei Planeten erst per
-          Zeitsprung ins Startfenster), unterwegs „Kurskorrektur“, dort „Einschwenken“ und
-          „Automatisch landen“ – oder alles selbst fliegen.
+          <p>
+            <strong>Mond und Planeten:</strong> Ziel wählen, „Transfer“ planen (bei Planeten erst
+            per Zeitsprung ins Startfenster), unterwegs „Kurskorrektur“, dort „Einschwenken“ und
+            „Automatisch landen“ – oder alles selbst fliegen.
+          </p>
         </li>
         <li>
-          <strong>Missions-Autopilot:</strong> Im Bordcomputer den Reiter „Mission“ öffnen, Ziel
-          wählen, „Landen“ oder „Danach zurück zur Erde“ ankreuzen und starten. Er fliegt alles
-          allein und zeigt jeden Schritt – eine Steuertaste gibt dir die Kontrolle zurück.
+          <p>
+            <strong>Missions-Autopilot:</strong> Im Bordcomputer den Reiter „Mission“ öffnen, Ziel
+            wählen, „Landen“ oder „Danach zurück zur Erde“ ankreuzen und starten. Er fliegt alles
+            allein und zeigt jeden Schritt – eine Steuertaste gibt dir die Kontrolle zurück.
+          </p>
         </li>
         <li>
-          <strong>Satelliten:</strong> Mit N aussetzen – sie bleiben auf ihrer Bahn, auch in
-          späteren Flügen. Drei um die Erde ergeben ein Satellitennetz.
+          <p>
+            <strong>Satelliten:</strong> Mit N aussetzen – sie bleiben auf ihrer Bahn, auch in
+            späteren Flügen. Drei um die Erde ergeben ein Satellitennetz.
+          </p>
         </li>
         <li>
-          <strong>Heimkehr:</strong> Bordcomputer „Wiedereintritt“ legt den tiefsten Punkt auf 25
-          km. Triebwerksstufe abwerfen, Hitzeschild voran (SAS retrograd), Fallschirm scharf.
+          <p>
+            <strong>Heimkehr:</strong> Bordcomputer „Wiedereintritt“ legt den tiefsten Punkt auf 25
+            km. Triebwerksstufe abwerfen, Hitzeschild voran (SAS retrograd), Fallschirm scharf.
+          </p>
         </li>
       </ol>
     </div>
@@ -223,7 +240,7 @@ function Guide() {
 
 function Controls() {
   return (
-    <div class="panel panel-pad doc-panel">
+    <div class="doc-panel">
       <table class="table">
         <tbody>
           {CONTROLS.map(([k, v]) => (
@@ -247,44 +264,97 @@ function Controls() {
 }
 
 function Physics() {
+  const falke = part('falke');
+  const nova = part('nova');
+  const falkeSea = ispAt(falke, 1);
   return (
-    <div class="grid-2 even doc-physics">
-      <Callout kind="fakt" title="Eine Umlaufbahn ist ein endloser Fall">
-        Die Rakete fällt in der Umlaufbahn ständig zur Erde – sie ist aber so schnell zur Seite
-        unterwegs, dass die Erdoberfläche unter ihr „wegkrümmt“. Im Spiel braucht das in 50 km Höhe{' '}
-        {fmt(circularSpeed(EARTH, 50_000))} m/s. Genau so hält die Schwerkraft auch den Mond auf
-        seiner Bahn (Kapitel 2).
-      </Callout>
-      <Callout kind="seminar" title="Hill-Sphäre: wo der Mond das Sagen hat">
-        Im Umkreis von {fmt(MOON_HILL / 1000)} km um den Spiel-Mond zieht der Mond stärker an der
-        Rakete als die Erde. Die Karte zeigt diese Grenze gestrichelt – es ist dieselbe Hill-Sphäre,
-        die in Kapitel 5 über die Stabilität unseres Mondes entscheidet.
-      </Callout>
-      <Callout kind="merke" title="Drei Körper, keine perfekte Ellipse">
-        Die Bahnvorhersage auf der Karte rechnet die Anziehung aller Körper gleichzeitig: Sonne,
-        Planeten und Monde ziehen an der Rakete, während sie selbst auf festen Bahnen laufen. Das
-        ist ein eingeschränktes Mehrkörperproblem – die Verallgemeinerung des Drei-Körper-Problems
-        aus Kapitel 4 und 8. Deshalb biegt der Mond die vorhergesagte Bahn, sobald sie in seine Nähe
-        kommt.
-      </Callout>
-      <Callout kind="merke" title="Hohmann-Transfer: der sparsamste Weg">
-        Der Bordcomputer plant Transfers wie echte Missionen: ein Schub in Flugrichtung macht die
-        Bahn zur Ellipse, deren höchster Punkt das Ziel berührt. Damit das Ziel dann auch dort ist,
-        muss man im richtigen Startfenster zünden – beim Mars wartet man im Spiel bis zu
-        {` ${fmt(transferWaitMax() / 86_400)} `}Tage darauf.
-      </Callout>
-      <Callout kind="fakt" title="Warum der Mond immer dieselbe Seite zeigt">
-        Im Spiel dreht sich der Mond einmal pro Umlauf um sich selbst – wie in Wirklichkeit. Das ist
-        die gebundene Rotation durch Gezeitenreibung aus Kapitel 6. Ein Landeplatz auf der
-        erdzugewandten Seite bleibt deshalb immer der Erde zugewandt.
-      </Callout>
-    </div>
+    <ol class="rule-list doc-panel">
+      <li>
+        <div>
+          <h3>Triebwerke: weniger Schub in dichter Luft</h3>
+          <p>
+            Ein Triebwerk fördert in jeder Höhe gleich viel Treibstoff. Am Boden drückt aber die
+            Luft gegen den Düsenaustritt: Der spezifische Impuls (Isp) des Falke-Triebwerks sinkt
+            von {falke.isp} s im Vakuum auf {falkeSea} s, sein Schub um{' '}
+            {fmt(100 * (1 - falkeSea / falke.isp))} %. Die große Vakuumdüse Nova behält am Boden nur{' '}
+            {fmt((100 * ispAt(nova, 1)) / nova.isp)} %. Wie weit eine Stufe kommt, sagt die
+            Raketengleichung: Δv = Isp · g₀ · ln(Startmasse / Leermasse).
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Luftwiderstand und Max Q</h3>
+          <p>
+            Der Widerstand wächst mit Luftdichte, Tempo², Stirnfläche und Form: Ein Nasenkegel oder
+            eine Verkleidung halbiert ihn, an der Schallmauer steigt er auf das 1,7-Fache. Am
+            stärksten drückt der Fahrtwind kurz vor der dünnen Luft – dieser Moment heißt „Max Q“
+            und steht im Flugbericht. Deshalb kostet der Aufstieg rund 3.800 m/s Δv, obwohl in 75 km
+            Höhe {fmt(circularSpeed(EARTH, 75_000))} m/s für die Kreisbahn reichen.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Eine Umlaufbahn ist ein endloser Fall</h3>
+          <p>
+            Die Rakete fällt in der Umlaufbahn ständig zur Erde – sie ist aber so schnell zur Seite
+            unterwegs, dass die Erdoberfläche unter ihr „wegkrümmt“. Im Spiel braucht das in 50 km
+            Höhe {fmt(circularSpeed(EARTH, 50_000))} m/s. Genau so hält die Schwerkraft auch den
+            Mond auf seiner Bahn (Kapitel 2).
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Hill-Sphäre: wo der Mond das Sagen hat</h3>
+          <p>
+            Im Umkreis von {fmt(MOON_HILL / 1000)} km um den Spiel-Mond zieht der Mond stärker an
+            der Rakete als die Erde. Die Karte zeigt diese Grenze gestrichelt – es ist dieselbe
+            Hill-Sphäre, die in Kapitel 5 über die Stabilität unseres Mondes entscheidet.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Drei Körper, keine perfekte Ellipse</h3>
+          <p>
+            Die Bahnvorhersage auf der Karte rechnet die Anziehung aller Körper gleichzeitig: Sonne,
+            Planeten und Monde ziehen an der Rakete, während sie selbst auf festen Bahnen laufen.
+            Das ist ein eingeschränktes Mehrkörperproblem – die Verallgemeinerung des
+            Drei-Körper-Problems aus Kapitel 4 und 8. Deshalb biegt der Mond die vorhergesagte Bahn,
+            sobald sie in seine Nähe kommt.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Hohmann-Transfer: der sparsamste Weg</h3>
+          <p>
+            Der Bordcomputer plant Transfers wie echte Missionen: ein Schub in Flugrichtung macht
+            die Bahn zur Ellipse, deren höchster Punkt das Ziel berührt. Damit das Ziel dann auch
+            dort ist, muss man im richtigen Startfenster zünden – beim Mars wartet man im Spiel bis
+            zu {fmt(transferWaitMax() / 86_400)} Tage darauf.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Warum der Mond immer dieselbe Seite zeigt</h3>
+          <p>
+            Im Spiel dreht sich der Mond einmal pro Umlauf um sich selbst – wie in Wirklichkeit. Das
+            ist die gebundene Rotation durch Gezeitenreibung aus Kapitel 6. Ein Landeplatz auf der
+            erdzugewandten Seite bleibt deshalb immer der Erde zugewandt.
+          </p>
+        </div>
+      </li>
+    </ol>
   );
 }
 
 function World() {
   return (
-    <div class="panel panel-pad doc-panel">
+    <div class="doc-panel">
       <p class="small muted">
         Damit ein Flug Minuten statt Tage dauert, ist das ganze Sonnensystem gleichmäßig verkleinert
         (Maßstab 1 : {fmt(1 / SCALE, 1)}). Schwerkraft an der Oberfläche, Massenverhältnisse und
