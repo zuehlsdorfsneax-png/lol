@@ -134,13 +134,14 @@ export function Navball({ flight, size, onSas }: Props) {
         />
         <span class="navball-pitch" ref={readout} title="Neigung gegen den Horizont" />
       </div>
+      {/* aria-disabled statt disabled, damit der Klick den Grund aus setSas zeigt. */}
       <div class="sas-row" role="group" aria-label="SAS-Lageregelung">
         {SAS_MODES.map((s) => (
           <button
             key={s.mode}
             type="button"
             class={`sas-btn sas-${s.mode} ${f.sas === s.mode ? 'on' : ''}`}
-            disabled={!available(s.mode)}
+            aria-disabled={!available(s.mode)}
             title={`${s.label} (Taste ${s.key})`}
             aria-label={s.label}
             aria-pressed={f.sas === s.mode}

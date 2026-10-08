@@ -1872,12 +1872,12 @@ html.game-open body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .sas-btn:hover:not(:disabled) {
+  .sas-btn:hover:not([aria-disabled='true']) {
     background: rgb(255 255 255 / 10%);
   }
 }
 
-.sas-btn:disabled {
+.sas-btn[aria-disabled='true'] {
   opacity: 0.25;
   cursor: default;
 }
@@ -3263,6 +3263,11 @@ html.game-open body {
     bottom: 66px;
     transform: none;
   }
+  /* Das RCS-Kreuz steht 8 px vom Rand und ist 128 px hoch (3 × 40 px, 2 Lücken à 4 px):
+     Die Lageanzeige steht 8 px darüber. */
+  .hud-bl:has(> .rcs-pad) ~ .hud-bc {
+    bottom: 144px;
+  }
   .sas-row {
     display: grid;
     grid-template-columns: repeat(4, 42px);
@@ -3795,7 +3800,7 @@ html.game-open body {
 .hbtn:active:not(:disabled),
 .abtn:active:not(:disabled),
 .mbtn:active:not(:disabled),
-.sas-btn:active:not(:disabled),
+.sas-btn:active:not([aria-disabled='true']),
 .round-btn:active,
 .part-tile:active {
   transform: scale(0.97);
