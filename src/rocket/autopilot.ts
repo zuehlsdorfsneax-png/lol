@@ -1,6 +1,6 @@
 import type { Flight } from './flight';
 import { part } from './parts';
-import { EARTH, bodyById, tinyBody, type Body } from './world';
+import { GAME_EARTH, bodyById, tinyBody, type Body } from './world';
 
 export type PilotPhase = 'ascent' | 'coast' | 'circularize' | 'done' | 'failed';
 
@@ -32,9 +32,9 @@ export class OrbitPilot {
   /** Warum der Pilot aufgegeben hat (nur bei 'failed'). */
   message = '';
 
-  constructor(body: Body = EARTH) {
+  constructor(body: Body = GAME_EARTH) {
     this.body = body;
-    if (body === EARTH) {
+    if (body === GAME_EARTH) {
       this.apoapsis = 75_000;
       this.turnStart = 1_000;
       this.turnEnd = 55_000;
@@ -55,7 +55,7 @@ export class OrbitPilot {
    */
   get needed(): number {
     const b = this.body;
-    if (b === EARTH) return 3_900;
+    if (b === GAME_EARTH) return 3_900;
     const v = Math.sqrt(b.mu / (b.radius + this.apoapsis));
     return v * (b.atmosphere > 0 ? 1.5 : 1.15);
   }
@@ -69,7 +69,7 @@ export class OrbitPilot {
     const up = Math.atan2(rel.ry, rel.rx);
     const h = rel.altitude;
     const o = f.orbit(b);
-    const safe = b === EARTH ? b.atmosphere : Math.max(b.atmosphere, this.apoapsis * 0.6);
+    const safe = b === GAME_EARTH ? b.atmosphere : Math.max(b.atmosphere, this.apoapsis * 0.6);
     // Leere Stufe abwerfen, solange noch eine übrig ist.
     if (f.status === 'flying' && f.active.fuel <= 0 && f.segs.length > 1) f.stage();
     if (f.status === 'flying' && !f.infiniteFuel && f.deltaV() < 1) {
@@ -145,7 +145,7 @@ export class OrbitPilot {
       const dirY = aUp * uy + (aSide * hy) / hv;
       const err = steerTo(f, Math.atan2(dirY, dirX));
       f.throttle = err < 0.3 ? Math.min(1, Math.max(0.05, need / (amax * 1.5))) : 0;
-      const margin = b === EARTH ? 5_000 : 1_000;
+      const margin = b === GAME_EARTH ? 5_000 : 1_000;
       if (o.bound && (o.periapsis > safe + margin || (need < 1 && o.periapsis > safe))) {
         f.throttle = 0;
         f.turn = 0;
@@ -176,7 +176,7 @@ export class HopPilot {
   /** Höchster erreichter Punkt über dem Boden (m). */
   peak = 0;
 
-  constructor(body: Body = EARTH) {
+  constructor(body: Body = GAME_EARTH) {
     this.body = body;
   }
 
@@ -432,7 +432,7 @@ export class LandingPilot {
       const need = speed * 1.2 + Math.sqrt(2 * g * Math.max(r.altitude, 0)) * 0.5 + 30;
       if (
         // Nur in dichter Luft (Erde, Venus) – in der dünnen Marsluft braucht es das Triebwerk.
-        body.density0 >= 0.5 * EARTH.density0 &&
+        body.density0 >= 0.5 * GAME_EARTH.density0 &&
         chuteAbove &&
         f.chute !== 'none' &&
         f.chuteLandingSpeed(body) > f.safeLandingSpeed &&

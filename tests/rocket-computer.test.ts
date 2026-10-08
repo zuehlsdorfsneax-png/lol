@@ -4,7 +4,7 @@ import { Flight, WARPS, satelliteState } from '../src/rocket/flight';
 import { elements, stateAt, timeToApoapsis, timeToPeriapsis } from '../src/rocket/kepler';
 import { TEMPLATES } from '../src/rocket/parts';
 import { arrivalPeriapsis, makePlan, planCircularize } from '../src/rocket/planner';
-import { EARTH, MOON, bodyById, bodyState, circularSpeed } from '../src/rocket/world';
+import { GAME_EARTH, GAME_MOON, bodyById, bodyState, circularSpeed } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 
@@ -30,16 +30,16 @@ function execute(f: Flight): string {
   return x.phase;
 }
 
-function toOrbit(f: Flight, body = EARTH): void {
+function toOrbit(f: Flight, body = GAME_EARTH): void {
   const pilot = new OrbitPilot(body);
   run(f, () => pilot.update(f) === 'done', 4);
 }
 
 describe('Kepler-Bahnen', () => {
   it('Bahnelemente und Ort nach einer Umlaufzeit', () => {
-    const r = EARTH.radius + 200_000;
-    const v = circularSpeed(EARTH, 200_000) * 1.1;
-    const el = elements(EARTH.mu, r, 0, 0, -v, 0);
+    const r = GAME_EARTH.radius + 200_000;
+    const v = circularSpeed(GAME_EARTH, 200_000) * 1.1;
+    const el = elements(GAME_EARTH.mu, r, 0, 0, -v, 0);
     expect(el.dir).toBe(-1);
     expect(el.e).toBeGreaterThan(0.1);
     const P = (2 * Math.PI) / el.n;
@@ -57,7 +57,7 @@ describe('Kepler-Bahnen', () => {
 describe('Lageregelung (SAS) und Zeitsprung', () => {
   it('SAS prograd richtet die Rakete in Flugrichtung aus', () => {
     const f = new Flight(template('orbiter'));
-    f.placeInOrbit(EARTH, 100_000, 1);
+    f.placeInOrbit(GAME_EARTH, 100_000, 1);
     f.angle = 2;
     f.sas = 'prograde';
     run(f, () => false, 1, 60 * 6);
@@ -72,13 +72,13 @@ describe('Lageregelung (SAS) und Zeitsprung', () => {
     ).toBeLessThan(0.02);
     f.sas = 'radialOut';
     run(f, () => false, 1, 60 * 6);
-    const rel = f.relative(EARTH);
+    const rel = f.relative(GAME_EARTH);
     expect(Math.cos(f.angle - Math.atan2(rel.ry, rel.rx))).toBeGreaterThan(0.99);
   });
 
   it('Zeitsprung hält genau am Ziel an', () => {
     const f = new Flight(template('orbiter'));
-    f.placeInOrbit(EARTH, 100_000, 1);
+    f.placeInOrbit(GAME_EARTH, 100_000, 1);
     const goal = f.t + 3_000;
     f.warpTo(goal);
     run(f, () => f.warpTarget === null, 1, 60 * 60);
@@ -90,16 +90,16 @@ describe('Lageregelung (SAS) und Zeitsprung', () => {
 describe('Bordcomputer', () => {
   it('Kreisbahn am Ap: planen und automatisch ausführen', () => {
     const f = new Flight(template('orbiter'));
-    f.placeInOrbit(EARTH, 80_000, 1);
+    f.placeInOrbit(GAME_EARTH, 80_000, 1);
     f.vx *= 1.05;
     f.vy *= 1.05;
-    const before = f.orbit(EARTH);
+    const before = f.orbit(GAME_EARTH);
     expect(before.apoapsis).toBeGreaterThan(200_000);
     const plan = planCircularize(f, 'ap');
     expect(plan.ok).toBe(true);
     expect(f.node!.prograde).toBeGreaterThan(10);
     expect(execute(f)).toBe('done');
-    const after = f.orbit(EARTH);
+    const after = f.orbit(GAME_EARTH);
     expect(after.eccentricity).toBeLessThan(0.01);
     expect(f.goals.has('node')).toBe(true);
   });
@@ -119,14 +119,14 @@ describe('Bordcomputer: Mondmission ohne Handsteuerung', () => {
     const course = makePlan(f, 'correct');
     if (course.ok) expect(execute(f)).toBe('done');
     const p = f.predict();
-    expect(p.encounter?.body).toBe(MOON);
+    expect(p.encounter?.body).toBe(GAME_MOON);
 
     // Bis in die Hill-Sphäre des Mondes vorspulen, dann am tiefsten Punkt einschwenken.
-    run(f, () => f.refBody() === MOON, 50_000);
+    run(f, () => f.refBody() === GAME_MOON, 50_000);
     const capture = makePlan(f, 'circ-pe');
     expect(capture.ok).toBe(true);
     expect(execute(f)).toBe('done');
-    const o = f.orbit(MOON);
+    const o = f.orbit(GAME_MOON);
     expect(o.bound).toBe(true);
     expect(f.goals.has('moonorbit')).toBe(true);
 
@@ -137,20 +137,24 @@ describe('Bordcomputer: Mondmission ohne Handsteuerung', () => {
       return ph === 'done' || ph === 'failed';
     });
     expect(f.status).toBe('landed');
-    expect(f.landedOn).toBe(MOON);
+    expect(f.landedOn).toBe(GAME_MOON);
 
     // Zurück in eine Mondumlaufbahn und heim
-    toOrbit(f, MOON);
-    expect(f.orbit(MOON).bound).toBe(true);
+    toOrbit(f, GAME_MOON);
+    expect(f.orbit(GAME_MOON).bound).toBe(true);
     f.target = null;
     const back = makePlan(f, 'return');
     expect(back.ok).toBe(true);
     expect(execute(f)).toBe('done');
-    run(f, () => f.refBody() === EARTH && f.relative(MOON).r > MOON.hill * 1.2, 5_000);
+    run(
+      f,
+      () => f.refBody() === GAME_EARTH && f.relative(GAME_MOON).r > GAME_MOON.hill * 1.2,
+      5_000,
+    );
     const fix = makePlan(f, 'deorbit');
     if (fix.ok) expect(execute(f)).toBe('done');
     // Tiefster Punkt der echten Mehrkörperbahn (die Zwei-Körper-Näherung stimmt so nah am Mond nicht).
-    const pe = arrivalPeriapsis(f.predict(), EARTH, 0)!;
+    const pe = arrivalPeriapsis(f.predict(), GAME_EARTH, 0)!;
     expect(pe).toBeLessThan(35_000);
     expect(pe).toBeGreaterThan(15_000);
 
@@ -160,7 +164,7 @@ describe('Bordcomputer: Mondmission ohne Handsteuerung', () => {
     run(f, () => f.status !== 'flying', 50_000);
     expect(f.crashReason).toBe('');
     expect(f.status).toBe('landed');
-    expect(f.landedOn).toBe(EARTH);
+    expect(f.landedOn).toBe(GAME_EARTH);
     expect(f.goals.has('return')).toBe(true);
   }, 120_000);
 });
@@ -185,7 +189,7 @@ describe('Bordcomputer: Rendezvous mit der Station', () => {
 describe('Satelliten und Hitzeschild', () => {
   it('ein ausgesetzter Satellit kreist auf seiner Kepler-Bahn weiter', () => {
     const f = new Flight(template('satnet'));
-    f.placeInOrbit(EARTH, 300_000, 1);
+    f.placeInOrbit(GAME_EARTH, 300_000, 1);
     expect(f.satellitesOnBoard).toBe(3);
     const mass = f.mass;
     expect(f.deploySatellite()).toBe(true);
@@ -201,8 +205,8 @@ describe('Satelliten und Hitzeschild', () => {
     const [x0, y0] = satelliteState(s, f.t);
     const P = (2 * Math.PI) / s.el.n;
     const [x1, y1] = satelliteState(s, f.t + P);
-    const [ex0, ey0] = bodyState(EARTH, f.t);
-    const [ex1, ey1] = bodyState(EARTH, f.t + P);
+    const [ex0, ey0] = bodyState(GAME_EARTH, f.t);
+    const [ex1, ey1] = bodyState(GAME_EARTH, f.t + P);
     expect(Math.hypot(x1 - ex1 - (x0 - ex0), y1 - ey1 - (y0 - ey0))).toBeLessThan(1);
     // Spielstand enthält die Satelliten.
     const g = Flight.restore(
@@ -213,7 +217,7 @@ describe('Satelliten und Hitzeschild', () => {
 
   it('ohne Umlaufbahn stürzt der Satellit ab', () => {
     const f = new Flight(template('satnet'));
-    f.placeInOrbit(EARTH, 100_000, 1);
+    f.placeInOrbit(GAME_EARTH, 100_000, 1);
     f.vx *= 0.9;
     f.vy *= 0.9;
     f.deploySatellite();
@@ -226,7 +230,7 @@ describe('Satelliten und Hitzeschild', () => {
       const f = new Flight(['fallschirm', 'kapsel', 'hitzeschild']);
       f.status = 'flying';
       f.landedOn = null;
-      f.y = EARTH.radius + 30_000;
+      f.y = GAME_EARTH.radius + 30_000;
       f.vy = -3_600;
       f.angle = shieldFirst ? Math.PI / 2 : -Math.PI / 2;
       for (let i = 0; i < 60 * 20 && f.status === 'flying'; i++) f.update(1 / 60);
@@ -255,12 +259,12 @@ describe('Planeten', () => {
 
   it('eine Umlaufbahn läuft im hohen Zeitraffer auf Schienen weiter', () => {
     const f = new Flight(template('orbiter'));
-    f.placeInOrbit(EARTH, 200_000, 1);
-    const before = f.orbit(EARTH);
+    f.placeInOrbit(GAME_EARTH, 200_000, 1);
+    const before = f.orbit(GAME_EARTH);
     f.setWarp(WARPS.length - 1);
     expect(f.warp).toBe(5_000_000);
     for (let i = 0; i < 60; i++) f.update(1 / 60);
-    const after = f.orbit(EARTH);
+    const after = f.orbit(GAME_EARTH);
     expect(f.t).toBeGreaterThan(4e6);
     expect(Math.abs(after.periapsis - before.periapsis)).toBeLessThan(100);
   });

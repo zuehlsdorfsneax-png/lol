@@ -7,6 +7,7 @@ import {
   dayLength,
   monthLength,
   synchronousDistance,
+  MOON_DISTANCE_KM,
 } from '../../physics';
 import { LineChart } from '../../ui/charts/LineChart';
 import { Callout, Equation, Figure, SectionTitle, Tex } from '../../ui/content';
@@ -111,7 +112,7 @@ export function Tides() {
 }
 
 function TideExplorer() {
-  const [distKm, setDistKm] = useState(384_400);
+  const [distKm, setDistKm] = useState(MOON_DISTANCE_KM);
   const a = distKm * KM;
   const sync = synchronousDistance();
   const data = useMemo(() => {
@@ -128,7 +129,7 @@ function TideExplorer() {
     return { x, day, month };
   }, []);
   // Jahre bis dahin, falls die heutige Rate konstant bliebe (nur zur Einordnung).
-  const years = ((distKm - 384_400) * 1000) / 0.038;
+  const years = ((distKm - MOON_DISTANCE_KM) * 1000) / 0.038;
   return (
     <div class="stack" style={{ gap: '14px' }}>
       <LineChart

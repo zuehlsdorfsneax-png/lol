@@ -5,6 +5,7 @@ import {
   YEAR,
   type OrbitalElements,
   type ScenarioParams,
+  MOON_DISTANCE_KM,
 } from '../physics';
 import type { FrameId } from '../sim/view';
 
@@ -61,7 +62,12 @@ export type Mission = SimMission | SpecialMission;
 
 const de = (v: number, d = 2): string =>
   v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
-const BASE: ScenarioParams = { ...REAL_PARAMS, moonDistance: 384_400, moonSpeed: 1, moonAngle: 0 };
+const BASE: ScenarioParams = {
+  ...REAL_PARAMS,
+  moonDistance: MOON_DISTANCE_KM,
+  moonSpeed: 1,
+  moonAngle: 0,
+};
 const RH_KM = EARTH_HILL_RADIUS / KM;
 
 /** Wendet den Reglerwert auf die Parameter an. */

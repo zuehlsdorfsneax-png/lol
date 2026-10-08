@@ -1,16 +1,16 @@
 import type { Flight } from './flight';
 import type { BuildRules } from './parts';
 import {
-  EARTH,
+  GAME_EARTH,
   CERES,
   EUROPA,
   GANYMEDE,
   JUPITER,
   MARS,
   MERCURY,
-  MOON,
+  GAME_MOON,
   PHOBOS,
-  SUN,
+  GAME_SUN,
   VENUS,
   stationState,
   type Body,
@@ -107,33 +107,33 @@ function landed(body: Body): (f: Flight) => void {
 }
 
 export const START_OPTIONS: readonly StartOption[] = [
-  { id: 'rampe', label: 'Startrampe', group: 'Erde', body: EARTH, place: () => undefined },
+  { id: 'rampe', label: 'Startrampe', group: 'Erde', body: GAME_EARTH, place: () => undefined },
   {
     id: 'orbit',
     label: 'Erdumlaufbahn (150 km)',
     group: 'Erde',
-    body: EARTH,
-    place: orbit(EARTH, 150_000),
+    body: GAME_EARTH,
+    place: orbit(GAME_EARTH, 150_000),
     orbital: true,
   },
   {
     id: 'hoch',
     label: 'Hohe Erdbahn (5.000 km)',
     group: 'Erde',
-    body: EARTH,
-    place: orbit(EARTH, 5_000_000),
+    body: GAME_EARTH,
+    place: orbit(GAME_EARTH, 5_000_000),
     orbital: true,
   },
   {
     id: 'station',
     label: 'Neben der Raumstation',
     group: 'Erde',
-    body: EARTH,
+    body: GAME_EARTH,
     place(f) {
       // 300 m hinter der Station auf ihrer eigenen Bahn: bleibt dicht dran.
       const [x, y, vx, vy] = stationState(f.t);
       const v = Math.hypot(vx, vy);
-      f.placeInOrbit(EARTH, 100_000, Math.PI / 2);
+      f.placeInOrbit(GAME_EARTH, 100_000, Math.PI / 2);
       f.x = x - (vx / v) * 300;
       f.y = y - (vy / v) * 300;
       f.vx = vx;
@@ -144,13 +144,13 @@ export const START_OPTIONS: readonly StartOption[] = [
     },
     orbital: true,
   },
-  { id: 'mond', label: 'Auf dem Mond', group: 'Mond', body: MOON, place: landed(MOON) },
+  { id: 'mond', label: 'Auf dem Mond', group: 'Mond', body: GAME_MOON, place: landed(GAME_MOON) },
   {
     id: 'mondorbit',
     label: 'Mondumlaufbahn',
     group: 'Mond',
-    body: MOON,
-    place: orbit(MOON),
+    body: GAME_MOON,
+    place: orbit(GAME_MOON),
     orbital: true,
   },
   {
@@ -238,8 +238,8 @@ export const START_OPTIONS: readonly StartOption[] = [
     id: 'sonne',
     label: 'Sonnenumlaufbahn (bei der Venus)',
     group: 'Sonne',
-    body: SUN,
-    place: orbit(SUN, VENUS.distance * 0.97 - SUN.radius),
+    body: GAME_SUN,
+    place: orbit(GAME_SUN, VENUS.distance * 0.97 - GAME_SUN.radius),
     orbital: true,
   },
 ];
@@ -251,7 +251,7 @@ export function buildRules(s: SandboxSettings): BuildRules {
   return {
     thrust: s.thrust,
     infiniteFuel: s.fuel,
-    body: o.body === SUN ? EARTH : o.body,
+    body: o.body === GAME_SUN ? GAME_EARTH : o.body,
     orbital: o.orbital ?? false,
   };
 }

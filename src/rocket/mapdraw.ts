@@ -21,12 +21,12 @@ import {
 } from './view';
 import {
   BODIES,
-  EARTH,
+  GAME_EARTH,
   MARS,
-  MOON,
+  GAME_MOON,
   PHOBOS,
   STATION,
-  SUN,
+  GAME_SUN,
   bodyById,
   bodyState,
   forms,
@@ -121,15 +121,16 @@ export function fitMapScale(
     if (pred && pred.n > 1 && pred.ref === ref && f.status === 'flying') {
       const [cx, cy] = bodyState(ref, f.t);
       r = Math.max(r, predictionReach(pred, f.t, cx, cy) * 1.12);
-      if (ref === SUN) r = Math.max(r, o.r * 1.2);
+      if (ref === GAME_SUN) r = Math.max(r, o.r * 1.2);
     } else {
       if (o.bound && Number.isFinite(o.apoapsis)) r = Math.max(r, o.apoapsis + ref.radius);
       if (!o.bound) r = Math.max(r * 2, Math.min(ref.hill, r * 20));
-      if (ref === SUN) r = Math.max(o.r * 1.3, MARS.distance * 1.1);
+      if (ref === GAME_SUN) r = Math.max(o.r * 1.3, MARS.distance * 1.1);
     }
-  } else if (b === SUN) r = MARS.distance * 1.15;
+  } else if (b === GAME_SUN) r = MARS.distance * 1.15;
   else r = Math.min(b.hill, b.radius * 60) * 1.2;
-  if (focus === 'earth' && ref === EARTH && f.goals.size > 3) r = Math.max(r, MOON.distance * 1.1);
+  if (focus === 'earth' && ref === GAME_EARTH && f.goals.size > 3)
+    r = Math.max(r, GAME_MOON.distance * 1.1);
   return half / Math.max(r, 1);
 }
 
@@ -205,7 +206,7 @@ export function drawMap(
   // Hill-Sphären als gestrichelte Kreise
   ctx.setLineDash([5, 5]);
   for (const b of BODIES) {
-    if (b === SUN || b === PHOBOS) continue;
+    if (b === GAME_SUN || b === PHOBOS) continue;
     const [bx, by] = bodyState(b, t);
     const hill = b.hill * v.scale;
     if (hill < 8 || hill > 40_000) continue;
@@ -226,8 +227,8 @@ export function drawMap(
   ctx.setLineDash([]);
 
   for (const b of BODIES) {
-    drawBody(ctx, v, b, t, b === SUN ? 5 : 2.5);
-    if (b === EARTH && EARTH.radius * v.scale < 2.5) {
+    drawBody(ctx, v, b, t, b === GAME_SUN ? 5 : 2.5);
+    if (b === GAME_EARTH && GAME_EARTH.radius * v.scale < 2.5) {
       const [ex, ey] = toScreen(v, 0, 0);
       ctx.fillStyle = '#4b8fe8';
       ctx.beginPath();
@@ -249,7 +250,7 @@ export function drawMap(
       b.name,
       sx + Math.max(5, b.radius * v.scale) + 4,
       sy,
-      b === EARTH ? '#9cc3ff' : '#d6d9df',
+      b === GAME_EARTH ? '#9cc3ff' : '#d6d9df',
     );
   }
   drawStation(ctx, v, t, 9);
@@ -369,14 +370,14 @@ const BELT = Array.from({ length: 420 }, (_, i) => {
 });
 
 function drawBelt(ctx: CanvasRenderingContext2D, v: View, t: number): void {
-  const au = EARTH.distance;
+  const au = GAME_EARTH.distance;
   const px = au * v.scale;
   // Nur, wenn der Gürtel auf den Schirm passt und nicht zu grob wirkt.
   if (px < 25 || px > 2_000) return;
-  const [sx0, sy0] = bodyState(SUN, t);
+  const [sx0, sy0] = bodyState(GAME_SUN, t);
   ctx.fillStyle = 'rgba(200,190,170,0.45)';
   for (const p of BELT) {
-    const rate = Math.sqrt(SUN.mu / (p.d * au) ** 3);
+    const rate = Math.sqrt(GAME_SUN.mu / (p.d * au) ** 3);
     const a = p.a - rate * t;
     const [x, y] = toScreen(v, sx0 + p.d * au * Math.cos(a), sy0 + p.d * au * Math.sin(a));
     ctx.fillRect(x, y, 1.4, 1.4);
@@ -453,7 +454,7 @@ function patchedPath(pred: Prediction): PatchedPath {
       for (let j = 0; j < chain.length; j++) {
         const b = chain[j]!;
         const [bx, by] = bodyState(b, t);
-        if (b === SUN || Math.hypot(pred.xs[i]! - bx, pred.ys[i]! - by) < b.hill) {
+        if (b === GAME_SUN || Math.hypot(pred.xs[i]! - bx, pred.ys[i]! - by) < b.hill) {
           k = j;
           break;
         }
@@ -486,7 +487,11 @@ export function predictionReach(pred: Prediction, t: number, cx: number, cy: num
   // über seine Hill-Sphäre hinaus (sonst wäre er beim Flug zum Nachbarplaneten nur ein Punkt).
   const parent = pred.ref.parent ? bodyById(pred.ref.parent) : null;
   const cap =
-    pred.ref === SUN ? Infinity : parent && parent !== SUN ? parent.hill : pred.ref.hill * 1.15;
+    pred.ref === GAME_SUN
+      ? Infinity
+      : parent && parent !== GAME_SUN
+        ? parent.hill
+        : pred.ref.hill * 1.15;
   // Nach einer Begegnung ist der Rest nur noch blass angedeutet – er zählt nicht mit.
   const last = pred.encounter ? pred.encounter.exit : pred.n - 1;
   let r = 0;

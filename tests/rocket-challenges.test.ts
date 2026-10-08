@@ -4,7 +4,7 @@ import { CHALLENGES, challengeById, type Memo } from '../src/rocket/challenges';
 import { Flight } from '../src/rocket/flight';
 import { checkDesign } from '../src/rocket/parts';
 import { makePlan, planCircularize } from '../src/rocket/planner';
-import { CERES, EARTH, JUPITER, MARS, MOON, PHOBOS } from '../src/rocket/world';
+import { CERES, GAME_EARTH, JUPITER, MARS, GAME_MOON, PHOBOS } from '../src/rocket/world';
 
 function start(id: string): { f: Flight; memo: Memo } {
   const c = challengeById(id)!;
@@ -96,13 +96,13 @@ describe('Herausforderungen', () => {
 
   it('Mondbasis: der Lande-Autopilot landet sicher', () => {
     const { f, memo } = start('moonbase');
-    expect(f.refBody()).toBe(MOON);
+    expect(f.refBody()).toBe(GAME_MOON);
     const lander = new LandingPilot();
     const r = play('moonbase', f, memo, () => {
       lander.update(f);
     })!;
     expect(r.success, r.text).toBe(true);
-    expect(f.landedOn).toBe(MOON);
+    expect(f.landedOn).toBe(GAME_MOON);
     expect(r.stars).toBeGreaterThanOrEqual(1);
   });
 
@@ -137,7 +137,7 @@ describe('Herausforderungen', () => {
     })!;
     expect(r.success, r.text).toBe(true);
     expect(r.stars).toBe(3);
-    expect(f.landedOn).toBe(EARTH);
+    expect(f.landedOn).toBe(GAME_EARTH);
   }, 60_000);
 
   it('Phobos: Start auf der Oberfläche, 2 km von der Station', () => {

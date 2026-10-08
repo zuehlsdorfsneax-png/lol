@@ -24,7 +24,7 @@ import {
 } from './parts';
 import {
   BODIES,
-  EARTH,
+  GAME_EARTH,
   CERES,
   EUROPA,
   GANYMEDE,
@@ -32,10 +32,10 @@ import {
   JUPITER,
   MARS,
   MERCURY,
-  MOON,
+  GAME_MOON,
   PHOBOS,
   STATION,
-  SUN,
+  GAME_SUN,
   VENUS,
   bodyById,
   bodyState,
@@ -352,7 +352,7 @@ function machDrag(mach: number): number {
   }
   return MACH_DRAG[MACH_DRAG.length - 1]![1];
 }
-const YEAR = 2 * Math.PI * Math.sqrt(EARTH.distance ** 3 / SUN.mu);
+const YEAR = 2 * Math.PI * Math.sqrt(GAME_EARTH.distance ** 3 / GAME_SUN.mu);
 /** Körper mit Lufthülle (für das Ende der Vorhersage beim Wiedereintritt). */
 const AIR_BODIES = BODIES.filter((b) => b.atmosphere > 0);
 const AIR_INDEX = AIR_BODIES.map((b) => BODIES.indexOf(b));
@@ -463,13 +463,13 @@ function horizonFor(s: Coast): number {
   const [bx, by, bvx, bvy] = bodyState(ref, s.t);
   const o = orbitAround(ref, s.x - bx, s.y - by, s.vx - bvx, s.vy - bvy);
   if (o.bound) return Math.min(1.02 * o.period, 3 * YEAR);
-  if (ref === SUN) return 3 * YEAR;
+  if (ref === GAME_SUN) return 3 * YEAR;
   // Auf Fluchtbahn: so weit rechnen, wie die neue Bahn um den Mutterkörper dauert.
-  const parent = ref.parent ? bodyById(ref.parent) : SUN;
+  const parent = ref.parent ? bodyById(ref.parent) : GAME_SUN;
   const [px, py, pvx, pvy] = bodyState(parent, s.t);
   const po = orbitAround(parent, s.x - px, s.y - py, s.vx - pvx, s.vy - pvy);
   let h = po.bound ? Math.min(1.02 * po.period, 3 * YEAR) : YEAR;
-  if (ref === EARTH || ref === MOON) h = Math.max(h, 12 * 86_400);
+  if (ref === GAME_EARTH || ref === GAME_MOON) h = Math.max(h, 12 * 86_400);
   return h;
 }
 
@@ -542,7 +542,7 @@ function nodeDelta(
 export class Flight {
   t = 0;
   x = 0;
-  y = EARTH.radius;
+  y = GAME_EARTH.radius;
   vx = 0;
   vy = 0;
   /** Richtung der Spitze (mathematischer Winkel). */
@@ -589,7 +589,7 @@ export class Flight {
   private bounceNote = -Infinity;
   segs: Segment[];
   status: FlightStatus = 'landed';
-  landedOn: Body | null = EARTH;
+  landedOn: Body | null = GAME_EARTH;
   chute: ChuteState;
   chuteOpen = 0;
   /** Nach der Landung sackt der Schirm sichtbar zusammen (nur Anzeige). */
@@ -839,9 +839,9 @@ export class Flight {
 
   /** Sonnenlicht im Vergleich zur Erdbahn: (1 AE / r)², begrenzt auf das Doppelte. */
   sunlight(): number {
-    const [sx, sy] = bodyState(SUN, this.t);
+    const [sx, sy] = bodyState(GAME_SUN, this.t);
     const r = Math.hypot(this.x - sx, this.y - sy);
-    return Math.min(2, (EARTH.distance / Math.max(r, 1)) ** 2);
+    return Math.min(2, (GAME_EARTH.distance / Math.max(r, 1)) ** 2);
   }
 
   /** Ausgefahrene Solarflügel (im All, außerhalb dichter Luft). */
@@ -1049,7 +1049,7 @@ export class Flight {
   }
 
   moon(): { x: number; y: number; vx: number; vy: number } {
-    return this.state(MOON);
+    return this.state(GAME_MOON);
   }
 
   /** Bezugskörper: der kleinste Körper, in dessen Hill-Sphäre die Rakete ist. */
@@ -1087,7 +1087,7 @@ export class Flight {
   } {
     const ref = this.refBody();
     const o = this.orbit(ref);
-    const el = this.status === 'flying' && ref !== SUN ? this.elements(ref) : null;
+    const el = this.status === 'flying' && ref !== GAME_SUN ? this.elements(ref) : null;
     const round = !!el && el.e < CIRCULAR_E;
     const out = {
       apoapsis: o.apoapsis,
@@ -1100,7 +1100,7 @@ export class Flight {
       !p ||
       p.ref !== ref ||
       this.status !== 'flying' ||
-      ref === SUN ||
+      ref === GAME_SUN ||
       (o.bound && o.apoapsis + ref.radius < 0.1 * ref.hill)
     )
       return out;
@@ -1162,12 +1162,12 @@ export class Flight {
   }
 
   get altitudeEarth(): number {
-    return Math.hypot(this.x, this.y) - EARTH.radius;
+    return Math.hypot(this.x, this.y) - GAME_EARTH.radius;
   }
 
   /** Der Körper mit dem kleinsten Abstand zur Oberfläche. */
   nearest(): { body: Body; altitude: number } {
-    let best = EARTH;
+    let best = GAME_EARTH;
     let alt = Infinity;
     for (const b of BODIES) {
       const [bx, by] = bodyState(b, this.t);
@@ -1404,11 +1404,11 @@ export class Flight {
   timeToEvent(): number {
     let best = Infinity;
     const ref = this.refBody();
-    const o = ref === SUN ? null : this.orbit(ref);
+    const o = ref === GAME_SUN ? null : this.orbit(ref);
     // Gebunden an den Bezugskörper: nur dessen Monde, und nur, wenn die Bahn so weit hinausreicht.
     const reach = o && o.bound ? o.apoapsis + ref.radius : Infinity;
     for (const b of BODIES) {
-      if (b === SUN || b === ref) continue;
+      if (b === GAME_SUN || b === ref) continue;
       if (Number.isFinite(reach) && (b.parent !== ref.id || reach < b.distance - b.hill)) continue;
       const c = this.state(b);
       const rx = this.x - c.x;
@@ -1418,7 +1418,7 @@ export class Flight {
       const closing = -((this.vx - c.vx) * rx + (this.vy - c.vy) * ry) / d;
       if (closing > 0) best = Math.min(best, (d - b.hill) / closing);
     }
-    if (ref !== SUN) {
+    if (ref !== GAME_SUN) {
       const el = this.elements(ref);
       if (el.e >= 1) best = Math.min(best, timeToPeriapsis(el, this.t));
     }
@@ -1434,7 +1434,7 @@ export class Flight {
     if (this.status !== 'flying' || this.thrusting) return null;
     if (this.rcs && (this.translate.x || this.translate.y)) return null;
     const ref = this.refBody();
-    if (ref === SUN) return null;
+    if (ref === GAME_SUN) return null;
     const o = this.orbit(ref);
     if (!o.bound || o.apoapsis + ref.radius > 0.1 * ref.hill) return null;
     if (o.periapsis < Math.max(ref.atmosphere, 10_000)) return null;
@@ -1724,7 +1724,7 @@ export class Flight {
     const around = (b: BodyId): Satellite[] => real.filter((s) => s.body === b);
     const earth = around('earth');
     if (earth.length) this.goal('satellite');
-    if (earth.some((s) => apsides(s.el).peri - EARTH.radius > 2_000_000)) this.goal('highsat');
+    if (earth.some((s) => apsides(s.el).peri - GAME_EARTH.radius > 2_000_000)) this.goal('highsat');
     if (earth.length >= 3) this.goal('network');
     if (around('moon').length) this.goal('moonsat');
     if (real.some((s) => !['earth', 'moon', 'sun'].includes(s.body))) this.goal('planetsat');
@@ -2323,7 +2323,7 @@ export class Flight {
       // „Butterweich“ zählt nur nach einem echten Flug, nicht nach einem Hüpfer auf der Rampe.
       if (speed < 2 && this.hopHeight > 100) this.goal('soft');
       if (this.maxHeat > 0.7) this.goal('fire');
-      if (body === MOON) this.goal('moonland');
+      if (body === GAME_MOON) this.goal('moonland');
       else if (body === MARS) this.goal('marsland');
       else if (body === VENUS) this.goal('venusland');
       else if (body === PHOBOS) this.goal('phobos');
@@ -2331,12 +2331,12 @@ export class Flight {
       else if (body === EUROPA) this.goal('europaland');
       else if (body === GANYMEDE) this.goal('ganymedeland');
       else if (body === CERES) this.goal('ceresland');
-      else if (body === EARTH) {
+      else if (body === GAME_EARTH) {
         // Heimkehr zählt nur mit Crew an Bord (Kapsel), nicht für unbemannte Sonden.
         const crew = this.allParts().some((id) => part(id).kind === 'capsule');
         if (crew && this.goals.has('moonland')) this.goal('return');
         if (crew && this.goals.has('marsland')) this.goal('marsreturn');
-        if (this.goals.has('orbit') && EARTH.radius * Math.abs(wrap(up - Math.PI / 2)) < 5_000)
+        if (this.goals.has('orbit') && GAME_EARTH.radius * Math.abs(wrap(up - Math.PI / 2)) < 5_000)
           this.goal('pinpoint');
       }
       if (!this.events.length || this.events[this.events.length - 1]!.kind !== 'goal')
@@ -2344,7 +2344,7 @@ export class Flight {
       return;
     }
     let reason: string;
-    if (body === SUN) reason = 'In der Sonne verglüht – über 5.000 °C heiß.';
+    if (body === GAME_SUN) reason = 'In der Sonne verglüht – über 5.000 °C heiß.';
     else if (!body.solid)
       reason = `${body.name} hat keine feste Oberfläche – die Rakete ist in der Gashülle zerdrückt worden.`;
     else
@@ -2463,23 +2463,24 @@ export class Flight {
     this.maxAltitude = Math.max(this.maxAltitude, h);
     if (this.status === 'flying' && h > 20) this.goal('lift');
     if (h > 10_000) this.goal('km10');
-    if (h > EARTH.atmosphere) this.goal('space');
+    if (h > GAME_EARTH.atmosphere) this.goal('space');
     if (this.status !== 'flying') return;
     const ref = this.refBody();
     this.visited.add(ref.id);
-    if (ref === MOON) {
+    if (ref === GAME_MOON) {
       this.goal('soi');
-      const o = this.orbit(MOON);
-      if (o.bound && o.periapsis > 2_000 && o.apoapsis + MOON.radius < MOON.hill)
+      const o = this.orbit(GAME_MOON);
+      if (o.bound && o.periapsis > 2_000 && o.apoapsis + GAME_MOON.radius < GAME_MOON.hill)
         this.goal('moonorbit');
-    } else if (ref === EARTH) {
-      const o = this.orbit(EARTH);
-      if (o.bound && o.periapsis > EARTH.atmosphere) this.goal('orbit');
-      if (o.bound && o.apoapsis > 1_000_000 && o.periapsis > EARTH.atmosphere) this.goal('high');
+    } else if (ref === GAME_EARTH) {
+      const o = this.orbit(GAME_EARTH);
+      if (o.bound && o.periapsis > GAME_EARTH.atmosphere) this.goal('orbit');
+      if (o.bound && o.apoapsis > 1_000_000 && o.periapsis > GAME_EARTH.atmosphere)
+        this.goal('high');
       if (this.goals.has('soi') && !this.goals.has('moonland')) this.goal('flyby');
-    } else if (ref === SUN) {
+    } else if (ref === GAME_SUN) {
       this.goal('escape');
-      const [sx, sy] = bodyState(SUN, this.t);
+      const [sx, sy] = bodyState(GAME_SUN, this.t);
       if (Math.hypot(this.x - sx, this.y - sy) < VENUS.distance) this.goal('sunclose');
     } else if (ref === MERCURY) {
       this.goal('mercury');
@@ -2785,7 +2786,7 @@ export class Flight {
     const preCap = skipPre ? 1 : Math.floor(maxPoints / 2);
     let postHorizon = pending ? 0 : horizonFor(s);
 
-    const others = BODIES.filter((b) => b !== ref && b.id !== ref.parent && b !== SUN);
+    const others = BODIES.filter((b) => b !== ref && b.id !== ref.parent && b !== GAME_SUN);
     const otherIndex = others.map((b) => BODIES.indexOf(b));
     const inside = new Map<Body, boolean>();
     for (const b of others) {

@@ -1,4 +1,4 @@
-import { EARTH, G0, MOON, enginePressure, type Body } from './world';
+import { GAME_EARTH, G0, GAME_MOON, enginePressure, type Body } from './world';
 
 export type PartKind =
   | 'capsule'
@@ -1451,7 +1451,7 @@ export interface BuildRules {
 export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
   const k = rules?.thrust ?? 1;
   const endless = rules?.infiniteFuel ?? false;
-  const home = rules?.body ?? EARTH;
+  const home = rules?.body ?? GAME_EARTH;
   const gStart = home.mu / home.radius ** 2;
   const segs = segments(design);
   const stats: StageStats[] = [];
@@ -1477,8 +1477,8 @@ export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
     const thrustHome = thrustAt(enginePressure(home.density0));
     const startMass = above + dry + fuel;
     const endMass = startMass - fuel;
-    const gEarth = EARTH.mu / EARTH.radius ** 2;
-    const gMoon = MOON.mu / MOON.radius ** 2;
+    const gEarth = GAME_EARTH.mu / GAME_EARTH.radius ** 2;
+    const gMoon = GAME_MOON.mu / GAME_MOON.radius ** 2;
     stats.push({
       number: 0,
       parts: seg,
@@ -1532,7 +1532,7 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
     });
   const stats = stageStats(design, rules);
   const first = stats[0]!;
-  const home = rules?.body ?? EARTH;
+  const home = rules?.body ?? GAME_EARTH;
   if (first.thrust === 0)
     problems.push({ level: 'error', text: 'Ganz unten muss ein Triebwerk sitzen.' });
   else if (first.fuel === 0)
@@ -1540,7 +1540,7 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
   else if (first.twrStart < 1 && !rules?.orbital)
     problems.push({
       level: 'warn',
-      text: `Zu schwer: Der Schub der ersten Stufe trägt ${home === EARTH ? '' : `am Startort (${home.name}) `}nur ${Math.round(first.twrStart * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
+      text: `Zu schwer: Der Schub der ersten Stufe trägt ${home === GAME_EARTH ? '' : `am Startort (${home.name}) `}nur ${Math.round(first.twrStart * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
     });
   // Reihenfolge im Stapel: Seitenteile stehen daneben und zählen hier nicht.
   const core = design.filter((e) => sideOf(e) === 0);

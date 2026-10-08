@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'preact/hooks';
-import { DAY, EARTH, G, KM, MOON, REAL_PARAMS, barycenterOffset } from '../../physics';
+import {
+  DAY,
+  EARTH,
+  G,
+  KM,
+  MOON,
+  REAL_PARAMS,
+  barycenterOffset,
+  MOON_DISTANCE_KM,
+} from '../../physics';
 import { SHOW_SIMULATOR } from '../../app/content';
 import { openInSimulator } from '../../app/store';
 import { LineChart } from '../../ui/charts/LineChart';
@@ -9,7 +18,7 @@ import { fmt, sci } from '../../ui/format';
 import { RollingRace, ShellCalculator, ShellGravityChart } from './HollowWidgets';
 
 const R = MOON.radius;
-const REAL_BARY = barycenterOffset(EARTH.mass, MOON.mass, 384_400 * KM);
+const REAL_BARY = barycenterOffset(EARTH.mass, MOON.mass, MOON_DISTANCE_KM * KM);
 
 /** Masse einer Gesteinsschale mit Dicke `frac` · R und Dichte `rho` (kg/m³). */
 function shellMass(frac: number, rho: number): number {
@@ -265,7 +274,7 @@ function HollowBarycenter() {
   const [frac, setFrac] = useState(0.1);
   const [rho, setRho] = useState(3.46);
   const m = shellMass(frac, rho * 1000);
-  const r = 384_400 * KM;
+  const r = MOON_DISTANCE_KM * KM;
   const bary = barycenterOffset(EARTH.mass, m, r);
   const period = 2 * Math.PI * Math.sqrt(r ** 3 / (G * (EARTH.mass + m)));
   const realPeriod = 2 * Math.PI * Math.sqrt(r ** 3 / (G * (EARTH.mass + MOON.mass)));
@@ -336,7 +345,7 @@ function HollowBarycenter() {
                   {
                     ...REAL_PARAMS,
                     sunMass: 0,
-                    moonDistance: 384_400,
+                    moonDistance: MOON_DISTANCE_KM,
                     moonSpeed: 1,
                     moonMass: m / MOON.mass,
                   },

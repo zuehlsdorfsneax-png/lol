@@ -46,7 +46,6 @@ jobs:
           Write-Host "Server-Test bestanden ($type)"
 
       - name: Test – App-Fenster in Edge
-        continue-on-error: true
         shell: pwsh
         run: |
           $exe = (Resolve-Path release/Orbitlabor.exe).Path

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Flight } from '../src/rocket/flight';
 import { PARTS, TEMPLATES, checkDesign, part, stageStats } from '../src/rocket/parts';
-import { EARTH, JUPITER, bodyState } from '../src/rocket/world';
+import { GAME_EARTH, JUPITER, bodyState } from '../src/rocket/world';
 
 const NEW = [
   'sonde-xl',
@@ -41,7 +41,7 @@ describe('Neue Bauteile', () => {
   it('Solarflügel verstärken Ionentriebwerke – nahe der Erde stark, bei Jupiter kaum', () => {
     const plain = new Flight(['sonde', 'tank-sonde', 'ionen']);
     const solar = new Flight(['sonde', 'solar', 'tank-sonde', 'ionen']);
-    for (const f of [plain, solar]) f.placeInOrbit(EARTH, 400_000, 0);
+    for (const f of [plain, solar]) f.placeInOrbit(GAME_EARTH, 400_000, 0);
     expect(solar.engine().thrust / plain.engine().thrust).toBeCloseTo(2.5, 1);
     solar.placeInOrbit(JUPITER, 5_000_000, 0);
     expect(solar.engine().thrust / plain.engine().thrust).toBeLessThan(1.1);
@@ -51,15 +51,15 @@ describe('Neue Bauteile', () => {
     expect(b.thrust / a.thrust).toBeCloseTo(2.5, 5);
     // Chemische Triebwerke bleiben unberührt.
     const chem = new Flight(['sonde', 'solar', 'tank-sonde', 'spatz']);
-    chem.placeInOrbit(EARTH, 400_000, 0);
+    chem.placeInOrbit(GAME_EARTH, 400_000, 0);
     expect(chem.engine().thrust).toBeCloseTo(part('spatz').thrust, 0);
   });
 
   it('Solarflügel klappen nur außerhalb der Luft aus', () => {
     const f = new Flight(['sonde', 'solar', 'tank-sonde', 'spatz']);
-    f.placeLanded(EARTH, Math.PI / 2);
+    f.placeLanded(GAME_EARTH, Math.PI / 2);
     expect(f.solarOpen).toBe(false);
-    f.placeInOrbit(EARTH, 400_000, 0);
+    f.placeInOrbit(GAME_EARTH, 400_000, 0);
     run(f, 0.5);
     expect(f.solarOpen).toBe(true);
   });
@@ -69,9 +69,9 @@ describe('Neue Bauteile', () => {
       const f = new Flight(['kapsel', shield]);
       f.status = 'flying';
       // Steiler, schneller Eintritt, Schild voran (relativ zur Erde)
-      const [bx, by, bvx, bvy] = bodyState(EARTH, f.t);
+      const [bx, by, bvx, bvy] = bodyState(GAME_EARTH, f.t);
       f.x = bx;
-      f.y = by + EARTH.radius + 60_000;
+      f.y = by + GAME_EARTH.radius + 60_000;
       f.vx = bvx;
       f.vy = bvy - 3_500;
       f.angle = Math.PI / 2;
@@ -95,7 +95,7 @@ describe('Neue Bauteile', () => {
   it('der Sondenkern Kepler dreht so flink wie mit einem Reaktionsrad', () => {
     const spin = (design: string[]): number => {
       const f = new Flight(design);
-      f.placeInOrbit(EARTH, 400_000, 0);
+      f.placeInOrbit(GAME_EARTH, 400_000, 0);
       f.sas = 'off';
       f.turn = 1;
       run(f, 1);
@@ -110,7 +110,7 @@ describe('Neue Bauteile', () => {
 
   it('ein Weltraumteleskop lässt sich wie ein Satellit aussetzen', () => {
     const f = new Flight(['teleskop', 'sonde-xl', 'tank-m', 'falke']);
-    f.placeInOrbit(EARTH, 600_000, 0);
+    f.placeInOrbit(GAME_EARTH, 600_000, 0);
     expect(f.satellitesOnBoard).toBe(1);
     expect(f.deploySatellite()).toBe(true);
     expect(f.satellitesOnBoard).toBe(0);
@@ -126,10 +126,10 @@ describe('Neue Bauteile', () => {
   it('Vakuumtriebwerke Hermes und Herkules verlieren Schub in dichter Luft', () => {
     for (const id of ['hermes', 'herkules']) {
       const f = new Flight(['sonde', 'tank-l', id]);
-      f.placeInOrbit(EARTH, 300, 0);
+      f.placeInOrbit(GAME_EARTH, 300, 0);
       run(f, 0.1);
       const ground = f.engine().thrust;
-      f.placeInOrbit(EARTH, 400_000, 0);
+      f.placeInOrbit(GAME_EARTH, 400_000, 0);
       run(f, 0.1);
       expect(ground, id).toBeLessThan(f.engine().thrust * 0.6);
     }

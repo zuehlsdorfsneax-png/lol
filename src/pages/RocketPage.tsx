@@ -6,10 +6,10 @@ import { ispAt, part } from '../rocket/parts';
 import { RocketArt } from '../rocket/RocketArt';
 import { RocketGame, type Tab } from '../rocket/RocketGame';
 import {
-  EARTH,
+  GAME_EARTH,
   EUROPA,
   MARS,
-  MOON,
+  GAME_MOON,
   MOON_DISTANCE,
   MOON_HILL,
   MOON_PERIOD,
@@ -21,6 +21,7 @@ import {
   type Body,
 } from '../rocket/world';
 import { PageHead } from '../ui/content';
+import { fmt } from '../ui/format';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Icon } from '../ui/Icon';
 
@@ -30,15 +31,12 @@ function numberWord(n: number): string {
   return words[n] ?? ['zehn', 'elf', 'zwölf'][n - 10] ?? String(n);
 }
 
-const fmt = (x: number, d = 0): string =>
-  x.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
-
 /** Schwerkraft an der Oberfläche aus μ und Radius des Spielkörpers. */
 const surfaceGravity = (b: Body): number => b.mu / b.radius ** 2;
 
 /** Längste Wartezeit auf ein Marsfenster: eine synodische Periode von Erde und Mars. */
 function transferWaitMax(): number {
-  return (2 * Math.PI) / Math.abs(angularRate(EARTH) - angularRate(MARS));
+  return (2 * Math.PI) / Math.abs(angularRate(GAME_EARTH) - angularRate(MARS));
 }
 
 const CONTROLS: [string, string][] = [
@@ -290,7 +288,7 @@ function Physics() {
             eine Verkleidung halbiert ihn, an der Schallmauer steigt er auf das 1,7-Fache. Am
             stärksten drückt der Fahrtwind kurz vor der dünnen Luft – dieser Moment heißt „Max Q“
             und steht im Flugbericht. Deshalb kostet der Aufstieg rund 3.800 m/s Δv, obwohl in 75 km
-            Höhe {fmt(circularSpeed(EARTH, 75_000))} m/s für die Kreisbahn reichen.
+            Höhe {fmt(circularSpeed(GAME_EARTH, 75_000))} m/s für die Kreisbahn reichen.
           </p>
         </div>
       </li>
@@ -300,8 +298,8 @@ function Physics() {
           <p>
             Die Rakete fällt in der Umlaufbahn ständig zur Erde – sie ist aber so schnell zur Seite
             unterwegs, dass die Erdoberfläche unter ihr „wegkrümmt“. Im Spiel braucht das in 50 km
-            Höhe {fmt(circularSpeed(EARTH, 50_000))} m/s. Genau so hält die Schwerkraft auch den
-            Mond auf seiner Bahn (Kapitel 2).
+            Höhe {fmt(circularSpeed(GAME_EARTH, 50_000))} m/s. Genau so hält die Schwerkraft auch
+            den Mond auf seiner Bahn (Kapitel 2).
           </p>
         </div>
       </li>
@@ -373,12 +371,12 @@ function World() {
           <tbody>
             <tr>
               <td>Erdradius</td>
-              <td>{fmt(EARTH.radius / 1000)} km</td>
+              <td>{fmt(GAME_EARTH.radius / 1000)} km</td>
               <td>6.371 km</td>
             </tr>
             <tr>
               <td>Mondradius</td>
-              <td>{fmt(MOON.radius / 1000)} km</td>
+              <td>{fmt(GAME_MOON.radius / 1000)} km</td>
               <td>1.737 km</td>
             </tr>
             <tr>
@@ -394,7 +392,7 @@ function World() {
             <tr>
               <td>Schwerkraft Erde / Mond</td>
               <td>
-                {fmt(surfaceGravity(EARTH), 2)} / {fmt(surfaceGravity(MOON), 2)} m/s²
+                {fmt(surfaceGravity(GAME_EARTH), 2)} / {fmt(surfaceGravity(GAME_MOON), 2)} m/s²
               </td>
               <td>9,81 / 1,62 m/s²</td>
             </tr>
@@ -413,12 +411,12 @@ function World() {
             </tr>
             <tr>
               <td>Abstand Erde–Sonne</td>
-              <td>{fmt(EARTH.distance / 1e9, 1)} Mio. km</td>
+              <td>{fmt(GAME_EARTH.distance / 1e9, 1)} Mio. km</td>
               <td>149,6 Mio. km</td>
             </tr>
             <tr>
               <td>Ein Erdjahr</td>
-              <td>{fmt(orbitalPeriod(EARTH) / 86_400)} Tage</td>
+              <td>{fmt(orbitalPeriod(GAME_EARTH) / 86_400)} Tage</td>
               <td>365 Tage</td>
             </tr>
             <tr>
@@ -430,7 +428,7 @@ function World() {
             </tr>
             <tr>
               <td>Kreisbahn in niedriger Höhe</td>
-              <td>≈ {fmt(circularSpeed(EARTH, 50_000) / 1000, 1)} km/s</td>
+              <td>≈ {fmt(circularSpeed(GAME_EARTH, 50_000) / 1000, 1)} km/s</td>
               <td>≈ 7,8 km/s</td>
             </tr>
           </tbody>

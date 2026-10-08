@@ -16,9 +16,9 @@ import {
 } from './kepler';
 import {
   BODIES,
-  EARTH,
+  GAME_EARTH,
   STATION,
-  SUN,
+  GAME_SUN,
   angularRate,
   bodyById,
   bodyState,
@@ -61,12 +61,12 @@ function fail(title: string, text: string, wait?: number): Plan {
 
 /** Tiefster Punkt für den Wiedereintritt: gut in der Atmosphäre, aber nicht zu steil. */
 export function reentryAltitude(b: Body): number {
-  return b === EARTH ? 25_000 : b.atmosphere * 0.5;
+  return b === GAME_EARTH ? 25_000 : b.atmosphere * 0.5;
 }
 
 /** Gewünschte Höhe des tiefsten Punkts bei der Ankunft an einem Körper. */
 export function arrivalAltitude(b: Body): number {
-  if (b === EARTH) return reentryAltitude(b);
+  if (b === GAME_EARTH) return reentryAltitude(b);
   if (b.atmosphere > 0) return b.atmosphere * 1.5;
   return Math.min(100_000, Math.max(500, b.radius * 0.3));
 }
@@ -298,7 +298,12 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
       label: `Anflug korrigieren`,
       hint: `Tiefsten Punkt auf ${km(arrivalAltitude(ref))} über ${forms(ref).dat} legen – dann einschwenken.`,
     });
-  if (!o.bound && o.periapsis > Math.max(ref.atmosphere, 1_000) && ref !== SUN && ref !== EARTH)
+  if (
+    !o.bound &&
+    o.periapsis > Math.max(ref.atmosphere, 1_000) &&
+    ref !== GAME_SUN &&
+    ref !== GAME_EARTH
+  )
     out.push({
       id: 'capture',
       label: `Einfangen ${forms(ref).at} (sparsam)`,
@@ -308,7 +313,7 @@ export function planOptions(f: Flight, pred: Prediction | null = null): PlanOpti
     const goal = legGoal(bodyById(target), ref);
     const onWay =
       pred?.encounter?.body === goal ||
-      ref === SUN ||
+      ref === GAME_SUN ||
       !o.bound ||
       o.apoapsis + ref.radius >
         0.2 * Math.min(ref.hill, goal.parent === ref.id ? goal.distance * 5 : Infinity);
@@ -360,7 +365,7 @@ export function recommendedPlan(
   const ref = f.refBody();
   const o = f.orbit(ref);
   // Noch keine stabile Bahn: erst rund machen.
-  if (o.bound && o.periapsis < Math.max(ref.atmosphere, 1_000) && ref !== SUN)
+  if (o.bound && o.periapsis < Math.max(ref.atmosphere, 1_000) && ref !== GAME_SUN)
     return has('circ-ap');
   const orb = orbiterFor(target);
   if (orb) {
@@ -723,7 +728,7 @@ export function planCorrection(f: Flight): Plan {
     // ist der Weiterflug zu einem Mond billig. Nur, solange das Ziel noch weit weg ist und der
     // Seitenwechsel wenig kostet.
     const moony =
-      f.refBody() !== target && target !== EARTH && BODIES.some((b) => b.parent === target.id);
+      f.refBody() !== target && target !== GAME_EARTH && BODIES.some((b) => b.parent === target.id);
     const prefer = moony ? -1 : natural;
     const radius = target.radius + arrivalAltitude(target);
     const fine =
@@ -835,7 +840,7 @@ export interface Orbiter {
 }
 
 const STATION_ORBITER: Orbiter = {
-  ref: EARTH,
+  ref: GAME_EARTH,
   radius: STATION.radius,
   size: 0,
   state: stationState,

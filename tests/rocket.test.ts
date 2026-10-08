@@ -3,8 +3,8 @@ import { OrbitPilot } from '../src/rocket/autopilot';
 import { Flight, WARPS } from '../src/rocket/flight';
 import { TEMPLATES, checkDesign, segments, stageStats, totalDeltaV } from '../src/rocket/parts';
 import {
-  EARTH,
-  MOON,
+  GAME_EARTH,
+  GAME_MOON,
   MOON_DISTANCE,
   MOON_HILL,
   MOON_PERIOD,
@@ -28,10 +28,10 @@ function fly(f: Flight, seconds: number, warp = 1, each?: () => void): void {
 
 describe('Spielwelt', () => {
   it('hat echte Oberflächenschwerkraft und das echte Massenverhältnis', () => {
-    expect(EARTH.mu / EARTH.radius ** 2).toBeCloseTo(9.81, 6);
-    expect(MOON.mu / MOON.radius ** 2).toBeCloseTo(1.62, 6);
-    expect(MOON.mu / EARTH.mu).toBeCloseTo(0.0123, 3);
-    expect(MOON_DISTANCE / EARTH.radius).toBe(60);
+    expect(GAME_EARTH.mu / GAME_EARTH.radius ** 2).toBeCloseTo(9.81, 6);
+    expect(GAME_MOON.mu / GAME_MOON.radius ** 2).toBeCloseTo(1.62, 6);
+    expect(GAME_MOON.mu / GAME_EARTH.mu).toBeCloseTo(0.0123, 3);
+    expect(MOON_DISTANCE / GAME_EARTH.radius).toBe(60);
   });
 
   it('der Mond läuft gleichmäßig auf seiner Kreisbahn', () => {
@@ -44,19 +44,19 @@ describe('Spielwelt', () => {
   });
 
   it('Hill-Radius des Mondes nach Kapitel 5', () => {
-    expect(MOON_HILL).toBeCloseTo(MOON_DISTANCE * Math.cbrt(MOON.mu / (3 * EARTH.mu)), 3);
-    expect(MOON_HILL).toBeGreaterThan(10 * MOON.radius);
+    expect(MOON_HILL).toBeCloseTo(MOON_DISTANCE * Math.cbrt(GAME_MOON.mu / (3 * GAME_EARTH.mu)), 3);
+    expect(MOON_HILL).toBeGreaterThan(10 * GAME_MOON.radius);
   });
 
   it('nahe der Oberfläche zieht die Erde mit g', () => {
-    const [ax, ay] = gravity(0, EARTH.radius, 0);
+    const [ax, ay] = gravity(0, GAME_EARTH.radius, 0);
     expect(Math.abs(ax)).toBeLessThan(0.01);
     expect(ay).toBeCloseTo(-9.81, 1);
   });
 
   it('Bahnelemente einer Kreisbahn', () => {
-    const v = circularSpeed(EARTH, 100_000);
-    const o = orbitAround(EARTH, EARTH.radius + 100_000, 0, 0, v);
+    const v = circularSpeed(GAME_EARTH, 100_000);
+    const o = orbitAround(GAME_EARTH, GAME_EARTH.radius + 100_000, 0, 0, v);
     expect(o.bound).toBe(true);
     expect(o.eccentricity).toBeLessThan(1e-9);
     expect(o.periapsis).toBeCloseTo(100_000, -1);
@@ -111,7 +111,7 @@ describe('Flug', () => {
     const f = new Flight(template('orbiter'));
     fly(f, 5);
     expect(f.status).toBe('landed');
-    expect(Math.hypot(f.x, f.y - EARTH.radius)).toBeLessThan(1e-6);
+    expect(Math.hypot(f.x, f.y - GAME_EARTH.radius)).toBeLessThan(1e-6);
   });
 
   it('eine zu schwere Rakete hebt nicht ab', () => {
@@ -126,9 +126,9 @@ describe('Flug', () => {
       const f = new Flight(template(id));
       const pilot = new OrbitPilot();
       fly(f, 900, 4, () => pilot.update(f));
-      const o = f.orbit(EARTH);
+      const o = f.orbit(GAME_EARTH);
       expect(pilot.phase, id).toBe('done');
-      expect(o.periapsis, id).toBeGreaterThan(EARTH.atmosphere);
+      expect(o.periapsis, id).toBeGreaterThan(GAME_EARTH.atmosphere);
       expect(f.goals.has('orbit'), id).toBe(true);
     }
   });
@@ -138,15 +138,15 @@ describe('Flug', () => {
     const h = 120_000;
     f.status = 'flying';
     f.landedOn = null;
-    f.x = EARTH.radius + h;
+    f.x = GAME_EARTH.radius + h;
     f.y = 0;
     f.vx = 0;
-    f.vy = -circularSpeed(EARTH, h);
+    f.vy = -circularSpeed(GAME_EARTH, h);
     // Weit weg vom Mond starten, damit nur die Erde zählt.
     f.t = 0;
-    const before = f.orbit(EARTH);
+    const before = f.orbit(GAME_EARTH);
     fly(f, 8 * before.period, 1000);
-    const after = f.orbit(EARTH);
+    const after = f.orbit(GAME_EARTH);
     expect(f.status).toBe('flying');
     expect(Math.abs(after.periapsis - before.periapsis)).toBeLessThan(3_000);
   });
@@ -161,14 +161,14 @@ describe('Flug', () => {
     fly(f, 3000, 50);
     expect(f.crashReason).toBe('');
     expect(f.status).toBe('landed');
-    expect(f.landedOn).toBe(EARTH);
+    expect(f.landedOn).toBe(GAME_EARTH);
   });
 
   it('ohne Fallschirm und Bremsen zerschellt die Rakete', () => {
     const f = new Flight(['kapsel', 'tank-s', 'falke']);
     f.status = 'flying';
     f.landedOn = null;
-    f.y = EARTH.radius + 2_000;
+    f.y = GAME_EARTH.radius + 2_000;
     fly(f, 120);
     expect(f.status).toBe('crashed');
     expect(f.crashReason).toMatch(/Aufprall/);
@@ -201,10 +201,10 @@ describe('Flug', () => {
     const f = new Flight(['kapsel', 'tank-s', 'falke']);
     f.status = 'flying';
     f.landedOn = null;
-    f.y = EARTH.radius + 150;
+    f.y = GAME_EARTH.radius + 150;
     // Mit dem Triebwerk langsam (1 m/s) herunterschweben.
     fly(f, 200, 1, () => {
-      const rel = f.relative(EARTH);
+      const rel = f.relative(GAME_EARTH);
       const v = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
       const hover = (f.mass * 9.81) / f.engine().thrust;
       f.throttle = f.status === 'flying' ? Math.max(0, Math.min(1, hover + 0.3 * (-1 - v))) : 0;
@@ -217,7 +217,7 @@ describe('Flug', () => {
     const f = new Flight(['kapsel', 'tank-s', 'falke']);
     f.status = 'flying';
     f.landedOn = null;
-    f.y = EARTH.radius + 30_000;
+    f.y = GAME_EARTH.radius + 30_000;
     f.vy = -4_500;
     fly(f, 20);
     expect(f.status).toBe('crashed');

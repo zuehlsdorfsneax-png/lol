@@ -1,4 +1,10 @@
-import { EARTH_HILL_RADIUS, KM, REAL_PARAMS, type ScenarioParams } from '../physics';
+import {
+  EARTH_HILL_RADIUS,
+  KM,
+  REAL_PARAMS,
+  type ScenarioParams,
+  MOON_DISTANCE_KM,
+} from '../physics';
 import type { SimSettings } from './Simulation';
 import type { FrameId } from './view';
 
@@ -19,7 +25,7 @@ export interface Preset {
   chapter?: number;
 }
 
-const BASE: ScenarioParams = { ...REAL_PARAMS, moonDistance: 384_400, moonSpeed: 1 };
+const BASE: ScenarioParams = { ...REAL_PARAMS, moonDistance: MOON_DISTANCE_KM, moonSpeed: 1 };
 const RH = EARTH_HILL_RADIUS / KM;
 
 export const SPEEDS = [

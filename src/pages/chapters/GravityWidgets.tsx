@@ -213,7 +213,7 @@ export function KeplerLab() {
                   <td>{p.name}</td>
                   <td class="num">{sig(p.a, 4)}</td>
                   <td class="num">{sig(p.T, 4)}</td>
-                  <td class="num">{(p.T ** 2 / p.a ** 3).toFixed(3).replace('.', ',')}</td>
+                  <td class="num">{fmt(p.T ** 2 / p.a ** 3, 3)}</td>
                   <td class="num">{sci(p.M, 3)} kg</td>
                 </tr>
               ))}

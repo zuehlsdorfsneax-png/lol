@@ -19,7 +19,7 @@ import {
   planOptions,
   recommendedPlan,
 } from '../src/rocket/planner';
-import { EARTH, MARS, PHOBOS, SUN, bodyById } from '../src/rocket/world';
+import { GAME_EARTH, MARS, PHOBOS, GAME_SUN, bodyById } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 
@@ -67,10 +67,10 @@ describe('Missions-Autopilot: Ablauf', () => {
   });
 
   it('nutzt beim Weg zu einem fremden Mond den Planeten als nächste Etappe', () => {
-    expect(legGoal(PHOBOS, EARTH)).toBe(MARS);
-    expect(legGoal(PHOBOS, SUN)).toBe(MARS);
+    expect(legGoal(PHOBOS, GAME_EARTH)).toBe(MARS);
+    expect(legGoal(PHOBOS, GAME_SUN)).toBe(MARS);
     expect(legGoal(PHOBOS, MARS)).toBe(PHOBOS);
-    expect(legGoal(bodyById('moon'), EARTH).id).toBe('moon');
+    expect(legGoal(bodyById('moon'), GAME_EARTH).id).toBe('moon');
     expect(orbiterFor('phobos')?.ref).toBe(MARS);
     expect(orbiterFor('moon')).toBeNull();
   });
@@ -79,7 +79,7 @@ describe('Missions-Autopilot: Ablauf', () => {
 describe('Bordcomputer: nächster Schritt', () => {
   it('empfiehlt in der Erdbahn den Transfer zum Ziel und bei der Station das Rendezvous', () => {
     const f = new Flight(template('luna'));
-    f.placeInOrbit(EARTH, 100_000, 1);
+    f.placeInOrbit(GAME_EARTH, 100_000, 1);
     f.target = 'moon';
     const pred = f.predict();
     expect(recommendedPlan(f, planOptions(f, pred), pred)).toBe('transfer');
@@ -89,7 +89,7 @@ describe('Bordcomputer: nächster Schritt', () => {
 
   it('empfiehlt nach dem Transfer zum Mars die Kurskorrektur, solange die Ankunft nicht passt', () => {
     const f = new Flight(template('ares'));
-    f.placeInOrbit(EARTH, 200_000, 1);
+    f.placeInOrbit(GAME_EARTH, 200_000, 1);
     f.target = 'mars';
     const r = makePlan(f, 'transfer');
     if (r.wait) f.warpTo(f.t + r.wait - f.orbit().period);
@@ -114,8 +114,8 @@ describe('Missions-Autopilot: Flüge', () => {
     const f = new Flight(template('orbiter'));
     const m = fly(f, { target: 'orbit', land: false, home: false });
     expect(m.status, m.message).toBe('done');
-    const o = f.orbit(EARTH);
-    expect(o.periapsis).toBeGreaterThan(EARTH.atmosphere);
+    const o = f.orbit(GAME_EARTH);
+    expect(o.periapsis).toBeGreaterThan(GAME_EARTH.atmosphere);
     expect(o.eccentricity).toBeLessThan(0.02);
   });
 
@@ -176,10 +176,10 @@ describe('Missions-Autopilot: Flüge', () => {
 
   it('umrundet den Mond und landet wieder auf der Erde', () => {
     const f = new Flight(template('luna'));
-    f.placeInOrbit(EARTH, 80_000, 1);
+    f.placeInOrbit(GAME_EARTH, 80_000, 1);
     const m = fly(f, { target: 'moon', land: false, home: true });
     expect(m.status, m.message).toBe('done');
-    expect(f.landedOn).toBe(EARTH);
+    expect(f.landedOn).toBe(GAME_EARTH);
     // Direkt heim, nicht erst auf eine weite Schleife um die Erde.
     expect(f.t).toBeLessThan(6 * 86_400);
   });

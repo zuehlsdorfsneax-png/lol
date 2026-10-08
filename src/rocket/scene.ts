@@ -9,15 +9,15 @@ import { drawLaunchComplex, drawRidges, drawSkySun } from './landscape';
 import { bodySpin, satelliteState, type Flight, type LandingSite } from './flight';
 import {
   BODIES,
-  EARTH,
+  GAME_EARTH,
   EUROPA,
   JUPITER,
   MARS,
   MERCURY,
-  MOON,
+  GAME_MOON,
   PHOBOS,
   STATION,
-  SUN,
+  GAME_SUN,
   VENUS,
   bodyById,
   bodyState,
@@ -76,17 +76,17 @@ function padRocket(f: Flight): { length: number; width: number } {
 }
 
 export function sunLight(x: number, y: number, body: Body, t: number): SunLight {
-  const [sx, sy] = bodyState(SUN, t);
+  const [sx, sy] = bodyState(GAME_SUN, t);
   const [bx, by] = bodyState(body, t);
   const dx = sx - x;
   const dy = sy - y;
   const d = Math.hypot(dx, dy) || 1;
   const ux = (x - bx) / (Math.hypot(x - bx, y - by) || 1);
   const uy = (y - by) / (Math.hypot(x - bx, y - by) || 1);
-  const elevation = body === SUN ? 1 : (ux * dx + uy * dy) / d;
+  const elevation = body === GAME_SUN ? 1 : (ux * dx + uy * dy) / d;
   // Schatten: Liegt der Körper zwischen Rakete und Sonne?
   let shadow = false;
-  if (body !== SUN) {
+  if (body !== GAME_SUN) {
     const rx = x - bx;
     const ry = y - by;
     const proj = (rx * dx + ry * dy) / d;
@@ -233,7 +233,7 @@ function nightSide(
   t: number,
   strength = 0.62,
 ): void {
-  const [sunX, sunY] = bodyState(SUN, t);
+  const [sunX, sunY] = bodyState(GAME_SUN, t);
   const [px, py] = toScreen(v, sunX, sunY);
   const dx = sx - px;
   const dy = sy - py;
@@ -253,12 +253,12 @@ function nightSide(
 }
 
 function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
-  const R = EARTH.radius;
+  const R = GAME_EARTH.radius;
   const rpx = R * v.scale;
   if (rpx < 20_000) {
     const [sx, sy] = toScreen(v, 0, 0);
     // Atmosphärenschein
-    const outer = rpx + Math.max(4, EARTH.atmosphere * 1.6 * v.scale);
+    const outer = rpx + Math.max(4, GAME_EARTH.atmosphere * 1.6 * v.scale);
     const glow = ctx.createRadialGradient(sx, sy, rpx * 0.98, sx, sy, outer);
     glow.addColorStop(0, 'rgba(120,180,255,0.55)');
     glow.addColorStop(1, 'rgba(120,180,255,0)');
@@ -291,7 +291,7 @@ function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
       nightSide(ctx, v, sx, sy, rpx, t, 0.7);
       // Stadtlichter auf der Nachtseite
       if (rpx > 30) {
-        const [sunX, sunY] = bodyState(SUN, t);
+        const [sunX, sunY] = bodyState(GAME_SUN, t);
         const sunA = Math.atan2(sunY, sunX);
         for (let i = 0; i < 90; i++) {
           const a = hash(i, 21) * Math.PI * 2;
@@ -352,17 +352,17 @@ function drawFarDisk(ctx: CanvasRenderingContext2D, v: View, b: Body, t: number)
   const rpx = b.radius * v.scale;
   if (rpx < 3 || rpx >= 2_500) return false;
   const glowPx =
-    b === SUN
+    b === GAME_SUN
       ? Math.max(rpx * 1.4, 26 - rpx)
       : b.atmosphere > 0
         ? Math.max(4, b.atmosphere * 1.6 * v.scale, rpx * 0.03)
         : 0;
   const reach = rpx + glowPx;
   if (sx < -reach || sx > v.width + reach || sy < -reach || sy > v.height + reach) return true;
-  const [sunX, sunY] = bodyState(SUN, t);
+  const [sunX, sunY] = bodyState(GAME_SUN, t);
   const [px, py] = toScreen(v, sunX, sunY);
   const sunAngle = Math.atan2(py - sy, px - sx);
-  const spin = b === EARTH ? 0 : bodySpin(b, t) || orbitAngle(b, t);
+  const spin = b === GAME_EARTH ? 0 : bodySpin(b, t) || orbitAngle(b, t);
   return drawPlanetDisk(ctx, b, sx, sy, rpx, v.up - Math.PI / 2 - spin, sunAngle, glowPx);
 }
 
@@ -375,7 +375,7 @@ export function drawBody(
   minPx = 0,
 ): void {
   if (drawFarDisk(ctx, v, b, t)) return;
-  if (b === EARTH) {
+  if (b === GAME_EARTH) {
     drawEarth(ctx, v, t);
     return;
   }
@@ -386,10 +386,10 @@ export function drawBody(
   // Leuchten (Sonne) bzw. Atmosphäre aus der Ferne
   if (look.glow && rpx < 20_000) {
     const outer =
-      b === SUN ? Math.max(rpx * 2.4, 26) : rpx + Math.max(3, b.atmosphere * 1.5 * v.scale);
+      b === GAME_SUN ? Math.max(rpx * 2.4, 26) : rpx + Math.max(3, b.atmosphere * 1.5 * v.scale);
     if (sx > -outer && sx < v.width + outer && sy > -outer && sy < v.height + outer) {
       const g = ctx.createRadialGradient(sx, sy, Math.max(rpx * 0.9, 0.5), sx, sy, outer);
-      g.addColorStop(0, `${look.glow}${b === SUN ? 0.9 : 0.45})`);
+      g.addColorStop(0, `${look.glow}${b === GAME_SUN ? 0.9 : 0.45})`);
       g.addColorStop(1, `${look.glow}0)`);
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -413,7 +413,7 @@ export function drawBody(
   ctx.save();
   ctx.clip();
   const rot = bodySpin(b, t) || orbitAngle(b, t);
-  if (b === MOON || b === PHOBOS) drawCraters(ctx, v, b, bx, by, rot, look.detail);
+  if (b === GAME_MOON || b === PHOBOS) drawCraters(ctx, v, b, bx, by, rot, look.detail);
   if (b === MERCURY) drawCraters(ctx, v, b, bx, by, rot, look.detail, 20);
   if (!close && rpx > 3) {
     if (b === MARS) {
@@ -472,14 +472,14 @@ export function drawBody(
         ctx.ellipse(sx + rpx * 0.35, sy + rpx * 0.3, rpx * 0.16, rpx * 0.09, 0, 0, Math.PI * 2);
         ctx.fill();
       }
-    } else if (b === SUN) {
+    } else if (b === GAME_SUN) {
       const g = ctx.createRadialGradient(sx - rpx * 0.2, sy - rpx * 0.2, 0, sx, sy, rpx);
       g.addColorStop(0, '#fff7d6');
       g.addColorStop(1, '#ffb52e');
       ctx.fillStyle = g;
       ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
     }
-    if (b !== SUN) nightSide(ctx, v, sx, sy, rpx, t, 0.55);
+    if (b !== GAME_SUN) nightSide(ctx, v, sx, sy, rpx, t, 0.55);
   }
   ctx.restore();
 }
@@ -577,7 +577,7 @@ function drawSurfaceDetail(ctx: CanvasRenderingContext2D, v: View, b: Body, t: n
   const [bx, by] = bodyState(b, t);
   const { from, to, spin } = visibleArc(v, b, t);
   const R = b.radius;
-  if (b === EARTH) {
+  if (b === GAME_EARTH) {
     if (v.scale < 0.3) return;
     const step = 28 / R;
     const pad = Math.PI / 2;
@@ -646,7 +646,7 @@ function drawGroundShade(
   t: number,
   day = 1,
 ): void {
-  if (b === SUN || !b.solid || b.radius * v.scale < 2_500) return;
+  if (b === GAME_SUN || !b.solid || b.radius * v.scale < 2_500) return;
   const [bx, by] = bodyState(b, t);
   const d = Math.hypot(v.cx - bx, v.cy - by) || 1;
   const gy = toScreen(v, bx + ((v.cx - bx) / d) * b.radius, by + ((v.cy - by) / d) * b.radius)[1];
@@ -700,7 +700,7 @@ function drawClouds(ctx: CanvasRenderingContext2D, v: View, light: SunLight): vo
   const img = cloudSprite(top, bottom);
   const rot = v.up - Math.PI / 2;
   for (const c of CLOUDS) {
-    const r = EARTH.radius + c.alt;
+    const r = GAME_EARTH.radius + c.alt;
     const [sx, sy] = toScreen(v, ex + r * Math.cos(c.a), ey + r * Math.sin(c.a));
     const sizePx = c.size * v.scale;
     if (sizePx < 3) continue;
@@ -1002,9 +1002,9 @@ export function drawFlight(
     nby + ((v.cy - nby) / nd) * near.body.radius,
   )[1];
   const closeUp = near.body.solid && near.body.radius * v.scale >= 20_000;
-  if (near.body !== SUN && (inAir || closeUp))
+  if (near.body !== GAME_SUN && (inAir || closeUp))
     drawSkySun(ctx, v, light, groundY, inAir ? k : 1, !!inAir, fancy);
-  const dimNow = near.body === SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
+  const dimNow = near.body === GAME_SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
   for (const b of order) {
     if (b === near.body && closeUp)
       drawRidges(
@@ -1015,13 +1015,13 @@ export function drawFlight(
         bodySpin(b, f.t),
         horizon,
         dimNow,
-        b === EARTH ? earthRidgeMask : undefined,
+        b === GAME_EARTH ? earthRidgeMask : undefined,
       );
-    drawBody(ctx, v, b, f.t, b === SUN ? 3 : 1.2);
+    drawBody(ctx, v, b, f.t, b === GAME_SUN ? 3 : 1.2);
   }
   // Nachtseite der Nahansicht abdunkeln
   const nearPx = near.body.radius * v.scale;
-  if (nearPx >= 20_000 && light.day < 0.99 && near.body !== SUN) {
+  if (nearPx >= 20_000 && light.day < 0.99 && near.body !== GAME_SUN) {
     const [bx, by] = bodyState(near.body, f.t);
     ctx.beginPath();
     if (sectorPath(ctx, v, bx, by, near.body.radius, 0, 2 * Math.PI)) {
@@ -1033,13 +1033,13 @@ export function drawFlight(
   // Bäume, Felsen, Gebäude und Basen liegen nachts im Dunkeln: ihre Farben werden abgedunkelt
   // (in 5-%-Schritten, gemerkt). Früher per Helligkeitsfilter – der kostet auf vielen Geräten
   // für jede einzelne Form eine eigene Bildebene.
-  nightDim = near.body === SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
+  nightDim = near.body === GAME_SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
   drawSurfaceDetail(ctx, v, near.body, f.t);
-  if (near.body === EARTH)
+  if (near.body === GAME_EARTH)
     drawLaunchComplex(ctx, v, time, lit, nightDim, f.status === 'flying', padRocket(f));
   if (f.site) drawSite(ctx, v, f.site, f.t, time);
   nightDim = 0;
-  if (near.body === EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);
+  if (near.body === GAME_EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);
   drawStation(ctx, v, f.t, 6);
 
   // Satelliten in der Nähe
@@ -1164,7 +1164,7 @@ export function drawFlight(
     }
     bagsAnim += (bagsWanted - bagsAnim) * Math.min(1, dtAnim * 4);
     const dark = light.shadow || light.day < 0.45;
-    const lamps = f.hasLights && dark && near.body !== SUN ? 1 : 0;
+    const lamps = f.hasLights && dark && near.body !== GAME_SUN ? 1 : 0;
     if (lamps && near.altitude < 90 && near.body.solid)
       drawLampPool(ctx, v, f, near, '255,240,205', 6 + near.altitude * 0.55, 0.75, 90);
     // Der Triebwerksstrahl beleuchtet den Boden – nachts deutlich, am Tag nur ein warmer Schimmer.
@@ -1229,7 +1229,7 @@ function backdropFor(
   altitude: number,
   airFade: number,
 ): { view: View; fade: number; key: string } | null {
-  if (body === SUN || altitude > body.radius * 40) return null;
+  if (body === GAME_SUN || altitude > body.radius * 40) return null;
   const { width: W, height: H } = v;
   // Erst, wenn der echte Boden unter dem Bild verschwunden ist – dann weich einblenden.
   const groundPx = altitude * v.scale;
@@ -1254,7 +1254,7 @@ function backdropFor(
     oy: v.oy + (dy / d) * dist,
   };
   if (view.ox < -rPx * 1.2 - W || view.ox > W * 2 + rPx * 1.2) return null;
-  const [sunX, sunY] = bodyState(SUN, f.t);
+  const [sunX, sunY] = bodyState(GAME_SUN, f.t);
   const sun = Math.atan2(sunY - by, sunX - bx);
   const spin = bodySpin(body, f.t) || orbitAngle(body, f.t);
   const key = [
@@ -1398,7 +1398,7 @@ function drawHeating(
   // Wasserdampf der Luft kondensiert – eine weiße Glocke um die Schulter der Rakete. Nur in
   // feuchter Erdluft; auf Mars und Venus fehlt das Wasser.
   const vapor =
-    air.body === EARTH
+    air.body === GAME_EARTH
       ? Math.max(0, 1 - Math.abs(speed / sound - 1) / 0.12) * Math.min(1, rho / 0.3)
       : 0;
   if (vapor > 0.02) {

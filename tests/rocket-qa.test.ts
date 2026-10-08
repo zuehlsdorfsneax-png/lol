@@ -12,10 +12,10 @@ import { forTouch } from '../src/rocket/touch';
 import { QUESTIONS, QUIZ, shuffledOrders } from '../src/quiz/questions';
 import { clock, clockIn } from '../src/rocket/format';
 import {
-  EARTH,
+  GAME_EARTH,
   JUPITER,
   MARS,
-  MOON,
+  GAME_MOON,
   circularSpeed,
   forms,
   stationState,
@@ -42,7 +42,7 @@ function hop(f: Flight): void {
 describe('Spiellogik (QA)', () => {
   it('„Kommt näher“: closing ist positiv, wenn der Abstand schrumpft', () => {
     const f = new Flight(['kapsel', 'tank-s', 'falke']);
-    f.placeInOrbit(EARTH, 100_000, Math.PI / 2);
+    f.placeInOrbit(GAME_EARTH, 100_000, Math.PI / 2);
     const [sx, sy, svx, svy] = stationState(f.t);
     const v = Math.hypot(svx, svy);
     // 1 km hinter der Station, 5 m/s schneller als sie.
@@ -98,8 +98,8 @@ describe('Spiellogik (QA)', () => {
 
   it('Satelliten bekommen eindeutige Nummern und Namen', () => {
     const f = new Flight(['satellit', 'satellit', 'sonde', 'tank-m', 'falke']);
-    f.placeInOrbit(EARTH, 150_000, Math.PI / 2);
-    const old: Satellite = { id: 1, name: 'Satellit 1', body: 'earth', el: f.elements(EARTH) };
+    f.placeInOrbit(GAME_EARTH, 150_000, Math.PI / 2);
+    const old: Satellite = { id: 1, name: 'Satellit 1', body: 'earth', el: f.elements(GAME_EARTH) };
     f.satellites = [old];
     expect(f.deploySatellite()).toBe(true);
     run(f, 2);
@@ -119,7 +119,7 @@ describe('Spiellogik (QA)', () => {
 
   it('Stufentrennung erhält den Impuls', () => {
     const f = new Flight(template('orbiter'));
-    f.placeInOrbit(EARTH, 150_000, Math.PI / 2);
+    f.placeInOrbit(GAME_EARTH, 150_000, Math.PI / 2);
     const m0 = f.mass;
     const p0 = [f.vx * m0, f.vy * m0];
     const n = f.debris.length;
@@ -166,14 +166,14 @@ describe('Spiellogik (QA)', () => {
 
   it('Vorhersage verändert das geplante Manöver nicht; Vorbeiflug wählt kein Ziel', () => {
     const f = new Flight(['kapsel', 'tank-m', 'falke']);
-    f.placeInOrbit(EARTH, 150_000, Math.PI / 2);
+    f.placeInOrbit(GAME_EARTH, 150_000, Math.PI / 2);
     f.setNode(f.t + 600, 300);
     const before = JSON.stringify(f.node);
     f.predict();
     expect(JSON.stringify(f.node)).toBe(before);
 
     const g = new Flight(['kapsel', 'tank-m', 'falke']);
-    g.placeInOrbit(EARTH, 100_000, Math.PI / 2);
+    g.placeInOrbit(GAME_EARTH, 100_000, Math.PI / 2);
     const [sx, sy, svx, svy] = stationState(g.t);
     g.x = sx + 150;
     g.y = sy;
@@ -223,13 +223,13 @@ describe('Werft (QA)', () => {
   it('Sandkasten-Regeln ändern Schub, Δv und Startschwerkraft in der Werft', () => {
     const d = ['kapsel', 'tank-m', 'falke'];
     const base = stageStats(d)[0]!;
-    const fast = stageStats(d, { thrust: 10, infiniteFuel: false, body: EARTH })[0]!;
+    const fast = stageStats(d, { thrust: 10, infiniteFuel: false, body: GAME_EARTH })[0]!;
     expect(fast.twrStart).toBeCloseTo(base.twrEarth * 10, 6);
     expect(fast.deltaV).toBeCloseTo(base.deltaV, 6);
     expect(fast.burnTime).toBeCloseTo(base.burnTime / 10, 6);
-    const endless = stageStats(d, { thrust: 1, infiniteFuel: true, body: EARTH })[0]!;
+    const endless = stageStats(d, { thrust: 1, infiniteFuel: true, body: GAME_EARTH })[0]!;
     expect(endless.deltaV).toBe(Infinity);
-    const moon = stageStats(d, { thrust: 1, infiniteFuel: false, body: MOON })[0]!;
+    const moon = stageStats(d, { thrust: 1, infiniteFuel: false, body: GAME_MOON })[0]!;
     expect(moon.twrStart).toBeCloseTo(base.twrMoon, 6);
   });
 
@@ -238,7 +238,7 @@ describe('Werft (QA)', () => {
     const heavyWarn = (rules?: Parameters<typeof checkDesign>[1]): boolean =>
       checkDesign(heavy, rules).some((p) => p.text.startsWith('Zu schwer'));
     expect(heavyWarn()).toBe(true);
-    expect(heavyWarn({ thrust: 1, infiniteFuel: false, body: MOON })).toBe(false);
+    expect(heavyWarn({ thrust: 1, infiniteFuel: false, body: GAME_MOON })).toBe(false);
   });
 });
 
@@ -264,8 +264,8 @@ describe('Texte (QA)', () => {
 describe('Namen mit Artikel (QA)', () => {
   it('bildet die Fälle für Planeten und Monde', () => {
     expect(forms(MARS).to).toBe('zum Mars');
-    expect(forms(EARTH).dat).toBe('der Erde');
-    expect(forms(MOON).acc).toBe('den Mond');
+    expect(forms(GAME_EARTH).dat).toBe('der Erde');
+    expect(forms(GAME_MOON).acc).toBe('den Mond');
     expect(forms(JUPITER).at).toBe('beim Jupiter');
   });
 

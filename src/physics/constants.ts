@@ -28,12 +28,15 @@ export const EARTH = {
   siderealYear: 365.256363 * DAY,
 } as const;
 
+/** Mittlerer Abstand Erde–Mond in km, so wie er in Arbeit und App angegeben wird. */
+export const MOON_DISTANCE_KM = 384_400;
+
 export const MOON = {
   mass: 7.342e22,
   radius: 1.7374e6,
   density: 3344,
   /** Mittlerer Abstand (große Halbachse) Erde–Mond. */
-  semiMajorAxis: 3.84399e8,
+  semiMajorAxis: MOON_DISTANCE_KM * KM,
   eccentricity: 0.0549,
   /** Siderischer Monat: Umlauf relativ zu den Fixsternen. */
   siderealPeriod: 27.321661 * DAY,

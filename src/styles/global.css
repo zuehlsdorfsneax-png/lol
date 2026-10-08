@@ -827,6 +827,7 @@ svg {
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+  transition: transform var(--dur-1) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2316,20 +2317,8 @@ table.data.compact td {
 /* ------------------------------------------------------------------
    Feinschliff: weiche Übergänge, Karten mit Tiefe, Knöpfe mit Druck
 ------------------------------------------------------------------- */
-.btn {
-  transition:
-    background-color var(--dur-2) var(--ease-out),
-    border-color var(--dur-2) var(--ease-out),
-    transform var(--dur-1) var(--ease-out),
-    box-shadow var(--dur-2) var(--ease-out);
-}
-
 .btn:active:not(:disabled) {
   transform: scale(0.97);
-}
-
-.btn.primary {
-  box-shadow: var(--shadow-1);
 }
 
 /* Seitenwechsel: neuer Inhalt blendet kurz ein. Nur Deckkraft und nur während der Einblendung
@@ -2858,5 +2847,23 @@ table.data.compact td {
       'title foot'
       'goal goal';
     padding-inline: 0;
+  }
+}
+
+/* Touch-Geräte: Ziele mindestens 44 px hoch und breit (DESIGN-REGELN §7). */
+@media (pointer: coarse) {
+  .btn,
+  .seg button,
+  .brand {
+    min-height: 44px;
+  }
+
+  .seg button {
+    height: auto;
+  }
+
+  .btn.icon {
+    width: 44px;
+    min-width: 44px;
   }
 }

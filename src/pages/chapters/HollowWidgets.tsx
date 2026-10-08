@@ -322,7 +322,7 @@ export function RollingRace() {
       ctx.fillText(b.name, x0 + 28, yTop - 6);
       if (elapsed >= times[i]!) {
         ctx.textAlign = 'right';
-        ctx.fillText(`${times[i]!.toFixed(3).replace('.', ',')} s`, x1 - 6, yBottom - 22);
+        ctx.fillText(`${fmt(times[i]!, 3)} s`, x1 - 6, yBottom - 22);
       }
     });
     if (start !== null && elapsed > Math.max(...times) && !done) setDone(true);

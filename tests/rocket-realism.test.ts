@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { OrbitPilot } from '../src/rocket/autopilot';
 import { Flight } from '../src/rocket/flight';
 import { PARTS, PART_CATEGORIES, TEMPLATES, part, stageStats } from '../src/rocket/parts';
-import { EARTH, G0, MOON, stationPort, stationState } from '../src/rocket/world';
+import { GAME_EARTH, G0, GAME_MOON, stationPort, stationState } from '../src/rocket/world';
 
 function run(f: Flight, seconds: number, until: () => boolean = () => false): void {
   for (let i = 0; i < seconds * 60 && f.status !== 'crashed' && !until(); i++) f.update(1 / 60);
@@ -13,7 +13,7 @@ describe('Triebwerke und Luftdruck', () => {
     const f = new Flight(['kapsel', 'tank-m', 'falke']);
     run(f, 0.1);
     const ground = f.engine();
-    f.placeInOrbit(EARTH, 400_000, 0);
+    f.placeInOrbit(GAME_EARTH, 400_000, 0);
     run(f, 0.1);
     const vacuum = f.engine();
     expect(ground.flow).toBeCloseTo(vacuum.flow, 6);
@@ -39,8 +39,8 @@ describe('Triebwerke und Luftdruck', () => {
 
   it('die Werft rechnet den Start mit Bodenschub, den Mond mit Vakuumschub', () => {
     const s = stageStats(['kapsel', 'tank-m', 'falke'])[0]!;
-    const gEarth = EARTH.mu / EARTH.radius ** 2;
-    const gMoon = MOON.mu / MOON.radius ** 2;
+    const gEarth = GAME_EARTH.mu / GAME_EARTH.radius ** 2;
+    const gMoon = GAME_MOON.mu / GAME_MOON.radius ** 2;
     expect(s.twrEarth * s.startMass * gEarth).toBeCloseTo(s.flow * G0 * s.ispSea, 3);
     expect(s.twrMoon * s.startMass * gMoon).toBeCloseTo(s.thrust, 3);
     expect(s.flow).toBeCloseTo(part('falke').thrust / (part('falke').isp * G0), 6);
@@ -66,7 +66,7 @@ describe('Luftwiderstand', () => {
 
   it('der Flug misst den größten Staudruck (Max Q)', () => {
     const f = new Flight([...TEMPLATES.find((t) => t.id === 'orbiter')!.parts]);
-    const pilot = new OrbitPilot(EARTH);
+    const pilot = new OrbitPilot(GAME_EARTH);
     for (let i = 0; i < 90 * 60; i++) {
       pilot.update(f);
       f.update(1 / 60);
@@ -87,7 +87,7 @@ describe('Neue Teile ohne Triebwerk', () => {
   it('die Verkleidung sprengt sich über 30 km ab und die Rakete wird leichter', () => {
     const f = new Flight(['verkleidung', 'satellit', 'sonde', 'tank-m', 'falke']);
     expect(f.streamlined).toBe(true);
-    const pilot = new OrbitPilot(EARTH);
+    const pilot = new OrbitPilot(GAME_EARTH);
     const dry = (): number => f.segs.flatMap((s) => s.parts).reduce((m, id) => m + part(id).dry, 0);
     const before = dry();
     let below = 0;
@@ -106,7 +106,7 @@ describe('Neue Teile ohne Triebwerk', () => {
   it('Gitterflossen drehen die Rakete in dichter Luft schneller, im All nicht', () => {
     const turn = (design: string[], altitude: number): number => {
       const f = new Flight(design);
-      f.placeInOrbit(EARTH, altitude, 0);
+      f.placeInOrbit(GAME_EARTH, altitude, 0);
       const a0 = f.angle;
       f.turn = 1;
       run(f, 0.5);
@@ -161,7 +161,7 @@ describe('Neue Teile ohne Triebwerk', () => {
 describe('Aufstiegspilot', () => {
   it('bringt auch eine schwache Oberstufe in die Bahn (Nachtfalke)', () => {
     const f = new Flight([...TEMPLATES.find((t) => t.id === 'nachtfalke')!.parts]);
-    const pilot = new OrbitPilot(EARTH);
+    const pilot = new OrbitPilot(GAME_EARTH);
     for (let i = 0; i < 900 * 60; i++) {
       const p = pilot.update(f);
       if (p === 'done' || p === 'failed') break;
@@ -169,6 +169,6 @@ describe('Aufstiegspilot', () => {
     }
     expect(f.status).toBe('flying');
     expect(pilot.phase).toBe('done');
-    expect(f.orbit(EARTH).periapsis).toBeGreaterThan(EARTH.atmosphere);
+    expect(f.orbit(GAME_EARTH).periapsis).toBeGreaterThan(GAME_EARTH.atmosphere);
   });
 });

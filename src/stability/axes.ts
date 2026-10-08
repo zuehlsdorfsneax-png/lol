@@ -8,6 +8,7 @@ import {
   scenarioInfo,
   type Outcome,
   type ScenarioParams,
+  MOON_DISTANCE_KM,
 } from '../physics';
 
 export type AxisKey =
@@ -245,7 +246,7 @@ export const MAP_PRESETS: readonly MapPreset[] = [
 
 export const DEFAULT_BASE: ScenarioParams = {
   ...REAL_PARAMS,
-  moonDistance: 384_400,
+  moonDistance: MOON_DISTANCE_KM,
   moonSpeed: 1,
   moonAngle: 0,
 };

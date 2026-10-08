@@ -9,9 +9,11 @@
  * Alle Körper laufen im Uhrzeigersinn – wie eine Rakete, die sich nach dem Start nach rechts neigt.
  */
 
+import { EARTH as REAL_EARTH } from '../physics/constants';
+
 export const G0 = 9.81;
-/** Maßstab der Spielwelt gegenüber der Wirklichkeit. */
-export const SCALE = 600_000 / 6_371_000;
+/** Maßstab der Spielwelt gegenüber der Wirklichkeit (Erdradius 600 km statt 6.371 km). */
+export const SCALE = 600_000 / REAL_EARTH.radius;
 const AU = 1.496e11 * SCALE;
 
 export type BodyId =
@@ -173,7 +175,7 @@ function body(b: Omit<Body, 'mu' | 'hill'> & { parentMu?: number }): Body {
 }
 
 const SUN_MU = 274 * (696_000_000 * SCALE) ** 2;
-const EARTH_R = 600_000;
+const EARTH_R = REAL_EARTH.radius * SCALE;
 const MARS_R = 3_390_000 * SCALE;
 const MARS_MU = 3.72 * MARS_R ** 2;
 const JUPITER_R = 69_911_000 * SCALE;
@@ -184,7 +186,7 @@ const JUPITER_MU = 24.8 * JUPITER_R ** 2;
  */
 const NOON = -Math.PI / 2;
 
-export const SUN = body({
+export const GAME_SUN = body({
   id: 'sun',
   name: 'Sonne',
   radius: 696_000_000 * SCALE,
@@ -232,7 +234,7 @@ export const VENUS = body({
   info: 'Dichte, heiße Atmosphäre – Fallschirme wirken hier sehr stark.',
 });
 
-export const EARTH = body({
+export const GAME_EARTH = body({
   id: 'earth',
   name: 'Erde',
   radius: EARTH_R,
@@ -249,7 +251,7 @@ export const EARTH = body({
   info: 'Unser Heimatplanet mit der Startrampe.',
 });
 
-export const MOON = body({
+export const GAME_MOON = body({
   id: 'moon',
   name: 'Mond',
   radius: 163_600,
@@ -364,11 +366,11 @@ export const CERES = body({
 });
 
 export const BODIES: readonly Body[] = [
-  SUN,
+  GAME_SUN,
   MERCURY,
   VENUS,
-  EARTH,
-  MOON,
+  GAME_EARTH,
+  GAME_MOON,
   MARS,
   PHOBOS,
   CERES,
@@ -420,8 +422,8 @@ const MU = BODIES.map((b) => b.mu);
  * und Planetenschwerkraft – dort lässt die Rechnung sie (samt indirektem Term) weg.
  */
 const FAR2 = BODIES.map((b) => (b.mu < 1e10 ? (100 * b.hill) ** 2 : Infinity));
-const I_EARTH = BODIES.indexOf(EARTH);
-const I_MOON = BODIES.indexOf(MOON);
+const I_EARTH = BODIES.indexOf(GAME_EARTH);
+const I_MOON = BODIES.indexOf(GAME_MOON);
 const hx = new Float64Array(N_BODIES);
 const hy = new Float64Array(N_BODIES);
 const hvx = new Float64Array(N_BODIES);
@@ -505,24 +507,24 @@ export function orbitalPeriod(b: Body): number {
 
 // ------------------------------------------------------------------ Mond (Kurzformen)
 
-export const MOON_DISTANCE = MOON.distance;
+export const MOON_DISTANCE = GAME_MOON.distance;
 export const MOON_RATE = RATES.get('moon')!;
 export const MOON_PERIOD = (2 * Math.PI) / MOON_RATE;
 export const MOON_SPEED = MOON_RATE * MOON_DISTANCE;
 /** Hill-Radius des Mondes im Schwerefeld der Erde – Grenze seines Einflussbereichs. */
-export const MOON_HILL = MOON.hill;
-export const MOON_PHASE0 = MOON.phase0;
+export const MOON_HILL = GAME_MOON.hill;
+export const MOON_PHASE0 = GAME_MOON.phase0;
 
 export function moonAngle(t: number): number {
-  return orbitAngle(MOON, t);
+  return orbitAngle(GAME_MOON, t);
 }
 
 export function moonPosition(t: number): [number, number] {
-  return bodyPosition(MOON, t);
+  return bodyPosition(GAME_MOON, t);
 }
 
 export function moonVelocity(t: number): [number, number] {
-  const [, , vx, vy] = bodyState(MOON, t);
+  const [, , vx, vy] = bodyState(GAME_MOON, t);
   return [vx, vy];
 }
 
@@ -545,7 +547,7 @@ export function enginePressure(rho: number): number {
 
 /** Luftdichte der Erde (Skalenhöhe 7 km). */
 export function airDensity(altitude: number): number {
-  return densityAt(EARTH, altitude);
+  return densityAt(GAME_EARTH, altitude);
 }
 
 // ------------------------------------------------------------------ Schwerkraft
@@ -558,8 +560,8 @@ export function airDensity(altitude: number): number {
 export function gravity(x: number, y: number, t: number): [number, number] {
   const r2 = x * x + y * y;
   const r = Math.sqrt(r2);
-  let ax = (-EARTH.mu * x) / (r2 * r);
-  let ay = (-EARTH.mu * y) / (r2 * r);
+  let ax = (-GAME_EARTH.mu * x) / (r2 * r);
+  let ay = (-GAME_EARTH.mu * y) / (r2 * r);
   // Direkt über die Zustandsliste (ohne Zwischen-Arrays): wird pro Runge-Kutta-Schritt viermal
   // gerufen und ist die innerste Schleife von Flug, Vorhersage und Planung.
   const st = statesAt(t);
@@ -587,11 +589,11 @@ export function gravity(x: number, y: number, t: number): [number, number] {
  * sonst die Sonne.
  */
 export function dominantBody(x: number, y: number, t: number): Body {
-  let best: Body = SUN;
+  let best: Body = GAME_SUN;
   const st = statesAt(t);
   for (let i = 0; i < N_BODIES; i++) {
     const b = BODIES[i]!;
-    if (b === SUN) continue;
+    if (b === GAME_SUN) continue;
     const s = st[i]!;
     if (Math.hypot(x - s[0], y - s[1]) < b.hill && b.hill < best.hill) best = b;
   }

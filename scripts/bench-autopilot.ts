@@ -7,7 +7,7 @@ import { NodeExecutor, OrbitPilot } from '../src/rocket/autopilot';
 import { Flight } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import { makePlan, type PlanId } from '../src/rocket/planner';
-import { EARTH, MOON } from '../src/rocket/world';
+import { GAME_EARTH, GAME_MOON } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 const now = (): number => performance.now();
@@ -96,7 +96,7 @@ function report(label: string, r: { stats: FrameStats; predMs: number[] }): void
 console.log('Mondmission (Luna, Bordcomputer):');
 {
   const f = new Flight(template('luna'));
-  const pilot = new OrbitPilot(EARTH);
+  const pilot = new OrbitPilot(GAME_EARTH);
   report(
     'Aufstieg',
     frames(f, () => pilot.update(f) === 'done'),
@@ -116,12 +116,12 @@ console.log('Mondmission (Luna, Bordcomputer):');
   if (enc) f.warpTo(f.predict().ts[enc.enter]!);
   report(
     'Zeitsprung zum Mond',
-    frames(f, () => f.warpTarget === null && f.refBody() === MOON, 40_000),
+    frames(f, () => f.warpTarget === null && f.refBody() === GAME_MOON, 40_000),
   );
   console.log('  Bezugskörper:', f.refBody().name);
   plan(f, 'circ-pe');
   if (f.node) console.log('  Ergebnis:', execute(f, 'Einschwenken ausführen'));
-  const o = f.orbit(MOON);
+  const o = f.orbit(GAME_MOON);
   console.log(
     `  Mondbahn: ${o.bound ? 'gebunden' : 'frei'}, Pe ${(o.periapsis / 1000).toFixed(0)} km, Ap ${(o.apoapsis / 1000).toFixed(0)} km`,
   );
@@ -130,7 +130,7 @@ console.log('Mondmission (Luna, Bordcomputer):');
 console.log('\nMarsmission (Aurora):');
 {
   const f = new Flight(template('aurora'));
-  f.placeInOrbit(EARTH, 150_000, 1);
+  f.placeInOrbit(GAME_EARTH, 150_000, 1);
   f.target = 'mars';
   plan(f, 'transfer');
 }

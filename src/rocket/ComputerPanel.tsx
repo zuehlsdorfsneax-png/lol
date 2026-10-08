@@ -16,7 +16,7 @@ import {
 } from './mission';
 import { runPlan, warmPlanner } from './planClient';
 import { planOptions, recommendedPlan, type Plan, type PlanId } from './planner';
-import { EARTH, bodyById, forms, tinyBody } from './world';
+import { GAME_EARTH, bodyById, forms, tinyBody } from './world';
 
 /** Knopf, der beim Festhalten immer schneller wiederholt. */
 function useRepeat(action: () => void) {
@@ -528,7 +528,7 @@ function MissionTab({
   const choices: { id: MissionTarget; label: string }[] = [
     { id: 'orbit', label: `Umlaufbahn um ${forms(here).acc}` },
     ...targets.filter((t) => {
-      if (t.id === 'station') return here === EARTH;
+      if (t.id === 'station') return here === GAME_EARTH;
       const b = bodyById(t.id);
       // Hier kann man nur landen (oder heimfliegen, wenn „hier“ ein Mond der Erde ist).
       if (b === here) return landable(b) && f.status !== 'landed';
@@ -537,15 +537,15 @@ function MissionTab({
   ];
   const valid = choices.some((c) => c.id === target) ? target : 'orbit';
   const body = valid !== 'orbit' && valid !== 'station' ? bodyById(valid) : null;
-  const canLand = !!body && landable(body) && body !== EARTH;
+  const canLand = !!body && landable(body) && body !== GAME_EARTH;
   const canHome = canReturnHome(valid, canLand && land);
   const spec: MissionSpec = {
     target: valid,
-    land: body === EARTH || (canLand && land) || (!!body && body === here),
+    land: body === GAME_EARTH || (canLand && land) || (!!body && body === here),
     home: canHome && home,
   };
   const steps = missionSteps(spec, f);
-  const inOrbit = f.status === 'flying' && f.orbit(EARTH).bound && f.refBody() === EARTH;
+  const inOrbit = f.status === 'flying' && f.orbit(GAME_EARTH).bound && f.refBody() === GAME_EARTH;
   const need = missionBudget(spec, inOrbit || f.status === 'docked');
   const dv = f.deltaV();
   const short = !f.infiniteFuel && dv < need * 0.9;

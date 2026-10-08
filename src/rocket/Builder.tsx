@@ -2,6 +2,7 @@ import { Fragment, type ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { Tex } from '../ui/content';
+import { fmt } from '../ui/format';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { ConfirmButton } from '../ui/ConfirmButton';
 import { Icon, type IconName } from '../ui/Icon';
@@ -57,9 +58,6 @@ const MILESTONES = [
   { dv: 10_500, label: 'Merkurlandung' },
   { dv: 10_800, label: 'Mars: landen & zurück' },
 ];
-
-const fmt = (x: number, d = 0): string =>
-  x.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 function PartIcon({ def }: { def: PartDef }) {
   const ref = useRef<HTMLCanvasElement>(null);

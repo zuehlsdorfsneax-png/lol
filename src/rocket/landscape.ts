@@ -2,7 +2,7 @@
  * Landschaft der Flugansicht: Bergketten und Hügel am Horizont (mit Luftperspektive), die Sonne am
  * Himmel mit Schein und Abendrot sowie die ausführliche Startanlage auf der Erde.
  */
-import { EARTH, bodyState, type Body } from './world';
+import { GAME_EARTH, bodyState, type Body } from './world';
 import { hash, local, mixHex, screenAngle, softSprite, toScreen, type View } from './view';
 
 // ------------------------------------------------------------------ Bergketten
@@ -243,7 +243,7 @@ export function drawLaunchComplex(
   const detail = v.scale >= 0.25;
   const hair = Math.max(0.12, 0.8 / v.scale);
   ctx.save();
-  local(ctx, v, 0, EARTH.radius, Math.PI / 2);
+  local(ctx, v, 0, GAME_EARTH.radius, Math.PI / 2);
 
   // Crawlerweg von der Halle zur Rampe
   ctx.fillStyle = lit('#9a9a90');

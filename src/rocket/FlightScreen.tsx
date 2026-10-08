@@ -43,19 +43,19 @@ import type { Design } from './parts';
 import { drawFlight, flightView } from './scene';
 import { toWorld, type View } from './view';
 import {
-  EARTH,
+  GAME_EARTH,
   CERES,
   EUROPA,
   GANYMEDE,
   JUPITER,
   MARS,
   MERCURY,
-  MOON,
+  GAME_MOON,
   MOON_DISTANCE,
   G0,
   MOON_RATE,
   PHOBOS,
-  SUN,
+  GAME_SUN,
   VENUS,
   angularRate,
   bodyById,
@@ -115,19 +115,20 @@ interface Window {
 
 /** Startfenster zum Mond (aus der Erdumlaufbahn) oder zu einem Planeten (Hohmann-Transfer). */
 function transferInfo(f: Flight): Window | null {
-  if (f.status !== 'flying' || f.refBody() !== EARTH) return null;
-  const o = f.orbit(EARTH);
-  if (!o.bound || o.periapsis < EARTH.atmosphere || o.apoapsis > 0.3 * MOON_DISTANCE) return null;
+  if (f.status !== 'flying' || f.refBody() !== GAME_EARTH) return null;
+  const o = f.orbit(GAME_EARTH);
+  if (!o.bound || o.periapsis < GAME_EARTH.atmosphere || o.apoapsis > 0.3 * MOON_DISTANCE)
+    return null;
   if (f.target === 'station') return null;
   const target = f.target ? bodyById(f.target) : null;
-  if (target && target.parent === 'sun' && target !== EARTH) {
-    const w = transferWindow(EARTH, target);
+  if (target && target.parent === 'sun' && target !== GAME_EARTH) {
+    const w = transferWindow(GAME_EARTH, target);
     const ideal = ((w.lead % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const lead = phaseLead(EARTH, target, f.t);
-    const rel = angularRate(EARTH) - angularRate(target);
+    const lead = phaseLead(GAME_EARTH, target, f.t);
+    const rel = angularRate(GAME_EARTH) - angularRate(target);
     const gap = rel > 0 ? lead - ideal : ideal - lead;
     const wait = (((gap % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / Math.abs(rel);
-    const outer = target.distance > EARTH.distance;
+    const outer = target.distance > GAME_EARTH.distance;
     return {
       title: `Startfenster ${target.name}`,
       wait: wait > (2 * Math.PI) / Math.abs(rel) - 86_400 ? 0 : wait,
@@ -138,11 +139,11 @@ function transferInfo(f: Flight): Window | null {
         : 'Bordcomputer (B): „Transfer“ – oder auf der sonnenzugewandten Seite zünden.',
     };
   }
-  if (target && target !== MOON) return null;
+  if (target && target !== GAME_MOON) return null;
   if (f.goals.has('moonland') && !target) return null;
   const r = Math.hypot(f.x, f.y);
   const at = (r + MOON_DISTANCE) / 2;
-  const tt = Math.PI * Math.sqrt(at ** 3 / EARTH.mu);
+  const tt = Math.PI * Math.sqrt(at ** 3 / GAME_EARTH.mu);
   const ideal = Math.PI - MOON_RATE * tt;
   const theta = Math.atan2(f.y, f.x);
   const lead = Math.atan2(Math.sin(theta - moonAngle(f.t)), Math.cos(theta - moonAngle(f.t)));
@@ -168,7 +169,7 @@ function tipFor(f: Flight, pilot: string | null): string {
   const rel = f.relative(ref);
   if (f.status === 'landed') {
     const on = f.landedOn;
-    if (on === MOON)
+    if (on === GAME_MOON)
       return 'Du stehst auf dem Mond! Zurück: „Hilfe-Pilot“ (T) bringt dich in eine Mondbahn, dann Bordcomputer „Rückflug“.';
     if (on === MARS)
       return 'Du stehst auf dem Mars! Ein Rückflug braucht viel Treibstoff – die Marsschwerkraft ist mehr als doppelt so stark wie die des Mondes.';
@@ -204,7 +205,7 @@ function tipFor(f: Flight, pilot: string | null): string {
       return `Fallschirm scharf: In der Luft öffnet er sich zuerst halb (unter 450 m/s), ganz dann unter ${km(f.chuteFullAltitude(ref))}.${touch} P entschärft ihn wieder.`;
   }
   if (f.sas === 'point') return 'SAS hält die gezeigte Richtung. Eine Drehtaste schaltet es aus.';
-  if (ref === SUN)
+  if (ref === GAME_SUN)
     return 'Du kreist um die Sonne! Bordcomputer: „Kurskorrektur“ legt den tiefsten Punkt am Ziel fest. Dann Zeitraffer hoch.';
   if (ref === JUPITER)
     return 'Jupiter hat keine feste Oberfläche – nur vorbeifliegen oder einschwenken („Einfangen (sparsam)“)! Ziel „Europa“ oder „Ganymed“ wählen für die Monde.';
@@ -226,7 +227,7 @@ function tipFor(f: Flight, pilot: string | null): string {
         : 'Zur Landung: Bordcomputer „Wiedereintritt“, Fallschirm (P) – in der dünnen Marsluft muss am Ende das Triebwerk bremsen.';
     return `Zur Landung: Bordcomputer „Abstieg“ und dann „Automatisch landen“ – oder selbst: bremsen, fallen, im letzten Moment Vollgas.`;
   }
-  if (ref === MOON) {
+  if (ref === GAME_MOON) {
     if (f.goals.has('moonland'))
       return 'Heimweg: Bordcomputer „Rückflug zu: Erde“. Zurück bei der Erde: „Wiedereintritt“ fein einstellen, dann Fallschirm.';
     if (!o.bound)
@@ -243,7 +244,7 @@ function tipFor(f: Flight, pilot: string | null): string {
     o.periapsis < ref.atmosphere
   )
     return 'Anflug zum Wiedereintritt: Bordcomputer „Wiedereintritt“ stellt den tiefsten Punkt auf 25 km. Dann Stufe mit Triebwerk abwerfen, Fallschirm scharf (P), SAS retrograd.';
-  if (!(o.bound && o.periapsis > EARTH.atmosphere)) {
+  if (!(o.bound && o.periapsis > GAME_EARTH.atmosphere)) {
     const climb = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
     if (climb < -20 && !f.thrusting && rel.altitude < 40_000)
       return f.chute === 'stowed'
@@ -283,6 +284,7 @@ function readMuted(): boolean {
   try {
     return localStorage.getItem(MUTE_KEY) === '1';
   } catch {
+    // Kein Speicher (z. B. privates Fenster): der Ton bleibt an.
     return false;
   }
 }
@@ -355,6 +357,7 @@ function loadSnapshot(sandbox: boolean): FlightSnapshot | null {
     const snap = raw ? (JSON.parse(raw) as FlightSnapshot) : null;
     return snap && typeof snap === 'object' && Array.isArray(snap.segs) ? snap : null;
   } catch {
+    // Beschädigter Spielstand: das Flugbuch startet leer.
     return null;
   }
 }
@@ -786,7 +789,7 @@ export function FlightScreen({
       (fl.status !== 'landed' && fl.status !== 'flying') ||
       (o.bound && o.periapsis > Math.max(ref.atmosphere, 5_000)) ||
       !ref.solid ||
-      ref === SUN
+      ref === GAME_SUN
     )
       return;
     const next = new OrbitPilot(ref);
@@ -1722,7 +1725,7 @@ export function FlightScreen({
   const ti = f.targetInfo();
   const site = f.siteInfo();
   const landing = landingState(f);
-  const el = f.status === 'flying' && ref !== SUN ? f.elements(ref) : null;
+  const el = f.status === 'flying' && ref !== GAME_SUN ? f.elements(ref) : null;
   // Auf einer fast runden Bahn sind Ap und Pe kaum bestimmt: dann keine Zeiten.
   const round = !!el && el.e < CIRCULAR_E;
   // Weit draußen aus der echten Vorhersage (wie die Karte), sonst aus der Kepler-Bahn.
@@ -1751,7 +1754,7 @@ export function FlightScreen({
     pilot.current !== 'hop' &&
     (f.status === 'landed' || f.status === 'flying') &&
     ref.solid &&
-    ref !== SUN &&
+    ref !== GAME_SUN &&
     !(o.bound && o.periapsis > Math.max(ref.atmosphere, 5_000)) &&
     (!challenge || challenge.computer);
   const newGoals = [...f.goals].filter((g) => !startGoals.current.has(g));
@@ -2243,7 +2246,7 @@ export function FlightScreen({
             </>
           ) : (
             <>
-              {f.status === 'landed' && f.stats.liftoff === null && f.landedOn === EARTH && (
+              {f.status === 'landed' && f.stats.liftoff === null && f.landedOn === GAME_EARTH && (
                 <button
                   type="button"
                   class={`abtn ${countdown !== null ? 'on' : ''}`}

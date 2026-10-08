@@ -4,7 +4,7 @@ import { Flight } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import { runPlan } from '../src/rocket/planClient';
 import { arrivalPeriapsis, makePlan, type PlanId } from '../src/rocket/planner';
-import { EARTH, MOON, bodyState, bodyStates, BODIES } from '../src/rocket/world';
+import { GAME_EARTH, GAME_MOON, bodyState, bodyStates, BODIES } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 const DT = 1 / 60;
@@ -29,7 +29,7 @@ function execute(f: Flight): void {
   expect(x.phase, x.message).toBe('done');
 }
 
-function circularAround(body = EARTH, alt: number, design = 'orbiter', t = 0): Flight {
+function circularAround(body = GAME_EARTH, alt: number, design = 'orbiter', t = 0): Flight {
   const f = new Flight(template(design));
   f.t = t;
   f.placeInOrbit(body, alt, 1);
@@ -41,7 +41,7 @@ describe('Körperzustände', () => {
     for (const t of [0, 12_345.678, 3e7]) {
       const all = bodyStates(t);
       BODIES.forEach((b, i) => expect(all[i]).toEqual(bodyState(b, t)));
-      expect(bodyState(EARTH, t)).toEqual([0, 0, 0, 0]);
+      expect(bodyState(GAME_EARTH, t)).toEqual([0, 0, 0, 0]);
     }
   });
 });
@@ -49,11 +49,11 @@ describe('Körperzustände', () => {
 describe('Hilfe-Pilot Umlaufbahn', () => {
   it('bringt auch eine Oberstufe mit schwachem Triebwerk (Aurora) sparsam in die Bahn', () => {
     const f = new Flight(template('aurora'));
-    const pilot = new OrbitPilot(EARTH);
+    const pilot = new OrbitPilot(GAME_EARTH);
     loop(f, () => ['done', 'failed'].includes(pilot.update(f)));
     expect(pilot.phase, pilot.message).toBe('done');
-    const o = f.orbit(EARTH);
-    expect(o.periapsis).toBeGreaterThan(EARTH.atmosphere);
+    const o = f.orbit(GAME_EARTH);
+    expect(o.periapsis).toBeGreaterThan(GAME_EARTH.atmosphere);
     // Früher hob der Pilot den höchsten Punkt auf Zehntausende Kilometer und verbrannte alles.
     expect(o.apoapsis).toBeLessThan(120_000);
     expect(f.deltaV()).toBeGreaterThan(2_500);
@@ -62,7 +62,7 @@ describe('Hilfe-Pilot Umlaufbahn', () => {
 
 describe('Manöver ausführen', () => {
   it('rechnet den Rest eines großen Schubs genau aus der Bahnenergie', () => {
-    const f = circularAround(MOON, 20_000, 'orbiter', 50_000);
+    const f = circularAround(GAME_MOON, 20_000, 'orbiter', 50_000);
     f.target = 'earth';
     plan(f, 'return');
     const n = f.node!;
@@ -77,10 +77,10 @@ describe('Manöver ausführen', () => {
 
 describe('Rückflug vom Mond', () => {
   it('zielt auf den ersten tiefsten Punkt – die Vorhersage bleibt nach dem Wechsel zur Erde gleich', () => {
-    const f = circularAround(MOON, 20_000, 'orbiter', 50_000);
+    const f = circularAround(GAME_MOON, 20_000, 'orbiter', 50_000);
     f.target = 'earth';
     plan(f, 'return');
-    const planned = arrivalPeriapsis(f.predict(), EARTH, 0)!;
+    const planned = arrivalPeriapsis(f.predict(), GAME_EARTH, 0)!;
     expect(planned).toBeGreaterThan(15_000);
     expect(planned).toBeLessThan(40_000);
     // Das Manöver ideal ausführen und mit Zeitraffer aus dem Einflussbereich des Mondes fliegen.
@@ -91,27 +91,27 @@ describe('Rückflug vom Mond', () => {
     f.vy += d.y;
     f.clearNode();
     loop(f, () => {
-      if (f.refBody() === EARTH) return true;
+      if (f.refBody() === GAME_EARTH) return true;
       f.setWarp(f.maxWarpIndex());
       return false;
     });
-    expect(f.refBody()).toBe(EARTH);
-    const after = arrivalPeriapsis(f.predict(), EARTH, 0)!;
+    expect(f.refBody()).toBe(GAME_EARTH);
+    const after = arrivalPeriapsis(f.predict(), GAME_EARTH, 0)!;
     expect(Math.abs(after - planned)).toBeLessThan(3_000);
   });
 });
 
 describe('Kreisbahn', () => {
   it('am Pe einer langgestreckten Bahn: aus der echten Vorhersage, nicht aus der Kepler-Ellipse', () => {
-    const f = circularAround(EARTH, 300_000, 'saturn');
-    const r1 = EARTH.radius + 300_000;
-    const r2 = EARTH.radius + 30_000_000;
+    const f = circularAround(GAME_EARTH, 300_000, 'saturn');
+    const r1 = GAME_EARTH.radius + 300_000;
+    const r2 = GAME_EARTH.radius + 30_000_000;
     const q = Math.sqrt((2 * r2) / (r1 + r2));
     f.vx *= q;
     f.vy *= q;
     plan(f, 'circ-pe');
     execute(f);
-    const o = f.orbit(EARTH);
+    const o = f.orbit(GAME_EARTH);
     expect(o.eccentricity).toBeLessThan(0.01);
     // Der Mond hat den tiefsten Punkt unterwegs von 300 auf gut 190 km gezogen.
     expect(o.periapsis).toBeLessThan(250_000);
@@ -124,8 +124,8 @@ describe('Rendezvous mit der Station', () => {
     [120_000, 0],
   ] as const) {
     it(`gelingt auch aus ${alt / 1000} km Höhe (Phasenbahn)`, () => {
-      const f = circularAround(EARTH, alt, 'faehre');
-      f.placeInOrbit(EARTH, alt, angle);
+      const f = circularAround(GAME_EARTH, alt, 'faehre');
+      f.placeInOrbit(GAME_EARTH, alt, angle);
       f.target = 'station';
       plan(f, 'transfer');
       execute(f);
@@ -146,16 +146,16 @@ describe('Rendezvous mit der Station', () => {
 describe('Hilfe-Pilot Hüpfer', () => {
   it('fliegt den Hüpfer senkrecht ins All und landet ihn sicher am Fallschirm', () => {
     const f = new Flight(template('huepfer'));
-    const pilot = new HopPilot(EARTH);
+    const pilot = new HopPilot(GAME_EARTH);
     loop(f, () => pilot.update(f) === 'done');
     expect(f.status).toBe('landed');
-    expect(pilot.peak).toBeGreaterThan(EARTH.atmosphere);
+    expect(pilot.peak).toBeGreaterThan(GAME_EARTH.atmosphere);
   });
 });
 
 describe('Lande-Autopilot', () => {
   it('lässt eine Kapsel mit Fallschirm von der Luft abbremsen, statt oben Treibstoff zu verbrennen', () => {
-    const f = circularAround(EARTH, 150_000, 'faehre');
+    const f = circularAround(GAME_EARTH, 150_000, 'faehre');
     // Wie nach einem echten Aufstieg: die Erststufe ist schon weg.
     f.stage();
     plan(f, 'deorbit');
@@ -170,7 +170,7 @@ describe('Lande-Autopilot', () => {
 
 describe('Planen im Hintergrund', () => {
   it('rechnet ohne Worker (Tests, alte Browser) direkt und setzt das Manöver', async () => {
-    const f = circularAround(EARTH, 150_000, 'orbiter');
+    const f = circularAround(GAME_EARTH, 150_000, 'orbiter');
     f.target = 'moon';
     const r = await runPlan(f, 'transfer');
     expect(r.ok, r.text).toBe(true);

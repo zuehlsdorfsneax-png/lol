@@ -12,6 +12,7 @@ import {
   criticalMoonDistance,
   hillRadius,
   jacobiCheck,
+  MOON_DISTANCE_KM,
 } from '../../physics';
 import { LagrangeCanvas } from '../../lagrange/LagrangeCanvas';
 import {
@@ -272,7 +273,7 @@ function HillCalculator() {
 }
 
 function MoonJacobi() {
-  const [dist, setDist] = useState(384_400);
+  const [dist, setDist] = useState(MOON_DISTANCE_KM);
   const [speed, setSpeed] = useState(1);
   const [dir, setDir] = useState<'pro' | 'retro'>('pro');
   const mu = EARTH.mass / (EARTH.mass + SUN.mass);

@@ -11,7 +11,7 @@ import {
   stageStats,
   totalMass,
 } from '../src/rocket/parts';
-import { EARTH } from '../src/rocket/world';
+import { GAME_EARTH } from '../src/rocket/world';
 
 function run(f: Flight, seconds: number): void {
   for (let i = 0; i < seconds * 60 && f.status !== 'crashed'; i++) f.update(1 / 60);
@@ -49,7 +49,7 @@ describe('Seitlich angebaute Teile (Paare)', () => {
     const f = new Flight(wide);
     expect(f.mass).toBeCloseTo(totalMass(wide), 6);
     expect(f.length).toBeCloseTo(designHeight(wide), 6);
-    f.placeInOrbit(EARTH, 400_000, 0);
+    f.placeInOrbit(GAME_EARTH, 400_000, 0);
     expect(f.engine().thrust).toBeCloseTo(3 * part('falke').thrust, 3);
     expect(f.hullDrag(0)).toBeGreaterThan(
       new Flight(['kapsel', 'tank-l', 'falke']).hullDrag(0) * 2,

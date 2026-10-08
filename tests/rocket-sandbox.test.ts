@@ -10,7 +10,7 @@ import {
   buildRules,
   readSandbox,
 } from '../src/rocket/sandbox';
-import { EARTH, MARS } from '../src/rocket/world';
+import { GAME_EARTH, MARS } from '../src/rocket/world';
 
 function run(f: Flight, seconds: number, each?: () => void): void {
   for (let i = 0; i < seconds * 60 && f.status !== 'crashed'; i++) {
@@ -59,7 +59,7 @@ describe('Sandkasten', () => {
     f.vy = -300;
     run(f, 60);
     expect(f.status).toBe('landed');
-    expect(f.landedOn).toBe(EARTH);
+    expect(f.landedOn).toBe(GAME_EARTH);
   });
 });
 
@@ -89,7 +89,7 @@ describe('Neue Bauteile', () => {
     f.throttle = 1;
     run(f, 1);
     const low = f.engine().thrust;
-    f.placeInOrbit(EARTH, 150_000, Math.PI / 2);
+    f.placeInOrbit(GAME_EARTH, 150_000, Math.PI / 2);
     run(f, 1);
     expect(low).toBeLessThan(f.engine().thrust * 0.6);
   });
@@ -97,7 +97,7 @@ describe('Neue Bauteile', () => {
   it('Reaktionsrad dreht schneller', () => {
     const spin = (design: string[]): number => {
       const f = new Flight(design);
-      f.placeInOrbit(EARTH, 150_000, Math.PI / 2);
+      f.placeInOrbit(GAME_EARTH, 150_000, Math.PI / 2);
       const a0 = f.angle;
       f.turn = 1;
       run(f, 1);

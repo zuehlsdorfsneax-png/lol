@@ -13,7 +13,7 @@ import {
   type Plan,
   type PlanId,
 } from '../src/rocket/planner';
-import { EARTH, bodyById, type Body } from '../src/rocket/world';
+import { GAME_EARTH, bodyById, type Body } from '../src/rocket/world';
 
 const filter = process.argv[2] ?? '';
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
@@ -78,7 +78,7 @@ function warpTo(f: Flight, t: number): void {
   log(`Zeitsprung: ${frames} Bilder, jetzt ${orbitText(f)}`);
 }
 
-function ascent(f: Flight, body: Body = EARTH): boolean {
+function ascent(f: Flight, body: Body = GAME_EARTH): boolean {
   const pilot = new OrbitPilot(body);
   const frames = loop(f, () => {
     const p = pilot.update(f);
@@ -202,7 +202,7 @@ for (const id of ['orbiter', 'faehre', 'luna', 'selene', 'saturn', 'ares', 'auro
 scenario('Mond: Transfer von verschiedenen Bahnen', () => {
   for (const alt of [90_000, 200_000, 600_000]) {
     for (const angle of [0, 1.3, 2.6, 3.9, 5.2]) {
-      const f = inOrbit('saturn', EARTH, alt, angle, 'moon');
+      const f = inOrbit('saturn', GAME_EARTH, alt, angle, 'moon');
       const r = makePlan(f, 'transfer');
       const p = f.predict();
       const enc = p.encounter?.body.id ?? '–';
@@ -230,12 +230,16 @@ scenario('Mond: ganze Mission mit Landung und Rückflug (Selene)', () => {
   if (!ascent(f, moon)) return;
   if (!plan(f, 'return').ok) return bad('Rückflug');
   execute(f);
-  log(`Nach dem Brennen: Vorhersage Pe Erde ${km(arrivalPeriapsis(f.predict(), EARTH, 0) ?? NaN)}`);
-  correct(f);
-  log(`Nach Korrektur: Vorhersage Pe Erde ${km(arrivalPeriapsis(f.predict(), EARTH, 0) ?? NaN)}`);
-  const n = warpUntil(f, () => f.refBody() === EARTH);
   log(
-    `Zurück (${n} Bilder): ${orbitText(f, EARTH)}, Vorhersage ${km(arrivalPeriapsis(f.predict(), EARTH, 0) ?? NaN)}`,
+    `Nach dem Brennen: Vorhersage Pe Erde ${km(arrivalPeriapsis(f.predict(), GAME_EARTH, 0) ?? NaN)}`,
+  );
+  correct(f);
+  log(
+    `Nach Korrektur: Vorhersage Pe Erde ${km(arrivalPeriapsis(f.predict(), GAME_EARTH, 0) ?? NaN)}`,
+  );
+  const n = warpUntil(f, () => f.refBody() === GAME_EARTH);
+  log(
+    `Zurück (${n} Bilder): ${orbitText(f, GAME_EARTH)}, Vorhersage ${km(arrivalPeriapsis(f.predict(), GAME_EARTH, 0) ?? NaN)}`,
   );
   if (planOptions(f, f.predict()).some((o) => o.id === 'deorbit')) {
     const r = plan(f, 'deorbit');
@@ -254,7 +258,7 @@ scenario('Mond: Rückflug aus verschiedenen Mondbahnen', () => {
       f.target = 'earth';
       const r = makePlan(f, 'return');
       const p = f.predict();
-      const pe = arrivalPeriapsis(p, EARTH, Math.max(0, p.nodeIndex)) ?? NaN;
+      const pe = arrivalPeriapsis(p, GAME_EARTH, Math.max(0, p.nodeIndex)) ?? NaN;
       const txt = `${km(alt)} / ${angle}: ${r.ok ? 'ok' : 'FEHLER'} ${r.text} (Pe Erde laut Vorhersage ${km(pe)})`;
       if (!r.ok || !(pe > 0 && pe < 80_000)) bad(txt);
       else log(txt);
@@ -264,7 +268,7 @@ scenario('Mond: Rückflug aus verschiedenen Mondbahnen', () => {
 
 scenario('Erde: Wiedereintritt und Landung (Orbiter)', () => {
   for (const alt of [80_000, 150_000, 400_000]) {
-    const f = inOrbit('orbiter', EARTH, alt, 1);
+    const f = inOrbit('orbiter', GAME_EARTH, alt, 1);
     // Nur die Kapsel mit Hitzeschild und Fallschirm (wie nach dem Abwerfen der Stufen)
     log(`Höhe ${km(alt)}`);
     const r = plan(f, 'deorbit');
@@ -286,11 +290,11 @@ scenario('Kreisbahn am Ap/Pe', () => {
     for (const where of ['circ-ap', 'circ-pe'] as const) {
       const f = new Flight(template('saturn'));
       // Elliptische Bahn: am Pe mit passender Geschwindigkeit starten.
-      f.placeInOrbit(EARTH, pe, 0.5);
-      const r1 = EARTH.radius + pe;
-      const r2 = EARTH.radius + ap;
-      const v = Math.sqrt(EARTH.mu * (2 / r1 - 2 / (r1 + r2)));
-      const vc = Math.sqrt(EARTH.mu / r1);
+      f.placeInOrbit(GAME_EARTH, pe, 0.5);
+      const r1 = GAME_EARTH.radius + pe;
+      const r2 = GAME_EARTH.radius + ap;
+      const v = Math.sqrt(GAME_EARTH.mu * (2 / r1 - 2 / (r1 + r2)));
+      const vc = Math.sqrt(GAME_EARTH.mu / r1);
       f.vx *= v / vc;
       f.vy *= v / vc;
       const r = plan(f, where);
@@ -299,9 +303,9 @@ scenario('Kreisbahn am Ap/Pe', () => {
         continue;
       }
       execute(f);
-      const o = f.orbit(EARTH);
+      const o = f.orbit(GAME_EARTH);
       const e = o.eccentricity;
-      const txt = `${where} ${km(pe)}–${km(ap)}: e danach ${e.toFixed(4)}, ${orbitText(f, EARTH)}`;
+      const txt = `${where} ${km(pe)}–${km(ap)}: e danach ${e.toFixed(4)}, ${orbitText(f, GAME_EARTH)}`;
       // Weit draußen zerrt der Mond an jeder Bahn – dort ist „rund“ nur ungefähr möglich.
       if (e > (ap > 10_000_000 ? 0.05 : 0.01)) bad(txt);
       else log(txt);
@@ -316,7 +320,7 @@ scenario('Station: Rendezvous und Angleichen (Fähre)', () => {
     [250_000, 4],
     [600_000, 1],
   ] as const) {
-    const f = inOrbit('faehre', EARTH, alt, angle, 'station');
+    const f = inOrbit('faehre', GAME_EARTH, alt, angle, 'station');
     log(`Start ${km(alt)} / ${angle}`);
     if (!plan(f, 'transfer').ok) continue;
     execute(f);
@@ -339,7 +343,7 @@ scenario('Station: Rendezvous und Angleichen (Fähre)', () => {
 });
 
 scenario('Mars: Fenster, Transfer, Einschwenken, Landung (Ares)', () => {
-  const f = inOrbit('ares', EARTH, 200_000, 1, 'mars');
+  const f = inOrbit('ares', GAME_EARTH, 200_000, 1, 'mars');
   f.infiniteFuel = false;
   let r = plan(f, 'transfer');
   if (!r.ok && r.wait) {
@@ -349,7 +353,7 @@ scenario('Mars: Fenster, Transfer, Einschwenken, Landung (Ares)', () => {
   if (!r.ok) return bad(r.text);
   execute(f);
   // Aus der Erd-Hill-Sphäre heraus
-  warpUntil(f, () => f.refBody() !== EARTH);
+  warpUntil(f, () => f.refBody() !== GAME_EARTH);
   log(`Unterwegs: ${orbitText(f)}`);
   correct(f);
   const mars = bodyById('mars');
@@ -365,7 +369,7 @@ scenario('Venus und Jupiter: Transfer planen', () => {
     ['jupiter', 'jupiter'],
     ['aurora', 'mercury'],
   ] as const) {
-    const f = inOrbit(design, EARTH, 200_000, 1, target);
+    const f = inOrbit(design, GAME_EARTH, 200_000, 1, target);
     let r = plan(f, 'transfer');
     if (!r.ok && r.wait) {
       warpTo(f, f.t + r.wait - f.orbit().period); // wie der Knopf im Bordcomputer

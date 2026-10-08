@@ -5,7 +5,16 @@
  */
 import { apsides, bodySpin, satelliteState, type Flight } from './flight';
 import { fmt, km } from './format';
-import { CERES, EARTH, JUPITER, MARS, MOON, PHOBOS, bodyState, stationState } from './world';
+import {
+  CERES,
+  GAME_EARTH,
+  JUPITER,
+  MARS,
+  GAME_MOON,
+  PHOBOS,
+  bodyState,
+  stationState,
+} from './world';
 
 export type ChallengeGroup = 'Flugschule' | 'Profi' | 'Meister';
 
@@ -142,8 +151,8 @@ export const CHALLENGES: readonly Challenge[] = [
     judge(f, memo) {
       const c = crashed(f);
       if (c) return c;
-      const o = f.orbit(EARTH);
-      const inOrbit = f.refBody() === EARTH && o.bound && o.periapsis > EARTH.atmosphere;
+      const o = f.orbit(GAME_EARTH);
+      const inOrbit = f.refBody() === GAME_EARTH && o.bound && o.periapsis > GAME_EARTH.atmosphere;
       if (!settled(f, memo, inOrbit)) return null;
       const dv = f.deltaV();
       return {
@@ -153,7 +162,7 @@ export const CHALLENGES: readonly Challenge[] = [
       };
     },
     progress: (f) => {
-      const o = f.orbit(EARTH);
+      const o = f.orbit(GAME_EARTH);
       return `Ap ${o.bound ? km(o.apoapsis) : '–'} · Pe ${km(o.periapsis)}`;
     },
   },
@@ -174,13 +183,13 @@ export const CHALLENGES: readonly Challenge[] = [
     ],
     design: ['fallschirm', 'kapsel', 'tank-m', 'falke'],
     computer: true,
-    setup: (f) => f.placeInOrbit(EARTH, 80_000, Math.PI / 2),
+    setup: (f) => f.placeInOrbit(GAME_EARTH, 80_000, Math.PI / 2),
     judge(f, memo) {
       const c = crashed(f);
       if (c) return c;
-      const o = f.orbit(EARTH);
+      const o = f.orbit(GAME_EARTH);
       const ok =
-        f.refBody() === EARTH && o.bound && o.periapsis >= 450_000 && o.apoapsis <= 550_000;
+        f.refBody() === GAME_EARTH && o.bound && o.periapsis >= 450_000 && o.apoapsis <= 550_000;
       if (!settled(f, memo, ok)) return null;
       return {
         success: true,
@@ -189,7 +198,7 @@ export const CHALLENGES: readonly Challenge[] = [
       };
     },
     progress: (f) => {
-      const o = f.orbit(EARTH);
+      const o = f.orbit(GAME_EARTH);
       return `Ap ${o.bound ? km(o.apoapsis) : '–'} · Pe ${km(o.periapsis)} · ${Math.round(f.stats.dvUsed)} m/s`;
     },
   },
@@ -208,7 +217,7 @@ export const CHALLENGES: readonly Challenge[] = [
     computer: true,
     setup(f) {
       const [sx, sy] = stationState(f.t);
-      f.placeInOrbit(EARTH, 140_000, Math.atan2(sy, sx) + (4 * Math.PI) / 180);
+      f.placeInOrbit(GAME_EARTH, 140_000, Math.atan2(sy, sx) + (4 * Math.PI) / 180);
       f.target = 'station';
       f.rcs = true;
     },
@@ -244,7 +253,7 @@ export const CHALLENGES: readonly Challenge[] = [
     ],
     design: ['satellit', 'satellit', 'satellit', 'sonde', 'tank-m', 'falke'],
     computer: true,
-    setup: (f) => f.placeInOrbit(EARTH, 250_000, Math.PI / 2),
+    setup: (f) => f.placeInOrbit(GAME_EARTH, 250_000, Math.PI / 2),
     judge(f) {
       const c = crashed(f);
       if (c) return c;
@@ -256,11 +265,11 @@ export const CHALLENGES: readonly Challenge[] = [
           stars: 0,
           text: `Nur ${sats.length} von 3 Satelliten kreisen – die anderen sind abgestürzt.`,
         };
-      const high = sats.every((s) => apsides(s.el).peri - EARTH.radius > 1_000_000);
+      const high = sats.every((s) => apsides(s.el).peri - GAME_EARTH.radius > 1_000_000);
       const angles = sats
         .map((s) => {
           const [x, y] = satelliteState(s, f.t);
-          const [ex, ey] = bodyState(EARTH, f.t);
+          const [ex, ey] = bodyState(GAME_EARTH, f.t);
           return Math.atan2(y - ey, x - ex);
         })
         .sort((a, b) => a - b);
@@ -271,7 +280,7 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, high, even),
-        text: `Kleinste Lücke ${Math.round((Math.min(...gaps) * 180) / Math.PI)}°, tiefster Satellit ${km(Math.min(...sats.map((s) => apsides(s.el).peri)) - EARTH.radius)}.`,
+        text: `Kleinste Lücke ${Math.round((Math.min(...gaps) * 180) / Math.PI)}°, tiefster Satellit ${km(Math.min(...sats.map((s) => apsides(s.el).peri)) - GAME_EARTH.radius)}.`,
       };
     },
     progress: (f) => `Satelliten ausgesetzt: ${3 - f.satellitesOnBoard} von 3`,
@@ -291,13 +300,13 @@ export const CHALLENGES: readonly Challenge[] = [
     computer: true,
     setup(f) {
       f.site = { body: 'moon', angle: MOON_BASE, name: 'Mondbasis' };
-      const base = bodySpin(MOON, f.t) + MOON_BASE;
-      f.placeInOrbit(MOON, 25_000, base + Math.PI / 2);
+      const base = bodySpin(GAME_MOON, f.t) + MOON_BASE;
+      f.placeInOrbit(GAME_MOON, 25_000, base + Math.PI / 2);
     },
     judge(f) {
       const c = crashed(f);
       if (c) return c;
-      if (f.status !== 'landed' || f.landedOn !== MOON) return null;
+      if (f.status !== 'landed' || f.landedOn !== GAME_MOON) return null;
       const d = f.siteInfo()!.distance;
       return {
         success: true,
@@ -397,15 +406,15 @@ export const CHALLENGES: readonly Challenge[] = [
     computer: true,
     setup(f) {
       // Rückkehrbahn vom Mond: höchster Punkt beim Mond, tiefster Punkt 5 km über der Erde.
-      const rp = EARTH.radius + 5_000;
-      const ra = MOON.distance;
+      const rp = GAME_EARTH.radius + 5_000;
+      const ra = GAME_MOON.distance;
       const r0 = 20_000_000;
       const a = (rp + ra) / 2;
-      const v = Math.sqrt(EARTH.mu * (2 / r0 - 1 / a));
-      const h = Math.sqrt((EARTH.mu * 2 * ra * rp) / (ra + rp));
+      const v = Math.sqrt(GAME_EARTH.mu * (2 / r0 - 1 / a));
+      const h = Math.sqrt((GAME_EARTH.mu * 2 * ra * rp) / (ra + rp));
       const vt = h / r0;
       const vr = -Math.sqrt(Math.max(0, v * v - vt * vt));
-      const [mx, my] = bodyState(MOON, f.t);
+      const [mx, my] = bodyState(GAME_MOON, f.t);
       const th = Math.atan2(my, mx) + Math.PI * 0.8;
       f.status = 'flying';
       f.landedOn = null;
@@ -418,7 +427,7 @@ export const CHALLENGES: readonly Challenge[] = [
     judge(f) {
       const c = crashed(f);
       if (c) return c;
-      if (f.status !== 'landed' || f.landedOn !== EARTH) return null;
+      if (f.status !== 'landed' || f.landedOn !== GAME_EARTH) return null;
       return {
         success: true,
         ...stars(true, f.maxHeat < 0.6, f.maxHeat < 0.35),
@@ -426,7 +435,7 @@ export const CHALLENGES: readonly Challenge[] = [
       };
     },
     progress: (f) => {
-      const o = f.orbit(EARTH);
+      const o = f.orbit(GAME_EARTH);
       return `Pe ${km(o.periapsis)} · Hitze ${pct(f.heat)}`;
     },
   },

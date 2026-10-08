@@ -4,11 +4,11 @@ import { makePlan } from '../src/rocket/planner';
 import { Flight, WARPS, goalPoints, rankFor } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import {
-  EARTH,
+  GAME_EARTH,
   JUPITER,
   MARS,
-  MOON,
-  SUN,
+  GAME_MOON,
+  GAME_SUN,
   VENUS,
   angularRate,
   bodyState,
@@ -38,29 +38,29 @@ function run(
 
 describe('Sonnensystem', () => {
   it('der Mond kreist wie in Wirklichkeit bei etwa einem Viertel des Hill-Radius der Erde', () => {
-    expect(MOON.distance / EARTH.hill).toBeGreaterThan(0.24);
-    expect(MOON.distance / EARTH.hill).toBeLessThan(0.28);
+    expect(GAME_MOON.distance / GAME_EARTH.hill).toBeGreaterThan(0.24);
+    expect(GAME_MOON.distance / GAME_EARTH.hill).toBeLessThan(0.28);
   });
 
   it('echte Massenverhältnisse: Sonne ≈ 333.000 Erdmassen', () => {
-    expect(SUN.mu / EARTH.mu).toBeGreaterThan(3.2e5);
-    expect(SUN.mu / EARTH.mu).toBeLessThan(3.45e5);
-    expect(JUPITER.mu / EARTH.mu).toBeGreaterThan(300);
+    expect(GAME_SUN.mu / GAME_EARTH.mu).toBeGreaterThan(3.2e5);
+    expect(GAME_SUN.mu / GAME_EARTH.mu).toBeLessThan(3.45e5);
+    expect(JUPITER.mu / GAME_EARTH.mu).toBeGreaterThan(300);
   });
 
   it('bestimmt den Bezugskörper über die Hill-Sphären', () => {
-    expect(dominantBody(0, EARTH.radius + 100_000, 0)).toBe(EARTH);
-    const [mx, my] = bodyState(MOON, 0);
-    expect(dominantBody(mx + MOON.radius * 2, my, 0)).toBe(MOON);
+    expect(dominantBody(0, GAME_EARTH.radius + 100_000, 0)).toBe(GAME_EARTH);
+    const [mx, my] = bodyState(GAME_MOON, 0);
+    expect(dominantBody(mx + GAME_MOON.radius * 2, my, 0)).toBe(GAME_MOON);
     const [ax, ay] = bodyState(MARS, 0);
     expect(dominantBody(ax + MARS.radius * 3, ay, 0)).toBe(MARS);
-    expect(dominantBody(EARTH.hill * 3, 0, 0)).toBe(SUN);
+    expect(dominantBody(GAME_EARTH.hill * 3, 0, 0)).toBe(GAME_SUN);
   });
 
   it('Startfenster: Mars eilt beim idealen Start voraus, Venus hinterher', () => {
-    expect(transferWindow(EARTH, MARS).lead).toBeGreaterThan(0);
-    expect(transferWindow(EARTH, VENUS).lead).toBeLessThan(0);
-    expect(angularRate(EARTH)).toBeGreaterThan(angularRate(MARS));
+    expect(transferWindow(GAME_EARTH, MARS).lead).toBeGreaterThan(0);
+    expect(transferWindow(GAME_EARTH, VENUS).lead).toBeLessThan(0);
+    expect(angularRate(GAME_EARTH)).toBeGreaterThan(angularRate(MARS));
   });
 });
 
@@ -172,7 +172,7 @@ describe('Marsmission', () => {
     f.target = 'mars';
     let plan = makePlan(f, 'transfer');
     if (!plan.ok && plan.wait) {
-      f.warpTo(f.t + plan.wait - f.orbit(EARTH).period);
+      f.warpTo(f.t + plan.wait - f.orbit(GAME_EARTH).period);
       runFrames(f, () => f.warpTarget === null);
       plan = makePlan(f, 'transfer');
     }

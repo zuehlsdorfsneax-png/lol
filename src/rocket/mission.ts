@@ -9,7 +9,7 @@ import { DockPilot, LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
 import type { Flight, TargetId } from './flight';
 import { part } from './parts';
 import { planOptions, type Plan, type PlanId } from './planner';
-import { EARTH, SUN, bodyById, forms, tinyBody, type Body } from './world';
+import { GAME_EARTH, GAME_SUN, bodyById, forms, tinyBody, type Body } from './world';
 
 export type PlanFn = (f: Flight, id: PlanId) => Plan | Promise<Plan>;
 
@@ -42,7 +42,7 @@ export type MissionStatus = 'running' | 'done' | 'failed';
 
 /** Kann man auf dem Körper landen (und wieder starten)? */
 export function landable(b: Body): boolean {
-  return b.solid && b !== SUN;
+  return b.solid && b !== GAME_SUN;
 }
 
 /**
@@ -54,7 +54,7 @@ export function canReturnHome(target: MissionTarget, land = false): boolean {
   const b = bodyById(target);
   // Von der Venus startet nach einer Landung keine Rakete mehr (90-facher Luftdruck, 460 °C).
   if (land && b.id === 'venus') return false;
-  return b !== EARTH && b !== SUN && !tinyBody(b);
+  return b !== GAME_EARTH && b !== GAME_SUN && !tinyBody(b);
 }
 
 /**
@@ -141,10 +141,10 @@ export function missionSteps(spec: MissionSpec, f: Flight): Step[] {
   }
   const goal = bodyById(spec.target);
   // Heimflug von einem Mond der Erde (Ziel „Erde“ oder „zurück“ ohne Hinflug).
-  if (goal === EARTH && here.parent === 'earth') {
+  if (goal === GAME_EARTH && here.parent === 'earth') {
     steps.push({ kind: 'ascent' });
-    steps.push({ kind: 'return', to: EARTH }, { kind: 'cruise', to: EARTH });
-    steps.push({ kind: 'reentry', at: EARTH });
+    steps.push({ kind: 'return', to: GAME_EARTH }, { kind: 'cruise', to: GAME_EARTH });
+    steps.push({ kind: 'reentry', at: GAME_EARTH });
     return steps;
   }
   if (goal !== here) {
@@ -166,12 +166,12 @@ export function missionSteps(spec: MissionSpec, f: Flight): Step[] {
   }
   if (spec.land && landable(goal) && !(f.status === 'landed' && here === goal))
     // Auf der Erde: Wiedereintritt mit Hitzeschild und Fallschirm (untere Stufen abwerfen).
-    steps.push(goal === EARTH ? { kind: 'reentry', at: goal } : { kind: 'land', on: goal });
+    steps.push(goal === GAME_EARTH ? { kind: 'reentry', at: goal } : { kind: 'land', on: goal });
   if (spec.home && canReturnHome(spec.target, spec.land && landable(goal))) {
     if (steps.at(-1)?.kind === 'land' || (f.status === 'landed' && here === goal))
       steps.push({ kind: 'ascent' });
     if (goal.parent === 'earth') {
-      steps.push({ kind: 'return', to: EARTH }, { kind: 'cruise', to: EARTH });
+      steps.push({ kind: 'return', to: GAME_EARTH }, { kind: 'cruise', to: GAME_EARTH });
     } else {
       // Von einem Mond erst zurück zu seinem Planeten, dann von dort heim.
       if (goal.parent && goal.parent !== 'sun') {
@@ -179,9 +179,9 @@ export function missionSteps(spec: MissionSpec, f: Flight): Step[] {
         steps.push({ kind: 'return', to: planet }, { kind: 'cruise', to: planet });
         steps.push({ kind: 'capture', at: planet });
       }
-      steps.push({ kind: 'transfer', to: EARTH }, { kind: 'cruise', to: EARTH });
+      steps.push({ kind: 'transfer', to: GAME_EARTH }, { kind: 'cruise', to: GAME_EARTH });
     }
-    steps.push({ kind: 'reentry', at: EARTH });
+    steps.push({ kind: 'reentry', at: GAME_EARTH });
   }
   return steps;
 }
@@ -373,7 +373,7 @@ export class MissionPilot {
         this.next(f);
         return this.status;
       }
-      if (!ref.solid || ref === SUN)
+      if (!ref.solid || ref === GAME_SUN)
         return this.fail(f, `Von ${forms(ref).dat} aus gibt es keinen Start.`);
       this.sub = new OrbitPilot(ref);
       if (f.status === 'landed' && !f.infiniteFuel && f.deltaV() < this.sub.needed * 0.95)
@@ -466,7 +466,7 @@ export class MissionPilot {
    * Einflussbereich des Ziels vorspulen.
    */
   private cruise(f: Flight, to: Body): MissionStatus {
-    if (to !== EARTH) f.target = to.id;
+    if (to !== GAME_EARTH) f.target = to.id;
     else f.target = 'earth';
     if (f.refBody() === to) {
       this.next(f);
@@ -475,7 +475,7 @@ export class MissionPilot {
     // Zu einem anderen Planeten: erst aus dem Einflussbereich des Startplaneten heraus – dicht am
     // Planeten wäre eine Kurskorrektur viel zu empfindlich. (Vom Mond heim wird gleich korrigiert.)
     const ref = f.refBody();
-    if (this.phase === 'start' && to.parent === 'sun' && ref !== SUN && ref.parent === 'sun') {
+    if (this.phase === 'start' && to.parent === 'sun' && ref !== GAME_SUN && ref.parent === 'sun') {
       this.detail = `Aus dem Einflussbereich ${forms(f.refBody()).gen} hinaus – Zeitraffer.`;
       this.fastForward(f);
       return this.status;
@@ -654,7 +654,7 @@ export class MissionPilot {
     if (!(this.sub instanceof LandingPilot)) {
       // Kommt danach noch ein Wiedereintritt, bleibt der Fallschirm dafür verpackt.
       const later = this.steps.slice(this.index + 1).some((st) => st.kind === 'reentry');
-      this.sub = new LandingPilot(later && on !== EARTH && f.engine().thrust > 0);
+      this.sub = new LandingPilot(later && on !== GAME_EARTH && f.engine().thrust > 0);
     }
     this.detail = `Lande-Autopilot ${forms(on).at}.`;
     const ph = this.sub.update(f);
