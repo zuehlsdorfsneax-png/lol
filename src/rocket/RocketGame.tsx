@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore, resetRocketCareer } from '../missions/progress';
 import { Builder } from './Builder';
 import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
+import { isolate } from './Dialog';
 import { FlightScreen } from './FlightScreen';
 import { PAINTS } from './draw';
 import { MAX_SATELLITES, type GoalId, type Satellite } from './flight';
@@ -53,24 +54,6 @@ function loadSats(): Satellite[] {
 }
 
 export type Tab = 'werft' | 'herausforderungen' | 'karriere';
-
-/**
- * Setzt alle Geschwister von `el` und seinen Vorfahren auf `inert`: Nur `el` bleibt bedienbar.
- * Gibt eine Funktion zurück, die das wieder aufhebt.
- */
-function isolate(el: HTMLElement): () => void {
-  const changed: HTMLElement[] = [];
-  for (let node: HTMLElement | null = el; node?.parentElement; node = node.parentElement) {
-    for (const sib of Array.from(node.parentElement.children)) {
-      if (sib !== node && sib instanceof HTMLElement && !sib.inert) {
-        sib.inert = true;
-        changed.push(sib);
-      }
-    }
-    if (node.parentElement === document.body) break;
-  }
-  return () => changed.forEach((s) => (s.inert = false));
-}
 
 /** Welche Stern-Bedingungen einer Herausforderung schon einmal erfüllt wurden. */
 function bestMet(id: string): boolean[] {

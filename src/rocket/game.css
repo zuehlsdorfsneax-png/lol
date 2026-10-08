@@ -1600,6 +1600,13 @@ html.game-open body {
   pointer-events: none;
 }
 
+/* Auf dem Handy steht der Ausblenden-Knopf links unter den Meldungen, nicht mitten über der Rakete. */
+.toast-hide {
+  justify-self: start;
+  margin-top: var(--sp-2);
+  pointer-events: auto;
+}
+
 .rocket-toast {
   display: grid;
   gap: var(--sp-0);
@@ -1954,6 +1961,35 @@ html.game-open body {
 .gauges {
   display: flex;
   gap: var(--sp-2);
+}
+
+/* Der Zahlenwert steht unter dem Balken, zweizeilig („82“ über „%“). So bleibt er etwa so breit
+   wie der Balken und überdeckt weder Tank und Hitze noch den Schubregler. Er liegt im Polster
+   unten und verschiebt das Layout des Triebwerksblocks nicht. */
+.gauge {
+  position: relative;
+  height: 100%;
+  padding-bottom: var(--sp-5);
+}
+
+.gauge .vgauge {
+  height: 100%;
+}
+
+.gauge-val {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  font: 600 var(--fs-1) / 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--g-ink);
+}
+
+.gauge-val.low {
+  color: var(--g-bad);
 }
 
 .vgauge {
@@ -3257,6 +3293,17 @@ html.game-open body {
   }
   .vgauge span {
     display: none;
+  }
+  /* Ohne Beschriftung zeigt das „!“ im Balken die Warnung, nicht nur die Farbe. */
+  .vgauge.low::before {
+    content: '!';
+    position: absolute;
+    top: 4px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font: 700 var(--fs-2) var(--font-mono);
+    color: var(--g-white);
   }
   .throttle {
     width: 44px;

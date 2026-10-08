@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { Icon } from '../ui/Icon';
 import type { Challenge, ChallengeResult } from './challenges';
+import { Dialog } from './Dialog';
 import type { Flight } from './flight';
 import { clock, distance, fmt } from './format';
 import { goalById, type GoalId } from './goals';
@@ -47,7 +48,7 @@ export function FlightReport({
   children: ComponentChildren;
 }) {
   return (
-    <div class="rocket-overlay report" role="dialog" aria-label={title}>
+    <Dialog class="report" label={title}>
       <h3>{title}</h3>
       <FlightStatsTable f={f} />
       {newGoals.length > 0 && (
@@ -60,7 +61,7 @@ export function FlightReport({
         </ul>
       )}
       <div class="btn-row">{children}</div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -89,7 +90,7 @@ export function ChallengeBrief({
   onExit: () => void;
 }) {
   return (
-    <div class="rocket-overlay brief" role="dialog" aria-label={challenge.title}>
+    <Dialog class="brief" label={challenge.title}>
       <span class="eyebrow">{challenge.group}</span>
       <h3>{challenge.title}</h3>
       <p>{challenge.brief}</p>
@@ -117,7 +118,7 @@ export function ChallengeBrief({
           Zurück
         </button>
       </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -143,7 +144,7 @@ export function ChallengeResultView({
   onExit: () => void;
 }) {
   return (
-    <div class="rocket-overlay result" role="dialog" aria-label="Ergebnis">
+    <Dialog class="result" label="Ergebnis">
       <span class="eyebrow">{challenge.title}</span>
       <h3>
         {result.success ? (result.stars === 3 ? 'Perfekt!' : 'Geschafft!') : 'Nicht geschafft'}
@@ -189,6 +190,6 @@ export function ChallengeResultView({
           Zur Übersicht
         </button>
       </div>
-    </div>
+    </Dialog>
   );
 }

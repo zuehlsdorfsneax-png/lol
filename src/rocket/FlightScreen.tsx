@@ -9,6 +9,7 @@ import { runPlan } from './planClient';
 import { PredictionService } from './predictClient';
 import type { Challenge, ChallengeResult, Memo } from './challenges';
 import { ComputerPanel } from './ComputerPanel';
+import { Dialog } from './Dialog';
 import { setPaint } from './draw';
 import {
   Flight,
@@ -618,6 +619,13 @@ export function FlightScreen({
     mission.current = null;
   };
 
+  /** Taste, Drehknopf und Regler geben die Steuerung gleich ab, mit derselben Meldung. */
+  const takeControl = (): void => {
+    if (!pilot.current) return;
+    stopPilots();
+    toast('Autopilot aus – du steuerst.');
+  };
+
   const restart = (next?: Flight): void => {
     flight.current =
       next ?? makeFlight(design, sandbox ? sandboxSettings : null, challenge, satellites);
@@ -973,6 +981,8 @@ export function FlightScreen({
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' && (e.target as HTMLInputElement).type !== 'range') return;
       if (tag === 'SELECT' || tag === 'TEXTAREA') return;
+      // Ein fokussierter Knopf bekommt die Leertaste: Sie löst ihn aus, statt die Stufe zu zünden.
+      if (tag === 'BUTTON' && e.key === ' ') return;
       // Strg/Cmd/Alt gehören dem Browser (Neu laden, Drucken, Suchen, Tab schließen …).
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.toLowerCase();
@@ -994,10 +1004,7 @@ export function FlightScreen({
       }
       if (k === '?') keys.current.delete('shift');
       if (control.has(k) || /^[1-7]$/.test(k)) e.preventDefault();
-      if (steer.has(k) && pilot.current) {
-        stopPilots();
-        toast('Autopilot aus – du steuerst.');
-      }
+      if (steer.has(k)) takeControl();
       if (e.repeat && !['arrowup', 'arrowdown', 'w', 's', 'shift'].includes(k)) return;
       keys.current.add(k);
       if (k === ' ') fl.stage();
@@ -1679,7 +1686,7 @@ export function FlightScreen({
     onPointerDown: (e: PointerEvent) => {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       audio.current.unlock();
-      if (pilot.current) stopPilots();
+      takeControl();
       touchTurn.current = dir;
     },
     onPointerUp: () => (touchTurn.current = 0),
@@ -1771,19 +1778,26 @@ export function FlightScreen({
   // Handy (auch quer): Meldungen unter dem Tipp im selben Block, damit sie sich nie überdecken.
   const phoneLayout = size.width > 0 && (size.width < 760 || size.height < 480);
   const toastList = (
-    <div class="toasts" aria-live="polite">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          class={`rocket-toast ${t.kind}`}
-          onClick={() => setToasts([])}
-          title="Antippen blendet die Meldungen aus"
-        >
-          {t.title && <strong>{t.title}</strong>}
-          <span>{t.text}</span>
-        </div>
-      ))}
-    </div>
+    <>
+      <div class="toasts" aria-live="polite">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            class={`rocket-toast ${t.kind}`}
+            onClick={() => setToasts([])}
+            title="Antippen blendet die Meldungen aus"
+          >
+            {t.title && <strong>{t.title}</strong>}
+            <span>{t.text}</span>
+          </div>
+        ))}
+      </div>
+      {toasts.length > 0 && (
+        <button type="button" class="hbtn toast-hide" onClick={() => setToasts([])}>
+          Meldungen ausblenden
+        </button>
+      )}
+    </>
   );
   const jumps: { label: string; t: number; what: string }[] = [];
   if (f.status === 'flying') {
@@ -2330,20 +2344,32 @@ export function FlightScreen({
         </div>
         <div class="engine">
           <div class="gauges">
-            <div
-              class={`vgauge fuel ${fuel < 0.15 ? 'low' : ''}`}
-              title={`Treibstoff der aktiven Stufe: ${fmt(fuel * 100)} %`}
-            >
-              <div class="vgauge-fill" style={{ height: `${fuel * 100}%` }} />
-              <span>Tank</span>
+            <div class="gauge">
+              <div
+                class={`vgauge fuel ${fuel < 0.15 ? 'low' : ''}`}
+                title={`Treibstoff der aktiven Stufe: ${fmt(fuel * 100)} %`}
+              >
+                <div class="vgauge-fill" style={{ height: `${fuel * 100}%` }} />
+                <span>{fuel < 0.15 ? 'Reserve' : 'Tank'}</span>
+              </div>
+              <span class={`gauge-val ${fuel < 0.15 ? 'low' : ''}`}>
+                {fmt(fuel * 100)}
+                <br />%
+              </span>
             </div>
             {f.heat > 0.05 && (
-              <div
-                class={`vgauge heat ${f.heat > 0.6 ? 'low' : ''}`}
-                title="Hitze beim Wiedereintritt – bei 100 % verglüht die Rakete"
-              >
-                <div class="vgauge-fill" style={{ height: `${Math.min(1, f.heat) * 100}%` }} />
-                <span>{f.shielded ? 'Schild' : 'Hitze'}</span>
+              <div class="gauge">
+                <div
+                  class={`vgauge heat ${f.heat > 0.6 ? 'low' : ''}`}
+                  title="Hitze beim Wiedereintritt – bei 100 % verglüht die Rakete"
+                >
+                  <div class="vgauge-fill" style={{ height: `${Math.min(1, f.heat) * 100}%` }} />
+                  <span>{f.heat > 0.6 ? 'Hitze hoch' : f.shielded ? 'Schild' : 'Hitze'}</span>
+                </div>
+                <span class={`gauge-val ${f.heat > 0.6 ? 'low' : ''}`}>
+                  {fmt(Math.min(1, f.heat) * 100)}
+                  <br />%
+                </span>
               </div>
             )}
           </div>
@@ -2351,7 +2377,7 @@ export function FlightScreen({
             value={f.throttle}
             fine={f.fine}
             onChange={(v) => {
-              if (pilot.current) stopPilots();
+              takeControl();
               audio.current.unlock();
               f.throttle = v;
             }}
@@ -2422,7 +2448,7 @@ export function FlightScreen({
       </div>
 
       {paused && !help && f.status !== 'crashed' && !briefing && (
-        <div class="rocket-overlay pause-menu" role="dialog" aria-label="Menü">
+        <Dialog class="pause-menu" label="Menü">
           <h3>Pause</h3>
           <div class="menu-list">
             <button type="button" class="mbtn primary" onClick={() => setPaused(false)}>
@@ -2522,11 +2548,11 @@ export function FlightScreen({
               )}
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {help && (
-        <div class="rocket-overlay help" role="dialog" aria-label="Hilfe">
+        <Dialog class="help" label="Hilfe">
           <h3>Steuerung</h3>
           {touch && (
             <table class="table">
@@ -2563,11 +2589,11 @@ export function FlightScreen({
               Verstanden
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {guide !== null && !help && !briefing && (
-        <div class="rocket-overlay guide" role="dialog" aria-label="Einführung: dein erster Flug">
+        <Dialog class="guide" label="Einführung: dein erster Flug">
           <span class="guide-step">
             Erster Flug · {guide + 1} von {GUIDE.length}
           </span>
@@ -2590,7 +2616,7 @@ export function FlightScreen({
               {guide + 1 < GUIDE.length ? 'Weiter' : 'Los geht’s!'}
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {briefing && challenge && (
@@ -2638,7 +2664,7 @@ export function FlightScreen({
       )}
 
       {f.status === 'crashed' && !result && (
-        <div class="rocket-overlay" role="dialog" aria-label="Absturz">
+        <Dialog label="Absturz">
           <h3>
             {f.crashReason.includes('verglüht')
               ? 'Verglüht!'
@@ -2664,7 +2690,7 @@ export function FlightScreen({
               Zurück zur Werft
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
