@@ -400,10 +400,14 @@ export function drawLaunchComplex(
     ctx.fillStyle = lit('#9a9ea5');
     ctx.fillRect(-pit - 0.3, -0.35, 0.3, 0.35);
     ctx.fillRect(pit, -0.35, 0.3, 0.35);
-    // Haltearme links und rechts, direkt an der Rakete
-    ctx.fillStyle = lit('#3c434d');
-    ctx.fillRect(-half - 1.4, 0, 1.2, 1.4);
-    ctx.fillRect(half + 0.2, 0, 1.2, 1.4);
+    // Haltearme links und rechts: Stütze mit Klaue, die die Rakete am unteren Ende fasst
+    for (const side of [-1, 1]) {
+      const x = side < 0 ? -half - 1.4 : half + 0.2;
+      ctx.fillStyle = lit('#3c434d');
+      ctx.fillRect(x, 0, 1.2, 1.4);
+      ctx.fillStyle = lit('#9a9ea5');
+      ctx.fillRect(side < 0 ? x + 0.9 : x, 1.05, 0.3, 0.35);
+    }
 
     // Startturm: Gitter, Plattformen, Kran und Versorgungsarme – so hoch wie die Rakete
     const tx = half + 2.4;
