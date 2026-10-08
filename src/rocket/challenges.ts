@@ -3,6 +3,7 @@
  * Von der Flugschule (erster Hüpfer, erste Umlaufbahn) bis zum Bremsen in letzter Sekunde auf dem
  * Mars.
  */
+import { wrapAngle } from '../physics/analysis';
 import { apsides, bodySpin, satelliteState, type Flight } from './flight';
 import { fmt, km } from './format';
 import {
@@ -86,10 +87,18 @@ function placeFalling(f: Flight, body: typeof MARS, angle: number, altitude: num
 /** Der Punkt auf der Mondoberfläche, der zur Erde zeigt, liegt beim Winkel π (mitdrehend). */
 const MOON_BASE = Math.PI + 0.35;
 const PHOBOS_BASE = 1.2;
+const PHOBOS_START = PHOBOS_BASE + 2_000 / PHOBOS.radius;
 /** Der Eisvulkan Ahuna Mons auf Ceres (Winkel auf der Oberfläche; Ceres dreht sich im Spiel nicht). */
 const CERES_BASE = 0.9;
 /** Bahnradius Ganymeds (für die Wertung beim Einfangen am Jupiter). */
 const GANYMEDE_ORBIT = 100_800_000;
+
+/** Abstand entlang der Phobos-Oberfläche vom Startplatz (die Regel misst am Boden, nicht im Raum). */
+function phobosFromStart(f: Flight): number {
+  const [bx, by] = bodyState(PHOBOS, f.t);
+  const local = Math.atan2(f.y - by, f.x - bx) - bodySpin(PHOBOS, f.t);
+  return PHOBOS.radius * Math.abs(wrapAngle(local - PHOBOS_START));
+}
 
 export const CHALLENGES: readonly Challenge[] = [
   {
@@ -459,9 +468,9 @@ export const CHALLENGES: readonly Challenge[] = [
     computer: false,
     setup(f) {
       f.site = { body: 'phobos', angle: PHOBOS_BASE, name: 'Forschungsstation' };
-      f.placeLanded(PHOBOS, PHOBOS_BASE + 2_000 / PHOBOS.radius);
+      f.placeLanded(PHOBOS, PHOBOS_START);
     },
-    judge(f, memo) {
+    judge(f) {
       const c = crashed(f);
       if (c) return c;
       if (f.refBody() !== PHOBOS && f.status === 'flying' && !f.orbit(PHOBOS).bound)
@@ -470,10 +479,9 @@ export const CHALLENGES: readonly Challenge[] = [
           stars: 0,
           text: 'Zu schnell – die Rakete ist Phobos davongeflogen.',
         };
-      memo.start ??= f.siteInfo()!.distance;
       if (f.status !== 'landed' || f.stats.liftoff === null) return null;
+      if (phobosFromStart(f) < 500) return null;
       const d = f.siteInfo()!.distance;
-      if (Math.abs(memo.start - d) < 500 && d > 250) return null;
       return {
         success: true,
         ...stars(true, d <= 250, d <= 50),
@@ -482,7 +490,10 @@ export const CHALLENGES: readonly Challenge[] = [
     },
     progress: (f) => {
       const s = f.siteInfo();
-      return s ? `Abstand zur Station: ${Math.round(s.distance)} m` : '';
+      if (!s) return '';
+      if (f.status === 'landed' && f.stats.liftoff !== null && phobosFromStart(f) < 500)
+        return 'Zu nah am Start – lande mindestens 500 m davon entfernt.';
+      return `Abstand zur Station: ${Math.round(s.distance)} m`;
     },
   },
   {

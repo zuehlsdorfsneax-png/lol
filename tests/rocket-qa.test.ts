@@ -4,7 +4,7 @@ import { sanitizeProgress, type Progress } from '../src/missions/progress';
 import { OrbitPilot } from '../src/rocket/autopilot';
 import { CHALLENGES } from '../src/rocket/challenges';
 import { CHALLENGE_COUNT, GOAL_COUNT } from '../src/rocket/counts';
-import { GOALS } from '../src/rocket/goals';
+import { GOALS, goalPoints } from '../src/rocket/goals';
 import { Flight, type Satellite } from '../src/rocket/flight';
 import { TEMPLATES, checkDesign, stageStats } from '../src/rocket/parts';
 import { DEFAULT_SANDBOX, applySandbox } from '../src/rocket/sandbox';
@@ -314,6 +314,22 @@ describe('App (QA)', () => {
     expect(broken.rocketChallenges).toEqual({ hop: { stars: 2, text: 'ok' } });
     expect(broken.rocketSeen).toEqual(['x']);
     expect(broken.rocketPaint).toBe('klassisch');
+  });
+
+  it('Ziele und Sterne aus dem Speicher: nur bekannte, eindeutige Ziele, Sterne von 0 bis 3', () => {
+    const p = sanitizeProgress({
+      rocketGoals: ['orbit', 'moonland', 'orbit', 'gibt-es-nicht', 42],
+      rocketChallenges: {
+        hop: { stars: 3, text: 'ok' },
+        phobos: { stars: 99, text: 'zu viel' },
+        ceres: { stars: 1.5, text: 'halb' },
+        mars: { stars: -1, text: 'negativ' },
+      },
+    } as unknown as Progress);
+    expect(p.rocketGoals).toEqual(['orbit', 'moonland']);
+    // Ein doppelter Eintrag würde die Punkte doppelt zählen.
+    expect(goalPoints(p.rocketGoals)).toBe(goalPoints(['orbit', 'moonland']));
+    expect(p.rocketChallenges).toEqual({ hop: { stars: 3, text: 'ok' } });
   });
 
   it('unbekannte Adressen und Kapitel landen auf „Seite nicht gefunden“', () => {

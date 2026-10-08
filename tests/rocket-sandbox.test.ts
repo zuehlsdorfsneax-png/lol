@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { progressStore, recordChallenge } from '../src/missions/progress';
 import { LandingPilot } from '../src/rocket/autopilot';
 import { challengeById } from '../src/rocket/challenges';
 import { Flight } from '../src/rocket/flight';
@@ -176,5 +177,16 @@ describe('Sandkasten: Startorte auf allen Körpern', () => {
     expect(checkDesign(heavy, rules).some((p) => p.text.includes('hebt nicht ab'))).toBe(false);
     const ground = buildRules({ ...DEFAULT_SANDBOX, start: 'mars' });
     expect(checkDesign(heavy, ground).some((p) => p.text.includes('hebt nicht ab'))).toBe(true);
+  });
+});
+
+describe('Herausforderungen und Sandkasten', () => {
+  it('im Sandkasten gewertete Herausforderungen bringen keine Sterne ins Fortschrittsbuch', () => {
+    progressStore.clear();
+    const won = { success: true, stars: 3, text: 'Gelandet!', met: [true, true, true] };
+    expect(recordChallenge('hop', won, true)).toBeNull();
+    expect(progressStore.load().rocketChallenges).toEqual({});
+    expect(recordChallenge('hop', won, false)?.stars).toBe(3);
+    expect(progressStore.load().rocketChallenges.hop?.stars).toBe(3);
   });
 });

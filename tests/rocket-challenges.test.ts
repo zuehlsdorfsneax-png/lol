@@ -150,6 +150,27 @@ describe('Herausforderungen', () => {
     for (let i = 0; i < 60; i++) f.update(1 / 60);
     expect(f.status).toBe('flying');
   });
+  it('Phobos: Landung 2 km auf der anderen Seite der Station (4 km vom Start) zählt', () => {
+    const c = challengeById('phobos')!;
+    const { f, memo } = start('phobos');
+    expect(c.judge(f, memo)).toBeNull();
+    // Gewertet wird nur nach einem Start vom Boden.
+    f.stats.liftoff = 1;
+    f.placeLanded(PHOBOS, f.site!.angle - 2_000 / PHOBOS.radius);
+    const r = c.judge(f, memo)!;
+    expect(r.success, r.text).toBe(true);
+    expect(r.stars).toBe(1);
+  });
+  it('Phobos: Landung 300 m vom Start wird nicht gewertet, der Hinweis nennt die Regel', () => {
+    const c = challengeById('phobos')!;
+    const { f, memo } = start('phobos');
+    c.judge(f, memo);
+    f.stats.liftoff = 1;
+    // 1,7 km von der Station, also 300 m vom Start.
+    f.placeLanded(PHOBOS, f.site!.angle + 1_700 / PHOBOS.radius);
+    expect(c.judge(f, memo)).toBeNull();
+    expect(c.progress(f)).toContain('500 m');
+  });
   it('Ceres: der Lande-Autopilot setzt auf dem Zwergplaneten auf', () => {
     const { f, memo } = start('ceres');
     expect(f.refBody()).toBe(CERES);

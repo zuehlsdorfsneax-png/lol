@@ -1,6 +1,11 @@
 import './game.css';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { progressStore, resetRocketCareer } from '../missions/progress';
+import {
+  metConditions,
+  progressStore,
+  recordChallenge,
+  resetRocketCareer,
+} from '../missions/progress';
 import { Builder } from './Builder';
 import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
 import { isolate } from './Dialog';
@@ -57,10 +62,7 @@ export type Tab = 'werft' | 'herausforderungen' | 'karriere';
 
 /** Welche Stern-Bedingungen einer Herausforderung schon einmal erfüllt wurden. */
 function bestMet(id: string): boolean[] {
-  const r = progressStore.load().rocketChallenges?.[id];
-  if (!r) return [false, false, false];
-  // Ältere Spielstände kennen nur die Anzahl der Sterne.
-  return r.met ?? [0, 1, 2].map((i) => i < r.stars);
+  return metConditions(progressStore.load().rocketChallenges?.[id]);
 }
 
 /**
@@ -167,18 +169,8 @@ export function RocketGame({
   };
 
   const finishChallenge = (id: string, r: ChallengeResult): void => {
-    if (!r.success) return;
-    // Jede Stern-Bedingung zählt für sich – auch wenn sie in verschiedenen Flügen erfüllt wurde.
-    const old = progressStore.load().rocketChallenges?.[id];
-    const oldMet = bestMet(id);
-    const met = [0, 1, 2].map((i) => !!(r.met?.[i] ?? i < r.stars) || !!oldMet[i]);
-    const count = Math.max(old?.stars ?? 0, met.filter(Boolean).length);
-    const text = !old || r.stars >= old.stars ? r.text : old.text;
-    setStars((s) => ({ ...s, [id]: count }));
-    progressStore.update((p) => ({
-      ...p,
-      rocketChallenges: { ...p.rocketChallenges, [id]: { stars: count, text, met } },
-    }));
+    const rec = recordChallenge(id, r, sandbox);
+    if (rec) setStars((s) => ({ ...s, [id]: rec.stars }));
   };
 
   const startChallenge = (c: Challenge): void => {
