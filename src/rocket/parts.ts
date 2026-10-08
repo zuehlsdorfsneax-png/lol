@@ -1372,7 +1372,7 @@ export const TEMPLATES: readonly Template[] = [
   {
     id: 'spatzsonde',
     name: 'Spatz-Sonde',
-    info: 'Winzige Sonde mit Sondentank und Spatz-Triebwerk auf einer kleinen Trägerrakete – landet auf Phobos oder Europa.',
+    info: 'Winzige Sonde mit Sondentank und Spatz-Triebwerk auf einer kleinen Trägerrakete – landet auf Phobos.',
     parts: [
       'nase',
       'sonde',
@@ -1567,6 +1567,11 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
       problems.push({
         level: 'warn',
         text: `Die Landestufe ist selbst für den Mond zu schwach (Schub ${Math.round(lander.twrMoon * 100)} % des Gewichts dort) – ein stärkeres Triebwerk oder weniger Last darüber.`,
+      });
+    else if (twrMars < 1)
+      problems.push({
+        level: 'warn',
+        text: `Hinweis: Für eine Marslandung reicht die Landestufe nicht (Schub ${Math.round(twrMars * 100)} % des Gewichts dort). Für den Mond reicht sie.`,
       });
     else if (twrMars < 1.3)
       problems.push({
