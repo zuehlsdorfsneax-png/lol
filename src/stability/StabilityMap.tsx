@@ -649,7 +649,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
                 )
               }
             >
-              Im Simulator ansehen <Icon name="arrow" />
+              Im Simulator ansehen
             </button>
           </div>
           {selInfo.r ? (

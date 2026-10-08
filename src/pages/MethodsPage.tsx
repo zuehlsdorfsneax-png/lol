@@ -60,8 +60,8 @@ export function MethodsPage() {
         />
         <p>
           Es ist <em>symplektisch</em>: Es erhält die geometrische Struktur der Bewegung. Die
-          Energie schwankt deshalb nur geringfügig, statt über lange Zeit wegzudriften –
-          entscheidend, wenn man Stabilität über Jahrhunderte untersuchen will.
+          Energie schwankt deshalb nur geringfügig, statt über lange Zeit wegzudriften. Das macht
+          das Verfahren für Stabilität über Jahrhunderte geeignet.
         </p>
         <p>
           Die Schrittweite passt sich an: In jedem Schritt wird die kürzeste Zeitskala aller Paare

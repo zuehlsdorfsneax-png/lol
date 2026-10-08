@@ -1029,6 +1029,22 @@ export interface RocketLook {
 }
 
 /** Zeichnet eine Rakete (Teile von oben nach unten); Ursprung = Unterkante, y nach oben. */
+/**
+ * Plattennähte auf Tanks, Boostern und Strukturen: zwei dunkle Fugen mit hellem Rand, wie aus
+ * Blech gefügt. Schmale Teile bleiben glatt, sonst wirken sie wie Strichcodes.
+ */
+function panelSeams(ctx: CanvasRenderingContext2D, def: PartDef, y: number): void {
+  if (def.kind !== 'tank' && def.kind !== 'booster' && def.kind !== 'structure') return;
+  if (def.width < 1.6) return;
+  for (const fx of [-0.28, 0.28]) {
+    const x = fx * def.width;
+    ctx.fillStyle = `rgba(10,14,24,${0.22 * (0.4 + 0.6 * lightLevel)})`;
+    ctx.fillRect(x - 0.02, y, 0.04, def.height);
+    ctx.fillStyle = `rgba(255,255,255,${0.12 * lightLevel})`;
+    ctx.fillRect(x + 0.03, y, 0.02, def.height);
+  }
+}
+
 export function drawRocket(
   ctx: CanvasRenderingContext2D,
   parts: string[],
@@ -1108,14 +1124,20 @@ export function drawRocket(
       continue;
     }
     drawPart(ctx, def, y, bottoms.get(i) ?? 0);
+    panelSeams(ctx, def, y);
     // Schattenfuge zum Teil darunter: die Rakete wirkt aus Stücken gebaut statt flach bemalt
     const next = parts.slice(i + 1).find((e) => !sideOf(e));
     if (next && y > 0) {
       const below = part(next);
       const seam = Math.min(def.width, below.topWidth ?? below.width);
       if (seam > 0.8 && def.kind !== 'chute' && below.kind !== 'shield') {
-        ctx.fillStyle = `rgba(10,14,24,${0.3 * (0.4 + 0.6 * lightLevel)})`;
-        ctx.fillRect(-seam / 2, y - 0.05, seam, 0.1);
+        // Die obere Stufe wirft unter ihrer Kante einen weichen Schatten auf die untere.
+        const band = 0.4;
+        const shadow = ctx.createLinearGradient(0, y, 0, y - band);
+        shadow.addColorStop(0, `rgba(10,14,24,${0.45 * (0.4 + 0.6 * lightLevel)})`);
+        shadow.addColorStop(1, 'rgba(10,14,24,0)');
+        ctx.fillStyle = shadow;
+        ctx.fillRect(-seam / 2, y - band, seam, band);
       }
     }
     y += def.height;
@@ -1226,18 +1248,24 @@ function drawFlame(
     g.addColorStop(0.55, `rgba(255,128,44,${0.6 * a})`);
     g.addColorStop(1, 'rgba(255,80,20,0)');
   }
-  // Äußerer Strahl (zwei leicht versetzte Formen flackern gegeneinander)
-  for (const [f2, off] of [
-    [1, 0],
-    [0.86, Math.sin(look.time * 23) * 0.08],
-  ] as const) {
+  // Äußerer Strahl aus mehreren Zungen: jede hat eigene Länge und Schwingung, so flackert der
+  // Rand wie echtes Abgas statt wie ein starrer Umriss.
+  const tongues = 5;
+  for (let i = 0; i < tongues; i++) {
+    const phase = look.time * (9 + i * 2.3) + i * 1.9;
+    const sway = Math.sin(phase) * w * (0.1 + 0.12 * vacuum);
+    const reach = 0.62 + 0.38 * (0.5 + 0.5 * Math.sin(phase * 0.61 + i * 0.8));
+    const spreadI = spread * (0.45 + 0.55 * (i / (tongues - 1)));
+    const off = (i / (tongues - 1) - 0.5) * w * 0.8;
+    const tipX = off + sway;
+    const tipY = -len * reach;
     ctx.beginPath();
     ctx.moveTo(-w / 2, 0);
-    ctx.quadraticCurveTo(-spread * f2 + off * w, -len * 0.35 * f2, off * w, -len * f2);
-    ctx.quadraticCurveTo(spread * f2 + off * w, -len * 0.35 * f2, w / 2, 0);
+    ctx.quadraticCurveTo(-spreadI + off * 0.5, tipY * 0.45, tipX, tipY);
+    ctx.quadraticCurveTo(spreadI + off * 0.5, tipY * 0.45, w / 2, 0);
     ctx.closePath();
     ctx.fillStyle = g;
-    ctx.globalAlpha = f2 === 1 ? 1 : 0.6;
+    ctx.globalAlpha = 0.5 + 0.1 * i;
     ctx.fill();
   }
   ctx.globalAlpha = 1;

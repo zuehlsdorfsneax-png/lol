@@ -48,9 +48,7 @@ html.game-open body {
   --g-sas-radial: #67e8f9;
   --g-sas-target: #d8b4fe;
   --g-sas-node: #93c5fd;
-  --g-blueprint-1: #13284c;
   --g-blueprint-2: #102140;
-  --g-blueprint-3: #0c1a33;
   --g-edge: rgb(255 255 255 / 7%);
   --g-fill: rgb(255 255 255 / 4%);
   --g-tip: rgb(8 12 22 / 72%);
@@ -107,10 +105,7 @@ html.game-open body {
    früh in der Datei, damit Zustände wie „an“ weiter unten ihren eigenen Hintergrund behalten. */
 .rocket-stage
   :is(.hud-card, .hbtn, .abtn, .engine, .sas-row, .warp, .round-btn, .dv-readout, .hselect-wrap) {
-  background-image: linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 0%) 55%);
-  box-shadow:
-    inset 0 1px 0 var(--g-edge),
-    var(--shadow-1);
+  box-shadow: none;
 }
 
 .game kbd {
@@ -465,14 +460,7 @@ html.game-open body {
   position: relative;
   min-width: 0;
   min-height: 0;
-  background:
-    radial-gradient(ellipse at 50% 35%, rgb(70 120 210 / 28%) 0%, transparent 65%),
-    linear-gradient(
-      180deg,
-      var(--g-blueprint-1) 0%,
-      var(--g-blueprint-2) 60%,
-      var(--g-blueprint-3) 100%
-    );
+  background: var(--g-blueprint-2);
 }
 
 .blueprint-canvas {
@@ -809,7 +797,7 @@ html.game-open body {
 .dv-fill {
   height: 100%;
   border-radius: var(--r-sm);
-  background: linear-gradient(90deg, var(--g-blue), var(--g-go));
+  background: var(--g-go);
 }
 
 .dv-mark {
@@ -1981,7 +1969,7 @@ html.game-open body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(0deg, var(--g-go-deep), var(--g-go));
+  background: var(--g-go);
 }
 
 .vgauge.low .vgauge-fill {
@@ -2040,7 +2028,7 @@ html.game-open body {
   right: 0;
   bottom: 0;
   border-radius: var(--r-md);
-  background: linear-gradient(0deg, var(--g-brass-deep), var(--g-brass-light));
+  background: var(--g-brass-mid);
 }
 
 .throttle-knob {
@@ -2077,11 +2065,10 @@ html.game-open body {
   min-height: 84px;
   border: 0;
   border-radius: var(--r-lg);
-  background: linear-gradient(180deg, var(--g-brass-mid), var(--g-brass-deep));
+  background: var(--g-brass-mid);
   color: var(--g-accent-ink);
   font-family: var(--font-ui);
   cursor: pointer;
-  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 18%);
   transition: transform var(--dur-1) var(--ease-out);
 }
 
@@ -3691,9 +3678,23 @@ html.game-open body {
 .rocket-overlay.guide {
   gap: var(--sp-3);
   /* Nicht abdunkeln: Man soll die erklärten Knöpfe dahinter sehen. */
-  box-shadow:
-    inset 0 1px 0 var(--g-edge),
-    var(--shadow-2);
+  box-shadow: var(--shadow-2);
+}
+
+/* Auf breiten Bildschirmen oben statt mittig: In der Mitte steht die Rakete. */
+@media (min-width: 761px) {
+  .rocket-overlay.guide {
+    top: 104px;
+    transform: translate(-50%, 0);
+    animation: g-guide-in var(--dur-3) var(--ease-out);
+  }
+}
+
+@keyframes g-guide-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
 }
 
 .rocket-overlay.guide p {

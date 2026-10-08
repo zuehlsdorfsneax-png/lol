@@ -252,6 +252,40 @@ function nightSide(
   ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
 }
 
+let grassTile: HTMLCanvasElement | null = null;
+
+/**
+ * Wiese als Muster: dunkle und helle Halme auf dem Grün, einmal gezeichnet. Das Muster hängt an
+ * der Oberfläche (Ursprung im Bild, Maßstab mit dem Zoom), damit die Halme beim Verschieben
+ * mitlaufen statt am Bildschirm zu kleben.
+ */
+function grassPattern(ctx: CanvasRenderingContext2D, tilePx: number, ox: number, oy: number) {
+  if (typeof DOMMatrix === 'undefined') return null;
+  if (!grassTile) {
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    const g = c.getContext('2d');
+    if (!g) return null;
+    g.fillStyle = '#3f8f4e';
+    g.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 320; i++) {
+      const x = hash(i, 91) * 128;
+      const y = hash(i, 92) * 128;
+      g.strokeStyle = hash(i, 93) < 0.62 ? 'rgba(26,66,38,0.6)' : 'rgba(176,222,128,0.4)';
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + (hash(i, 94) - 0.5) * 4, y - 2 - hash(i, 95) * 3);
+      g.stroke();
+    }
+    grassTile = c;
+  }
+  const pattern = ctx.createPattern(grassTile, 'repeat');
+  const k = tilePx / 128;
+  pattern?.setTransform(new DOMMatrix([k, 0, 0, k, ox, oy]));
+  return pattern;
+}
+
 function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
   const R = GAME_EARTH.radius;
   const rpx = R * v.scale;
@@ -316,7 +350,9 @@ function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
     ctx.fillStyle = '#2764b8';
     ctx.fill();
   }
-  ctx.fillStyle = '#3f8f4e';
+  // Wiese in Metern gemessen: eine Kachel gut 6 m, damit die Halme sichtbar bleiben.
+  const [cx, cy] = toScreen(v, 0, 0);
+  ctx.fillStyle = grassPattern(ctx, 6 * v.scale, cx, cy) ?? '#3f8f4e';
   for (const [a, b] of LAND) {
     ctx.beginPath();
     if (sectorPath(ctx, v, 0, 0, R, (a * Math.PI) / 180, (b * Math.PI) / 180)) ctx.fill();
@@ -1169,7 +1205,7 @@ export function drawFlight(
       drawLampPool(ctx, v, f, near, '255,240,205', 6 + near.altitude * 0.55, 0.75, 90);
     // Der Triebwerksstrahl beleuchtet den Boden – nachts deutlich, am Tag nur ein warmer Schimmer.
     if (f.thrusting && near.altitude < 160 && near.body.solid && f.engine().thrust > 20_000) {
-      const flare = (0.25 + 0.55 * (1 - light.day)) * f.throttle;
+      const flare = (0.1 + 0.3 * (1 - light.day)) * f.throttle;
       drawLampPool(ctx, v, f, near, '255,170,80', 14 + near.altitude * 0.4, flare, 160);
     }
     const minPx = opts.minRocket ?? 34;

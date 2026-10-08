@@ -44,7 +44,6 @@ function TocRow({
           <span>{children}</span>
         </span>
         {meta && <span class="toc-meta">{meta}</span>}
-        <Icon name="arrow" />
       </a>
     </li>
   );
@@ -169,7 +168,7 @@ export function HomePage() {
         <div class="section-head">
           <h2 id="inhalt">Inhalt</h2>
           <a class="more" href="#kapitel-2">
-            Von vorn lesen <Icon name="arrow" />
+            Von vorn lesen
           </a>
         </div>
         <ol class="toc">
@@ -208,9 +207,7 @@ export function HomePage() {
               echter Schwerkraft, Bordcomputer, {CHALLENGE_COUNT} Herausforderungen und {GOAL_COUNT}{' '}
               Zielen.
             </p>
-            <span class="rocket-banner-cta">
-              Raketenwerft öffnen <Icon name="arrow" />
-            </span>
+            <span class="rocket-banner-cta">Raketenwerft öffnen</span>
           </div>
           <RocketArt />
         </a>

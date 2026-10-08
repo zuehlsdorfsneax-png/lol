@@ -49,7 +49,7 @@ export const SAS_MODES: readonly {
   { mode: 'target', icon: '◆', short: 'Ziel', label: 'Zum Ziel zeigen', key: '6' },
   {
     mode: 'maneuver',
-    icon: '✦',
+    icon: '✎',
     short: 'Plan',
     label: 'Auf das geplante Manöver ausrichten',
     key: '7',

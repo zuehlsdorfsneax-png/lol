@@ -4,7 +4,7 @@ import { Callout, PageHead } from '../ui/content';
 export function StabilityMapPage({ preset }: { preset: string | null }) {
   return (
     <div class="stack" style={{ gap: 'var(--sp-4)', maxWidth: '1100px' }}>
-      <PageHead eyebrow="Werkzeug · Eigenanteil" title="Stabilitätskarte">
+      <PageHead eyebrow="Werkzeug" title="Stabilitätskarte">
         Jedes Feld der Karte ist eine eigene Simulation über viele Jahre. Die Farbe zeigt, was mit
         dem Mond passiert. So wird sichtbar, wo genau die Grenzen der Stabilität liegen – und wie
         gut die Theorie (Linien) sie vorhersagt.

@@ -150,7 +150,7 @@ export function drawRidges(
 // ------------------------------------------------------------------ Sonne am Himmel
 
 /**
- * Die Sonne als Scheibe mit Schein, dazu Abendrot und leichte Blendflecken. Sie steht über dem
+ * Die Sonne als Scheibe mit Schein und Abendrot. Sie steht über dem
  * Bodenpunkt unter der Kamera in Richtung des echten Sonnenstands – bei Sonnenuntergang sinkt sie
  * also hinter die Berge und den Boden (die danach gezeichnet werden).
  */
@@ -190,8 +190,8 @@ export function drawSkySun(
   const tint = warm > 0.3 ? '255,190,120' : '255,240,205';
   const halo = fancy ? softSprite(tint, 0.08) : null;
   if (halo) {
-    const r = Math.min(W, H) * (air ? 0.26 : 0.16);
-    ctx.globalAlpha = (air ? 0.5 : 0.35) * (0.4 + 0.6 * Math.max(sun.day, warm));
+    const r = Math.min(W, H) * (air ? 0.07 : 0.05);
+    ctx.globalAlpha = (air ? 0.22 : 0.16) * (0.4 + 0.6 * Math.max(sun.day, warm));
     ctx.drawImage(halo, x - r, y - r, 2 * r, 2 * r);
   }
   const core = softSprite('255,252,236', 0.55);
@@ -204,22 +204,6 @@ export function drawSkySun(
   ctx.beginPath();
   ctx.arc(x, y, 9, 0, Math.PI * 2);
   ctx.fill();
-  // Blendflecken entlang der Linie Sonne → Bildmitte
-  if (fancy && x > 0 && x < W && y > 0 && y < H) {
-    const ghosts: [number, number, string, number][] = [
-      [0.55, 9, '120,200,255', 0.08],
-      [0.85, 20, '160,255,190', 0.05],
-      [1.25, 13, '255,170,120', 0.07],
-    ];
-    for (const [k, r, rgb, a] of ghosts) {
-      const img = softSprite(rgb, 0.6);
-      if (!img) continue;
-      ctx.globalAlpha = a;
-      const gx = x + (W / 2 - x) * k;
-      const gy = y + (H / 2 - y) * k;
-      ctx.drawImage(img, gx - r, gy - r, 2 * r, 2 * r);
-    }
-  }
   ctx.restore();
 }
 

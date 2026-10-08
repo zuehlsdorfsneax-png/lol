@@ -67,7 +67,7 @@ export function RocketArt({ paused = false }: { paused?: boolean }) {
   }, [size, paused, visible]);
   return (
     <div ref={box} aria-hidden="true">
-      <canvas ref={canvas} />
+      <canvas ref={canvas} aria-hidden="true" />
     </div>
   );
 }

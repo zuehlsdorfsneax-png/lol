@@ -80,7 +80,14 @@ function PartIcon({ def }: { def: PartDef }) {
     drawPart(ctx, def, 0, -below + (def.kind === 'legs' ? 0.2 : 0));
     ctx.restore();
   }, [def]);
-  return <canvas ref={ref} class="part-icon" style={{ width: '44px', height: '44px' }} />;
+  return (
+    <canvas
+      aria-hidden="true"
+      ref={ref}
+      class="part-icon"
+      style={{ width: '44px', height: '44px' }}
+    />
+  );
 }
 
 /** Ende des Blocks ab Index i: ein Teil im Stapel samt der Seitenteile direkt dahinter. */
@@ -1624,7 +1631,7 @@ function ChallengeList({
                       ))}
                     </span>
                     <button type="button" class="gbtn small" onClick={() => onStart(c)}>
-                      {n > 0 ? 'Nochmal' : 'Starten'} <Icon name="arrow" />
+                      {n > 0 ? 'Nochmal' : 'Starten'}
                     </button>
                   </div>
                 </li>
