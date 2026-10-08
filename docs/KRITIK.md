@@ -25,18 +25,55 @@ und Handy, Raketenwerft bis zum Flugbild) und Screenshots von Werft, Start und F
 - Flamme aus mehreren flackernden Zungen, Plattennähte auf Tanks, weicher Stufenschatten,
   gekachelte Wiese, weniger Glanz an Sonne und Düse.
 
+## Umsetzungsrunde (Befundliste aus fünf Bereichen)
+
+Umgesetzt, jeweils mit Test oder Prüflauf: Lageanzeige und SAS-Knöpfe auf dem Handy, Leertaste
+zündet keine Stufe mehr bei fokussierten Knöpfen, Dialoge mit Fokus und Inert, Menü-Knöpfe
+schließen, Meldungen ausblendbar, Hitze und Tank mit Zahl, Ionen-Brenndauer mit Stromfaktor,
+Landung und Start auf drehenden Monden (Europa, Ganymed), Ionen-Brennmitte am Knoten,
+Venus-Triebwerke mit Bodenschub (Druck auf den Meereswert gedeckelt), Phobos-Mindestabstand,
+Sandkasten-Sterne nicht gespeichert, Fortschrittsdaten geprüft, Missionsprüflauf mit Abschluss am
+Ende, stetiges Seitenlicht, weiche Flamme, Feuer über Rauch, Gebirgsumriss, Nachtschein der
+Planeten, Himmelsebene an die Pixeldichte gekoppelt.
+
 ## Offen
 
-| Befund                                                                        | Stand | Grund                                                                                       |
-| ----------------------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- |
-| Sicherheitsabstand an der Kerbe auf einem echten iPhone                       | ⛔    | Kein Gerät hier.                                                                            |
-| Windows-Warnung „unbekannter Herausgeber“                                     | ⛔    | Braucht ein gekauftes Code-Signing-Zertifikat.                                              |
-| Luftdruck im Spiel auf 2 bar gedeckelt                                        | 🔶    | Spielentscheidung. Ob die App das erklärt, ist nicht geprüft.                               |
-| Sehr große Dateien: `flight.ts`, `FlightScreen.tsx`, `game.css`, `global.css` | offen | Aufteilung braucht eine eigene Runde.                                                       |
-| Farben in den Zeichenroutinen sind teils Einzelwerte                          | offen | Planeten- und Gesteinsfarben bleiben bewusst. Himmel und Overlays sollten Tokens lesen.     |
-| Wolken sitzen bei 1,5 bis 8 km und sind im Flug unsichtbar                    | 🔶    | Die Kamera skaliert auf die Rakete. Wolken in Flughöhe bräuchten eine andere Kameraführung. |
-| Simulator: nur „Szenario“ und „Mond“ sind beim Öffnen aufgeklappt             | 🔶    | Die Mond-Regler sind das Herz der Arbeit. Bewusst so gelassen.                              |
-| Dunkelmodus und Tablet nicht in Screenshots geprüft                           | offen | Nur Smoke-Test, kein Bildvergleich.                                                         |
-| Physik gegen Quellen nachgerechnet                                            | offen | Nicht Teil dieser Runde.                                                                    |
+Entscheidungen der Spielleitung (Spielwerte, nicht umgesetzt):
+
+| Befund                                                                      | Frage                                                                                                                          |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Ionentriebwerk ohne Solarflügel läuft mit voller Leistung                   | Schub ohne Strom auf null setzen, oder Infotext „Batterie“? Die Ionensonde Dämmerung kommt am Ceres mit 46.500 m/s Reserve an. |
+| Missions- und Lande-Autopilot vergeben volle Karriereziele                  | Sollen Autopilot-Läufe Karrierepunkte bringen?                                                                                 |
+| Ziel „Nach Plan“ wird durch den Manöver-Autopiloten trivial                 | Nur Handmanöver zählen?                                                                                                        |
+| Lande-Airbags schlagen Stoßdämpfer-Beine (Masse, Freischaltung, Schräglage) | Welche Lande-Stufe ist gewollt?                                                                                                |
+| Titan ohne Freischaltung, Adler mit 50 Punkten schwächer                    | Titan ebenfalls freischalten?                                                                                                  |
+| Neun Teile in keiner Vorlage, Zwischenstufe fehlt                           | Teile in Vorlagen aufnehmen?                                                                                                   |
+| Oberflächendruck Jupiter jetzt 1 bar statt 2 (Folge des Venus-Fixes)        | Wert bestätigen.                                                                                                               |
+
+Umsetzung offen:
+
+| Befund                                                                            | Stand                                                                                                                                                 |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Luftwiderstand in der Bahnvorhersage (physik-4)                                   | Ein Entwurf liegt im Scratchpad. planner.ts braucht eine Anpassung (Fallschirm-Annahme, Zielhöhe), sonst schlagen drei Tests fehl.                    |
+| Geschwindigkeitsanzeige nach Landung auf drehenden Monden                         | Misst gegen den Mittelpunkt: Mond rund 1,4 m/s, Europa rund 9,6 m/s statt 0. FlightScreen über speedFrame.                                            |
+| FlightScreen.tsx: eine Funktion über rund 2.280 Zeilen                            | Aufteilung in Schritten mit Screenshot-Vergleich.                                                                                                     |
+| Handy Hochformat: rechter Pfeil des Drehkreuzes von der Schubleiste angeschnitten | Ursache nicht geklärt.                                                                                                                                |
+| Einfangen-Text nennt die Richtung fest (physik-6)                                 | Kosmetisch, von der Prüfung verworfen.                                                                                                                |
+| Gegenprüfung (niedrig)                                                            | Dialog/isolate ohne Test (KI-REGELN §3), zwei redundante Tests, ein tautologischer Test in tests/rocket-physik.test.ts, neue Einzelwerte in game.css. |
+| Smoke-Test läuft nicht in der CI                                                  | Browser im Workflow einrichten.                                                                                                                       |
+| Workflow-Läufe für die Commits seit 6ff6675                                       | Noch nicht bestätigt.                                                                                                                                 |
+| Grafik nur teilweise per Screenshot geprüft                                       | Orbit ja, Werft und Nachtseite nicht.                                                                                                                 |
+| Datei /vitest-final.txt im Dateisystem-Wurzelverzeichnis                          | Von einem Agenten angelegt, Löschen wurde blockiert. Von Hand entfernen.                                                                              |
+
+Älter, weiterhin offen:
+
+| Befund                                                            | Stand                                   |
+| ----------------------------------------------------------------- | --------------------------------------- |
+| Sicherheitsabstand an der Kerbe auf einem echten iPhone           | ⛔ Kein Gerät hier.                     |
+| Windows-Warnung „unbekannter Herausgeber“                         | ⛔ Braucht ein Code-Signing-Zertifikat. |
+| Wolken sitzen bei 1,5 bis 8 km und sind im Flug unsichtbar        | 🔶 Kamera skaliert auf die Rakete.      |
+| Simulator: nur „Szenario“ und „Mond“ sind beim Öffnen aufgeklappt | 🔶 Bewusst so.                          |
+| Dunkelmodus und Tablet nicht in Screenshots geprüft               | Offen.                                  |
+| Physik gegen Quellen nachgerechnet                                | Offen.                                  |
 
 Legende: ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne Gerät oder Zertifikat nicht lösbar
