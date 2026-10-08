@@ -57,6 +57,11 @@ export function local(
   ctx.transform(s * scale, c * scale, c * scale, -s * scale, sx, sy);
 }
 
+/** Sonnenrichtung im Koordinatensystem von `local()` (Achse `axis`): x nach rechts, y nach außen. */
+export function localSunDir(sunAngle: number, axis: number): [number, number] {
+  return [Math.sin(axis - sunAngle), Math.cos(axis - sunAngle)];
+}
+
 /** Gleichverteilte Pseudozufallszahl aus einer ganzen Zahl (immer dieselbe). */
 export function hash(i: number, n = 0): number {
   const x = Math.sin(i * 91.345 + n * 47.853) * 24634.6345;
@@ -84,12 +89,7 @@ const MILKY = Array.from({ length: 150 }, (_, i) => ({
 }));
 
 /** Farbige Nebel (Lichtjahre entfernt – sie drehen sich nur mit dem Himmel). */
-const NEBULAE: readonly [number, number, number, string][] = [
-  [0.22, 0.28, 0.16, '140,90,220'],
-  [0.74, 0.7, 0.19, '60,150,190'],
-  [0.63, 0.2, 0.11, '220,90,140'],
-  [0.3, 0.8, 0.13, '90,120,230'],
-];
+const NEBULAE: readonly [number, number, number, string][] = [[0.74, 0.7, 0.19, '60,150,190']];
 
 /**
  * Hintergrund aus Milchstraße und Nebeln – einmal in ein eigenes Bild gezeichnet und dann nur noch
@@ -99,9 +99,20 @@ const NEBULAE: readonly [number, number, number, string][] = [
 let skyLayer: { canvas: HTMLCanvasElement; size: number } | null = null;
 let skyLayerFailed = false;
 
-function makeSkyLayer(): { canvas: HTMLCanvasElement; size: number } | null {
+/** Obergrenze der Himmelsebene (Pixel je Seite): mehr kostet auf Handys zu viel Speicher. */
+const SKY_LAYER_MAX = 1536;
+
+/**
+ * Seitenlänge der Himmelsebene in Gerätepixeln: Die Ebene deckt die Bilddiagonale ab, also
+ * Diagonale × Pixeldichte. Auf 128 Pixel gerundet, damit ein Fenster, das beim Ziehen jeden Pixel
+ * ändert, die Ebene nicht bei jedem Schritt neu zeichnet.
+ */
+export function skyLayerSize(diagonal: number, dpr: number): number {
+  return Math.min(SKY_LAYER_MAX, Math.ceil((diagonal * dpr) / 128) * 128);
+}
+
+function makeSkyLayer(size: number): { canvas: HTMLCanvasElement; size: number } | null {
   if (skyLayerFailed || typeof document === 'undefined') return null;
-  const size = 1024;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -190,7 +201,9 @@ export function drawStars(
   const R = Math.hypot(W, H) / 2;
   const c = Math.cos(spin);
   const s = Math.sin(spin);
-  skyLayer ??= makeSkyLayer();
+  const m = ctx.getTransform();
+  const size = skyLayerSize(2 * R, Math.hypot(m.a, m.b) || 1);
+  if (skyLayer?.size !== size) skyLayer = makeSkyLayer(size);
   if (skyLayer) {
     ctx.save();
     ctx.globalAlpha = alpha;

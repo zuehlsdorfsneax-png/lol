@@ -599,6 +599,31 @@ const AIR_GLOW: Partial<Record<BodyId, string>> = {
 };
 
 /**
+ * Kreise für den Schein einer Lufthülle: Mittelpunkt sowie Beginn (`inner`) und Ende (`outer`) des
+ * Verlaufs. Der Mittelpunkt wandert um die halbe Dicke zur Sonne (`sunAngle`, Bildschirmwinkel).
+ * So ist der Schein auf der Sonnenseite so dick wie gezeichnet und läuft auf der Nachtseite am
+ * Rand aus. Eine bloße Senkung der Deckkraft ließe dort einen hellen Ring stehen. Ohne `sunAngle`
+ * (die Sonne hat keine Nachtseite) bleibt der Mittelpunkt in der Mitte.
+ */
+export function haloCircles(
+  sx: number,
+  sy: number,
+  rpx: number,
+  glowPx: number,
+  innerFrac: number,
+  sunAngle: number | null,
+): { x: number; y: number; inner: number; outer: number } {
+  const shift = sunAngle === null ? 0 : glowPx / 2;
+  const toSun = sunAngle ?? 0;
+  return {
+    x: sx + Math.cos(toSun) * shift,
+    y: sy + Math.sin(toSun) * shift,
+    inner: Math.max(0, innerFrac * rpx - shift),
+    outer: rpx + glowPx - shift,
+  };
+}
+
+/**
  * Zeichnet einen Körper als beleuchtete Scheibe: Oberflächenbild (gedreht mit `rot`), Schatten
  * der Nachtseite (Sonne in Richtung `sunAngle`, Bildschirmwinkel), dunklerer Rand und – mit
  * Lufthülle – ein Schein darum. false, wenn kein Bild verfügbar ist (dann zeichnet der Aufrufer
@@ -663,14 +688,14 @@ function paintDisk(
 ): void {
   const glow = AIR_GLOW[b.id];
   if (glow && glowPx > 0.5) {
-    const outer = rpx + glowPx;
-    const g = ctx.createRadialGradient(sx, sy, rpx * 0.96, sx, sy, outer);
+    const halo = haloCircles(sx, sy, rpx, glowPx, 0.96, b.id === 'sun' ? null : sunAngle);
+    const g = ctx.createRadialGradient(halo.x, halo.y, halo.inner, halo.x, halo.y, halo.outer);
     g.addColorStop(0, `rgba(${glow},${b.id === 'sun' ? 0.9 : 0.6})`);
     g.addColorStop(0.35, `rgba(${glow},${b.id === 'sun' ? 0.35 : 0.22})`);
     g.addColorStop(1, `rgba(${glow},0)`);
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(sx, sy, outer, 0, Math.PI * 2);
+    ctx.arc(sx, sy, rpx + glowPx, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.save();

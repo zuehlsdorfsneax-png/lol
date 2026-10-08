@@ -3,7 +3,7 @@
  * Startanlage, Stationen und Basen, Satelliten, Rauch, Rakete und Richtungsmarker.
  */
 import { drawRocket, drawSatellite, entryWidth, setLighting } from './draw';
-import { drawPlanetDisk } from './planets';
+import { drawPlanetDisk, haloCircles } from './planets';
 import { part } from './parts';
 import { drawLaunchComplex, drawRidges, drawSkySun } from './landscape';
 import { bodySpin, satelliteState, type Flight, type LandingSite } from './flight';
@@ -33,6 +33,7 @@ import {
   hash,
   label,
   local,
+  localSunDir,
   mix,
   mixHex,
   rgbOf,
@@ -291,14 +292,18 @@ function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
   const rpx = R * v.scale;
   if (rpx < 20_000) {
     const [sx, sy] = toScreen(v, 0, 0);
-    // Atmosphärenschein
-    const outer = rpx + Math.max(4, GAME_EARTH.atmosphere * 1.6 * v.scale);
-    const glow = ctx.createRadialGradient(sx, sy, rpx * 0.98, sx, sy, outer);
+    const [sunX, sunY] = bodyState(GAME_SUN, t);
+    const [sunScreenX, sunScreenY] = toScreen(v, sunX, sunY);
+    // Atmosphärenschein, auf der Nachtseite am Rand ausgelaufen (siehe haloCircles)
+    const glowPx = Math.max(4, GAME_EARTH.atmosphere * 1.6 * v.scale);
+    const sunAngle = Math.atan2(sunScreenY - sy, sunScreenX - sx);
+    const halo = haloCircles(sx, sy, rpx, glowPx, 0.98, sunAngle);
+    const glow = ctx.createRadialGradient(halo.x, halo.y, halo.inner, halo.x, halo.y, halo.outer);
     glow.addColorStop(0, 'rgba(120,180,255,0.55)');
     glow.addColorStop(1, 'rgba(120,180,255,0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(sx, sy, outer, 0, Math.PI * 2);
+    ctx.arc(sx, sy, rpx + glowPx, 0, Math.PI * 2);
     ctx.fill();
     ctx.save();
     ctx.beginPath();
@@ -325,7 +330,6 @@ function drawEarth(ctx: CanvasRenderingContext2D, v: View, t: number): void {
       nightSide(ctx, v, sx, sy, rpx, t, 0.7);
       // Stadtlichter auf der Nachtseite
       if (rpx > 30) {
-        const [sunX, sunY] = bodyState(GAME_SUN, t);
         const sunA = Math.atan2(sunY, sunX);
         for (let i = 0; i < 90; i++) {
           const a = hash(i, 21) * Math.PI * 2;
@@ -608,7 +612,13 @@ function lit(hex: string): string {
 }
 
 /** Bäume in der Nähe der Startrampe, Felsen und kleine Krater auf den anderen Körpern. */
-function drawSurfaceDetail(ctx: CanvasRenderingContext2D, v: View, b: Body, t: number): void {
+function drawSurfaceDetail(
+  ctx: CanvasRenderingContext2D,
+  v: View,
+  b: Body,
+  t: number,
+  sunDir: number,
+): void {
   if (v.scale < 0.3 || !b.solid) return;
   const [bx, by] = bodyState(b, t);
   const { from, to, spin } = visibleArc(v, b, t);
@@ -624,6 +634,16 @@ function drawSurfaceDetail(ctx: CanvasRenderingContext2D, v: View, b: Body, t: n
       const hgt = 8 + hash(i, 42) * 12;
       ctx.save();
       local(ctx, v, bx + R * Math.cos(a), by + R * Math.sin(a), a);
+      // Flacher Schatten zur Seite weg von der Sonne. Die Länge wächst mit dem Abstand der Sonne
+      // von der Senkrechten; steht sie unter dem Horizont, fällt keiner.
+      const [sunLx, sunLy] = localSunDir(sunDir, a);
+      if (sunLy > 0) {
+        const len = hgt * 0.5 * Math.abs(sunLx);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.beginPath();
+        ctx.ellipse(-Math.sign(sunLx) * len * 0.5, -0.05, len * 0.5, 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.fillStyle = lit('#5b3a1e');
       ctx.fillRect(-0.4, 0, 0.8, hgt * 0.3);
       ctx.fillStyle = hash(i, 43) < 0.5 ? lit('#2f6b3a') : lit('#3d7d3f');
@@ -1070,9 +1090,9 @@ export function drawFlight(
   // (in 5-%-Schritten, gemerkt). Früher per Helligkeitsfilter – der kostet auf vielen Geräten
   // für jede einzelne Form eine eigene Bildebene.
   nightDim = near.body === GAME_SUN ? 0 : Math.round((1 - light.day) * 0.7 * 20) / 20;
-  drawSurfaceDetail(ctx, v, near.body, f.t);
+  drawSurfaceDetail(ctx, v, near.body, f.t, light.dir);
   if (near.body === GAME_EARTH)
-    drawLaunchComplex(ctx, v, time, lit, nightDim, f.status === 'flying', padRocket(f));
+    drawLaunchComplex(ctx, v, time, lit, nightDim, f.status === 'flying', light.dir, padRocket(f));
   if (f.site) drawSite(ctx, v, f.site, f.t, time);
   nightDim = 0;
   if (near.body === GAME_EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);

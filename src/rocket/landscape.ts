@@ -3,7 +3,16 @@
  * Himmel mit Schein und Abendrot sowie die ausführliche Startanlage auf der Erde.
  */
 import { GAME_EARTH, bodyState, type Body } from './world';
-import { hash, local, mixHex, screenAngle, softSprite, toScreen, type View } from './view';
+import {
+  hash,
+  local,
+  localSunDir,
+  mixHex,
+  screenAngle,
+  softSprite,
+  toScreen,
+  type View,
+} from './view';
 
 // ------------------------------------------------------------------ Bergketten
 
@@ -120,7 +129,7 @@ export function drawRidges(
     if (r.height * s * k < 1.2) continue;
     let color = r.haze > 0 ? mixHex(r.color, horizon, r.haze * (1 - dim * 0.6)) : r.color;
     if (dim > 0.02) color = mixHex(color, '#070a14', dim);
-    ctx.beginPath();
+    const crest = new Path2D();
     for (let i = 0; i <= n; i++) {
       const x = (i / n) * v.width;
       const dx = x - csx;
@@ -131,18 +140,20 @@ export function drawRidges(
       let h = ridgeHeight(r, along / r.width);
       if (mask) h *= mask(along / R);
       const y = groundY - h * s * k;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (i === 0) crest.moveTo(x, y);
+      else crest.lineTo(x, y);
     }
-    ctx.lineTo(v.width, v.height * 2);
-    ctx.lineTo(0, v.height * 2);
-    ctx.closePath();
+    const mass = new Path2D(crest);
+    mass.lineTo(v.width, v.height * 2);
+    mass.lineTo(0, v.height * 2);
+    mass.closePath();
     ctx.fillStyle = color;
-    ctx.fill();
-    // Sonnenbeschienene Kante
+    ctx.fill(mass);
+    // Nur der Kamm bekommt die helle Linie: Ein Umriss um die ganze Fläche zeichnete auch die
+    // senkrechten Bildränder mit.
     ctx.strokeStyle = `rgba(255,255,255,${0.1 * (1 - dim)})`;
     ctx.lineWidth = 1;
-    ctx.stroke();
+    ctx.stroke(crest);
   }
   ctx.restore();
 }
@@ -221,11 +232,14 @@ export function drawLaunchComplex(
   lit: (hex: string) => string,
   night: number,
   launched: boolean,
+  sunDir: number,
   rocket: { length: number; width: number } = { length: 30, width: 3 },
 ): void {
   if (v.scale < 0.03) return;
   const detail = v.scale >= 0.25;
   const hair = Math.max(0.12, 0.8 / v.scale);
+  // Glanzstellen wandern mit der Sonne: x nach rechts, y nach oben (wie in local())
+  const [sunLx, sunLy] = localSunDir(sunDir, Math.PI / 2);
   ctx.save();
   local(ctx, v, 0, GAME_EARTH.radius, Math.PI / 2);
 
@@ -267,7 +281,7 @@ export function drawLaunchComplex(
   const hh = 88;
   const hall = ctx.createLinearGradient(hx, 0, hx + hw, 0);
   hall.addColorStop(0, lit('#c3c9d2'));
-  hall.addColorStop(0.35, lit('#eef1f4'));
+  hall.addColorStop(0.5 + 0.3 * sunLx, lit('#eef1f4'));
   hall.addColorStop(1, lit('#b7bec8'));
   ctx.fillStyle = hall;
   ctx.fillRect(hx, 0, hw, hh);
@@ -310,7 +324,7 @@ export function drawLaunchComplex(
     ctx.fillStyle = lit('#6b7380');
     ctx.fillRect(x - 4.5, 0, 1, 8);
     ctx.fillRect(x + 3.5, 0, 1, 8);
-    const g = ctx.createRadialGradient(x - 2.4, 15.5, 1, x, 13, 7.2);
+    const g = ctx.createRadialGradient(x + 2.4 * sunLx, 13 + 2.5 * sunLy, 1, x, 13, 7.2);
     g.addColorStop(0, lit('#ffffff'));
     g.addColorStop(0.6, lit('#e3e7ec'));
     g.addColorStop(1, lit('#9aa3ae'));
@@ -335,7 +349,7 @@ export function drawLaunchComplex(
   ctx.moveTo(47.2, 10);
   ctx.lineTo(40.8, 20);
   ctx.stroke();
-  const wt = ctx.createRadialGradient(42, 36, 1, 44, 34, 6);
+  const wt = ctx.createRadialGradient(44 + 2 * sunLx, 34 + 2 * sunLy, 1, 44, 34, 6);
   wt.addColorStop(0, lit('#ffffff'));
   wt.addColorStop(1, lit('#b2bac5'));
   ctx.fillStyle = wt;
