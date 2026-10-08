@@ -83,7 +83,7 @@ export const PAINTS: readonly Paint[] = [
 
 let paint: Paint = PAINTS[0]!;
 let METAL: string[] = paint.metal;
-/** Von welcher Seite die Sonne scheint (1 = von links, −1 = von rechts) und wie hell. */
+/** Seitlicher Anteil der Sonne (1 = von links, −1 = von rechts, dazwischen stetig) und wie hell. */
 let lightSide = 1;
 let lightLevel = 1;
 /** Glühen durch Hitze (0…1). */
@@ -103,9 +103,12 @@ export function setPaint(id: string): void {
   METAL = paint.metal;
 }
 
-/** Licht für die folgenden Zeichnungen: Seite der Sonne, Helligkeit (0 = Nacht) und Hitze. */
+/**
+ * Licht für die folgenden Zeichnungen: seitlicher Anteil der Sonnenrichtung (−1 … 1, 0 = von vorn
+ * oder hinten), Helligkeit (0 = Nacht) und Hitze.
+ */
 export function setLighting(side: number, level: number, heat = 0): void {
-  lightSide = side < 0 ? -1 : 1;
+  lightSide = Math.max(-1, Math.min(1, side));
   lightLevel = Math.max(0.25, Math.min(1, level));
   glow = Math.max(0, Math.min(1, heat));
 }
@@ -114,33 +117,74 @@ function rgbHex(hex: string): number[] {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 
-/** Farbe unter dem aktuellen Licht; `k` hellt auf (> 1) oder dunkelt ab (< 1), `mix` mischt `to` bei. */
-function shade(hex: string, k = 1, to?: string, mix = 0): string {
+type Rgb = number[];
+
+/** Kanäle 0…255 unter dem Licht, ungerundet, damit Verläufe zwischen zwei Lichtlagen mischen können. */
+function shadeRgb(hex: string, k = 1, to?: string, mix = 0): Rgb {
   const c = rgbHex(hex);
   const d = to ? rgbHex(to) : c;
   // Hitze färbt rotglühend, Dunkelheit dunkelt ab.
   const hot = [255, 90, 30];
-  const out = c.map((x0, i) => {
+  return c.map((x0, i) => {
     const x = x0 + (d[i]! - x0) * mix;
     const h = x + (hot[i]! - x) * glow * 0.75;
-    return Math.max(0, Math.min(255, Math.round(h * k * (0.35 + 0.65 * lightLevel))));
+    return Math.max(0, Math.min(255, h * k * (0.35 + 0.65 * lightLevel)));
   });
-  return `rgb(${out[0]},${out[1]},${out[2]})`;
 }
+
+function rgbCss(c: Rgb): string {
+  return `rgb(${Math.round(c[0]!)},${Math.round(c[1]!)},${Math.round(c[2]!)})`;
+}
+
+/** Farbe unter dem aktuellen Licht; `k` hellt auf (> 1) oder dunkelt ab (< 1), `mix` mischt `to` bei. */
+function shade(hex: string, k = 1, to?: string, mix = 0): string {
+  return rgbCss(shadeRgb(hex, k, to, mix));
+}
+
+/** Stufen des Zylinderverlaufs bei Sonne von links: Lage (0…1 über die Breite) und Farbe. */
+function cylinderStops(stops: string[]): [number, Rgb][] {
+  return [
+    [0, shadeRgb(stops[0]!, 0.8)],
+    [0.1, shadeRgb(stops[0]!)],
+    [0.3, shadeRgb(stops[1]!, 1.04)],
+    [0.42, shadeRgb(stops[1]!)],
+    [0.64, shadeRgb(stops[1]!, 1, stops[2], 0.6)],
+    [0.88, shadeRgb(stops[2]!)],
+    [1, shadeRgb(stops[2]!, 0.6)],
+  ];
+}
+
+/** Farbe an der Lage q zwischen den Stufen, linear wie beim Canvas-Verlauf. */
+function stopColor(table: [number, Rgb][], q: number): Rgb {
+  let i = 0;
+  while (i < table.length - 2 && q > table[i + 1]![0]) i++;
+  const [a, from] = table[i]!;
+  const [b, to] = table[i + 1]!;
+  const t = Math.max(0, Math.min(1, (q - a) / (b - a)));
+  return from.map((x, k) => x + (to[k]! - x) * t);
+}
+
+/**
+ * Lagen der Stufen auf der Sonnenseite und ihren Spiegelbildern (1 − Lage): dort knickt der
+ * gemischte Verlauf.
+ */
+const CYLINDER_SPOTS = [0, 0.1, 0.12, 0.3, 0.36, 0.42, 0.58, 0.64, 0.7, 0.88, 0.9, 1];
 
 /**
  * Zylinder-Schattierung quer über ein Bauteil: dunkler Rand, Glanz auf der Sonnenseite,
  * weicher Übergang und tiefer Schatten am abgewandten Rand – so wirkt es rund statt flach.
  */
 function hGrad(ctx: CanvasRenderingContext2D, w: number, stops: string[], cx = 0): CanvasGradient {
-  const g = ctx.createLinearGradient(cx - (lightSide * w) / 2, 0, cx + (lightSide * w) / 2, 0);
-  g.addColorStop(0, shade(stops[0]!, 0.8));
-  g.addColorStop(0.1, shade(stops[0]!));
-  g.addColorStop(0.3, shade(stops[1]!, 1.04));
-  g.addColorStop(0.42, shade(stops[1]!));
-  g.addColorStop(0.64, shade(stops[1]!, 1, stops[2], 0.6));
-  g.addColorStop(0.88, shade(stops[2]!));
-  g.addColorStop(1, shade(stops[2]!, 0.6));
+  // Sonne von links und von rechts sind Spiegelbilder. Dazwischen mischen beide Verläufe stetig,
+  // damit die Glanzseite wandert statt bei Sonne von vorn auf die andere Flanke zu springen.
+  const table = cylinderStops(stops);
+  const mirror = (1 - lightSide) / 2;
+  const g = ctx.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0);
+  for (const q of CYLINDER_SPOTS) {
+    const lit = stopColor(table, q);
+    const other = stopColor(table, 1 - q);
+    g.addColorStop(q, rgbCss(lit.map((x, k) => x + (other[k]! - x) * mirror)));
+  }
   return g;
 }
 
@@ -1269,21 +1313,24 @@ function drawFlame(
     ctx.fill();
   }
   ctx.globalAlpha = 1;
-  // Heißer Kern
-  ctx.beginPath();
-  ctx.moveTo(-w * 0.3, 0);
-  ctx.quadraticCurveTo(0, -len * 0.5, w * 0.3, 0);
-  ctx.fillStyle = atom ? 'rgba(235,245,255,0.9)' : 'rgba(255,253,235,0.9)';
-  ctx.fill();
-  // Machsche Knoten in dichter Luft
-  if (!atom && look.air > 0.3 && look.throttle > 0.3) {
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  // Heißer Kern als weicher Fleck: eine harte Zunge wirkt neben dem Außenschein aufgesetzt.
+  const core = softSprite(atom ? '235,245,255' : '255,253,235', 0.4);
+  if (core) {
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(core, -w * 0.45, -len * 0.4, w * 0.9, len * 0.5);
+    ctx.globalAlpha = 1;
+  }
+  // Machsche Knoten in dichter Luft, mit nach außen auslaufendem Rand
+  const knot =
+    !atom && look.air > 0.3 && look.throttle > 0.3 ? softSprite('255,255,255', 0.3) : null;
+  if (knot) {
+    ctx.globalAlpha = 0.6;
     for (let k = 1; k <= 4; k++) {
       const yy = -len * (0.14 + k * 0.12);
-      ctx.beginPath();
-      ctx.ellipse(0, yy, w * 0.17 * (1 - k * 0.14), w * 0.07, 0, 0, Math.PI * 2);
-      ctx.fill();
+      const rx = w * 0.17 * (1 - k * 0.14);
+      ctx.drawImage(knot, -rx, yy - w * 0.07, 2 * rx, w * 0.14);
     }
+    ctx.globalAlpha = 1;
   }
 }
 

@@ -1145,46 +1145,51 @@ export function drawFlight(
   let y0 = Infinity;
   let x1 = -Infinity;
   let y1 = -Infinity;
-  for (const p of f.particles) {
-    const [sx, sy] = toScreen(v, p.x, p.y);
-    if (sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue;
-    const q = p.life / p.max;
-    const grow = p.kind === 'smoke' ? 1 + q * 5 : p.kind === 'dust' ? 1 + q * 3.5 : 1 + q * 2;
-    const size = Math.max(
-      1.2,
-      Math.min(p.kind === 'smoke' ? 80 : 50, p.size * grow * Math.min(3, v.scale)),
-    );
-    const alpha =
-      (1 - q) *
-      (p.kind === 'smoke' ? 0.42 : p.kind === 'dust' ? 0.55 : p.kind === 'spark' ? 1 : 0.95);
-    if (alpha < 0.03) continue;
-    const soft = layer && (p.kind === 'smoke' || p.kind === 'dust');
-    const g = soft ? layer : ctx;
-    g.globalAlpha = alpha;
-    const img =
-      p.kind === 'smoke'
-        ? smokeImg
-        : p.kind === 'dust'
-          ? dustImg
-          : p.kind === 'fire'
-            ? fireImg[q < 0.3 ? 0 : q < 0.6 ? 1 : 2]!
-            : sparkImg;
-    // Das Bildchen hat einen weichen Rand – etwas größer zeichnen als die alte Scheibe.
-    const d = size * 2.3;
-    if (soft) {
-      x0 = Math.min(x0, sx - d / 2);
-      y0 = Math.min(y0, sy - d / 2);
-      x1 = Math.max(x1, sx + d / 2);
-      y1 = Math.max(y1, sy + d / 2);
+  // Rauch und Staub zuerst, Feuer und Funken danach direkt darüber: sonst dämpft der graue Rauch
+  // die hellen Bälle.
+  const drawParticles = (puffs: boolean): void => {
+    for (const p of f.particles) {
+      if ((p.kind === 'smoke' || p.kind === 'dust') !== puffs) continue;
+      const [sx, sy] = toScreen(v, p.x, p.y);
+      if (sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue;
+      const q = p.life / p.max;
+      const grow = p.kind === 'smoke' ? 1 + q * 5 : p.kind === 'dust' ? 1 + q * 3.5 : 1 + q * 2;
+      const size = Math.max(
+        1.2,
+        Math.min(p.kind === 'smoke' ? 80 : 50, p.size * grow * Math.min(3, v.scale)),
+      );
+      const alpha =
+        (1 - q) *
+        (p.kind === 'smoke' ? 0.42 : p.kind === 'dust' ? 0.55 : p.kind === 'spark' ? 1 : 0.95);
+      if (alpha < 0.03) continue;
+      const g = puffs && layer ? layer : ctx;
+      g.globalAlpha = alpha;
+      const img =
+        p.kind === 'smoke'
+          ? smokeImg
+          : p.kind === 'dust'
+            ? dustImg
+            : p.kind === 'fire'
+              ? fireImg[q < 0.3 ? 0 : q < 0.6 ? 1 : 2]!
+              : sparkImg;
+      // Das Bildchen hat einen weichen Rand – etwas größer zeichnen als die alte Scheibe.
+      const d = size * 2.3;
+      if (puffs && layer) {
+        x0 = Math.min(x0, sx - d / 2);
+        y0 = Math.min(y0, sy - d / 2);
+        x1 = Math.max(x1, sx + d / 2);
+        y1 = Math.max(y1, sy + d / 2);
+      }
+      if (img) g.drawImage(img, sx - d / 2, sy - d / 2, d, d);
+      else {
+        g.fillStyle = `rgb(${p.kind === 'smoke' ? smokeRgb : dustRgb})`;
+        g.beginPath();
+        g.arc(sx, sy, size, 0, Math.PI * 2);
+        g.fill();
+      }
     }
-    if (img) g.drawImage(img, sx - d / 2, sy - d / 2, d, d);
-    else {
-      g.fillStyle = `rgb(${p.kind === 'smoke' ? smokeRgb : dustRgb})`;
-      g.beginPath();
-      g.arc(sx, sy, size, 0, Math.PI * 2);
-      g.fill();
-    }
-  }
+  };
+  drawParticles(true);
   if (layer && x1 > x0) {
     // Nur den benutzten Ausschnitt einblenden (in ganzen Ebenen-Pixeln).
     const bx = Math.max(0, Math.floor(x0 / 2));
@@ -1197,6 +1202,8 @@ export function drawFlight(
     }
     smokeDirty = { x: bx, y: by, w: bw, h: bh };
   }
+  ctx.globalAlpha = 1;
+  drawParticles(false);
   ctx.globalAlpha = 1;
 
   if (f.status !== 'crashed') {
@@ -1230,10 +1237,11 @@ export function drawFlight(
     }
     const minPx = opts.minRocket ?? 34;
     const scale = Math.max(v.scale, minPx / Math.max(heightM, 1));
-    // Licht von der Seite der Sonne
-    const side = Math.sin(light.dir - f.angle) >= 0 ? 1 : -1;
+    // Seitlicher Anteil der Sonnenrichtung statt eines Vorzeichens: mit dem Vorzeichen springt die
+    // Glanzseite, sobald die Sonne in Achsrichtung steht.
+    const lateral = Math.sin(light.dir - f.angle);
     const level = light.shadow ? 0.3 : 0.55 + 0.45 * Math.max(light.day, inAir ? 0 : 1);
-    setLighting(side, level, Math.max(0, (f.heat - 0.25) / 0.75));
+    setLighting(lateral, level, Math.max(0, (f.heat - 0.25) / 0.75));
     ctx.save();
     local(ctx, v, f.x, f.y, f.angle, scale);
     drawRocket(ctx, parts, {
