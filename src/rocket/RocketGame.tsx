@@ -60,11 +60,6 @@ function loadSats(): Satellite[] {
 
 export type Tab = 'werft' | 'herausforderungen' | 'karriere';
 
-/** Welche Stern-Bedingungen einer Herausforderung schon einmal erfüllt wurden. */
-function bestMet(id: string): boolean[] {
-  return metConditions(progressStore.load().rocketChallenges?.[id]);
-}
-
 /**
  * Das Spiel läuft als eigener Bildschirm über der ganzen App – wie ein richtiges Spiel.
  * Schließen führt zurück auf die Seite der Raketenwerft.
@@ -198,7 +193,9 @@ export function RocketGame({
           satellites={sats}
           challenge={challenge}
           bestStars={challenge ? (stars[challenge.id] ?? 0) : 0}
-          bestMet={challenge ? bestMet(challenge.id) : []}
+          bestMet={
+            challenge ? metConditions(progressStore.load().rocketChallenges?.[challenge.id]) : []
+          }
           onGoal={reachGoal}
           onSatellites={saveFlightSats}
           onChallenge={finishChallenge}

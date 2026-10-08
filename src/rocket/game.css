@@ -3300,12 +3300,14 @@ html.game-open body {
     display: none;
   }
   /* Ohne Beschriftung zeigt das „!“ im Balken die Warnung, nicht nur die Farbe. */
+  /* Über dem Füllbalken: bei hoher Hitze füllt der Balken die ganze Säule. */
   .vgauge.low::before {
     content: '!';
     position: absolute;
     top: 4px;
     left: 0;
     right: 0;
+    z-index: 1;
     text-align: center;
     font: 700 var(--fs-2) var(--font-mono);
     color: var(--g-white);
