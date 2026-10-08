@@ -1,4 +1,13 @@
-import { CHUTE_SEMI, boosterPod, part, segments, type FlameKind, type PartDef } from './parts';
+import {
+  CHUTE_SEMI,
+  boosterPod,
+  part,
+  segments,
+  sideOf,
+  stackHeight,
+  type FlameKind,
+  type PartDef,
+} from './parts';
 import { softSprite } from './view';
 
 // ------------------------------------------------------------------ Lackierungen
@@ -841,6 +850,12 @@ function legReach(def: PartDef): number {
   return def.id === 'beine-s' ? 0.8 : 1.4;
 }
 
+/** Sichtbare Breite eines Eintrags im Bauplan; Seitenteile als Paar beiderseits der Achse. */
+export function entryWidth(e: string): number {
+  const side = sideOf(e);
+  return side > 0 ? 2 * side + visualWidth(part(e)) : visualWidth(part(e));
+}
+
 /** Sichtbare Breite eines Teils samt Boostern und Landebeinen (m). */
 export function visualWidth(def: PartDef): number {
   if (def.kind === 'booster') {
@@ -1030,7 +1045,7 @@ export function drawRocket(
     for (let k = seg.length - 1; k >= 0; k--) {
       index--;
       bottoms.set(index, segBottom);
-      y += part(seg[k]!).height;
+      y += stackHeight(seg[k]!);
     }
   }
   const top = y;
@@ -1041,7 +1056,7 @@ export function drawRocket(
   bagsOpen = look?.bags ?? 0;
   if (lampsOn > 0) drawLightCones(ctx, parts, lampsOn);
   if (look && look.throttle > 0) {
-    const engineId = [...parts].reverse().find((id) => part(id).kind === 'engine');
+    const engineId = [...parts].reverse().find((id) => part(id).kind === 'engine' && !sideOf(id));
     const kind: FlameKind = engineId ? (part(engineId).flame ?? 'chemisch') : 'chemisch';
     drawFlame(ctx, parts, look, kind);
     // Seitenbooster der untersten Stufe brennen mit.
@@ -1056,19 +1071,47 @@ export function drawRocket(
         ctx.restore();
       }
     }
+    // Seitliche Triebwerke der untersten Stufe: Flamme an ihrer Unterkante, links und rechts.
+    let sy = 0;
+    for (let i = parts.length - 1; i >= 0 && i >= parts.length - bottom.length; i--) {
+      const e = parts[i]!;
+      const side = sideOf(e);
+      const def = part(e);
+      if (side > 0 && def.kind === 'engine')
+        for (const sgn of [-1, 1]) {
+          ctx.save();
+          ctx.translate(sgn * side, sy);
+          drawFlame(ctx, parts, look, def.flame ?? 'chemisch', def.width * 0.9);
+          ctx.restore();
+        }
+      sy += stackHeight(e);
+    }
   }
 
   y = 0;
   for (let i = parts.length - 1; i >= 0; i--) {
     const def = part(parts[i]!);
+    const side = sideOf(parts[i]!);
+    if (side > 0) {
+      // Seitenteil: als Paar neben dem Träger, gleiche Unterkante
+      if (def.kind === 'chute' && look && look.chuteOpen > 0) continue;
+      for (const sgn of [-1, 1]) {
+        ctx.save();
+        ctx.translate(sgn * side, 0);
+        drawPart(ctx, def, y, bottoms.get(i) ?? 0);
+        ctx.restore();
+      }
+      continue;
+    }
     if (def.kind === 'chute' && look && look.chuteOpen > 0) {
       y += def.height;
       continue;
     }
     drawPart(ctx, def, y, bottoms.get(i) ?? 0);
     // Schattenfuge zum Teil darunter: die Rakete wirkt aus Stücken gebaut statt flach bemalt
-    if (i < parts.length - 1 && y > 0) {
-      const below = part(parts[i + 1]!);
+    const next = parts.slice(i + 1).find((e) => !sideOf(e));
+    if (next && y > 0) {
+      const below = part(next);
       const seam = Math.min(def.width, below.topWidth ?? below.width);
       if (seam > 0.8 && def.kind !== 'chute' && below.kind !== 'shield') {
         ctx.fillStyle = `rgba(10,14,24,${0.3 * (0.4 + 0.6 * lightLevel)})`;
@@ -1096,12 +1139,12 @@ function drawLightCones(ctx: CanvasRenderingContext2D, parts: string[], on: numb
   for (let i = parts.length - 1; i >= 0; i--) {
     const def = part(parts[i]!);
     if (def.kind === 'decoupler') return;
-    if (def.kind === 'light') {
+    if (def.kind === 'light' && !sideOf(parts[i]!)) {
       lampY = y;
       lampW = def.width;
       break;
     }
-    y += def.height;
+    y += stackHeight(parts[i]!);
   }
   if (lampY < 0) return;
   const len = 48;
@@ -1129,7 +1172,7 @@ function drawFlame(
   kind: FlameKind,
   width?: number,
 ): void {
-  const engine = [...parts].reverse().find((id) => part(id).kind === 'engine');
+  const engine = [...parts].reverse().find((id) => part(id).kind === 'engine' && !sideOf(id));
   const w = width ?? (engine ? part(engine).width * 0.9 : 1.6);
   const vacuum = 1 - Math.min(1, look.air / 1.2);
   const flicker = 0.85 + 0.15 * Math.sin(look.time * 47) * Math.sin(look.time * 31);

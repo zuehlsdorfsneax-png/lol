@@ -2,7 +2,7 @@
  * Flugansicht: Himmel mit Tag, Nacht und Dämmerung, Himmelskörper, Wolken, Bäume und Felsen,
  * Startanlage, Stationen und Basen, Satelliten, Rauch, Rakete und Richtungsmarker.
  */
-import { drawRocket, drawSatellite, setLighting, visualWidth } from './draw';
+import { drawRocket, drawSatellite, entryWidth, setLighting } from './draw';
 import { drawPlanetDisk } from './planets';
 import { part } from './parts';
 import { drawLaunchComplex, drawRidges, drawSkySun } from './landscape';
@@ -69,8 +69,7 @@ let padCache: { segs: unknown; n: number; size: { length: number; width: number 
 function padRocket(f: Flight): { length: number; width: number } {
   if (padCache?.segs !== f.segs || padCache.n !== f.segs.length) {
     let width = 1;
-    for (const seg of f.segs)
-      for (const id of seg.parts) width = Math.max(width, visualWidth(part(id)));
+    for (const seg of f.segs) for (const id of seg.parts) width = Math.max(width, entryWidth(id));
     padCache = { segs: f.segs, n: f.segs.length, size: { length: f.length, width } };
   }
   return padCache.size;

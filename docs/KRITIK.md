@@ -8,6 +8,15 @@ hier – mit dem, was daraus geworden ist.
 
 **Legende:** ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne dich nicht lösbar
 
+## Unbegrenzt viele Teile, seitlich anbauen, Bauplan verschieben
+
+| #   | Befund                                                       | Status | Lösung                                                                                                                                                                                                                                                                                                                                                                     |
+| --- | ------------------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 206 | Höchstens 32 Teile pro Rakete                                | ✅     | Keine Obergrenze mehr; Werte, Zeichnung und Flug rechnen mit beliebig vielen Teilen                                                                                                                                                                                                                                                                                        |
+| 207 | Teile nur übereinander (y-Achse), nichts seitlich            | ✅     | Ein Teil neben ein Teil im Stapel gezogen wird ein symmetrisches Paar im gewählten Abstand (gespeichert als „id@x“). Masse, Treibstoff und Schub zählen doppelt, die Höhe nicht; Seitentriebwerke brennen mit Flamme; die Stirnfläche wächst mit der Breite. Möglich für Tanks, Triebwerke, Fallschirme, Nutzlast, Räder, RCS, Solar, Licht, Gitterflossen und Luftbremsen |
+| 208 | Bauplan immer fest eingepasst, große Raketen winzig          | ✅     | Mausrad oder zwei Finger zoomen (0,3- bis 8-fach um den Zeiger), Ziehen auf freier Fläche verschiebt, Knöpfe +, − und „Ganze Rakete zeigen“ (auch Doppelklick); Maßlinien passen ihren Abstand an                                                                                                                                                                          |
+| 209 | Ein Teil im Stapel mit Seitenteilen umsortieren oder löschen | ✅     | Seitenteile gehen mit; Hoch/Runter tauscht ganze Blöcke, bei Seitenteilen wechselt es den Träger; Doppeln setzt ein weiteres Paar weiter außen                                                                                                                                                                                                                             |
+
 ## Raketenbau und Rest der App ohne KI-Einheitslook (Runde 2)
 
 Einzelbefunde mit Regelverweis in `docs/DESIGN-BEFUND.md` (B23–B36).
@@ -368,7 +377,7 @@ Beim Ausbau hat die strenge Prüfung weitere Mängel gefunden – alle behoben:
 
 ## Wie geprüft wurde
 
-- **258 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
+- **264 automatische Tests**, darunter komplette Flüge: Mondmission von Hand und eine zweite, die
   der Bordcomputer allein fliegt (Transfer, Einschwenken, Landung, Rückflug, Wiedereintritt),
   Marsmission mit Startfenster, zwei Kurskorrekturen, Einschwenken und Landung, Rendezvous mit der
   Station, Satelliten, Hitzeschild, Kepler-Bahnen und alle neun Herausforderungen (Start stabil,

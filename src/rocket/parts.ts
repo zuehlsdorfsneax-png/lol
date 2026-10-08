@@ -816,14 +816,71 @@ export const PARTS: readonly PartDef[] = [
 
 const BY_ID = new Map(PARTS.map((p) => [p.id, p]));
 
+/**
+ * Eintrag im Bauplan: Teil-ID, bei seitlich angebauten Teilen „id@x“. Ein Seitenteil ist ein
+ * symmetrisches Paar im Abstand x (m, Mitte zur Achse) und hängt am Teil, das in der Liste davor
+ * steht: gleiche Unterkante, gleiche Stufe, aber keine eigene Höhe im Stapel.
+ */
+const SIDE = new Map<string, { def: PartDef; side: number } | null>();
+
+function entry(e: string): { def: PartDef; side: number } | null {
+  const core = BY_ID.get(e);
+  if (core) return { def: core, side: 0 };
+  let hit = SIDE.get(e);
+  if (hit === undefined) {
+    const at = e.indexOf('@');
+    const def = at > 0 ? BY_ID.get(e.slice(0, at)) : undefined;
+    const side = Number(e.slice(at + 1));
+    hit = def && Number.isFinite(side) && side > 0 && side <= 100 ? { def, side } : null;
+    SIDE.set(e, hit);
+  }
+  return hit;
+}
+
 export function part(id: string): PartDef {
-  const p = BY_ID.get(id);
+  const p = entry(id);
   if (!p) throw new Error(`Unbekanntes Bauteil: ${id}`);
-  return p;
+  return p.def;
 }
 
 export function isPart(id: string): boolean {
-  return BY_ID.has(id);
+  return entry(id) !== null;
+}
+
+/** Seitlicher Abstand eines Eintrags (0: Teil im Stapel). */
+export function sideOf(e: string): number {
+  return entry(e)?.side ?? 0;
+}
+
+/** Wie oft das Teil an der Rakete ist: Seitenteile als Paar. */
+export function copies(e: string): number {
+  return sideOf(e) > 0 ? 2 : 1;
+}
+
+/** Beitrag zur Höhe des Stapels: Seitenteile stehen neben ihrem Träger. */
+export function stackHeight(e: string): number {
+  return sideOf(e) > 0 ? 0 : part(e).height;
+}
+
+/** Eintrag für ein Teil im Abstand `side` (0: im Stapel), auf 0,1 m gerundet. */
+export function sideEntry(id: string, side: number): string {
+  return side > 0 ? `${id}@${Math.round(side * 10) / 10}` : id;
+}
+
+/** Diese Arten lassen sich seitlich anbauen (keine Trenner, Spitzen, Schilde, Beine …). */
+export function sideMountable(def: PartDef): boolean {
+  return [
+    'tank',
+    'engine',
+    'chute',
+    'payload',
+    'wheel',
+    'rcs',
+    'solar',
+    'light',
+    'fins',
+    'airbrake',
+  ].includes(def.kind);
 }
 
 /** Seitenbooster: Breite, Überstand nach oben und Abstand der Röhren. */
@@ -940,8 +997,6 @@ export function isControl(id: string): boolean {
 
 /** Eine Rakete: Bauteile von oben nach unten. */
 export type Design = string[];
-
-export const MAX_PARTS = 32;
 
 export interface Template {
   id: string;
@@ -1403,7 +1458,8 @@ export function stageStats(design: Design, rules?: BuildRules): StageStats[] {
   let above = 0;
   let solar = 0;
   for (const seg of segs) {
-    const defs = seg.map(part);
+    // Seitenteile zählen doppelt (Paar).
+    const defs = seg.flatMap((e) => (copies(e) === 2 ? [part(e), part(e)] : [part(e)]));
     // Solarflügel dieser Stufe und darüber verstärken Ionentriebwerke (Werte für die Erdbahn).
     solar += defs.filter((p) => p.kind === 'solar').length;
     const power = (p: PartDef): number => (p.flame === 'ionen' ? 1 + 1.5 * Math.min(2, solar) : 1);
@@ -1457,11 +1513,11 @@ export function totalDeltaV(design: Design, rules?: BuildRules): number {
 }
 
 export function totalMass(design: Design): number {
-  return design.reduce((s, id) => s + part(id).dry + part(id).fuel, 0);
+  return design.reduce((s, id) => s + (part(id).dry + part(id).fuel) * copies(id), 0);
 }
 
 export function designHeight(design: Design): number {
-  return design.reduce((s, id) => s + part(id).height, 0);
+  return design.reduce((s, id) => s + stackHeight(id), 0);
 }
 
 export type DesignProblem = { level: 'error' | 'warn'; text: string };
@@ -1486,15 +1542,15 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
       level: 'warn',
       text: `Zu schwer: Der Schub der ersten Stufe trägt ${home === EARTH ? '' : `am Startort (${home.name}) `}nur ${Math.round(first.twrStart * 100)} % des Gewichts. Die Rakete hebt nicht ab.`,
     });
-  const buriedTop = design
-    .slice(1)
-    .find((id) => ['nose', 'fairing', 'dock'].includes(part(id).kind));
+  // Reihenfolge im Stapel: Seitenteile stehen daneben und zählen hier nicht.
+  const core = design.filter((e) => sideOf(e) === 0);
+  const buriedTop = core.slice(1).find((id) => ['nose', 'fairing', 'dock'].includes(part(id).kind));
   if (buriedTop)
     problems.push({
       level: 'warn',
       text: `${part(buriedTop).name} wirkt nur ganz oben – weiter unten ist das Teil nur Ballast.`,
     });
-  if (design[design.length - 1] && part(design[design.length - 1]!).kind === 'decoupler')
+  if (core[core.length - 1] && part(core[core.length - 1]!).kind === 'decoupler')
     problems.push({ level: 'warn', text: 'Ganz unten hängt ein Stufentrenner ohne Stufe.' });
   const has = (kind: PartKind): boolean => design.some((id) => part(id).kind === kind);
   if (has('capsule') && !has('chute'))
@@ -1518,14 +1574,10 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
         text: `Hinweis: Für eine Marslandung ist die Landestufe knapp (Schub ${Math.round(twrMars * 100)} % des Gewichts dort). Für den Mond reicht sie.`,
       });
   }
-  if (design.length > MAX_PARTS)
-    problems.push({ level: 'error', text: `Höchstens ${MAX_PARTS} Teile.` });
   // Jeder Hitzeschild braucht einen Stufentrenner direkt darunter (oder sitzt ganz unten).
-  const buried = design.some(
+  const buried = core.some(
     (id, i) =>
-      part(id).kind === 'shield' &&
-      i < design.length - 1 &&
-      part(design[i + 1]!).kind !== 'decoupler',
+      part(id).kind === 'shield' && i < core.length - 1 && part(core[i + 1]!).kind !== 'decoupler',
   );
   if (buried)
     problems.push({

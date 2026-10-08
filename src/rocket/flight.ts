@@ -14,8 +14,11 @@ import {
   boosterPod,
   chuteExtent,
   ispAt,
+  copies,
   part,
   segments,
+  sideOf,
+  stackHeight,
   type Design,
   type PartDef,
 } from './parts';
@@ -637,7 +640,7 @@ export class Flight {
     this.design = [...design];
     this.segs = segments(design).map((parts) => ({
       parts,
-      fuel: parts.reduce((s, id) => s + part(id).fuel, 0),
+      fuel: parts.reduce((s, id) => s + part(id).fuel * copies(id), 0),
     }));
     this.chute = design.some((id) => part(id).kind === 'chute') ? 'stowed' : 'none';
   }
@@ -775,7 +778,7 @@ export class Flight {
 
   get mass(): number {
     return this.segs.reduce(
-      (s, seg) => s + seg.fuel + seg.parts.reduce((d, id) => d + part(id).dry, 0),
+      (s, seg) => s + seg.fuel + seg.parts.reduce((d, id) => d + part(id).dry * copies(id), 0),
       0,
     );
   }
@@ -786,7 +789,7 @@ export class Flight {
 
   /** Höhe der Rakete in Metern. */
   get length(): number {
-    return this.segs.reduce((s, seg) => s + seg.parts.reduce((a, id) => a + part(id).height, 0), 0);
+    return this.segs.reduce((s, seg) => s + seg.parts.reduce((a, id) => a + stackHeight(id), 0), 0);
   }
 
   /** Schub (N) und Massenstrom (kg/s) einer Stufe bei Vollgas im Vakuum. */
@@ -796,8 +799,9 @@ export class Flight {
     for (const id of parts) {
       const p = part(id);
       if (p.thrust > 0) {
-        thrust += p.thrust * this.thrustScale;
-        flow += (p.thrust * this.thrustScale) / (p.isp * G0);
+        const t = p.thrust * this.thrustScale * copies(id);
+        thrust += t;
+        flow += t / (p.isp * G0);
       }
     }
     return { thrust, flow };
@@ -813,7 +817,8 @@ export class Flight {
     for (const id of this.active.parts) {
       const p = part(id);
       if (p.thrust > 0) {
-        const t = p.thrust * this.thrustScale * (p.flame === 'ionen' ? this.ionPower() : 1);
+        const t =
+          p.thrust * this.thrustScale * copies(id) * (p.flame === 'ionen' ? this.ionPower() : 1);
         const f = t / (p.isp * G0);
         thrust += f * G0 * ispAt(p, this.pressure);
         flow += f;
@@ -864,7 +869,14 @@ export class Flight {
 
   /** Anzahl eines Bauteiltyps an der Rakete. */
   private count(kind: PartDef['kind']): number {
-    return this.allParts().filter((id) => part(id).kind === kind).length;
+    return this.allParts().reduce((n, id) => n + (part(id).kind === kind ? copies(id) : 0), 0);
+  }
+
+  /** Unterstes Teil im Stapel der aktiven Stufe (Seitenteile stehen daneben). */
+  private get bottomPart(): PartDef | null {
+    const a = this.active.parts;
+    for (let i = a.length - 1; i >= 0; i--) if (sideOf(a[i]!) === 0) return part(a[i]!);
+    return null;
   }
 
   get hasAirbrakes(): boolean {
@@ -932,7 +944,7 @@ export class Flight {
   }
 
   get fuelCapacity(): number {
-    return this.active.parts.reduce((s, id) => s + part(id).fuel, 0);
+    return this.active.parts.reduce((s, id) => s + part(id).fuel * copies(id), 0);
   }
 
   get hasLegs(): boolean {
@@ -946,14 +958,12 @@ export class Flight {
 
   /** Sitzt ein Hitzeschild ganz unten? */
   get shieldAtBottom(): boolean {
-    const a = this.active.parts;
-    return a.length > 0 && part(a[a.length - 1]!).kind === 'shield';
+    return this.bottomPart?.kind === 'shield';
   }
 
   /** Hitze-Anteil mit dem untersten Hitzeschild voran. */
   private get shieldFactor(): number {
-    const a = this.active.parts;
-    return (a.length && part(a[a.length - 1]!).shieldFactor) || SHIELD_FACTOR;
+    return this.bottomPart?.shieldFactor || SHIELD_FACTOR;
   }
 
   /** Nutzlasten an Bord (Satelliten und Teleskope). */
@@ -973,7 +983,7 @@ export class Flight {
     let above = 0;
     let dv = 0;
     for (const seg of this.segs) {
-      const dry = seg.parts.reduce((s, id) => s + part(id).dry, 0);
+      const dry = seg.parts.reduce((s, id) => s + part(id).dry * copies(id), 0);
       const start = above + dry + seg.fuel;
       const { thrust, flow } = this.stageEngine(seg.parts);
       if (thrust > 0 && seg.fuel > 0) dv += (thrust / flow) * Math.log(start / (start - seg.fuel));
@@ -986,7 +996,7 @@ export class Flight {
   nextStageAccel(): number {
     if (this.segs.length < 2) return 0;
     const seg = this.active;
-    const drop = seg.parts.reduce((m, id) => m + part(id).dry, 0) + seg.fuel;
+    const drop = seg.parts.reduce((m, id) => m + part(id).dry * copies(id), 0) + seg.fuel;
     return this.stageEngine(this.segs[this.segs.length - 2]!.parts).thrust / (this.mass - drop);
   }
 
@@ -1014,7 +1024,7 @@ export class Flight {
     let mass = this.mass;
     for (let i = this.segs.length - 1; i >= 0 && left > 1e-6; i--) {
       const seg = this.segs[i]!;
-      const dry = seg.parts.reduce((s, id) => s + part(id).dry, 0);
+      const dry = seg.parts.reduce((s, id) => s + part(id).dry * copies(id), 0);
       const { thrust, flow } = this.stageEngine(seg.parts);
       if (thrust > 0 && (seg.fuel > 0 || this.infiniteFuel)) {
         const ve = thrust / flow;
@@ -1308,7 +1318,7 @@ export class Flight {
     for (const seg of this.segs)
       for (const id of seg.parts) {
         const p = part(id);
-        width = Math.max(width, p.width);
+        width = Math.max(width, p.width + 2 * sideOf(id));
         if (p.kind === 'booster') pods += 2 * boosterPod(p).width ** 2;
       }
     const area = (Math.PI / 4) * (width * width + pods);
@@ -1484,7 +1494,7 @@ export class Flight {
       return false;
     }
     const dropped = this.segs.pop()!;
-    const height = dropped.parts.reduce((s, id) => s + part(id).height, 0);
+    const height = dropped.parts.reduce((s, id) => s + stackHeight(id), 0);
     // Was mit der Stufe abfällt, ist weg: Fallschirm und Luftbremsen dort gelten nicht mehr.
     if (!this.allParts().some((id) => part(id).kind === 'chute')) {
       this.chute = 'none';
@@ -1495,7 +1505,7 @@ export class Flight {
     const ay = Math.sin(this.angle);
     // Die Federn der Trennung drücken beide Teile mit 2 m/s auseinander – aufgeteilt nach Masse,
     // damit der Impuls erhalten bleibt (kein geschenktes Δv).
-    const mDrop = dropped.fuel + dropped.parts.reduce((m, id) => m + part(id).dry, 0);
+    const mDrop = dropped.fuel + dropped.parts.reduce((m, id) => m + part(id).dry * copies(id), 0);
     const mRest = this.mass;
     const push = 2;
     const dvRest = (push * mDrop) / (mDrop + mRest);
@@ -1612,7 +1622,8 @@ export class Flight {
   /** An der Station alle Tanks füllen. */
   refuel(): boolean {
     if (this.status !== 'docked') return false;
-    for (const seg of this.segs) seg.fuel = seg.parts.reduce((s, id) => s + part(id).fuel, 0);
+    for (const seg of this.segs)
+      seg.fuel = seg.parts.reduce((s, id) => s + part(id).fuel * copies(id), 0);
     this.emptyWarned = false;
     this.goal('refuel');
     return true;
@@ -2375,7 +2386,7 @@ export class Flight {
         parts: [id],
         age: 0,
       });
-      h += part(id).height;
+      h += stackHeight(id);
     }
     this.segs = [{ parts: [], fuel: 0 }];
     this.explode(this.x, this.y, c.vx, c.vy, 90);

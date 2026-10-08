@@ -492,6 +492,21 @@ html.game-open body {
   touch-action: none;
 }
 
+/* Zoom des Bauplans: rechts mittig, außerhalb der Werkzeugleisten */
+.blueprint-zoom {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  gap: var(--sp-1);
+  transform: translateY(-50%);
+}
+
+.blueprint-zoom .gbtn {
+  background: var(--g-panel);
+}
+
 .werft.dragging,
 .werft.dragging * {
   cursor: grabbing;
