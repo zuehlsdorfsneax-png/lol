@@ -146,13 +146,13 @@ function shade(hex: string, k = 1, to?: string, mix = 0): string {
 /** Stufen des Zylinderverlaufs bei Sonne von links: Lage (0…1 über die Breite) und Farbe. */
 function cylinderStops(stops: string[]): [number, Rgb][] {
   return [
-    [0, shadeRgb(stops[0]!, 0.8)],
+    [0, shadeRgb(stops[0]!, 0.55)],
     [0.1, shadeRgb(stops[0]!)],
     [0.3, shadeRgb(stops[1]!, 1.04)],
     [0.42, shadeRgb(stops[1]!)],
     [0.64, shadeRgb(stops[1]!, 1, stops[2], 0.6)],
     [0.88, shadeRgb(stops[2]!)],
-    [1, shadeRgb(stops[2]!, 0.6)],
+    [1, shadeRgb(stops[2]!, 0.4)],
   ];
 }
 
