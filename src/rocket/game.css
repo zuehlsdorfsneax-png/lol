@@ -3795,6 +3795,19 @@ html.game-open body {
   .stats-summary .stats-mass {
     display: none;
   }
+  /* Unter 438 px Breite passt das Drehkreuz nicht neben die Schubleiste (sie beginnt bei 412 px
+     ab x 234, bei 360 px ab x 182): dann steht es über den Drehknöpfen, die Lageanzeige darüber
+     (8 + 50 + 8 + 128 + 8 = 202 px vom unteren Rand). */
+  .hud-bl {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .turn-pad {
+    order: 0;
+  }
+  .hud-bl:has(> .rcs-pad) ~ .hud-bc {
+    bottom: 202px;
+  }
 }
 
 /* Druck-Rückmeldung für alle Knöpfe (Emil-Kowalski-Wert 0,97) */

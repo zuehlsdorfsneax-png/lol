@@ -392,6 +392,20 @@ export function surfaceVelocity(b: Body, rx: number, ry: number): [number, numbe
   return [w * ry, -w * rx];
 }
 
+const GROUND_TEMPO_ALTITUDE = 30_000;
+
+/**
+ * Tempo gegen den Boden, so wie der Landepilot es misst. Gegen den Mittelpunkt bliebe auf Europa
+ * ein Rest von 9,6 m/s, obwohl die Rakete am Boden steht. Ab 30 km zählt das Tempo gegen den
+ * Mittelpunkt wie bei einer Bahn, weil der Drehanteil in der Höhe das Bahntempo verfälschen würde.
+ */
+export function groundSpeed(f: Flight): number {
+  const rel = f.relative();
+  if (rel.altitude >= GROUND_TEMPO_ALTITUDE) return Math.hypot(rel.vx, rel.vy);
+  const [sx, sy] = surfaceVelocity(rel.body, rel.rx, rel.ry);
+  return Math.hypot(rel.vx - sx, rel.vy - sy);
+}
+
 /** Ort eines Satelliten zur Zeit t (Weltkoordinaten). */
 export function satelliteState(s: Satellite, t: number): [number, number, number, number] {
   const [bx, by, bvx, bvy] = bodyState(bodyById(s.body), t);

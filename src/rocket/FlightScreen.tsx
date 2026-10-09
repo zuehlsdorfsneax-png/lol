@@ -16,6 +16,7 @@ import {
   GOALS,
   effects,
   careerPoints,
+  groundSpeed,
   rankFor,
   type FlightEvent,
   type FlightSnapshot,
@@ -1722,7 +1723,7 @@ export function FlightScreen({
   const rel = f.relative(ref);
   const o = f.orbit(ref);
   const sf = f.speedFrame();
-  const speed = Math.hypot(sf.vx, sf.vy);
+  const speed = sf.mode === 'orbit' ? groundSpeed(f) : Math.hypot(sf.vx, sf.vy);
   const vertical = (rel.rx * rel.vx + rel.ry * rel.vy) / rel.r;
   const airData = f.airData();
   const engineNow = f.engine();
