@@ -414,22 +414,14 @@ function PrecessionExperiment() {
   const data = useMemo(measure, []);
   return (
     <div class="stack" style={{ gap: '18px' }}>
-      <div class="grid-3">
-        <div class="panel panel-pad" style={{ gap: '4px' }}>
-          <div class="small muted">Apsidendrehung (Simulation)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>{fmt(data.period, 2)} Jahre</div>
-        </div>
-        <div class="panel panel-pad" style={{ gap: '4px' }}>
-          <div class="small muted">Beobachtet</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>8,85 Jahre</div>
-        </div>
-        <div class="panel panel-pad" style={{ gap: '4px' }}>
-          <div class="small muted">Abweichung</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>
-            {fmt(((data.period - 8.85) / 8.85) * 100, 1)} %
-          </div>
-        </div>
-      </div>
+      <dl class="kv">
+        <dt>Apsidendrehung (Simulation)</dt>
+        <dd class="num">{fmt(data.period, 2)} Jahre</dd>
+        <dt>Beobachtet</dt>
+        <dd class="num">8,85 Jahre</dd>
+        <dt>Abweichung</dt>
+        <dd class="num">{fmt(((data.period - 8.85) / 8.85) * 100, 1)} %</dd>
+      </dl>
       <LineChart
         title="Richtung des Perigäums (seit Start)"
         series={[

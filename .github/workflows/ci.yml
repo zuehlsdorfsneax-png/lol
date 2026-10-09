@@ -19,7 +19,6 @@ jobs:
       - name: Test – Oberflächen-Prüfung im Browser
         run: |
           npx playwright install --with-deps chromium
-          npm run build
           npx vite preview --port 4173 &
           for i in $(seq 1 30); do
             curl -sf -o /dev/null http://localhost:4173/ && break
