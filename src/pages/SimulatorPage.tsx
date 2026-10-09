@@ -165,7 +165,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
 
   return (
     <div class="stack" style={{ gap: 'var(--sp-4)' }}>
-      <PageHead eyebrow="Werkzeug · Eigenanteil" title="Drei-Körper-Simulator">
+      <PageHead eyebrow="Werkzeug, Eigenanteil" title="Drei-Körper-Simulator">
         Erde, Mond und Sonne – alle Parameter frei einstellbar. Die Simulation löst Newtons
         Bewegungsgleichungen numerisch und meldet, wenn der Mond abstürzt, zerrissen wird oder
         entkommt.

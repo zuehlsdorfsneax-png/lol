@@ -82,7 +82,7 @@ export function QuizPage() {
           <section class="panel panel-pad" aria-live="polite">
             <div class="row" style={{ justifyContent: 'space-between' }}>
               <span class="eyebrow">
-                Frage {index + 1} von {QUESTIONS.length} · Kapitel {q.chapter}
+                Frage {index + 1} von {QUESTIONS.length}, Kapitel {q.chapter}
               </span>
               <span class="small muted">{score} richtig</span>
             </div>

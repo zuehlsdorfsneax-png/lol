@@ -140,7 +140,7 @@ export function GlossaryPage() {
               {t.link && (
                 <>
                   {' '}
-                  <a href={`#${t.link[0]}`}>→ {t.link[1]}</a>
+                  <a href={`#${t.link[0]}`}>{t.link[1]}</a>
                 </>
               )}
             </dd>

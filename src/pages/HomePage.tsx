@@ -219,7 +219,7 @@ export function HomePage() {
             to="missionen"
             mark={<Icon name="flag" />}
             title="Missionen"
-            meta={`${stars} / ${MISSIONS.length * 3} ★`}
+            meta={`${stars} / ${MISSIONS.length * 3} Sterne`}
           >
             Neun Aufträge an den Grenzen der Stabilität, bis zu drei Sterne pro Auftrag.
           </TocRow>

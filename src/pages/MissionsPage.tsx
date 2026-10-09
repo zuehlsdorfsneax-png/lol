@@ -30,7 +30,7 @@ export function MissionsPage() {
           <a class="mission-card" href={`#mission-${m.id}`} key={m.id}>
             <div class="mission-meta">
               <span>
-                Mission {i + 1} · Kapitel {m.chapter}
+                Mission {i + 1}, Kapitel {m.chapter}
               </span>
               <span>{DIFFICULTY[m.difficulty]}</span>
             </div>

@@ -244,8 +244,6 @@ svg {
   font-family: var(--font-ui);
   font-size: var(--fs-2);
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--accent-ink);
 }
 
@@ -352,10 +350,8 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: var(--fs-1);
+  font-size: var(--fs-2);
   font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
   color: var(--ink-3);
   padding: 0 var(--sp-3) var(--sp-1);
 }
@@ -366,7 +362,7 @@ svg {
   cursor: pointer;
   padding-top: var(--sp-0);
   text-align: left;
-  font-size: var(--fs-1);
+  font-size: var(--fs-2);
   border-radius: var(--r-sm);
 }
 
@@ -761,8 +757,6 @@ svg {
   font-family: var(--font-ui);
   font-size: var(--fs-2);
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--ink-2);
 }
 
@@ -1921,10 +1915,8 @@ details.section .section-body {
 }
 
 .launcher-stats dt {
-  font-size: var(--fs-1);
+  font-size: var(--fs-2);
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--space-ink-2);
 }
 
@@ -2141,6 +2133,11 @@ kbd {
   font-size: var(--fs-4);
   line-height: 1.55;
   max-width: 65ch;
+}
+
+/* Ohne Pfeil bricht der Querverweis sonst mitten in „Kapitel 1“. */
+.glossary dd a {
+  white-space: nowrap;
 }
 
 @media (max-width: 700px) {
