@@ -3795,9 +3795,9 @@ html.game-open body {
   .stats-summary .stats-mass {
     display: none;
   }
-  /* Unter 438 px Breite passt das Drehkreuz nicht neben die Schubleiste (sie beginnt bei 412 px
-     ab x 234, bei 360 px ab x 182): dann steht es über den Drehknöpfen, die Lageanzeige darüber
-     (8 + 50 + 8 + 128 + 8 = 202 px vom unteren Rand). */
+  /* Bis 480 px Breite überlappen Drehkreuz und Schubleiste (ohne Überlappung erst ab etwa 438 px;
+     der Rand bis 480 px ist bewusst mit abgedeckt). Dann steht das Drehkreuz über den Drehknöpfen,
+     die Lageanzeige darüber (8 + 50 + 8 + 128 + 8 = 202 px vom unteren Rand). */
   .hud-bl {
     flex-direction: column;
     align-items: flex-start;
