@@ -232,7 +232,6 @@ export class NodeExecutor {
       f.throttle = 0;
       return (this.phase = 'done');
     }
-    node.byAutopilot = true;
     if (node.frozen && this.burnStart === null) {
       this.burnStart = f.t;
       this.burnBudget = 3 * f.burnTime(Math.hypot(node.prograde, node.radial)) + 30;
@@ -281,7 +280,10 @@ export class NodeExecutor {
       return (this.phase = 'burn');
     }
     // Zu Beginn erst ausrichten, am Ende sanft auslaufen lassen.
-    f.throttle = err < 0.12 ? Math.max(0.005, Math.min(1, rem.mag / (accel * 1.2))) : 0;
+    const burning = err < 0.12;
+    f.throttle = burning ? Math.max(0.005, Math.min(1, rem.mag / (accel * 1.2))) : 0;
+    // Nur wirklich gebrannt: Wer nur ausrichtet und dann selbst brennt, bekommt „Nach Plan“.
+    if (burning) node.byAutopilot = true;
     // Lange Brennphasen im Zeitraffer (so weit die Physik es erlaubt) – aber nur, solange das
     // Triebwerk wirklich läuft; beim Ausrichten läuft die Zeit normal.
     const seconds = rem.mag / Math.max(accel, 1e-6);

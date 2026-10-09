@@ -1454,6 +1454,8 @@ export function FlightScreen({
       const fresh = fl.eventsAfter(lastEvent);
       if (fresh.length) {
         lastEvent = fresh[fresh.length - 1]!.id;
+        // Der Missions- und Lande-Autopilot erreicht Ziele ohne Zutun und bringt dafür keine Punkte.
+        const autoFlown = pilot.current === 'mission' || pilot.current === 'land';
         for (const e of fresh) {
           if (e.kind === 'goal') audio.current.chime();
           if (e.kind === 'fail') {
@@ -1463,12 +1465,24 @@ export function FlightScreen({
           if (e.text === 'Fallschirm offen!' || e.text.startsWith('Fallschirm halb offen'))
             audio.current.chute();
           // Punkte nur für echte Flüge – nicht im Sandkasten, auch nicht nach dem Laden eines
-          // Sandkasten-Spielstands. Der Missions- und Lande-Autopilot erreicht Ziele ohne Zutun.
-          const autoFlown = pilot.current === 'mission' || pilot.current === 'land';
+          // Sandkasten-Spielstands.
           if (e.goal && career && !fl.sandbox && !autoFlown) goalCallback.current(e.goal);
         }
         // In Herausforderungen und im Sandkasten zählen Ziele nicht – ihre Meldungen stören dort nur.
-        const shown = challenge || fl.sandbox ? fresh.filter((e) => e.kind !== 'goal') : fresh;
+        const shown =
+          challenge || fl.sandbox
+            ? fresh.filter((e) => e.kind !== 'goal')
+            : fresh.map((e) =>
+                autoFlown && e.kind === 'goal'
+                  ? {
+                      ...e,
+                      title: (e.title ?? '').replace(
+                        / · \+\d+ Punkte$/,
+                        ' · ohne Punkte (Autopilot)',
+                      ),
+                    }
+                  : e,
+              );
         if (shown.length) setToasts((t) => [...t, ...shown].slice(-MAX_TOASTS));
       }
 

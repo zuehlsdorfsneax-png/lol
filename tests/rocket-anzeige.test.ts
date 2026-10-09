@@ -44,11 +44,19 @@ describe('Tempo-Anzeige auf drehenden Monden', () => {
     expect(Math.abs(beforeTouchdown - f.stats.lastLanding!.speed)).toBeLessThan(0.5);
   });
 
-  it('ab 30 km Höhe zählt das Tempo gegen den Mittelpunkt wie bei einer Bahn', () => {
-    const f = new Flight(template('faehre'));
-    f.placeInOrbit(EUROPA, 100_000, 0);
-    expect(f.refBody()).toBe(EUROPA);
-    const rel = f.relative(EUROPA);
-    expect(groundSpeed(f)).toBeCloseTo(Math.hypot(rel.vx, rel.vy), 9);
+  it('das Tempo springt zwischen 20 und 30 km nicht und endet beim Mittelpunkt', () => {
+    // Jede Höhe bekommt ihre Kreisbahn: Der Mittelpunktwert wird im selben Zustand gemessen.
+    const at = (altitude: number) => {
+      const f = new Flight(template('faehre'));
+      f.placeInOrbit(EUROPA, altitude, 0);
+      const rel = f.relative();
+      return { ground: groundSpeed(f), center: Math.hypot(rel.vx, rel.vy) };
+    };
+    const samples = [19_000, 20_000, 20_500, 25_000, 29_500].map(at);
+    for (let i = 1; i < samples.length; i++) {
+      expect(Math.abs(samples[i]!.ground - samples[i - 1]!.ground)).toBeLessThan(8);
+    }
+    const above = at(30_000);
+    expect(above.ground).toBeCloseTo(above.center, 6);
   });
 });
