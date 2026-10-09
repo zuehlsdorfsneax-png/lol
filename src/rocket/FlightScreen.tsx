@@ -9,7 +9,6 @@ import { runPlan } from './planClient';
 import { PredictionService } from './predictClient';
 import type { Challenge, ChallengeResult, Memo } from './challenges';
 import { ComputerPanel } from './ComputerPanel';
-import { Dialog } from './Dialog';
 import { setPaint } from './draw';
 import {
   Flight,
@@ -40,7 +39,15 @@ import {
 import { applyRules, applySandbox, type SandboxSettings } from './sandbox';
 import { forTouch, isTouch } from './touch';
 import { Navball, SAS_MODES } from './Navball';
-import { ChallengeBrief, ChallengeResultView, FlightReport, FlightStatsTable } from './Overlays';
+import {
+  ChallengeBrief,
+  ChallengeResultView,
+  CrashDialog,
+  FlightReport,
+  GuideDialog,
+  HelpDialog,
+  PauseMenu,
+} from './Overlays';
 import type { Design } from './parts';
 import { drawFlight, flightView } from './scene';
 import { toWorld, type View } from './view';
@@ -318,32 +325,6 @@ function markGuideSeen(): void {
   }
 }
 
-/** Einführung beim ersten Flug: vier Schritte, je nach Gerät mit Knöpfen oder Tasten erklärt. */
-const GUIDE: readonly { title: string; text: (touch: boolean) => string }[] = [
-  {
-    title: 'Abheben',
-    text: (touch) =>
-      touch
-        ? 'Tippe auf START oder schiebe den Schubregler rechts unten nach oben. Die Rakete hebt ab, sobald ihr Schub größer ist als ihr Gewicht.'
-        : 'Z gibt Vollgas, W und S (oder ↑ ↓) regeln den Schub fein. Die Rakete hebt ab, sobald ihr Schub größer ist als ihr Gewicht.',
-  },
-  {
-    title: 'Lenken',
-    text: (touch) =>
-      `${touch ? 'Mit den runden Pfeilen links unten' : 'Mit A und D (oder ← →)'} neigst du die Rakete. Für eine Umlaufbahn ab etwa 1 km Höhe langsam zur Seite kippen. Die Lageanzeige zeigt dir mit dem grünen Kreis, wohin du gerade fliegst.`,
-  },
-  {
-    title: 'Stufen abwerfen',
-    text: (touch) =>
-      `Ist ein Tank leer, wirf ihn ab (${touch ? 'Knopf STUFE' : 'Leertaste'}): Die Rakete wird leichter und fliegt mit der nächsten Stufe weiter. Zum Schluss bringt dich der Fallschirm sicher zurück.`,
-  },
-  {
-    title: 'Karte und Hilfe-Pilot',
-    text: (touch) =>
-      `Die Karte (${touch ? 'oben links' : 'M'}) zeigt deine Bahn. Der Hilfe-Pilot (${touch ? 'Knopf rechts' : 'T'}) fliegt für dich – in eine Umlaufbahn oder, wenn das Δv nicht reicht, einen Hüpfer. Δv ist dein Treibstoffvorrat in m/s: Für eine Umlaufbahn braucht es etwa 3.900 m/s.`,
-  },
-];
-
 /** Höchstens so viele Meldungen gleichzeitig, jede so lange sichtbar. */
 const MAX_TOASTS = 2;
 const TOAST_MS = 5000;
@@ -362,16 +343,6 @@ function loadSnapshot(sandbox: boolean): FlightSnapshot | null {
     // Beschädigter Spielstand: das Flugbuch startet leer.
     return null;
   }
-}
-
-/** „heute 14:32“ oder „3. Okt., 14:32“. */
-function savedLabel(snap: FlightSnapshot | null): string {
-  if (!snap?.savedAt) return '';
-  const d = new Date(snap.savedAt);
-  const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  return d.toDateString() === new Date().toDateString()
-    ? `heute ${time}`
-    : `${d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}, ${time}`;
 }
 
 interface Props {
@@ -1833,6 +1804,27 @@ export function FlightScreen({
     for (const h of [1, 6, 24])
       jumps.push({ label: `+ ${h} h`, t: f.t + h * 3600, what: `um ${h} h` });
 
+  const toggleMute = (): void => {
+    setMuted(!muted);
+    audio.current.setMuted(!muted);
+    writeMuted(!muted);
+  };
+  const requestRestart = (): void => {
+    if (inProgress && confirm !== 'restart') {
+      setConfirm('restart');
+      return;
+    }
+    setPaused(false);
+    restart();
+  };
+  const requestExit = (): void => {
+    if (inProgress && confirm !== 'exit') {
+      setConfirm('exit');
+      return;
+    }
+    onExit();
+  };
+
   return (
     <div
       class={`rocket-stage ${map ? 'is-map' : ''} ${toasts.length ? 'has-toast' : ''} ${computer ? 'has-computer' : ''}`}
@@ -2450,175 +2442,40 @@ export function FlightScreen({
       </div>
 
       {paused && !help && f.status !== 'crashed' && !briefing && (
-        <Dialog class="pause-menu" label="Menü">
-          <h3>Pause</h3>
-          <div class="menu-list">
-            <button type="button" class="mbtn primary" onClick={() => setPaused(false)}>
-              <Icon name="play" /> Weiterfliegen <kbd>Esc</kbd>
-            </button>
-            <button
-              type="button"
-              class="mbtn"
-              onClick={() => {
-                if (inProgress && confirm !== 'restart') {
-                  setConfirm('restart');
-                  return;
-                }
-                setPaused(false);
-                restart();
-              }}
-            >
-              <Icon name="reset" /> {confirm === 'restart' ? 'Wirklich neu starten?' : 'Neustart'}
-              {confirm === 'restart' && <small class="mbtn-note">Der Flug geht verloren</small>}
-            </button>
-            {!challenge && (
-              <>
-                <button type="button" class="mbtn" onClick={quicksave}>
-                  <Icon name="save" /> Spielstand speichern <kbd>F5</kbd>
-                </button>
-                <button
-                  type="button"
-                  class="mbtn"
-                  onClick={() => {
-                    quickload();
-                    setPaused(false);
-                  }}
-                  disabled={!saved}
-                  title={saved ? `Gespeichert ${savedLabel(saved)}` : 'Noch kein Spielstand'}
-                >
-                  <Icon name="folder" /> Spielstand laden
-                  {saved?.savedAt ? <small class="mbtn-note">{savedLabel(saved)}</small> : null}
-                  <kbd>F9</kbd>
-                </button>
-              </>
-            )}
-            {FILE_EXPORT && (
-              <button type="button" class="mbtn" onClick={photo}>
-                <Icon name="camera" /> Foto speichern <kbd>O</kbd>
-              </button>
-            )}
-            <button type="button" class="mbtn" onClick={() => setHelp(true)}>
-              <Icon name="quiz" /> Steuerung <kbd>H</kbd>
-            </button>
-            <div class="menu-split">
-              <button
-                type="button"
-                class="mbtn"
-                onClick={() => {
-                  setMuted(!muted);
-                  audio.current.setMuted(!muted);
-                  writeMuted(!muted);
-                }}
-                aria-pressed={muted}
-              >
-                <Icon name={muted ? 'mute' : 'sound'} />{' '}
-                {muted ? 'Ton einschalten' : 'Ton ausschalten'}
-              </button>
-              <button
-                type="button"
-                class="mbtn"
-                onClick={fullscreen}
-                disabled={!document.fullscreenEnabled}
-                title={
-                  document.fullscreenEnabled ? 'Vollbild an/aus' : 'Vollbild ist hier nicht erlaubt'
-                }
-              >
-                <Icon name="expand" /> Vollbild
-              </button>
-            </div>
-            <button
-              type="button"
-              class={`mbtn ${confirm === 'exit' ? 'warn' : ''}`}
-              onClick={() => {
-                if (inProgress && confirm !== 'exit') {
-                  setConfirm('exit');
-                  return;
-                }
-                onExit();
-              }}
-            >
-              <Icon name="wrench" />{' '}
-              {confirm === 'exit'
-                ? 'Wirklich verlassen?'
-                : challenge
-                  ? 'Zur Übersicht'
-                  : 'Zur Werft'}
-              {confirm === 'exit' && (
-                <small class="mbtn-note">
-                  {challenge ? 'Der Versuch endet' : 'Nicht gespeicherter Flug geht verloren'}
-                </small>
-              )}
-            </button>
-          </div>
-        </Dialog>
+        <PauseMenu
+          confirm={confirm}
+          inChallenge={!!challenge}
+          saved={saved}
+          muted={muted}
+          fileExport={FILE_EXPORT}
+          onResume={() => setPaused(false)}
+          onRestart={requestRestart}
+          onSave={quicksave}
+          onLoad={() => {
+            quickload();
+            setPaused(false);
+          }}
+          onPhoto={photo}
+          onHelp={() => setHelp(true)}
+          onToggleMute={toggleMute}
+          onFullscreen={fullscreen}
+          onExit={requestExit}
+        />
       )}
 
       {help && (
-        <Dialog class="help" label="Hilfe">
-          <h3>Steuerung</h3>
-          {touch && (
-            <table class="table">
-              <tbody>
-                {TOUCH_ROWS.map(([what, how]) => (
-                  <tr key={what}>
-                    <th scope="row">{what}</th>
-                    <td>{how}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          {touch ? (
-            <details class="help-keys">
-              <summary>Mit Tastatur</summary>
-              <KeyTable />
-            </details>
-          ) : (
-            <KeyTable />
-          )}
-          <div class="guide-actions">
-            <button
-              type="button"
-              class="btn"
-              onClick={() => {
-                setHelp(false);
-                setGuide(0);
-              }}
-            >
-              Einführung ansehen
-            </button>
-            <button type="button" class="btn primary" onClick={() => setHelp(false)}>
-              Verstanden
-            </button>
-          </div>
-        </Dialog>
+        <HelpDialog
+          touch={touch}
+          onGuide={() => {
+            setHelp(false);
+            setGuide(0);
+          }}
+          onClose={() => setHelp(false)}
+        />
       )}
 
       {guide !== null && !help && !briefing && (
-        <Dialog class="guide" label="Einführung: dein erster Flug">
-          <span class="guide-step">
-            Erster Flug · {guide + 1} von {GUIDE.length}
-          </span>
-          <h3>{GUIDE[guide]!.title}</h3>
-          <p>{GUIDE[guide]!.text(touch)}</p>
-          <div class="guide-dots" aria-hidden="true">
-            {GUIDE.map((_, i) => (
-              <span key={i} class={i === guide ? 'on' : ''} />
-            ))}
-          </div>
-          <div class="guide-actions">
-            <button type="button" class="btn ghost" onClick={closeGuide}>
-              Überspringen
-            </button>
-            <button
-              type="button"
-              class="btn primary"
-              onClick={() => (guide + 1 < GUIDE.length ? setGuide(guide + 1) : closeGuide())}
-            >
-              {guide + 1 < GUIDE.length ? 'Weiter' : 'Los geht’s!'}
-            </button>
-          </div>
-        </Dialog>
+        <GuideDialog step={guide} touch={touch} onStep={setGuide} onClose={closeGuide} />
       )}
 
       {briefing && challenge && (
@@ -2666,109 +2523,15 @@ export function FlightScreen({
       )}
 
       {f.status === 'crashed' && !result && (
-        <Dialog label="Absturz">
-          <h3>
-            {f.crashReason.includes('verglüht')
-              ? 'Verglüht!'
-              : f.crashReason.includes('Gashülle')
-                ? 'Verschluckt!'
-                : 'Bumm! Die Rakete ist zerschellt.'}
-          </h3>
-          <p>{f.crashReason}</p>
-          <details class="report-more">
-            <summary>Flugdaten</summary>
-            <FlightStatsTable f={f} />
-          </details>
-          <div class="btn-row">
-            <button type="button" class="btn primary" onClick={() => restart()}>
-              <Icon name="reset" /> Nochmal starten
-            </button>
-            {saved && !challenge && (
-              <button type="button" class="btn" onClick={quickload}>
-                Spielstand laden
-              </button>
-            )}
-            <button type="button" class="btn" onClick={onExit}>
-              Zurück zur Werft
-            </button>
-          </div>
-        </Dialog>
+        <CrashDialog
+          f={f}
+          canLoad={!!saved && !challenge}
+          onRestart={() => restart()}
+          onLoad={quickload}
+          onExit={onExit}
+        />
       )}
     </div>
-  );
-}
-
-/** Tasten der Hilfe: Wörter wie „oder“ und „/“ stehen zwischen den Tastenkappen. */
-const HELP_ROWS: [string[] | string, string][] = [
-  [
-    ['W', '/', 'S', 'oder', '↑', '/', '↓'],
-    'Schub stufenlos (Umschalt: hoch; mit RCS: vor / zurück)',
-  ],
-  [['Z', '/', 'X'], 'Vollgas / Triebwerk aus'],
-  [['A', '/', 'D', 'oder', '←', '/', '→'], 'Drehen (F: Feinsteuerung)'],
-  [['1', 'bis', '7'], 'SAS: aus, prograd, retrograd, radial außen/innen, Ziel, Manöver'],
-  ['Gedrückt halten', 'In der Flugansicht: Rakete zeigt in diese Richtung'],
-  [['R', 'dann', 'Q', '/', 'E'], 'RCS-Düsen: seitwärts schieben (zum Andocken)'],
-  [['Leertaste'], 'Nächste Stufe'],
-  [['P'], 'Fallschirm scharf machen, entschärfen oder abwerfen'],
-  [['N', '/', 'U'], 'Satellit aussetzen / Luftbremsen'],
-  [['M'], 'Karte: Klick auf die Bahn plant ein Manöver, Anfasser ziehen'],
-  [['B'], 'Bordcomputer: Pläne, Manöver, Missions-Autopilot'],
-  [['L', '/', 'T', '/', 'C'], 'Lande-Autopilot / Hilfe-Pilot / Countdown'],
-  [[',', 'und', '.'], 'Zeitraffer langsamer / schneller (Zeitsprung: automatisch vorspulen)'],
-  [['F5', '/', 'F9'], 'Spielstand speichern / laden'],
-  [['O'], 'Foto speichern (Buchstabe O)'],
-  [['Esc', '/', 'H'], 'Menü (Pause, Speichern, Ton, Vollbild) / diese Hilfe'],
-  ['Gamepad', 'Stick drehen, Trigger Schub, A Stufe, B Fallschirm, X RCS, Y Karte'],
-];
-
-/** Bedienung mit dem Finger (Handy, Tablet). */
-const TOUCH_ROWS: [string, string][] = [
-  ['Drehen', 'Runde Pfeilknöpfe unten links gedrückt halten'],
-  ['Schub', 'Regler rechts hoch- und runterziehen; darunter „Vollgas“ und „Aus“'],
-  ['Start und Stufen', 'Großer Knopf rechts: vor dem Start „Start“, im Flug die nächste Stufe'],
-  ['Ausrichten', 'In der Flugansicht kurz gedrückt halten: Die Rakete zeigt dorthin'],
-  ['SAS', 'Knöpfe an der Lageanzeige: prograd, retrograd, radial, Ziel, Manöver'],
-  ['Zoomen', 'Mit zwei Fingern auseinander- oder zusammenziehen'],
-  ['Karte', 'Kartenknopf oben links; auf der Karte die Bahn antippen plant ein Manöver'],
-  ['Zeitraffer', 'Pfeile oben in der Mitte, der Doppelpfeil daneben springt vor'],
-  ['Ziel und Bordcomputer', 'Oben rechts'],
-  ['Menü', 'Knopf oben links: Pause, Speichern, Ton, Vollbild, Hilfe'],
-];
-
-function KeyTable() {
-  return (
-    <table class="table">
-      <tbody>
-        {HELP_ROWS.map(([keys, text]) => (
-          <tr key={text}>
-            <td class="keys">
-              <KeyCaps keys={keys} />
-            </td>
-            <td>{text}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-const KEY_JOINERS = new Set(['/', 'oder', 'und', 'dann', 'bis']);
-
-function KeyCaps({ keys }: { keys: string[] | string }) {
-  if (typeof keys === 'string') return <span class="key-word">{keys}</span>;
-  return (
-    <>
-      {keys.map((k, i) =>
-        KEY_JOINERS.has(k) ? (
-          <span key={i} class="key-join">
-            {k}
-          </span>
-        ) : (
-          <kbd key={i}>{k}</kbd>
-        ),
-      )}
-    </>
   );
 }
 
