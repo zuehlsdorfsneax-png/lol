@@ -131,8 +131,10 @@ function untilFirstFarthest(
 
 /**
  * Höhe des (ersten) tiefsten Punkts über `body` auf der vorhergesagten Bahn ab dem Index `from`
- * (echte Mehrkörperbahn; bei einem Aufschlag negativ aus den Bahnelementen). null, wenn die Bahn
- * nicht in die Hill-Sphäre des Körpers kommt.
+ * (echte Mehrkörperbahn). Stürzt die Bahn in die Luft, zählt die Periapsis der Kepler-Bahn beim
+ * Eintritt: Der Aufschlag hat keinen brauchbaren Tiefpunkt, und der Fallschirm übernimmt die
+ * Landung. Ohne Luft negativ aus den Bahnelementen. null, wenn die Bahn nicht in die
+ * Hill-Sphäre des Körpers kommt.
  */
 export function arrivalPeriapsis(p: Prediction, body: Body, from: number): number | null {
   return arrival(p, body, from)?.altitude ?? null;
@@ -143,18 +145,23 @@ function arrival(p: Prediction, body: Body, from: number): { altitude: number; t
   let best: number | null = null;
   let when = 0;
   let entered = false;
+  let airEntry = -1;
   untilFirstClosest(p, body, from, (i, d) => {
     if (d > body.hill) return !entered;
     entered = true;
     const alt = d - body.radius;
+    if (airEntry < 0 && body.atmosphere > 0 && alt < body.atmosphere) airEntry = i;
     if (best === null || alt < best) {
       best = alt;
       when = p.ts[i]!;
     }
     if (p.impact === body && i === p.n - 1) {
-      const [bx, by, bvx, bvy] = bodyState(body, p.ts[i]!);
-      const o = orbitAround(body, p.xs[i]! - bx, p.ys[i]! - by, p.vxs[i]! - bvx, p.vys[i]! - bvy);
-      best = Math.min(o.periapsis, 0);
+      // Der Aufschlag selbst ist kein brauchbarer Tiefpunkt. Bis zum Eintritt wirkt keine Luft,
+      // darum zählt die Bahn dort.
+      const k = airEntry >= 0 ? airEntry : i;
+      const [bx, by, bvx, bvy] = bodyState(body, p.ts[k]!);
+      const o = orbitAround(body, p.xs[k]! - bx, p.ys[k]! - by, p.vxs[k]! - bvx, p.vys[k]! - bvy);
+      best = airEntry >= 0 ? o.periapsis : Math.min(o.periapsis, 0);
     }
   });
   return best === null ? null : { altitude: best, t: when };
@@ -168,13 +175,17 @@ function arrival(p: Prediction, body: Body, from: number): { altitude: number; t
 export function signedMiss(p: Prediction, body: Body, from: number): number | null {
   let best = -1;
   let bestD = Infinity;
+  let entry = -1;
   untilFirstClosest(p, body, from, (i, d) => {
+    if (entry < 0 && body.atmosphere > 0 && d - body.radius < body.atmosphere) entry = i;
     if (d < bestD) {
       bestD = d;
       best = i;
     }
   });
   if (best < 0) return null;
+  // Stürzt die Bahn in die Luft, zählt der Eintritt (wie bei `arrivalPeriapsis`).
+  if (p.impact === body && entry >= 0) best = entry;
   const t = p.ts[best]!;
   const [bx, by, bvx, bvy] = bodyState(body, t);
   const rx = p.xs[best]! - bx;
@@ -182,8 +193,9 @@ export function signedMiss(p: Prediction, body: Body, from: number): number | nu
   const vx = p.vxs[best]! - bvx;
   const vy = p.vys[best]! - bvy;
   const h = rx * vy - ry * vx;
-  let r = bestD;
-  if (bestD < body.hill) {
+  const dist = Math.hypot(rx, ry);
+  let r = dist;
+  if (dist < body.hill) {
     const o = orbitAround(body, rx, ry, vx, vy);
     r = o.periapsis + body.radius;
   }
@@ -1224,9 +1236,17 @@ export function planDeorbit(f: Flight): Plan {
   }
   const dv = (lo + hi) / 2;
   const reached = pe(dv);
+  // Die Höhe gilt für die Bahn bis zum Lufteintritt. Danach bremst nur der Fallschirm die Rakete.
+  const basis = ref.atmosphere > 0 ? ' (ohne Luftwiderstand gerechnet)' : '';
+  const landing =
+    ref.atmosphere === 0
+      ? ' Den Rest erledigt der Lande-Autopilot.'
+      : f.chute === 'none'
+        ? ' Ohne Fallschirm stürzt die Rakete ab.'
+        : ' Dann Fallschirm scharf machen (P) und mit dem Hitzeschild voran eintauchen.';
   return {
     ok: true,
     title: `${title}: ${where}`,
-    text: `${fmt(Math.abs(dv), Math.abs(dv) < 10 ? 1 : 0)} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(dt)}. Tiefster Punkt danach ${km(reached)}.${ref.atmosphere > 0 ? ' Dann Fallschirm scharf machen (P) und mit dem Hitzeschild voran eintauchen.' : ' Den Rest erledigt der Lande-Autopilot.'}`,
+    text: `${fmt(Math.abs(dv), Math.abs(dv) < 10 ? 1 : 0)} m/s ${dv >= 0 ? 'in' : 'gegen die'} Flugrichtung in ${clockIn(dt)}. Tiefster Punkt danach ${km(reached)}${basis}.${landing}`,
   };
 }

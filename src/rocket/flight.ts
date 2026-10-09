@@ -280,8 +280,8 @@ export interface Prediction {
   /** Endet die Bahn auf einer Oberfläche? */
   impact: Body | null;
   /**
-   * Endet die Bahn am tiefsten Punkt in der Luft eines Körpers? Weiter rechnet die Vorhersage
-   * nicht – sie kennt keinen Luftwiderstand, danach bremst die Luft die Rakete ab.
+   * Prallt die Bahn am tiefsten Punkt in der Luft eines Körpers ab? Dann endet die Vorhersage dort.
+   * Ein Aufschlag steht in `impact`.
    */
   reentry: Body | null;
   /** Erste Begegnung mit einem anderen Körper. */
@@ -418,12 +418,15 @@ export function apsides(el: Elements): { peri: number; apo: number } {
   return { peri: el.p / (1 + el.e), apo: el.e < 1 ? el.p / (1 - el.e) : Infinity };
 }
 
+/** Zustand einer Vorhersage: Ort, Tempo, Zeit und Fallschirm (wie im Flug). */
 interface Coast {
   x: number;
   y: number;
   vx: number;
   vy: number;
   t: number;
+  chute: ChuteState;
+  chuteOpen: number;
 }
 
 /**
@@ -468,18 +471,6 @@ function coastStep(s: Coast, dt: number): void {
   s.vx = vx + (dt / 6) * (a1x + 2 * a2x + 2 * a3x + a4x);
   s.vy = vy + (dt / 6) * (a1y + 2 * a2y + 2 * a3y + a4y);
   s.t = t + dt;
-}
-
-/** Freier Flug bis `until` (ohne Schub). false, wenn die Schrittgrenze oder ein Körper stört. */
-function coastTo(s: Coast, until: number, maxSteps: number): boolean {
-  for (let i = 0; i < maxSteps && s.t < until - 1e-9; i++) {
-    coastStep(s, Math.min(coastDt(s.x, s.y, s.vx, s.vy, s.t), until - s.t));
-    for (const b of BODIES) {
-      const [bx, by] = bodyState(b, s.t);
-      if (Math.hypot(s.x - bx, s.y - by) < b.radius) return false;
-    }
-  }
-  return s.t >= until - 1e-9;
 }
 
 /** Wie weit die Vorhersage von diesem Zustand aus reichen soll. */
@@ -1805,8 +1796,8 @@ export class Flight {
     const n = this.node;
     if (!n || n.frozen) return;
     if (!n.at) {
-      const s: Coast = { x: this.x, y: this.y, vx: this.vx, vy: this.vy, t: this.t };
-      if (this.status === 'flying' && n.t > s.t && !coastTo(s, n.t, 200_000)) return;
+      const s = this.coastState();
+      if (this.status === 'flying' && n.t > s.t && !this.coastTo(s, n.t, 200_000)) return;
       n.at = [s.x, s.y, s.vx, s.vy];
     }
     const [x, y, vx, vy] = n.at;
@@ -2742,6 +2733,78 @@ export class Flight {
 
   // ---------------------------------------------------------------- Bahnvorhersage
 
+  /** Startzustand der Vorhersage aus dem jetzigen Flug. */
+  private coastState(): Coast {
+    return {
+      x: this.x,
+      y: this.y,
+      vx: this.vx,
+      vy: this.vy,
+      t: this.t,
+      chute: this.chute,
+      chuteOpen: this.chuteOpen,
+    };
+  }
+
+  /**
+   * Luftwiderstand eines Vorhersageschritts, wie im Flug (substep): implizit und relativ zur Luft
+   * des Körpers, mit demselben Fallschirmablauf. Ohne Luftwiderstand fiele der tiefste Punkt im
+   * Luftraum zu hoch aus, und ein scharfer Schirm, der sich unterwegs öffnet, bliebe unsichtbar.
+   */
+  private coastDrag(s: Coast, dt: number): void {
+    for (const b of AIR_BODIES) {
+      const [bx, by, bvx, bvy] = bodyState(b, s.t);
+      const alt = Math.hypot(s.x - bx, s.y - by) - b.radius;
+      const rho = densityAt(b, alt);
+      if (rho <= 0) continue;
+      const rvx = s.vx - bvx;
+      const rvy = s.vy - bvy;
+      const rv = Math.hypot(rvx, rvy);
+      if (s.chute === 'armed' && rho > 0.002 && rv < CHUTE_SEMI_SPEED) s.chute = 'semi';
+      if (
+        s.chute === 'semi' &&
+        rho > 0.002 &&
+        rv < CHUTE_MAX_SPEED &&
+        alt < this.chuteFullAltitude(b)
+      )
+        s.chute = 'open';
+      if (s.chute === 'semi' || s.chute === 'open') {
+        const goal = s.chute === 'open' ? 1 : CHUTE_SEMI;
+        const rate = s.chute === 'open' ? 1 / 3 : CHUTE_SEMI / 2;
+        s.chuteOpen =
+          s.chuteOpen < goal
+            ? Math.min(goal, s.chuteOpen + rate * dt)
+            : Math.max(goal, s.chuteOpen - rate * dt);
+        const limit = s.chute === 'open' ? 2 * CHUTE_MAX_SPEED : 1.6 * CHUTE_SEMI_SPEED;
+        if (rv > limit) {
+          s.chute = 'none';
+          s.chuteOpen = 0;
+        }
+      }
+      const cda =
+        this.hullDrag(rv / (b.soundSpeed ?? 340)) +
+        (s.chute === 'semi' || s.chute === 'open' ? CHUTE_CDA * this.chuteArea * s.chuteOpen : 0);
+      const f = 1 / (1 + ((0.5 * rho * cda) / this.mass) * rv * dt);
+      s.vx = bvx + rvx * f;
+      s.vy = bvy + rvy * f;
+      return;
+    }
+  }
+
+  /** Freier Flug bis `until` (ohne Schub). false, wenn die Schrittgrenze oder ein Körper stört. */
+  private coastTo(s: Coast, until: number, maxSteps: number): boolean {
+    for (let i = 0; i < maxSteps && s.t < until - 1e-9; i++) {
+      const dt = Math.min(coastDt(s.x, s.y, s.vx, s.vy, s.t), until - s.t);
+      coastStep(s, dt);
+      this.coastDrag(s, dt);
+      for (const b of BODIES) {
+        const [bx, by] = bodyState(b, s.t);
+        if (Math.hypot(s.x - bx, s.y - by) < b.radius) return false;
+      }
+    }
+    return s.t >= until - 1e-9;
+  }
+
   /**
    * Sagt die Bahn ohne Schub voraus – mit allen Körpern, also als echte Mehrkörperbahn.
    * Nahe anderer Körper weicht sie deshalb von einer Ellipse ab (Vorbeiflug, Einfang).
@@ -2754,7 +2817,7 @@ export class Flight {
     const vys = new Float64Array(maxPoints);
     const ts = new Float64Array(maxPoints);
     const ref = this.refBody();
-    const s: Coast = { x: this.x, y: this.y, vx: this.vx, vy: this.vy, t: this.t };
+    const s = this.coastState();
     const t0 = s.t;
     let n = 0;
     const push = (): void => {
@@ -2839,7 +2902,7 @@ export class Flight {
         if (n >= preCap || s.t - t0 >= preLimit) {
           // Bis zum Manöver ohne Speichern vorspulen.
           result.preEnd = n - 1;
-          if (!coastTo(s, node!.t, 150_000)) break;
+          if (!this.coastTo(s, node!.t, 150_000)) break;
           push();
           applyNode();
           vxs[n - 1] = s.vx;
@@ -2858,7 +2921,10 @@ export class Flight {
         dt = node!.t - s.t;
         hitNode = true;
       }
-      if (dt > 1e-9) coastStep(s, dt);
+      if (dt > 1e-9) {
+        coastStep(s, dt);
+        this.coastDrag(s, dt);
+      }
       push();
       const i = n - 1;
       const st = bodyStates(s.t);
@@ -2869,8 +2935,8 @@ export class Flight {
         if (dx * dx + dy * dy < RADII[k]! ** 2) result.impact = BODIES[k]!;
       }
       if (result.impact) break;
-      // In der Luft nur bis zum tiefsten Punkt: Danach würde die Bahn ohne Luftwiderstand wieder
-      // hinausführen (und beim nächsten Umlauf scheinbar aufschlagen).
+      // Prallt die Bahn in der Luft ab, endet die Vorhersage an diesem tiefsten Punkt: Danach fliegt
+      // die Rakete weit hinaus und kommt erst nach einem langen Umlauf wieder.
       for (let k = 0; k < AIR_BODIES.length; k++) {
         const b = AIR_BODIES[k]!;
         const [bx, by, bvx, bvy] = st[AIR_INDEX[k]!]!;
