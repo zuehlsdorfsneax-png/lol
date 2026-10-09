@@ -326,7 +326,7 @@ export const GOALS: readonly GoalDef[] = [
     group: 'Können',
     points: 10,
     title: 'Nach Plan',
-    text: 'Ein geplantes Manöver auf 1 m/s genau ausgeführt.',
+    text: 'Ein geplantes Manöver von Hand auf 1 m/s genau ausgeführt.',
   },
   {
     id: 'fire',

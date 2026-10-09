@@ -155,10 +155,11 @@ describe('Neue Teile ohne Triebwerk', () => {
       run(f, 3, () => f.status === 'landed');
       return f;
     };
-    const bags = drop(['sonde', 'tank-sonde', 'airbags'], 0.9);
+    const bags = drop(['sonde', 'tank-sonde', 'airbags'], 0.6);
     expect(bags.status).toBe('landed');
     expect(bags.stats.lastLanding!.speed).toBeGreaterThan(16);
     expect(bags.segs[0]!.parts).not.toContain('airbags');
+    expect(drop(['sonde', 'tank-sonde', 'airbags'], 0.9).status).toBe('crashed');
     expect(drop(['sonde', 'tank-sonde', 'beine-s'], 0).status).toBe('crashed');
   });
 

@@ -1492,8 +1492,9 @@ export function FlightScreen({
           if (e.text === 'Fallschirm offen!' || e.text.startsWith('Fallschirm halb offen'))
             audio.current.chute();
           // Punkte nur für echte Flüge – nicht im Sandkasten, auch nicht nach dem Laden eines
-          // Sandkasten-Spielstands.
-          if (e.goal && career && !fl.sandbox) goalCallback.current(e.goal);
+          // Sandkasten-Spielstands. Der Missions- und Lande-Autopilot erreicht Ziele ohne Zutun.
+          const autoFlown = pilot.current === 'mission' || pilot.current === 'land';
+          if (e.goal && career && !fl.sandbox && !autoFlown) goalCallback.current(e.goal);
         }
         // In Herausforderungen und im Sandkasten zählen Ziele nicht – ihre Meldungen stören dort nur.
         const shown = challenge || fl.sandbox ? fresh.filter((e) => e.kind !== 'goal') : fresh;

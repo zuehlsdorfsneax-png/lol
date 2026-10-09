@@ -555,7 +555,8 @@ function MissionTab({
       <p class="small muted">
         Der Missions-Autopilot fliegt alles allein: Start, Startfenster abwarten, Transfer,
         Kurskorrekturen, Einschwenken, Landung – Wartezeiten spult er im Zeitraffer vor. Jede
-        Steuertaste gibt dir die Kontrolle zurück.
+        Steuertaste gibt dir die Kontrolle zurück. Ziele, die der Autopilot erreicht, zählen nicht
+        für Karrierepunkte.
       </p>
       <label class="cp-field">
         <span class="small">Ziel der Mission</span>

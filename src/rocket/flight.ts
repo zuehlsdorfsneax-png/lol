@@ -129,6 +129,8 @@ export interface ManeuverNode {
   ref: BodyId;
   /** Zwischengespeicherter Zustand zur Manöverzeit (ohne Schub). */
   at: [number, number, number, number] | null;
+  /** Der Manöver-Autopilot hat es ausgeführt – fürs Ziel „Nach Plan“ zählen nur Handmanöver. */
+  byAutopilot?: boolean;
 }
 
 /** Ein ausgesetzter Satellit auf seiner Kepler-Bahn. */
@@ -1933,7 +1935,7 @@ export class Flight {
           ? `Manöver ausgeführt – auf ${rem.toLocaleString('de-DE', { maximumFractionDigits: rem < 0.1 ? 2 : 1 })} m/s genau.`
           : `Manöver beendet, ${Math.round(rem)} m/s daneben.`,
       );
-      if (rem <= 1 && total >= 5) this.goal('node');
+      if (rem <= 1 && total >= 5 && !n.byAutopilot) this.goal('node');
     }
   }
 

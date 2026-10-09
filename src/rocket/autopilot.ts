@@ -232,6 +232,7 @@ export class NodeExecutor {
       f.throttle = 0;
       return (this.phase = 'done');
     }
+    node.byAutopilot = true;
     if (node.frozen && this.burnStart === null) {
       this.burnStart = f.t;
       this.burnBudget = 3 * f.burnTime(Math.hypot(node.prograde, node.radial)) + 30;

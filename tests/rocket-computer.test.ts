@@ -30,6 +30,21 @@ function execute(f: Flight): string {
   return x.phase;
 }
 
+/** Brennt das Manöver ohne Autopiloten: Lage per SAS, Schub nach dem Restweg. */
+function burnByHand(f: Flight): void {
+  f.sas = 'maneuver';
+  for (let i = 0; i < 200_000 && f.node; i++) {
+    const rem = f.nodeRemaining();
+    const d = f.angle - Math.atan2(rem.y, rem.x);
+    const err = Math.abs(Math.atan2(Math.sin(d), Math.cos(d)));
+    const { thrust } = f.engine();
+    const burning = f.t >= f.nodeBurnStart() && err < 0.12;
+    f.throttle = burning ? Math.max(0.005, Math.min(1, rem.mag / ((thrust / f.mass) * 1.2))) : 0;
+    f.update(1 / 60);
+  }
+  f.throttle = 0;
+}
+
 function toOrbit(f: Flight, body = GAME_EARTH): void {
   const pilot = new OrbitPilot(body);
   run(f, () => pilot.update(f) === 'done', 4);
@@ -101,6 +116,19 @@ describe('Bordcomputer', () => {
     expect(execute(f)).toBe('done');
     const after = f.orbit(GAME_EARTH);
     expect(after.eccentricity).toBeLessThan(0.01);
+    expect(f.goals.has('node')).toBe(false);
+  });
+
+  it('Nach Plan zählt nur ein Manöver, das von Hand gebrannt wurde', () => {
+    const f = new Flight(template('orbiter'));
+    f.placeInOrbit(GAME_EARTH, 80_000, 1);
+    f.vx *= 1.05;
+    f.vy *= 1.05;
+    expect(planCircularize(f, 'ap').ok).toBe(true);
+    f.warpTo(f.nodeBurnStart() - 12);
+    run(f, () => f.warpTarget === null, 1, 60 * 60);
+    burnByHand(f);
+    expect(f.orbit(GAME_EARTH).eccentricity).toBeLessThan(0.01);
     expect(f.goals.has('node')).toBe(true);
   });
 });
