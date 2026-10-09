@@ -96,6 +96,8 @@ let solarOpen = 0;
 let lampsOn = 0;
 /** Wie weit die Lande-Airbags aufgeblasen sind (0…1). */
 let bagsOpen = 0;
+/** Schub des Triebwerks (0…1): wärmt die Glocke am unteren Rand. */
+let nozzleThrottle = 0;
 
 /** Lackierung für alle folgenden Zeichnungen wählen. */
 export function setPaint(id: string): void {
@@ -170,20 +172,42 @@ function stopColor(table: [number, Rgb][], q: number): Rgb {
  */
 const CYLINDER_SPOTS = [0, 0.1, 0.12, 0.3, 0.36, 0.42, 0.58, 0.64, 0.7, 0.88, 0.9, 1];
 
+/** Breite des Randlichts als Anteil der Breite, von der Sonnenkante aus gemessen. */
+const RIM_WIDTH = 0.18;
+
+/** Anteil des Randlichts an der Lage q: 1 an der Sonnenkante, 0 ab RIM_WIDTH (weich abfallend). */
+function rimFall(q: number): number {
+  return Math.max(0, 1 - q / RIM_WIDTH) ** 2;
+}
+
 /**
  * Zylinder-Schattierung quer über ein Bauteil: dunkler Rand, Glanz auf der Sonnenseite,
  * weicher Übergang und tiefer Schatten am abgewandten Rand – so wirkt es rund statt flach.
+ * Mit `rim` läuft zusätzlich ein heller Randstreifen in der Farbe des Teils an der Sonnenkante aus.
  */
-function hGrad(ctx: CanvasRenderingContext2D, w: number, stops: string[], cx = 0): CanvasGradient {
+function hGrad(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  stops: string[],
+  cx = 0,
+  rim = false,
+): CanvasGradient {
   // Sonne von links und von rechts sind Spiegelbilder. Dazwischen mischen beide Verläufe stetig,
   // damit die Glanzseite wandert statt bei Sonne von vorn auf die andere Flanke zu springen.
   const table = cylinderStops(stops);
   const mirror = (1 - lightSide) / 2;
+  const rimRgb = rim ? shadeRgb(stops[1]!, 1, '#ffffff', 0.6) : null;
   const g = ctx.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0);
   for (const q of CYLINDER_SPOTS) {
     const lit = stopColor(table, q);
     const other = stopColor(table, 1 - q);
-    g.addColorStop(q, rgbCss(lit.map((x, k) => x + (other[k]! - x) * mirror)));
+    const c = lit.map((x, k) => x + (other[k]! - x) * mirror);
+    if (rimRgb) {
+      // Die Kante zur Sonne wird heller; auf der Schattenseite bleibt sie dunkel.
+      const share = 0.9 * ((1 - mirror) * rimFall(q) + mirror * rimFall(1 - q));
+      for (let k = 0; k < 3; k++) c[k] = c[k]! + (rimRgb[k]! - c[k]!) * share;
+    }
+    g.addColorStop(q, rgbCss(c));
   }
   return g;
 }
@@ -233,6 +257,15 @@ function nozzle(
     ctx.restore();
   }
   ctx.stroke();
+  if (nozzleThrottle > 0) {
+    // Warmer Schimmer am Austritt: die Glocke bleibt unter Schub nahe am Austritt heiß. Der Pfad
+    // ist noch die Glocke, deshalb füllt dieser Schritt sie mit dem Verlauf nach.
+    const warm = ctx.createLinearGradient(0, y0, 0, y0 + h * 0.4);
+    warm.addColorStop(0, `rgba(255,170,90,${0.55 * nozzleThrottle})`);
+    warm.addColorStop(1, 'rgba(255,120,40,0)');
+    ctx.fillStyle = warm;
+    ctx.fill();
+  }
   // Innenseite der Düse (dunkle Öffnung) und Glut nach dem Brennen
   ctx.beginPath();
   ctx.ellipse(cx, y0 + 0.04, w / 2 - 0.04, Math.max(0.06, w * 0.06), 0, 0, Math.PI * 2);
@@ -261,7 +294,7 @@ export function drawPart(
         ctx.lineTo(t / 2, y0 + h);
         ctx.lineTo(-t / 2, y0 + h);
         ctx.closePath();
-        ctx.fillStyle = hGrad(ctx, w, METAL);
+        ctx.fillStyle = hGrad(ctx, w, METAL, 0, true);
         ctx.fill();
         ctx.save();
         ctx.clip();
@@ -283,7 +316,7 @@ export function drawPart(
         ctx.stroke();
         break;
       }
-      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fillStyle = hGrad(ctx, w, METAL, 0, true);
       ctx.fillRect(-w / 2, y0, w, h);
       ctx.strokeRect(-w / 2, y0, w, h);
       ctx.fillStyle = shade(paint.stripe);
@@ -316,7 +349,7 @@ export function drawPart(
       ctx.lineTo(top / 2, y0 + h);
       ctx.lineTo(-top / 2, y0 + h);
       ctx.closePath();
-      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fillStyle = hGrad(ctx, w, METAL, 0, true);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = shade(paint.stripe);
@@ -656,7 +689,7 @@ export function drawPart(
       ctx.bezierCurveTo(-w / 2, y0 + h * 0.55, -w * 0.14, y0 + h * 0.96, 0, y0 + h);
       ctx.bezierCurveTo(w * 0.14, y0 + h * 0.96, w / 2, y0 + h * 0.55, w / 2, y0);
       ctx.closePath();
-      ctx.fillStyle = hGrad(ctx, w, METAL);
+      ctx.fillStyle = hGrad(ctx, w, METAL, 0, true);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = shade(paint.stripe);
@@ -1114,6 +1147,7 @@ export function drawRocket(
   solarOpen = look?.solar ?? 0;
   lampsOn = look?.lights ?? 0;
   bagsOpen = look?.bags ?? 0;
+  nozzleThrottle = look?.throttle ?? 0;
   if (lampsOn > 0) drawLightCones(ctx, parts, lampsOn);
   if (look && look.throttle > 0) {
     const engineId = [...parts].reverse().find((id) => part(id).kind === 'engine' && !sideOf(id));
@@ -1193,6 +1227,33 @@ export function drawRocket(
   brakeOpen = 0;
   solarOpen = 0;
   lampsOn = 0;
+  nozzleThrottle = 0;
+}
+
+/**
+ * Kontaktschatten am Fuß der stehenden Rakete: eine flache, weiche Ellipse auf dem Boden, damit
+ * die Rakete auf der Rampe steht statt darüber zu schweben. `scale` sind Pixel je Meter; die
+ * Höhe der Ellipse ist in Pixeln festgelegt, damit sie beim Herauszoomen nicht zu einem Fleck wird.
+ */
+export function drawContactShadow(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  scale: number,
+): void {
+  const rx = width / 2 + 1.2;
+  const ry = 4 / scale;
+  const dark = 0.6 * (0.4 + 0.6 * lightLevel);
+  ctx.save();
+  ctx.scale(1, ry / rx);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+  g.addColorStop(0, `rgba(10,14,24,${dark})`);
+  g.addColorStop(0.5, `rgba(10,14,24,${dark * 0.45})`);
+  g.addColorStop(1, 'rgba(10,14,24,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, rx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 /** Lichtkegel der Landescheinwerfer nach unten (additiv, wie echtes Licht). */

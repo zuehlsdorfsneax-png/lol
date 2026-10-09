@@ -2,7 +2,7 @@
  * Flugansicht: Himmel mit Tag, Nacht und Dämmerung, Himmelskörper, Wolken, Bäume und Felsen,
  * Startanlage, Stationen und Basen, Satelliten, Rauch, Rakete und Richtungsmarker.
  */
-import { drawRocket, drawSatellite, entryWidth, setLighting } from './draw';
+import { drawContactShadow, drawRocket, drawSatellite, entryWidth, setLighting } from './draw';
 import { drawPlanetDisk, haloCircles } from './planets';
 import { part } from './parts';
 import { drawLaunchComplex, drawRidges, drawSkySun } from './landscape';
@@ -1244,6 +1244,8 @@ export function drawFlight(
     setLighting(lateral, level, Math.max(0, (f.heat - 0.25) / 0.75));
     ctx.save();
     local(ctx, v, f.x, f.y, f.angle, scale);
+    if (near.body === GAME_EARTH && f.status === 'landed')
+      drawContactShadow(ctx, padRocket(f).width, scale);
     drawRocket(ctx, parts, {
       throttle: f.thrusting ? f.throttle : 0,
       air: air.rho,
