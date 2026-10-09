@@ -3806,7 +3806,7 @@ html.game-open body {
     order: 0;
   }
   .hud-bl:has(> .rcs-pad) ~ .hud-bc {
-    bottom: 202px;
+    bottom: calc(var(--sp-2) * 3 + 50px + 128px);
   }
 }
 

@@ -4,7 +4,7 @@ import { sanitizeProgress, type Progress } from '../src/missions/progress';
 import { OrbitPilot } from '../src/rocket/autopilot';
 import { CHALLENGES } from '../src/rocket/challenges';
 import { CHALLENGE_COUNT, GOAL_COUNT } from '../src/rocket/counts';
-import { GOALS, goalPoints } from '../src/rocket/goals';
+import { GOALS } from '../src/rocket/goals';
 import { Flight, type Satellite } from '../src/rocket/flight';
 import { TEMPLATES, checkDesign, stageStats } from '../src/rocket/parts';
 import { DEFAULT_SANDBOX, applySandbox } from '../src/rocket/sandbox';
@@ -326,9 +326,8 @@ describe('App (QA)', () => {
         mars: { stars: -1, text: 'negativ' },
       },
     } as unknown as Progress);
-    expect(p.rocketGoals).toEqual(['orbit', 'moonland']);
     // Ein doppelter Eintrag würde die Punkte doppelt zählen.
-    expect(goalPoints(p.rocketGoals)).toBe(goalPoints(['orbit', 'moonland']));
+    expect(p.rocketGoals).toEqual(['orbit', 'moonland']);
     expect(p.rocketChallenges).toEqual({ hop: { stars: 3, text: 'ok' } });
   });
 

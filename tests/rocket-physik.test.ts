@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { LandingPilot, NodeExecutor } from '../src/rocket/autopilot';
-import { Flight, bodySpin, surfaceVelocity } from '../src/rocket/flight';
+import { Flight, bodySpin, groundSpeed, surfaceVelocity } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
-import { EUROPA, GAME_EARTH, bodyState } from '../src/rocket/world';
+import { EUROPA, GAME_EARTH, angularRate, bodyState } from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 const DT = 1 / 60;
@@ -42,14 +42,22 @@ describe('Ionentriebwerke: Brenndauer und Zündzeit', () => {
 });
 
 describe('Gebundene Monde: der Boden dreht sich mit der Bahn', () => {
-  it('gelandet steht die Rakete gegenüber dem Boden still, nicht gegenüber dem Mittelpunkt', () => {
+  it('gelandet steht die Rakete am Boden still und dreht sich mit dem Körper mit', () => {
     const f = new Flight(template('faehre'));
     f.placeLanded(EUROPA, 0.4);
-    const rel = f.relative(EUROPA);
-    const [sx, sy] = surfaceVelocity(EUROPA, rel.rx, rel.ry);
-    expect(Math.hypot(rel.vx - sx, rel.vy - sy)).toBeLessThan(1e-9);
-    // Europa dreht sich mit ω·R ≈ 9,6 m/s, gegenüber dem Mittelpunkt steht die Rakete also nicht.
-    expect(Math.hypot(rel.vx, rel.vy)).toBeGreaterThan(9);
+    // Gegenüber dem Mittelpunkt läuft der Boden mit ω·R. Die Anzeige misst gegen den Boden,
+    // sonst stünden dort rund 9,6 m/s.
+    const groundRate = angularRate(EUROPA) * EUROPA.radius;
+    const [, , bvx, bvy] = bodyState(EUROPA, f.t);
+    expect(Math.hypot(f.vx - bvx, f.vy - bvy)).toBeCloseTo(groundRate, 6);
+    expect(groundSpeed(f)).toBeLessThan(0.01);
+
+    const angle0 = f.angle;
+    const t0 = f.t;
+    for (let i = 0; i < 60 * 10 && f.status === 'landed'; i++) f.update(DT);
+    expect(f.status).toBe('landed');
+    expect(Math.abs(f.angle - angle0)).toBeCloseTo(Math.abs(angularRate(EUROPA)) * (f.t - t0), 9);
+    expect(groundSpeed(f)).toBeLessThan(0.01);
   });
 
   it('die gespeicherte Geschwindigkeit ist die Bewegung der gelandeten Rakete', () => {
