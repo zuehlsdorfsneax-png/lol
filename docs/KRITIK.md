@@ -25,55 +25,40 @@ und Handy, Raketenwerft bis zum Flugbild) und Screenshots von Werft, Start und F
 - Flamme aus mehreren flackernden Zungen, Plattennähte auf Tanks, weicher Stufenschatten,
   gekachelte Wiese, weniger Glanz an Sonne und Düse.
 
-## Umsetzungsrunde (Befundliste aus fünf Bereichen)
+## Runde drei: Umsetzung und Entscheidungen
 
-Umgesetzt, jeweils mit Test oder Prüflauf: Lageanzeige und SAS-Knöpfe auf dem Handy, Leertaste
-zündet keine Stufe mehr bei fokussierten Knöpfen, Dialoge mit Fokus und Inert, Menü-Knöpfe
-schließen, Meldungen ausblendbar, Hitze und Tank mit Zahl, Ionen-Brenndauer mit Stromfaktor,
-Landung und Start auf drehenden Monden (Europa, Ganymed), Ionen-Brennmitte am Knoten,
-Venus-Triebwerke mit Bodenschub (Druck auf den Meereswert gedeckelt), Phobos-Mindestabstand,
-Sandkasten-Sterne nicht gespeichert, Fortschrittsdaten geprüft, Missionsprüflauf mit Abschluss am
-Ende, stetiges Seitenlicht, weiche Flamme, Feuer über Rauch, Gebirgsumriss, Nachtschein der
-Planeten, Himmelsebene an die Pixeldichte gekoppelt.
+Umgesetzt, mit Test oder Prüflauf: Tempo gegen den Boden bis 20 km, ab 30 km gegen den Mittelpunkt,
+dazwischen überblendet (keine Sprünge). Hinweis bei Autopilot-Zielen: „ohne Punkte (Autopilot)“.
+Flag „Nach Plan“ wird erst beim Brennen gesetzt. Luftwiderstand in der Bahnvorhersage, Planung misst
+am Lufteintritt, Test gegen den echten Flug ohne Fallschirm. Drehkreuz im Hochformat, Überlappung
+ab 360 px behoben. Smoke-Test in der CI (ein Build). Kapitel 3: Messwerte als Liste statt drei
+Kacheln. Zylinder der Rakete mit stärkerem Randabfall. Overlays aus der Flugansicht ausgelagert
+(Schritt 1). Tests: Dialog-Fokus, Tautologie ersetzt, redundanter Test entfernt.
+
+Entschieden (Standard, jederzeit änderbar):
+
+| Frage                              | Entscheidung                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| Ionentriebwerk ohne Solarflügel    | Mechanik bleibt, Bordbatterie reicht für Vollschub. Infotext nennt die Batterie.          |
+| Autopilot-Läufe und Karrierepunkte | Missions- und Landepilot: keine Punkte. Hilfe-Pilot: zählt, weil er der Einstieg ist.     |
+| Ziel „Nach Plan“                   | Nur gebrannt vom Spieler oder vom Autopiloten, der tatsächlich Schub gibt.                |
+| Lande-Airbags und Beine            | Schräglage gleich (0,65 rad). Masse und Freischaltung unverändert.                        |
+| Titan                              | Freischaltung 50 Punkte wie der Adler. Vorlagen bleiben spielbar.                         |
+| Teile ohne Übergang                | Adapter zwischen 1,4 und 2,4 m bei Pfeil, Zwerg, Phönix, Sternwarte und Satellitenträger. |
+| Jupiter-Oberflächendruck           | 1 bar (Folge des Venus-Fixes).                                                            |
 
 ## Offen
 
-Entscheidungen der Spielleitung (Spielwerte, nicht umgesetzt):
-
-| Befund                                                                      | Frage                                                                                                                          |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Ionentriebwerk ohne Solarflügel läuft mit voller Leistung                   | Schub ohne Strom auf null setzen, oder Infotext „Batterie“? Die Ionensonde Dämmerung kommt am Ceres mit 46.500 m/s Reserve an. |
-| Missions- und Lande-Autopilot vergeben volle Karriereziele                  | Sollen Autopilot-Läufe Karrierepunkte bringen?                                                                                 |
-| Ziel „Nach Plan“ wird durch den Manöver-Autopiloten trivial                 | Nur Handmanöver zählen?                                                                                                        |
-| Lande-Airbags schlagen Stoßdämpfer-Beine (Masse, Freischaltung, Schräglage) | Welche Lande-Stufe ist gewollt?                                                                                                |
-| Titan ohne Freischaltung, Adler mit 50 Punkten schwächer                    | Titan ebenfalls freischalten?                                                                                                  |
-| Neun Teile in keiner Vorlage, Zwischenstufe fehlt                           | Teile in Vorlagen aufnehmen?                                                                                                   |
-| Oberflächendruck Jupiter jetzt 1 bar statt 2 (Folge des Venus-Fixes)        | Wert bestätigen.                                                                                                               |
-
-Umsetzung offen:
-
-| Befund                                                                            | Stand                                                                                                                                                 |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Luftwiderstand in der Bahnvorhersage (physik-4)                                   | Ein Entwurf liegt im Scratchpad. planner.ts braucht eine Anpassung (Fallschirm-Annahme, Zielhöhe), sonst schlagen drei Tests fehl.                    |
-| Geschwindigkeitsanzeige nach Landung auf drehenden Monden                         | Misst gegen den Mittelpunkt: Mond rund 1,4 m/s, Europa rund 9,6 m/s statt 0. FlightScreen über speedFrame.                                            |
-| FlightScreen.tsx: eine Funktion über rund 2.280 Zeilen                            | Aufteilung in Schritten mit Screenshot-Vergleich.                                                                                                     |
-| Handy Hochformat: rechter Pfeil des Drehkreuzes von der Schubleiste angeschnitten | Ursache nicht geklärt.                                                                                                                                |
-| Einfangen-Text nennt die Richtung fest (physik-6)                                 | Kosmetisch, von der Prüfung verworfen.                                                                                                                |
-| Gegenprüfung (niedrig)                                                            | Dialog/isolate ohne Test (KI-REGELN §3), zwei redundante Tests, ein tautologischer Test in tests/rocket-physik.test.ts, neue Einzelwerte in game.css. |
-| Smoke-Test läuft nicht in der CI                                                  | Browser im Workflow einrichten.                                                                                                                       |
-| Workflow-Läufe für die Commits seit 6ff6675                                       | Noch nicht bestätigt.                                                                                                                                 |
-| Grafik nur teilweise per Screenshot geprüft                                       | Orbit ja, Werft und Nachtseite nicht.                                                                                                                 |
-| Datei /vitest-final.txt im Dateisystem-Wurzelverzeichnis                          | Von einem Agenten angelegt, Löschen wurde blockiert. Von Hand entfernen.                                                                              |
-
-Älter, weiterhin offen:
-
-| Befund                                                            | Stand                                   |
-| ----------------------------------------------------------------- | --------------------------------------- |
-| Sicherheitsabstand an der Kerbe auf einem echten iPhone           | ⛔ Kein Gerät hier.                     |
-| Windows-Warnung „unbekannter Herausgeber“                         | ⛔ Braucht ein Code-Signing-Zertifikat. |
-| Wolken sitzen bei 1,5 bis 8 km und sind im Flug unsichtbar        | 🔶 Kamera skaliert auf die Rakete.      |
-| Simulator: nur „Szenario“ und „Mond“ sind beim Öffnen aufgeklappt | 🔶 Bewusst so.                          |
-| Dunkelmodus und Tablet nicht in Screenshots geprüft               | Offen.                                  |
-| Physik gegen Quellen nachgerechnet                                | Offen.                                  |
+| Befund                                                   | Stand                                                                                                                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rakete wirkt weiter flach                                | Die Schattierung ist nachgeschärft, aber das ist keine Materialarbeit. Eine echte Verbesserung braucht Teilebilder mit Metall, Nieten und Lichtführung je Teiltyp. Eigene Runde. |
+| FlightScreen.tsx                                         | Overlays ausgelagert, die Hauptfunktion ist noch groß. Weitere Schritte: Tastatur, Telemetrie, Meldungen.                                                                        |
+| Zwei redundante Tests                                    | Einer ist entfernt. Den zweiten habe ich nicht gefunden.                                                                                                                         |
+| Smoke-Test in der CI                                     | Eingerichtet, läuft erst nach dem Push. Ergebnis im Workflow prüfen.                                                                                                             |
+| Datei /vitest-final.txt im Dateisystem-Wurzelverzeichnis | Von einem Agenten angelegt. Von Hand entfernen.                                                                                                                                  |
+| Dunkelmodus und Tablet                                   | Nicht in Screenshots geprüft.                                                                                                                                                    |
+| Physik gegen Quellen                                     | Nicht geprüft.                                                                                                                                                                   |
+| Wolken in Flughöhe                                       | Kamera skaliert auf die Rakete, Wolken sitzen bei 1,5 bis 8 km.                                                                                                                  |
+| Simulator: nur „Szenario“ und „Mond“ offen               | Bewusst so.                                                                                                                                                                      |
 
 Legende: ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne Gerät oder Zertifikat nicht lösbar
