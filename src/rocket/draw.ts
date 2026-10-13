@@ -27,7 +27,7 @@ export const PAINTS: readonly Paint[] = [
     id: 'klassisch',
     name: 'Klassisch',
     points: 0,
-    metal: ['#c9d1dc', '#ffffff', '#aeb7c4'],
+    metal: ['#a9b3c2', '#f4f7fb', '#7f8a9c'],
     stripe: '#e0503a',
     band: '#2f5fbf',
   },
@@ -218,7 +218,7 @@ function sheen(ctx: CanvasRenderingContext2D, w: number, y0: number, h: number, 
   const x = cx - lightSide * w * 0.2;
   const g = ctx.createLinearGradient(x - w * 0.08, 0, x + w * 0.08, 0);
   g.addColorStop(0, 'rgba(255,255,255,0)');
-  g.addColorStop(0.5, `rgba(255,255,255,${0.42 * lightLevel})`);
+  g.addColorStop(0.5, `rgba(255,255,255,${0.6 * lightLevel})`);
   g.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = g;
   ctx.fillRect(x - w * 0.08, y0 + 0.25, w * 0.16, h - 0.5);
@@ -282,7 +282,7 @@ export function drawPart(
 ): void {
   const { width: w, height: h } = def;
   ctx.lineWidth = 0.06;
-  ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+  ctx.strokeStyle = 'rgba(20,26,40,0.7)';
   switch (def.kind) {
     case 'tank': {
       if (def.topWidth) {
@@ -407,7 +407,7 @@ export function drawPart(
         ctx.closePath();
         ctx.fillStyle = hGrad(ctx, w * 0.9, ['#9ca3af', '#ffffff', '#b8c0cc']);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+        ctx.strokeStyle = 'rgba(20,26,40,0.7)';
         ctx.lineWidth = 0.05;
         ctx.stroke();
         ctx.fillStyle = shade('#4b5563');
@@ -775,7 +775,7 @@ export function drawPart(
         }
         ctx.stroke();
       }
-      ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+      ctx.strokeStyle = 'rgba(20,26,40,0.7)';
       ctx.lineWidth = 0.06;
       break;
     }
@@ -796,7 +796,7 @@ export function drawPart(
           ctx.quadraticCurveTo(x, y0 + 0.15 - r * 0.25, x + r * 0.7, y0 + 0.15);
           ctx.stroke();
         }
-        ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+        ctx.strokeStyle = 'rgba(20,26,40,0.7)';
         ctx.lineWidth = 0.06;
       }
       ctx.fillStyle = hGrad(ctx, w, ['#8f8a7c', '#d9d3c2', '#77736a']);
@@ -811,7 +811,7 @@ export function drawPart(
         ctx.lineTo(x, y0 + h - 0.06);
       }
       ctx.stroke();
-      ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+      ctx.strokeStyle = 'rgba(20,26,40,0.7)';
       ctx.lineWidth = 0.06;
       break;
     }
@@ -981,7 +981,7 @@ function drawSatelliteBody(
   g.addColorStop(1, shade('#8a6508'));
   ctx.fillStyle = g;
   ctx.fillRect(-bw / 2, y0, bw, h * 0.82);
-  ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+  ctx.strokeStyle = 'rgba(20,26,40,0.7)';
   ctx.lineWidth = 0.05;
   ctx.strokeRect(-bw / 2, y0, bw, h * 0.82);
   ctx.strokeStyle = 'rgba(120,80,0,0.4)';
@@ -1056,7 +1056,7 @@ function drawTelescopeBody(
   // Geräteteil unten (Goldfolie), Röhre darüber (silbern)
   ctx.fillStyle = hGrad(ctx, bw, ['#8a6508', '#ffd76a', '#b8860b']);
   ctx.fillRect(-bw / 2, y0, bw, h * 0.34);
-  ctx.strokeStyle = 'rgba(20,26,40,0.55)';
+  ctx.strokeStyle = 'rgba(20,26,40,0.7)';
   ctx.lineWidth = 0.05;
   ctx.strokeRect(-bw / 2, y0, bw, h * 0.34);
   ctx.fillStyle = hGrad(ctx, bw * 0.92, ['#b8c0cc', '#ffffff', '#9aa3b2']);
