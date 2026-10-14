@@ -83,10 +83,7 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
   phaseRef.current = phase;
   const [, setTick] = useState(0);
 
-  useEffect(() => {
-    // Nur Tastatur: Zeiger-Ereignisse laufen über die Knöpfe, daher ein unsichtbares Element.
-    return input.current.attach(document.createElement('div'), () => ({ x: 0, y: 0 }));
-  }, []);
+  useEffect(() => input.current.attach(), []);
 
   const start = (): void => {
     game.current = { s: startState(), t: 0, fuel: FUEL, trail: [], thrust: [0, 0] };

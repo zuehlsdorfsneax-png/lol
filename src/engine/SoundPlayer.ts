@@ -21,27 +21,7 @@ export class SoundPlayer {
     if (context?.state === 'suspended') void context.resume();
   }
 
-  /** Lädt und dekodiert eine Sounddatei (z. B. .ogg, .mp3, .wav). */
-  async load(url: string): Promise<AudioBuffer> {
-    const context = this.ensureContext();
-    if (!context) throw new Error('Web Audio wird von diesem Browser nicht unterstützt.');
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Sound konnte nicht geladen werden: ${url}`);
-    return context.decodeAudioData(await response.arrayBuffer());
-  }
-
-  play(buffer: AudioBuffer, volume = 1): void {
-    const { context, master } = this;
-    if (!context || !master || context.state !== 'running') return;
-    const source = context.createBufferSource();
-    const gain = context.createGain();
-    source.buffer = buffer;
-    gain.gain.value = volume;
-    source.connect(gain).connect(master);
-    source.start();
-  }
-
-  /** Spielt einen synthetischen Ton – praktisch für Prototypen ohne Sounddateien. */
+  /** Spielt einen synthetischen Ton. */
   tone(frequency: number, duration = 0.1, type: OscillatorType = 'square', volume = 0.15): void {
     const { context, master } = this;
     if (!context || !master || context.state !== 'running') return;

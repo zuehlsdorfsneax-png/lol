@@ -50,7 +50,7 @@ describe('Input', () => {
 
   it('lässt Enter und Leertaste auf Knöpfen und Tippen in Feldern der Seite', () => {
     const input = new Input(bindings);
-    const detach = input.attach(document.createElement('div'), () => ({ x: 0, y: 0 }));
+    const detach = input.attach();
     const button = document.createElement('button');
     const field = document.createElement('input');
     document.body.append(button, field);
@@ -76,24 +76,11 @@ describe('Input', () => {
     expect(input.axis('left', 'right')).toBe(-1);
   });
 
-  it('verfolgt den Zeiger', () => {
-    const input = new Input(bindings);
-    input.handlePointerDown(10, 20);
-    expect(input.pointer).toMatchObject({ x: 10, y: 20, down: true, pressed: true });
-    input.endStep();
-    input.handlePointerMove(30, 40);
-    expect(input.pointer).toMatchObject({ x: 30, y: 40, down: true, pressed: false });
-    input.handlePointerUp(30, 40);
-    expect(input.pointer).toMatchObject({ down: false, released: true });
-  });
-
   it('vergisst beim Zurücksetzen alle gehaltenen Tasten', () => {
     const input = new Input(bindings);
     input.handleKeyDown('KeyA');
-    input.handlePointerDown(1, 1);
     input.reset();
     expect(input.isDown('left')).toBe(false);
-    expect(input.pointer.down).toBe(false);
   });
 
   describe('attach', () => {
@@ -102,7 +89,7 @@ describe('Input', () => {
 
     it('verarbeitet Tastatur-Events und verhindert das Standardverhalten belegter Tasten', () => {
       const input = new Input(bindings);
-      detach = input.attach(document.createElement('canvas'), (x, y) => ({ x, y }));
+      detach = input.attach();
 
       const bound = new KeyboardEvent('keydown', { code: 'Space', cancelable: true });
       window.dispatchEvent(bound);
@@ -124,7 +111,7 @@ describe('Input', () => {
 
     it('setzt Tasten zurück, wenn das Fenster den Fokus verliert', () => {
       const input = new Input(bindings);
-      detach = input.attach(document.createElement('canvas'), (x, y) => ({ x, y }));
+      detach = input.attach();
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD' }));
       window.dispatchEvent(new Event('blur'));
       expect(input.isDown('right')).toBe(false);
@@ -132,7 +119,7 @@ describe('Input', () => {
 
     it('entfernt alle Listener wieder', () => {
       const input = new Input(bindings);
-      input.attach(document.createElement('canvas'), (x, y) => ({ x, y }))();
+      input.attach()();
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
       expect(input.isDown('jump')).toBe(false);
     });

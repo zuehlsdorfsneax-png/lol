@@ -99,7 +99,7 @@ src/
   validation/   Integratorvergleich und Vergleich mit Messwerten
   pages/        Seiten und Kapitel
   ui/           Bedienelemente, Diagramme, Formeln (KaTeX), Formatierung
-  engine/       Kleine Spiel-Engine: Spielschleife, Eingabe, Speicherstand, Ton
+  engine/       Tastatureingabe, Speicherstand, Ton
   app/          Navigation und Routing
 scripts/        Kalibrierung der Stabilitätsgrenzen, Bau der Windows-EXE
 desktop/        Windows-Starter (Go) und Programmsymbol
