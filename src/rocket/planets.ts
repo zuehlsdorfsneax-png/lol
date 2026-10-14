@@ -126,20 +126,23 @@ function paint(b: Body, g: CanvasRenderingContext2D): void {
         blob(g, x, y, rad * R * 1.12, seed);
         g.fill();
       }
-      // Land
-      g.fillStyle = '#3d8a47';
+      // Land mit Wüsten (nahe am Äquator, also am Rand), Wäldern und Gebirgen: erst auf einer
+      // eigenen, durchsichtigen Fläche, damit source-atop die Flecken auf das Land begrenzt.
+      const land = document.createElement('canvas');
+      land.width = land.height = S;
+      const l = land.getContext('2d')!;
+      l.fillStyle = '#3d8a47';
       for (const [ang, dist, rad, seed] of CONTINENTS) {
         const [x, y] = at(ang, dist);
-        blob(g, x, y, rad * R, seed);
-        g.fill();
+        blob(l, x, y, rad * R, seed);
+        l.fill();
       }
       for (let i = 0; i < 26; i++) {
         const [x, y] = spot(i, 107, 0.9);
-        blob(g, x, y, 10 + hash(i, 109) * 26, hash(i, 110) * 6);
-        g.fill();
+        blob(l, x, y, 10 + hash(i, 109) * 26, hash(i, 110) * 6);
+        l.fill();
       }
-      // Wüsten (nahe am Äquator, also am Rand), Wälder und Gebirge – nur auf dem Land
-      g.globalCompositeOperation = 'source-atop';
+      l.globalCompositeOperation = 'source-atop';
       for (let i = 0; i < 120; i++) {
         const [x, y] = spot(i, 111);
         const eq = Math.hypot(x - R, y - R) / R;
@@ -149,13 +152,13 @@ function paint(b: Body, g: CanvasRenderingContext2D): void {
             : hash(i, 114) < 0.5
               ? '46,107,58'
               : '104,140,72';
-        puff(g, rgb, x, y, 30 + hash(i, 115) * 90, 0.7);
+        puff(l, rgb, x, y, 30 + hash(i, 115) * 90, 0.7);
       }
       for (let i = 0; i < 40; i++) {
         const [x, y] = spot(i, 117);
-        puff(g, '120,104,88', x, y, 12 + hash(i, 118) * 28, 0.6);
+        puff(l, '120,104,88', x, y, 12 + hash(i, 118) * 28, 0.6);
       }
-      g.globalCompositeOperation = 'source-over';
+      g.drawImage(land, 0, 0);
       // Nordpol in der Mitte: Eis
       puff(g, '240,246,252', R, R, R * 0.16, 0.9);
       for (let i = 0; i < 16; i++)

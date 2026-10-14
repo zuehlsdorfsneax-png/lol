@@ -288,12 +288,15 @@ export function drawPart(
       if (def.topWidth) {
         // Tankadapter: Kegelstumpf von der dicken zur schlanken Stufe
         const t = def.topWidth;
-        ctx.beginPath();
-        ctx.moveTo(-w / 2, y0);
-        ctx.lineTo(w / 2, y0);
-        ctx.lineTo(t / 2, y0 + h);
-        ctx.lineTo(-t / 2, y0 + h);
-        ctx.closePath();
+        const outline = () => {
+          ctx.beginPath();
+          ctx.moveTo(-w / 2, y0);
+          ctx.lineTo(w / 2, y0);
+          ctx.lineTo(t / 2, y0 + h);
+          ctx.lineTo(-t / 2, y0 + h);
+          ctx.closePath();
+        };
+        outline();
         ctx.fillStyle = hGrad(ctx, w, METAL, 0, true);
         ctx.fill();
         ctx.save();
@@ -313,6 +316,7 @@ export function drawPart(
         }
         sheen(ctx, (w + t) / 2, y0, h);
         ctx.restore();
+        outline();
         ctx.stroke();
         break;
       }
@@ -605,8 +609,15 @@ export function drawPart(
         ctx.translate(cx, 0);
         // Streben zur Rakete
         ctx.fillStyle = shade('#4b5563');
-        ctx.fillRect(sgn > 0 ? -pod.offset - 0.05 : bw / 2 - 0.05, top - 2.2, pod.offset, 0.18);
-        ctx.fillRect(sgn > 0 ? -pod.offset - 0.05 : bw / 2 - 0.05, foot + 1.6, pod.offset, 0.18);
+        const strutX = sgn > 0 ? -pod.offset - 0.05 : 0.05;
+        const len = top - foot - 0.6;
+        ctx.fillRect(
+          strutX,
+          Math.max(foot + 0.6, top - 0.18 - Math.min(2, len / 2)),
+          pod.offset,
+          0.18,
+        );
+        ctx.fillRect(strutX, foot + 0.6 + Math.min(1, len / 4), pod.offset, 0.18);
         ctx.fillStyle = liquid
           ? hGrad(ctx, bw, ['#b45a1c', '#f0a060', '#8a3f10'])
           : hGrad(ctx, bw, METAL);
@@ -670,7 +681,7 @@ export function drawPart(
         ctx.lineWidth = 0.22;
       }
       const reach = legReach(def);
-      const pad = def.id === 'beine-s' ? 0.55 : 0.9;
+      const pad = legPad(def);
       if (def.id === 'beine-s') ctx.lineWidth = 0.14;
       for (const sgn of [-1, 1]) {
         ctx.beginPath();
@@ -927,6 +938,11 @@ function legReach(def: PartDef): number {
   return def.id === 'beine-s' ? 0.8 : 1.4;
 }
 
+/** Breite der Fußplatte eines Landebeins (m). */
+function legPad(def: PartDef): number {
+  return def.id === 'beine-s' ? 0.55 : 0.9;
+}
+
 /** Sichtbare Breite eines Eintrags im Bauplan; Seitenteile als Paar beiderseits der Achse. */
 export function entryWidth(e: string): number {
   const side = sideOf(e);
@@ -939,7 +955,7 @@ export function visualWidth(def: PartDef): number {
     const pod = boosterPod(def);
     return def.width + 2 * (pod.offset + pod.width / 2);
   }
-  if (def.kind === 'legs') return def.width + 2 * legReach(def) + 0.2;
+  if (def.kind === 'legs') return def.width + 2 * (legReach(def) + legPad(def) / 2);
   if (def.kind === 'airbrake' || def.kind === 'rcs' || def.kind === 'solar') return def.width + 1;
   if (def.kind === 'fins') return def.width + 1.8;
   return def.width;
@@ -1150,11 +1166,10 @@ export function drawRocket(
   nozzleThrottle = look?.throttle ?? 0;
   if (lampsOn > 0) drawLightCones(ctx, parts, lampsOn);
   if (look && look.throttle > 0) {
-    const engineId = [...parts].reverse().find((id) => part(id).kind === 'engine' && !sideOf(id));
-    const kind: FlameKind = engineId ? (part(engineId).flame ?? 'chemisch') : 'chemisch';
-    drawFlame(ctx, parts, look, kind);
-    // Seitenbooster der untersten Stufe brennen mit.
     const bottom = segs[segs.length - 1] ?? [];
+    const engineId = [...bottom].reverse().find((id) => part(id).kind === 'engine' && !sideOf(id));
+    if (engineId) drawFlame(ctx, parts, look, part(engineId).flame ?? 'chemisch');
+    // Seitenbooster der untersten Stufe brennen mit.
     const booster = bottom.map(part).find((d) => d.kind === 'booster');
     if (booster) {
       const pod = boosterPod(booster);
@@ -1429,11 +1444,14 @@ function drawChute(
     ctx.stroke();
   }
   // Kappe: Kuppel mit Streifen (orange/weiß)
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, y);
-  ctx.bezierCurveTo(-w / 2, y + hgt * 1.25, w / 2, y + hgt * 1.25, w / 2, y);
-  ctx.quadraticCurveTo(0, y + hgt * 0.18, -w / 2, y);
-  ctx.closePath();
+  const cap = () => {
+    ctx.beginPath();
+    ctx.moveTo(-w / 2, y);
+    ctx.bezierCurveTo(-w / 2, y + hgt * 1.25, w / 2, y + hgt * 1.25, w / 2, y);
+    ctx.quadraticCurveTo(0, y + hgt * 0.18, -w / 2, y);
+    ctx.closePath();
+  };
+  cap();
   ctx.fillStyle = '#f28c28';
   ctx.fill();
   ctx.save();
@@ -1450,6 +1468,7 @@ function drawChute(
   ctx.ellipse(0, y + hgt * 0.93, w * 0.06, hgt * 0.06, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+  cap();
   ctx.strokeStyle = 'rgba(120,60,20,0.5)';
   ctx.lineWidth = 0.06;
   ctx.stroke();
@@ -1464,7 +1483,7 @@ function drawChuteCollapse(
 ): void {
   const fade = Math.max(0, 1 - Math.max(0, c.age - 0.8) / 1.4);
   if (fade <= 0) return;
-  const k = Math.sqrt(Math.max(1, c.area));
+  const k = Math.sqrt(Math.max(0.35, c.area));
   const fall = Math.min(1, c.age / 1.1);
   const ease = fall * fall * (3 - 2 * fall);
   const lines = (10 + 8 * Math.min(1, c.open)) * Math.sqrt(k);
