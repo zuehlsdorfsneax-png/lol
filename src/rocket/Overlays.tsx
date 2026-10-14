@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { useRef } from 'preact/hooks';
 import { Icon } from '../ui/Icon';
 import type { Challenge, ChallengeResult } from './challenges';
 import { Dialog } from './Dialog';
@@ -498,6 +499,12 @@ export function CrashDialog({
   onLoad: () => void;
   onExit: () => void;
 }) {
+  const shown = useRef(performance.now());
+  // Ein Leertasten-Druck der Stufenbedienung kurz nach dem Aufprall soll den Bericht nicht wegwischen.
+  const restart = (e: MouseEvent): void => {
+    if (e.detail === 0 && performance.now() - shown.current < 600) return;
+    onRestart();
+  };
   return (
     <Dialog label="Absturz">
       <h3>
@@ -513,7 +520,7 @@ export function CrashDialog({
         <FlightStatsTable f={f} />
       </details>
       <div class="btn-row">
-        <button type="button" class="btn primary" onClick={onRestart}>
+        <button type="button" class="btn primary" onClick={restart}>
           <Icon name="reset" /> Nochmal starten
         </button>
         {canLoad && (

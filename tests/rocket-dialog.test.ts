@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { h, render, type ComponentChildren } from 'preact';
 import { act } from 'preact/test-utils';
 import { Dialog } from '../src/rocket/Dialog';
+import { Flight } from '../src/rocket/flight';
+import { CrashDialog } from '../src/rocket/Overlays';
 
 // jsdom setzt `inert` weder als Attribut noch blockiert es Fokus oder Klicks. Geprüft wird die
 // Eigenschaft, nach der der Browser die Sperre einrichtet.
@@ -68,5 +70,30 @@ describe('Dialog: Sperre des Hintergrunds und Fokus', () => {
     await act(() => render(null, layer));
     expect(footer.inert).toBe(true);
     expect(hud.inert).toBeFalsy();
+  });
+});
+
+describe('Absturzdialog', () => {
+  it('ein Tastendruck direkt nach dem Aufprall startet nicht neu, ein Klick schon', async () => {
+    let n = 0;
+    const f = new Flight(['kapsel', 'tank-xs', 'kolibri']);
+    f.crashReason = 'Aufprall mit 87 m/s.';
+    await act(() =>
+      render(
+        h(CrashDialog, {
+          f,
+          canLoad: false,
+          onRestart: () => n++,
+          onLoad: () => {},
+          onExit: () => {},
+        }),
+        layer,
+      ),
+    );
+    const restart = layer.querySelector<HTMLButtonElement>('.primary')!;
+    restart.click();
+    expect(n).toBe(0);
+    restart.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    expect(n).toBe(1);
   });
 });
