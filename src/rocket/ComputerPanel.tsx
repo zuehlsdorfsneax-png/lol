@@ -39,13 +39,24 @@ function useRepeat(action: () => void) {
       stop();
       tick();
     },
+    onClick: (e: MouseEvent) => {
+      if (e.detail === 0) action();
+    },
     onPointerUp: stop,
     onPointerCancel: stop,
     onLostPointerCapture: stop,
   };
 }
 
-function Step({ label, action, title }: { label: string; action: () => void; title: string }) {
+export function Step({
+  label,
+  action,
+  title,
+}: {
+  label: string;
+  action: () => void;
+  title: string;
+}) {
   const hold = useRepeat(action);
   return (
     <button type="button" class="step-btn" title={title} aria-label={title} {...hold}>
@@ -90,6 +101,12 @@ export function ComputerPanel({
   const [result, setResult] = useState<Plan | null>(null);
   const f = flight.current;
   const node = f.node;
+
+  const hadNode = useRef(false);
+  useEffect(() => {
+    if (hadNode.current && !node) setResult(null);
+    hadNode.current = !!node;
+  }, [node]);
 
   const alive = useRef(true);
   useEffect(() => {
