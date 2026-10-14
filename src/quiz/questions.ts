@@ -78,9 +78,9 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 3,
     text: 'Die Sonne zieht den Mond etwa 2,2-mal stärker an als die Erde. Warum reißt sie ihn nicht weg?',
     options: [
-      'Weil die Erde schwerer ist als die Sonne',
+      'Weil die Erde den Mond viel stärker anzieht als die Sonne, die ihn deshalb nie erreicht',
       'Weil die Sonne Erde und Mond fast gleich stark anzieht; nur der kleine Unterschied stört',
-      'Weil der Mond zu schnell ist',
+      'Weil der Mond so schnell ist, dass die Sonne ihn nicht halten kann',
       'Weil die Rechnung falsch ist – die Erde zieht stärker',
     ],
     answer: 1,
@@ -101,8 +101,8 @@ export const QUESTIONS: readonly Question[] = [
     options: [
       'Wie eine Schraubenlinie mit Schleifen',
       'Wie eine leicht gewellte Kurve, überall zur Sonne hin gekrümmt',
-      'Wie ein Kreis um die Erde',
-      'Wie eine gerade Linie',
+      'Wie ein fast perfekter Kreis, der sich in einem Jahr einmal um die Erde schließt',
+      'Wie eine gerade Linie, die nur ein wenig schwankt',
     ],
     answer: 1,
     explanation:
@@ -114,8 +114,8 @@ export const QUESTIONS: readonly Question[] = [
     options: [
       'Auf der Verbindungslinie der beiden Körper',
       'An den Spitzen gleichseitiger Dreiecke mit den beiden Hauptkörpern',
-      'Genau hinter dem kleineren Körper',
-      'Im Schwerpunkt',
+      'Genau hinter dem kleineren Körper auf der gemeinsamen Achse, im Schatten des Hauptkörpers',
+      'Im gemeinsamen Schwerpunkt der beiden Hauptkörper',
     ],
     answer: 1,
     explanation:
@@ -133,9 +133,9 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 4,
     text: 'Warum sind L4 und L5 stabil, obwohl sie Maxima des effektiven Potentials sind?',
     options: [
-      'Wegen der Reibung im Weltraum',
+      'Wegen der Reibung im Weltraum, die alle Bewegung bremst und den Körper festhält',
       'Weil die Coriolis-Kraft abdriftende Körper auf Bahnen um den Punkt lenkt',
-      'Weil dort keine Gravitation wirkt',
+      'Weil sich dort die Anziehungen beider Körper aufheben',
       'Sie sind in Wirklichkeit Minima',
     ],
     answer: 1,
@@ -154,10 +154,10 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 5,
     text: 'Was garantiert das Jacobi-Kriterium C(Mond) > C(L1)?',
     options: [
-      'Dass der Mond eine Kreisbahn hat',
+      'Dass der Mond immer genau auf einer Kreisbahn um die Erde bleibt, ohne jede Störung',
       'Dass der Mond die Umgebung der Erde niemals verlassen kann',
-      'Dass der Mond irgendwann abstürzt',
-      'Dass die Sonne keinen Einfluss hat',
+      'Dass der Mond nach einiger Zeit auf die Erde abstürzt',
+      'Dass die Sonne auf die Mondbahn gar keinen Einfluss hat',
     ],
     answer: 1,
     explanation:
@@ -235,10 +235,10 @@ export const QUESTIONS: readonly Question[] = [
     chapter: 2,
     text: 'Warum fällt eine Rakete in der Umlaufbahn nicht auf die Erde?',
     options: [
-      'Im Weltraum gibt es keine Schwerkraft mehr',
+      'Im Weltraum wirkt keine Schwerkraft mehr, deshalb schwebt sie',
       'Sie fällt, fliegt aber so schnell seitwärts, dass sie die Erde verfehlt',
-      'Die Triebwerke laufen die ganze Zeit',
-      'Der Mond hält sie mit seiner Anziehung fest',
+      'Die Triebwerke laufen die ganze Zeit und gleichen die Schwerkraft genau aus',
+      'Der Mond hält sie mit seiner Anziehung in der Schwebe',
     ],
     answer: 1,
     explanation:

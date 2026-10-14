@@ -204,7 +204,7 @@ export const MISSIONS: readonly Mission[] = [
     ],
     hint: 'Numerische Studien (Domingos et al. 2006) finden für prograde Monde eine Grenze bei etwa der Hälfte des Hill-Radius.',
     explanation:
-      'Die Simulation findet die Grenze bei 0,478\u00a0Hill-Radien, Domingos et al. geben 0,481\u00a0Hill-Radien an. Jenseits davon kann der Mond durch das Tor bei L1/L2 entkommen – die Gezeitenkraft der Sonne wächst mit r³.',
+      'Die Stabilitätskarte (Kapitel 5) findet die Grenze bei 0,478\u00a0Hill-Radien, Domingos et al. geben 0,481\u00a0Hill-Radien an. Jenseits davon kann der Mond durch das Tor bei L1/L2 entkommen – im Verhältnis zur Anziehung der Erde wächst die Gezeitenkraft der Sonne mit r³.',
     view: { frame: 'rotating', radius: 2.4e9 },
   },
   {
@@ -266,7 +266,7 @@ export const MISSIONS: readonly Mission[] = [
     ],
     hint: 'Der Hill-Radius wächst linear mit dem Abstand zur Sonne: Hill-Radius = a · ∛(m/3M).',
     explanation:
-      'Die Grenze liegt bei etwa 0,52\u00a0AE: Dort ist der Hill-Radius auf 790.000\u00a0km geschrumpft, und der Mond steht bei 0,48\u00a0Hill-Radien. Auf der Venusbahn (0,72\u00a0AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39\u00a0AE) nicht mehr.',
+      'Die Grenze liegt bei etwa 0,52\u00a0AE: Dort ist der Hill-Radius auf etwa 780.000\u00a0km geschrumpft, und der Mond steht bei rund 0,49\u00a0Hill-Radien. Auf der Venusbahn (0,72\u00a0AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39\u00a0AE) nicht mehr.',
     view: { frame: 'rotating', radius: 1.6e9 },
   },
   {

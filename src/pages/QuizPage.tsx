@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { progressStore } from '../missions/progress';
 import { playFailure, playSuccess } from '../missions/sound';
 import { QUIZ as QUESTIONS, shuffledOrders } from '../quiz/questions';
@@ -15,6 +15,13 @@ export function QuizPage() {
   const done = index >= QUESTIONS.length;
   const q = QUESTIONS[index];
   const order = orders[index] ?? [];
+  const heading = useRef<HTMLHeadingElement>(null);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (mounted.current) heading.current?.focus();
+    mounted.current = true;
+  }, [index]);
 
   const choose = (i: number): void => {
     if (chosen !== null || !q) return;
@@ -55,7 +62,7 @@ export function QuizPage() {
       </PageHead>
       {done ? (
         <section class="panel panel-pad">
-          <h2>
+          <h2 ref={heading} tabIndex={-1}>
             {score} von {QUESTIONS.length} richtig
           </h2>
           <p class="muted">
@@ -79,14 +86,16 @@ export function QuizPage() {
         </section>
       ) : (
         q && (
-          <section class="panel panel-pad" aria-live="polite">
+          <section class="panel panel-pad">
             <div class="row" style={{ justifyContent: 'space-between' }}>
               <span class="eyebrow">
                 Frage {index + 1} von {QUESTIONS.length}, Kapitel {q.chapter}
               </span>
               <span class="small muted">{score} richtig</span>
             </div>
-            <h2 class="quiz-question">{q.text}</h2>
+            <h2 class="quiz-question" ref={heading} tabIndex={-1}>
+              {q.text}
+            </h2>
             <div class="stack" style={{ gap: 'var(--sp-2)' }}>
               {order.map((i) => {
                 const o = q.options[i]!;
@@ -101,15 +110,25 @@ export function QuizPage() {
                     onClick={() => choose(i)}
                   >
                     {o}
+                    {state && (
+                      <span class="quiz-mark">
+                        <Icon name={state === 'ok' ? 'check' : 'fail'} />
+                        {state === 'ok' ? 'Richtig' : 'Deine Wahl'}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
-            {chosen !== null && (
-              <div class="stack" style={{ gap: 'var(--sp-3)' }}>
+            <div aria-live="polite">
+              {chosen !== null && (
                 <StatusChip status={chosen === q.answer ? 'ok' : 'fail'}>
                   {chosen === q.answer ? 'Richtig' : 'Nicht ganz'}
                 </StatusChip>
+              )}
+            </div>
+            {chosen !== null && (
+              <div class="stack" style={{ gap: 'var(--sp-3)' }}>
                 <p>{q.explanation}</p>
                 <div class="btn-row">
                   <button type="button" class="btn primary" onClick={next}>

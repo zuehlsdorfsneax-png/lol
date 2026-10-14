@@ -1740,6 +1740,17 @@ details.section .section-body {
   border-color: var(--fail);
   color: var(--fail);
 }
+
+.quiz-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-left: auto;
+  padding-left: var(--sp-3);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
 /* ---------------------------- Startseite --------------------------- */
 
 @media (hover: hover) and (pointer: fine) {

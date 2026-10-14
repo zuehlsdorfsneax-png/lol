@@ -291,6 +291,17 @@ describe('Quiz (QA)', () => {
   });
 });
 
+describe('Quiz (Ratbarkeit)', () => {
+  it('die richtige Antwort ist nicht auffällig oft die längste', () => {
+    const längste = QUIZ.filter((q) => {
+      const längen = q.options.map((o) => o.length);
+      const max = Math.max(...längen);
+      return längen[q.answer] === max && längen.filter((l) => l === max).length === 1;
+    });
+    expect(längste.length).toBeLessThanOrEqual(QUIZ.length / 3);
+  });
+});
+
 describe('App (QA)', () => {
   it('kaputter Spielstand fällt Feld für Feld auf die Voreinstellung zurück', () => {
     const broken = sanitizeProgress({
