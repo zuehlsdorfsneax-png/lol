@@ -89,7 +89,7 @@ describe('Simulator: Voreinstellung wechseln', () => {
     await frames(30);
     expect(clock()).toMatch(/Tage$/);
     await choose('mondbahn-sonne');
-    expect(clock()).toBe('t = 0,0 h');
+    expect(clock()).toBe('t = 0,0\u00a0h');
   });
 });
 

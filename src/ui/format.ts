@@ -54,13 +54,13 @@ export function superscript(n: number): string {
 }
 
 export function km(m: number, digits = 0): string {
-  return `${fmt(m / KM, digits)} km`;
+  return `${fmt(m / KM, digits)}\u00a0km`;
 }
 
 /** Abstand in km oder AE – je nachdem, was lesbarer ist. */
 export function distance(m: number): string {
   if (!Number.isFinite(m)) return '–';
-  if (Math.abs(m) >= 0.05 * AU) return `${sig(m / AU, 3)} AE`;
+  if (Math.abs(m) >= 0.05 * AU) return `${sig(m / AU, 3)}\u00a0AE`;
   return km(m);
 }
 
@@ -68,17 +68,17 @@ export function distance(m: number): string {
 export function duration(s: number): string {
   if (!Number.isFinite(s)) return '–';
   const a = Math.abs(s);
-  if (a < 2 * DAY) return `${de(s / 3600, 1)} h`;
-  if (a < YEAR) return `${de(s / DAY, 1)} Tage`;
-  return `${de(s / YEAR, a < 100 * YEAR ? 2 : 1)} Jahre`;
+  if (a < 2 * DAY) return `${de(s / 3600, 1)}\u00a0h`;
+  if (a < YEAR) return `${de(s / DAY, 1)}\u00a0Tage`;
+  return `${de(s / YEAR, a < 100 * YEAR ? 2 : 1)}\u00a0Jahre`;
 }
 
 export function speed(mps: number): string {
-  return `${sig(mps / KM, 3)} km/s`;
+  return `${sig(mps / KM, 3)}\u00a0km/s`;
 }
 
 export function percent(v: number, digits = 1): string {
-  return `${de(v * 100, digits)} %`;
+  return `${de(v * 100, digits)}\u00a0%`;
 }
 
 /** Zehnerpotenz als Achsenbeschriftung: 10⁻⁶ (für logarithmische Achsen). */
