@@ -2835,8 +2835,27 @@ table.data.compact td {
 /* Touch-Geräte: Ziele mindestens 44 px hoch und breit (DESIGN-REGELN §7). */
 @media (pointer: coarse) {
   .btn,
+  .btn.small,
   .seg button,
+  .segmented button,
   .brand {
+    min-height: 44px;
+  }
+
+  .segmented {
+    gap: var(--sp-2);
+  }
+
+  .zoom-btns {
+    gap: var(--sp-2);
+  }
+
+  .zoom-btns button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .switch {
     min-height: 44px;
   }
 

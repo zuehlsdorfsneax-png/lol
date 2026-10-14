@@ -140,42 +140,39 @@ export function LineChart(props: Props) {
           ))}
         </div>
       )}
-      {showTable ? (
-        <DataTable {...props} />
-      ) : (
-        <div class="chart-canvas-wrap" ref={wrapRef}>
-          <canvas
-            ref={canvasRef}
-            style={{ height: `${height}px` }}
-            role="img"
-            aria-label={`${props.yLabel} über ${props.xLabel}`}
-            onPointerMove={onMove}
-            onPointerLeave={() => setHover(null)}
-          />
-          {tooltip.length > 0 && (
-            <div
-              class="tooltip"
-              style={{
-                left: `${Math.min(Math.max(tipX + 12, 0), size.width - 170)}px`,
-                top: `${M.top}px`,
-              }}
-            >
-              <div class="tooltip-head">
-                {props.xLabel}: {props.xFormat(tooltip[0]!.x)}
-              </div>
-              {tooltip.map(({ s, i, y }) => (
-                <div class="tooltip-row" key={s.id}>
-                  <span class="legend-key" style={{ background: seriesColor(s, i, colors) }} />
-                  <strong>
-                    {Number.isFinite(y) ? (props.valueFormat ?? props.yFormat)(y) : '–'}
-                  </strong>
-                  <span class="muted">{s.label}</span>
-                </div>
-              ))}
+      {showTable && <DataTable {...props} />}
+      <div class="chart-canvas-wrap" ref={wrapRef} hidden={showTable}>
+        <canvas
+          ref={canvasRef}
+          style={{ height: `${height}px` }}
+          role="img"
+          aria-label={`${props.yLabel} über ${props.xLabel}`}
+          onPointerMove={onMove}
+          onPointerLeave={() => setHover(null)}
+        />
+        {tooltip.length > 0 && (
+          <div
+            class="tooltip"
+            style={{
+              left: `${Math.min(Math.max(tipX + 12, 0), size.width - 170)}px`,
+              top: `${M.top}px`,
+            }}
+          >
+            <div class="tooltip-head">
+              {props.xLabel}: {props.xFormat(tooltip[0]!.x)}
             </div>
-          )}
-        </div>
-      )}
+            {tooltip.map(({ s, i, y }) => (
+              <div class="tooltip-row" key={s.id}>
+                <span class="legend-key" style={{ background: seriesColor(s, i, colors) }} />
+                <strong>
+                  {Number.isFinite(y) ? (props.valueFormat ?? props.yFormat)(y) : '–'}
+                </strong>
+                <span class="muted">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -281,7 +278,11 @@ function draw(
     if (yMax === yMin) yMax = yMin * 10;
     yTicks = logTicks(yMin, yMax);
   } else {
-    if (p.yMin === undefined || p.yMax === undefined) [yMin, yMax] = niceRange(yMin, yMax, 4);
+    if (p.yMin === undefined || p.yMax === undefined) {
+      const [lo, hi] = niceRange(yMin, yMax, 4);
+      if (p.yMin === undefined) yMin = lo;
+      if (p.yMax === undefined) yMax = hi;
+    }
     yTicks = niceTicks(yMin, yMax, 4);
   }
 
@@ -356,7 +357,7 @@ function draw(
     ctx.font = `11px ${c.fontUi}`;
     ctx.fillStyle = c.ink2;
     ctx.textAlign = 'left';
-    const below = r.py - 3 - lastLabel < 13;
+    const below = r.py - 3 - lastLabel < 13 || r.py - 14 < y1 - 4;
     ctx.textBaseline = below ? 'top' : 'bottom';
     const ly = below ? r.py + 3 : r.py - 3;
     ctx.fillText(r.label, x0 + 6, ly);

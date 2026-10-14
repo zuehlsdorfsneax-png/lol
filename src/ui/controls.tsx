@@ -33,6 +33,9 @@ export function Slider({
   const fromPos = (p: number): number =>
     log ? Math.exp(Math.log(min) + p * (Math.log(max) - Math.log(min))) : min + p * (max - min);
   const pos = Math.min(1, Math.max(0, toPos(value)));
+  // Mit Schrittweite und linearer Skala trägt der Regler die echten Werte, damit jeder
+  // Pfeiltastendruck genau eine Stufe weiterspringt.
+  const native = step !== undefined && !log;
   const resolution = 1000;
   return (
     <div class="field">
@@ -47,14 +50,15 @@ export function Slider({
       <input
         id={id}
         type="range"
-        min={0}
-        max={resolution}
-        step={1}
-        value={Math.round(pos * resolution)}
+        min={native ? min : 0}
+        max={native ? max : resolution}
+        step={native ? step : 1}
+        value={native ? value : Math.round(pos * resolution)}
         disabled={disabled}
         style={{ '--fill': `${pos * 100}%` }}
         onInput={(e) => {
-          let v = fromPos(Number((e.target as HTMLInputElement).value) / resolution);
+          const raw = Number((e.target as HTMLInputElement).value);
+          let v = native ? raw : fromPos(raw / resolution);
           if (step) v = Math.round(v / step) * step;
           onChange(Math.min(max, Math.max(min, v)));
         }}

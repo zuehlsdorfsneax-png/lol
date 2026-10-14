@@ -492,11 +492,13 @@ export function renderSpace(
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fill();
-    if (body === 'earth' && r > 6) {
-      // Tag-/Nachtseite andeuten.
+    if (body === 'earth' && r > 6 && indices.sun >= 0 && sys.alive[indices.sun]) {
+      // Nachtseite: die Hälfte, die von der Sonne abgewandt ist.
+      const [sunX, sunY] = T(sys.x[indices.sun]!, sys.y[indices.sun]!);
+      const away = Math.atan2(sy(sunY) - py, sx(sunX) - px) + Math.PI;
       ctx.fillStyle = 'rgba(6, 10, 24, 0.35)';
       ctx.beginPath();
-      ctx.arc(px, py, r, Math.PI / 2, (3 * Math.PI) / 2);
+      ctx.arc(px, py, r, away - Math.PI / 2, away + Math.PI / 2);
       ctx.fill();
     }
     drawn.push({ body, px, py, r });

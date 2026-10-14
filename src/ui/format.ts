@@ -23,8 +23,13 @@ export function sci(v: number, digits = 2): string {
   if (v === 0) return '0';
   const exp = Math.floor(Math.log10(Math.abs(v)));
   if (exp >= -2 && exp <= 4) return sig(v, digits + 1);
-  const mant = v / 10 ** exp;
-  return `${de(mant, digits)} · 10${superscript(exp)}`;
+  let mant = Number((v / 10 ** exp).toFixed(digits));
+  let e = exp;
+  if (Math.abs(mant) >= 10) {
+    mant /= 10;
+    e += 1;
+  }
+  return `${de(mant, digits)} · 10${superscript(e)}`;
 }
 
 const SUP: Record<string, string> = {
