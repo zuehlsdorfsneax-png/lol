@@ -46,10 +46,10 @@ export function MoonTest() {
           <dl class="kv">
             <dt>Mondabstand r</dt>
             <dd>
-              {fmt(r / KM)} km = {sig(ratio, 4)} R⊕
+              {fmt(r / KM)}&nbsp;km = {sig(ratio, 4)} R⊕
             </dd>
             <dt>Siderische Umlaufzeit T</dt>
-            <dd>{sig(T / DAY, 6)} Tage</dd>
+            <dd>{sig(T / DAY, 6)}&nbsp;Tage</dd>
             <dt>Gemessen: a = 4π²r / T²</dt>
             <dd>{sig(measured * 1000, 4)} mm/s²</dd>
             <dt>Vorhergesagt: g · (R⊕/r)ⁿ</dt>
@@ -79,7 +79,7 @@ export function MoonTest() {
           ))}
           <p class="small muted">
             {Math.abs(factor - 1) < 0.03
-              ? 'Übereinstimmung auf etwa 1 % – der Rest stammt u. a. von der Mondmasse und der Erdrotation in g.'
+              ? 'Übereinstimmung auf etwa 1\u00a0% – der Rest stammt u. a. von der Mondmasse und der Erdrotation in g.'
               : factor > 1
                 ? `Die Vorhersage ist ${sig(factor, 2)}-mal zu groß.`
                 : `Die Vorhersage ist ${sig(1 / factor, 2)}-mal zu klein.`}

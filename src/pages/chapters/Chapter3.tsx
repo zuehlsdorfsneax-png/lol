@@ -85,13 +85,13 @@ export function Chapter3() {
             <tbody>
               <tr>
                 <td>Evektion</td>
-                <td class="num">31,8 Tage</td>
+                <td class="num">31,8&nbsp;Tage</td>
                 <td>Exzentrizität schwankt, Mondort bis ±1,27°</td>
                 <td>Ptolemäus (2. Jh.)</td>
               </tr>
               <tr>
                 <td>Variation</td>
-                <td class="num">14,8 Tage</td>
+                <td class="num">14,8&nbsp;Tage</td>
                 <td>Mond eilt zwischen Neu- und Vollmond voraus/nach, ±0,66°</td>
                 <td>Tycho Brahe (1590)</td>
               </tr>
@@ -103,13 +103,13 @@ export function Chapter3() {
               </tr>
               <tr>
                 <td>Apsidendrehung</td>
-                <td class="num">8,85 Jahre</td>
+                <td class="num">8,85&nbsp;Jahre</td>
                 <td>Die Ellipse dreht sich rechtläufig</td>
                 <td>Antike (Hipparch)</td>
               </tr>
               <tr>
                 <td>Knotendrehung</td>
-                <td class="num">18,6 Jahre</td>
+                <td class="num">18,6&nbsp;Jahre</td>
                 <td>
                   Die geneigte Bahnebene dreht sich rückläufig (bestimmt die Finsterniszyklen)
                 </td>
@@ -120,8 +120,8 @@ export function Chapter3() {
         </div>
         <p>
           Die Apsidendrehung hat Geschichte geschrieben: Newton konnte sie mit seiner Theorie nur
-          etwa zur Hälfte erklären. Alexis Clairaut erhielt 1747 ebenfalls nur 18 statt 9 Jahre und
-          schlug schon vor, das Gravitationsgesetz zu ändern – bis er 1749 bemerkte, dass die
+          etwa zur Hälfte erklären. Alexis Clairaut erhielt 1747 ebenfalls nur 18 statt 9&nbsp;Jahre
+          und schlug schon vor, das Gravitationsgesetz zu ändern – bis er 1749 bemerkte, dass die
           vernachlässigten Terme zweiter Ordnung den Rest liefern. Das Drei-Körper-Problem ist also
           selbst bei kleinen Störungen tückisch.
         </p>
@@ -129,22 +129,22 @@ export function Chapter3() {
         <SectionTitle n="3.3">Langfristige Auswirkungen auf die Stabilität</SectionTitle>
         <p>
           Eine numerische Simulation braucht keine Störungsreihen: Sie enthält alle Effekte
-          automatisch. Abb. 3.2 vergleicht zwei Rechnungen über 20 Jahre – einmal mit, einmal ohne
-          Sonne. Ohne Sonne bleibt die Ellipse ortsfest und ihre Exzentrizität konstant. Mit Sonne
-          schwankt die Exzentrizität im Rhythmus der Evektion, und die Richtung des Perigäums dreht
-          sich gleichmäßig weiter.
+          automatisch. Abb. 3.2 vergleicht zwei Rechnungen über 20&nbsp;Jahre – einmal mit, einmal
+          ohne Sonne. Ohne Sonne bleibt die Ellipse ortsfest und ihre Exzentrizität konstant. Mit
+          Sonne schwankt die Exzentrizität im Rhythmus der Evektion, und die Richtung des Perigäums
+          dreht sich gleichmäßig weiter.
         </p>
         <p>
           Diese Störungen sind periodisch: Sie verformen die Bahn, verändern aber ihre mittlere
           Größe nicht dauerhaft – die Simulation zeigt über Jahrhunderte keinen Drift. Langfristig
           wirksam ist vor allem die Gezeitenreibung: Messungen zeigen eine langsame Zunahme des
-          Erde-Mond-Abstands um etwa 3,8 cm pro Jahr (Kapitel 6).
+          Erde-Mond-Abstands um etwa 3,8&nbsp;cm pro Jahr (Kapitel 6).
         </p>
       </div>
 
       <Figure
         n="3.2"
-        caption="Simulation des realen Systems über 20 Jahre (Velocity-Verlet, adaptive Schrittweite). Aus der Steigung der Ausgleichsgeraden ergibt sich die Umlaufzeit der Apsidenlinie."
+        caption="Simulation des realen Systems über 20&nbsp;Jahre (Velocity-Verlet, adaptive Schrittweite). Aus der Steigung der Ausgleichsgeraden ergibt sich die Umlaufzeit der Apsidenlinie."
       >
         <PrecessionExperiment />
       </Figure>
@@ -169,9 +169,11 @@ export function Chapter3() {
 
       <Callout kind="merke">
         Für die Stabilität zählt nicht, wie stark die Sonne am Mond zieht, sondern wie
-        unterschiedlich sie an Mond und Erde zieht. Diese Gezeitenbeschleunigung wächst mit{' '}
-        <Tex>{'r^3'}</Tex>: Je weiter außen ein Mond kreist, desto stärker stört ihn die Sonne im
-        Verhältnis zur Anziehung seines Planeten. Das führt direkt zur Hill-Sphäre in Kapitel 5.
+        unterschiedlich sie an Mond und Erde zieht. Diese Gezeitenbeschleunigung wächst linear mit{' '}
+        <Tex>r</Tex>, die Anziehung des Planeten fällt mit <Tex>{'1/r^2'}</Tex>: Das Verhältnis
+        wächst mit <Tex>{'r^3'}</Tex>. Je weiter außen ein Mond kreist, desto stärker stört ihn die
+        Sonne im Verhältnis zur Anziehung seines Planeten. Das führt direkt zur Hill-Sphäre in
+        Kapitel 5.
       </Callout>
     </>
   );
@@ -318,7 +320,7 @@ function TidalField() {
           <dt>Erde → Mond</dt>
           <dd>{sig(aEarth * 1000, 4)} mm/s²</dd>
           <dt>Gezeitenbeschleunigung</dt>
-          <dd>{sci(tidalMag, 2)} m/s²</dd>
+          <dd>{sci(tidalMag, 2)}&nbsp;m/s²</dd>
           <dt>Gezeiten / Erdanziehung</dt>
           <dd>{fmt((tidalMag / aEarth) * 100, 2)} %</dd>
         </dl>
@@ -416,9 +418,9 @@ function PrecessionExperiment() {
     <div class="stack" style={{ gap: '18px' }}>
       <dl class="kv">
         <dt>Apsidendrehung (Simulation)</dt>
-        <dd class="num">{fmt(data.period, 2)} Jahre</dd>
+        <dd class="num">{fmt(data.period, 2)}&nbsp;Jahre</dd>
         <dt>Beobachtet</dt>
-        <dd class="num">8,85 Jahre</dd>
+        <dd class="num">8,85&nbsp;Jahre</dd>
         <dt>Abweichung</dt>
         <dd class="num">{fmt(((data.period - 8.85) / 8.85) * 100, 1)} %</dd>
       </dl>
@@ -435,7 +437,7 @@ function PrecessionExperiment() {
         height={230}
       />
       <LineChart
-        title="Exzentrizität im ersten Jahr – die Schwankung mit etwa 32 Tagen Periode ist die Evektion"
+        title="Exzentrizität im ersten Jahr – die Schwankung mit etwa 32&nbsp;Tagen Periode ist die Evektion"
         series={[
           { id: 'sun', label: 'mit Sonne', x: data.tE, y: data.eSun },
           { id: 'nosun', label: 'ohne Sonne', x: data.tE, y: data.eNoSun },

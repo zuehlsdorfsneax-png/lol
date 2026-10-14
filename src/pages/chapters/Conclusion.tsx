@@ -18,12 +18,12 @@ export function Conclusion() {
           nicht verlassen kann.
         </p>
         <p>
-          <strong>Abstürzen</strong> würde der Mond erst, wenn er rund 80 % seiner Geschwindigkeit
-          verlöre; bei 70 % Verlust würde er an der Roche-Grenze zerrissen.{' '}
-          <strong>Verlassen</strong> würde er das System mit etwa 19 % mehr Geschwindigkeit, bei
-          einem Abstand über 0,48 Hill-Radien, wenn die Erde der Sonne näher als 0,52 AE käme oder
-          die Sonne 6,5-mal schwerer wäre. Keine dieser Bedingungen ist absehbar – auch die
-          Gezeitenreibung treibt den Mond nur bis etwa 554.000 km (0,37 r<sub>H</sub>).
+          <strong>Abstürzen</strong> würde der Mond erst, wenn er rund 80&nbsp;% seiner
+          Geschwindigkeit verlöre; bei 70&nbsp;% Verlust würde er an der Roche-Grenze zerrissen.{' '}
+          <strong>Verlassen</strong> würde er das System mit etwa 19&nbsp;% mehr Geschwindigkeit,
+          bei einem Abstand über 0,48 Hill-Radien, wenn die Erde der Sonne näher als 0,52&nbsp;AE
+          käme oder die Sonne 6,5-mal schwerer wäre. Keine dieser Bedingungen ist absehbar – auch
+          die Gezeitenreibung treibt den Mond nur bis etwa 554.000&nbsp;km (0,37 r<sub>H</sub>).
         </p>
 
         <SectionTitle n="9.2">Zusammenfassung der wichtigsten Erkenntnisse</SectionTitle>
@@ -33,8 +33,8 @@ export function Conclusion() {
             man Näherungen und Simulationen.
           </li>
           <li>
-            Die Sonne zieht den Mond stärker an als die Erde, stört die Mondbahn aber nur mit etwa 1
-            % (Gezeitenkraft).
+            Die Sonne zieht den Mond stärker an als die Erde, stört die Mondbahn aber nur mit etwa
+            1&nbsp;% (Gezeitenkraft).
           </li>
           <li>
             Die Lagrange-Punkte L1 und L2 markieren die „Tore“ der Hill-Sphäre; L4/L5 sind stabil,
@@ -58,7 +58,7 @@ export function Conclusion() {
             nicht enthalten.
           </li>
           <li>
-            Stabilitätsgrenzen wurden über 10–30 Jahre bestimmt; manche Bahnen werden erst nach
+            Stabilitätsgrenzen wurden über 10–30&nbsp;Jahre bestimmt; manche Bahnen werden erst nach
             Jahrhunderten instabil.
           </li>
         </ul>

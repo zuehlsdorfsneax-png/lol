@@ -71,8 +71,9 @@ export function OwnWork() {
         <SectionTitle n="8.4">Simulation von Instabilität und des hohlen Mondes</SectionTitle>
         <p>
           Die folgenden Voreinstellungen zeigen die untersuchten Fälle direkt im Simulator. Den
-          hohlen Mond aus Kapitel 7 kann man dort ebenfalls simulieren: Bei 10 % Schalenstärke rückt
-          das Baryzentrum von 4.670 km auf etwa 1.320 km, die Umlaufzeit ändert sich kaum.
+          hohlen Mond aus Kapitel 7 kann man dort ebenfalls simulieren: Bei 10&nbsp;% Schalenstärke
+          rückt das Baryzentrum von 4.670&nbsp;km auf etwa 1.320&nbsp;km, die Umlaufzeit ändert sich
+          kaum.
         </p>
       </div>
       <div class="btn-row">
@@ -95,7 +96,7 @@ export function OwnWork() {
       </div>
       <Figure
         n="8.2"
-        caption="Vergleich der Simulation (Velocity-Verlet, adaptive Schrittweite, 30 Jahre) mit Messwerten."
+        caption="Vergleich der Simulation (Velocity-Verlet, adaptive Schrittweite, 30&nbsp;Jahre) mit Messwerten."
       >
         <ValidationTable />
       </Figure>

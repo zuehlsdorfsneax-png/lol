@@ -167,8 +167,8 @@ export function Basics() {
           von Zentrifugalkraft und Gravitation entstehen Ebbe und Flut. Der Einfluss des leichteren
           Mondes ist dabei größer als der der massereicheren Sonne, da er der Erde viel näher ist.
           Die Gezeiten wirken auch auf Erde und Mond zurück: Der Erde wird ständig Drehimpuls
-          entzogen, ihre Rotation verlangsamt sich, und der Mond entfernt sich um etwa 4 cm pro Jahr
-          (Kapitel 6).
+          entzogen, ihre Rotation verlangsamt sich, und der Mond entfernt sich um etwa 4&nbsp;cm pro
+          Jahr (Kapitel 6).
         </p>
         <p>
           Besonders deutlich wird das Zusammenspiel bei{' '}
@@ -200,7 +200,9 @@ export function Basics() {
           Das Baryzentrum zweier Körper liegt auf ihrer Verbindungslinie im Abstand
         </p>
         <Equation tex={String.raw`d_B = r\cdot\frac{m_2}{m_1+m_2}`} n="2.5" />
-        <p>vom Mittelpunkt des schwereren Körpers. Für Erde und Mond sind das etwa 4.670 km.</p>
+        <p>
+          vom Mittelpunkt des schwereren Körpers. Für Erde und Mond sind das etwa 4.670&nbsp;km.
+        </p>
       </div>
 
       <Figure
@@ -288,11 +290,11 @@ function BarycenterDemo() {
         />
         <dl class="kv">
           <dt>Abstand Baryzentrum – Erdmitte</dt>
-          <dd>{fmt(d / KM)} km</dd>
+          <dd>{fmt(d / KM)}&nbsp;km</dd>
           <dt>Erdradius</dt>
-          <dd>{fmt(EARTH.radius / KM)} km</dd>
+          <dd>{fmt(EARTH.radius / KM)}&nbsp;km</dd>
           <dt>Umlaufzeit (Kepler III)</dt>
-          <dd>{fmt(period / DAY, 2)} Tage</dd>
+          <dd>{fmt(period / DAY, 2)}&nbsp;Tage</dd>
         </dl>
         <StatusChip status={inside ? 'ok' : 'warn'}>
           {inside ? 'Baryzentrum im Erdinneren' : 'Baryzentrum außerhalb der Erde: Doppelplanet'}

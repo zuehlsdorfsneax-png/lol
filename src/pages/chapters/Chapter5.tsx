@@ -50,7 +50,7 @@ export function Chapter5() {
           <strong> hierarchischen</strong> Drei-Körper-Systeme – ein enges Paar, weit entfernt ein
           dritter Körper – sind oft über sehr lange Zeiten stabil, während Systeme mit ähnlichen
           Abständen meist chaotisch zerfallen. Wie in Kapitel 3 gezeigt, stört die Sonne die
-          Mondbahn nur mit etwa 1 % der Erdanziehung. Drei Überlegungen machen genau, warum das
+          Mondbahn nur mit etwa 1&nbsp;% der Erdanziehung. Drei Überlegungen machen genau, warum das
           reicht.
         </p>
 
@@ -70,9 +70,10 @@ export function Chapter5() {
           <strong>
             {fmt(moonFrac, 3)} r<sub>H</sub>
           </strong>
-          . Dort ist die Anziehung der Erde rund {fmt(1 / ((3 * moonFrac ** 3) / 1), 0)}-mal stärker
-          als die störende Gezeitenwirkung der Sonne (sie wächst mit <Tex>r^3</Tex>, die
-          Erdanziehung fällt mit <Tex>{'1/r^2'}</Tex>).
+          . Dort ist die Anziehung der Erde rund {fmt(1 / moonFrac ** 3, 0)}-mal stärker als die
+          störende Gezeitenwirkung der Sonne (die Störung wächst linear mit <Tex>r</Tex>, die
+          Erdanziehung fällt mit <Tex>{'1/r^2'}</Tex>, das Verhältnis ändert sich also mit{' '}
+          <Tex>r^3</Tex>).
         </p>
       </div>
 
@@ -132,7 +133,7 @@ export function Chapter5() {
           <strong>
             0,923 r<sub>H</sub>
           </strong>{' '}
-          stabil (30 Jahre, Skript <code>npm run calibrate</code>). Der Mond hat also fast die
+          stabil (30&nbsp;Jahre, Skript <code>npm run calibrate</code>). Der Mond hat also fast die
           doppelte Sicherheitsreserve.
         </p>
         <p>
@@ -149,7 +150,7 @@ export function Chapter5() {
           Die Gezeitenreibung bremst die Erdrotation und schiebt den Mond nach außen – heute um 3,8
           cm pro Jahr (gemessen mit Laserreflektoren). Das endet, wenn ein Erdtag so lang ist wie
           ein Monat. Aus der Erhaltung des Drehimpulses von Erdrotation und Mondbahn folgt dafür ein
-          Abstand von etwa 555.000 km. Das sind rund{' '}
+          Abstand von etwa 554.000&nbsp;km. Das sind rund{' '}
           <strong>
             0,37 r<sub>H</sub>
           </strong>{' '}
@@ -160,8 +161,8 @@ export function Chapter5() {
 
       <Callout kind="merke">
         Der Mond ist stabil, weil er (1) bei nur einem Viertel des Hill-Radius kreist, wo die Erde
-        die Sonne um fast das Hundertfache übertrifft, (2) seine Jacobi-Konstante größer als C(L1)
-        ist und die Erdumgebung damit beweisbar geschlossen bleibt, und (3) die numerisch bestimmte
+        die Sonne um rund das 60-Fache übertrifft, (2) seine Jacobi-Konstante größer als C(L1) ist
+        und die Erdumgebung damit beweisbar geschlossen bleibt, und (3) die numerisch bestimmte
         Stabilitätsgrenze bei 0,48 r<sub>H</sub> fast doppelt so weit außen liegt.
       </Callout>
 
@@ -239,7 +240,7 @@ function HillCalculator() {
           min={0.05}
           max={40}
           log
-          format={(v) => `${sig(v, 3)} AE`}
+          format={(v) => `${sig(v, 3)}\u00a0AE`}
           onChange={setA}
         />
         <dl class="kv">
@@ -253,7 +254,7 @@ function HillCalculator() {
             Stabil retrograd bis ≈ 0,93 r<sub>H</sub>
           </dt>
           <dd>{distance(retro)}</dd>
-          <dt>Unser Mond (384.400 km) läge bei</dt>
+          <dt>Unser Mond (384.400&nbsp;km) läge bei</dt>
           <dd>
             {fmt(MOON.semiMajorAxis / r, 2)} r<sub>H</sub>
           </dd>
@@ -307,7 +308,7 @@ function MoonJacobi() {
         label="Nullgeschwindigkeitskurve des Mondes um die Erde"
         overlay={(ctx, toScreen, scale) => {
           const [ex, ey] = toScreen(1 - mu, 0);
-          ctx.strokeStyle = '#8f84ff';
+          ctx.strokeStyle = '#c3cbe2';
           ctx.setLineDash([5, 5]);
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -323,7 +324,7 @@ function MoonJacobi() {
           ctx.font = '12px Jost, system-ui, sans-serif';
           ctx.textAlign = 'left';
           ctx.fillText('Mond', mx + 8, my - 6);
-          ctx.fillStyle = '#8f84ff';
+          ctx.fillStyle = '#c3cbe2';
           ctx.fillText('Hill-Radius', ex + rhN * scale * 0.72, ey - rhN * scale * 0.72);
         }}
       />
@@ -336,7 +337,7 @@ function MoonJacobi() {
             min={100_000}
             max={1_500_000}
             log
-            format={(v) => `${fmt(v)} km`}
+            format={(v) => `${fmt(v)}\u00a0km`}
             hint={`= ${fmt((dist * KM) / EARTH_HILL_RADIUS, 2)} Hill-Radien`}
             onChange={(v) => setDist(Math.round(v / 1000) * 1000)}
           />

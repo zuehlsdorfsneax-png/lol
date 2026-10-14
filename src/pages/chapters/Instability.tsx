@@ -39,8 +39,8 @@ const THRESHOLDS = [
   },
   {
     cond: 'Erde näher an der Sonne',
-    theory: 'a_Erde < 0,52 AE',
-    sim: 'a_Erde < 0,524 AE',
+    theory: 'a_Erde < 0,52\u00a0AE',
+    sim: 'a_Erde < 0,524\u00a0AE',
     result: 'Flucht',
     link: 'sim-merkurbahn',
   },
@@ -83,9 +83,9 @@ export function Instability() {
           Ein Aufprall erfolgt, wenn{' '}
           <Tex>{String.raw`r_P < R_\oplus + R_\text{Mond} = 8\,108\ \text{km}`}</Tex>, also für{' '}
           <Tex>{String.raw`f < 0{,}203`}</Tex>. Schon vorher, unterhalb der{' '}
-          <strong>Roche-Grenze</strong> von 18.365 km, übersteigen die Gezeitenkräfte der Erde den
-          Zusammenhalt des Mondes: Er würde zu einem Ring zerrieben, wie ihn Saturn hat. Dazu genügt{' '}
-          <Tex>{String.raw`f < 0{,}302`}</Tex>. Der Mond müsste also rund 70 % seiner
+          <strong>Roche-Grenze</strong> von 18.365&nbsp;km, übersteigen die Gezeitenkräfte der Erde
+          den Zusammenhalt des Mondes: Er würde zu einem Ring zerrieben, wie ihn Saturn hat. Dazu
+          genügt <Tex>{String.raw`f < 0{,}302`}</Tex>. Der Mond müsste also rund 70 % seiner
           Geschwindigkeit verlieren – ein Vorgang, für den es keinen natürlichen Mechanismus gibt.
         </p>
 
@@ -97,22 +97,24 @@ export function Instability() {
           <Tex>{String.raw`v_F = \sqrt2\,v_K`}</Tex>. Mit Sonne genügt schon{' '}
           <Tex>{String.raw`f \approx 1{,}19`}</Tex>: Dann reicht die Ellipse bis etwa 930 000 km,
           also 0,62 Hill-Radien – jenseits der Stabilitätsgrenze. Dort öffnet sich das Tor bei L1
-          oder L2 und die Sonne übernimmt. Die Sonne senkt die nötige Geschwindigkeit damit um 16 %.
+          oder L2 und die Sonne übernimmt. Die Sonne senkt die nötige Geschwindigkeit damit um
+          16&nbsp;%.
         </p>
 
         <SectionTitle n="8.3.4">Die Hill-Sphäre schrumpft</SectionTitle>
         <p>
           Aus <Tex>{String.raw`r_H = a\,\sqrt[3]{m/3M}`}</Tex> folgt: Der Mond wird instabil, wenn
           die Erde der Sonne näher kommt oder die Sonne schwerer wird. Mit der Grenze 0,48 r
-          <sub>H</sub> gilt für unseren Mond (384.400 km)
+          <sub>H</sub> gilt für unseren Mond (384.400&nbsp;km)
         </p>
         <Equation
           tex={String.raw`a_\text{Erde} > \frac{384\,400\ \text{km}}{0{,}48\cdot 1{,}5\ \text{Mio. km}}\ \text{AE} \approx 0{,}52\ \text{AE},\qquad M_\odot < \left(\frac{0{,}48\cdot r_H}{384\,400\ \text{km}}\right)^3 M_\odot \approx 6{,}6\,M_\odot.`}
           n="8.2"
         />
         <p>
-          Auf der Venusbahn (0,72 AE) wäre der Mond noch stabil, auf der Merkurbahn (0,39 AE) nicht
-          mehr. Bei einer stark elliptischen Erdbahn zählt der kleinste Hill-Radius im Perihel.
+          Auf der Venusbahn (0,72&nbsp;AE) wäre der Mond noch stabil, auf der Merkurbahn
+          (0,39&nbsp;AE) nicht mehr. Bei einer stark elliptischen Erdbahn zählt der kleinste
+          Hill-Radius im Perihel.
         </p>
       </div>
 
@@ -122,7 +124,7 @@ export function Instability() {
             <tr>
               <th>Bedingung</th>
               <th>Theorie</th>
-              <th>Simulation (30 Jahre)</th>
+              <th>Simulation (30&nbsp;Jahre)</th>
               <th>Folge</th>
               <th />
             </tr>
@@ -143,14 +145,14 @@ export function Instability() {
         </table>
       </div>
       <p class="small muted">
-        vₖ = Kreisbahngeschwindigkeit im Startabstand 384.400 km. Simulationswerte ermittelt mit{' '}
-        <code>npm run calibrate</code> (Velocity-Verlet, adaptive Schrittweite, Schrittweite 0,25 %
-        der Umlaufzeit). Theorie: Formeln (8.1), (8.2) und Domingos et al. (2006).
+        vₖ = Kreisbahngeschwindigkeit im Startabstand 384.400&nbsp;km. Simulationswerte ermittelt
+        mit <code>npm run calibrate</code> (Velocity-Verlet, adaptive Schrittweite, Schrittweite
+        0,25&nbsp;% der Umlaufzeit). Theorie: Formeln (8.1), (8.2) und Domingos et al. (2006).
       </p>
 
       <Figure
         n="8.1"
-        caption="Stabilitätskarte: Jede Zelle ist eine eigene Simulation über 10 Jahre. Die Linien zeigen die Vorhersagen aus (8.1) und die Stabilitätsgrenze nach Domingos et al. Größere Karten und weitere Parameter im Werkzeug „Stabilitätskarte“."
+        caption="Stabilitätskarte: Jede Zelle ist eine eigene Simulation über 10&nbsp;Jahre. Die Linien zeigen die Vorhersagen aus (8.1) und die Stabilitätsgrenze nach Domingos et al. Größere Karten und weitere Parameter im Werkzeug „Stabilitätskarte“."
       >
         <StabilityMap compact />
       </Figure>
@@ -178,15 +180,16 @@ export function Instability() {
         <ul>
           <li>
             <strong>Nahe Vorbeiflüge</strong>: Ein Stern oder Schurkenplanet, der nahe genug
-            vorbeizieht, stört das System von außen. Ein Körper mit Jupitermasse in 500.000 km
+            vorbeizieht, stört das System von außen. Ein Körper mit Jupitermasse in 500.000&nbsp;km
             Abstand reißt den Mond fort (Voreinstellung „Vorbeiflug“). Für Sterne ist ein so naher
             Vorbeiflug in der Sonnenumgebung extrem unwahrscheinlich.
           </li>
           <li>
             <strong>Gezeitenwanderung nach innen</strong>: Kreist ein Mond schneller um seinen
             Planeten, als dieser sich dreht, bremsen die Gezeiten den Mond. Der Marsmond Phobos
-            nähert sich so um etwa 2 m pro Jahrhundert und wird in einigen zehn Millionen Jahren
-            zerrissen. Auch der retrograd laufende Neptunmond Triton spiralt langsam nach innen.
+            nähert sich so um etwa 2&nbsp;m pro Jahrhundert und wird in einigen zehn Millionen
+            Jahren zerrissen. Auch der retrograd laufende Neptunmond Triton spiralt langsam nach
+            innen.
           </li>
           <li>
             <strong>Resonanzen</strong>: Stehen Umlaufzeiten im Verhältnis kleiner ganzer Zahlen,
@@ -197,10 +200,10 @@ export function Instability() {
       </div>
 
       <Callout kind="merke">
-        Damit der Mond abstürzt, müsste er etwa 70 % seiner Geschwindigkeit verlieren (Roche-Grenze)
-        bzw. 80 % (Aufprall). Damit er entkommt, bräuchte er 19 % mehr Geschwindigkeit, einen
-        doppelt so großen Abstand, eine Erde auf halber Entfernung zur Sonne oder eine 6,5-mal
-        schwerere Sonne. Nichts davon ist in Sicht – der Mond bleibt.
+        Damit der Mond abstürzt, müsste er etwa 70&nbsp;% seiner Geschwindigkeit verlieren
+        (Roche-Grenze) bzw. 80&nbsp;% (Aufprall). Damit er entkommt, bräuchte er 19&nbsp;% mehr
+        Geschwindigkeit, einen doppelt so großen Abstand, eine Erde auf halber Entfernung zur Sonne
+        oder eine 6,5-mal schwerere Sonne. Nichts davon ist in Sicht – der Mond bleibt.
       </Callout>
 
       <div class="btn-row">

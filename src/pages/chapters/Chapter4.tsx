@@ -157,8 +157,8 @@ export function Chapter4() {
         <SectionTitle n="4.5">Lagrange-Punkte in der Praxis</SectionTitle>
         <ul>
           <li>
-            <strong>Sonne–Erde L1</strong> (1,5 Mio. km sonnenwärts): Sonnenobservatorium SOHO, seit
-            1996. Weil L1 instabil ist, braucht die Sonde regelmäßige Bahnkorrekturen.
+            <strong>Sonne–Erde L1</strong> (1,5&nbsp;Mio. km sonnenwärts): Sonnenobservatorium SOHO,
+            seit 1996. Weil L1 instabil ist, braucht die Sonde regelmäßige Bahnkorrekturen.
           </li>
           <li>
             <strong>Sonne–Erde L2</strong>: James-Webb-Weltraumteleskop und Gaia. Erde, Mond und
@@ -266,7 +266,7 @@ function ZeroVelocityExplorer() {
       />
       <p class="small">
         {open.length === 0
-          ? `Alle Tore geschlossen: Ein Körper nahe ${system.labels[1]} bleibt für immer dort.`
+          ? `Alle Tore geschlossen: Ein Körper im ${system.labels[1]}-Bereich bleibt für immer dort.`
           : `Offen: ${open.join(', ')}. ${open.includes('L1') ? `Über L1 kann ein Körper zwischen ${system.labels[0]} und ${system.labels[1]} wechseln.` : ''} ${open.includes('L2') ? 'Über L2 kann er nach außen entkommen.' : ''}`}
       </p>
     </div>

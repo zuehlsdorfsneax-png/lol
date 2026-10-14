@@ -54,8 +54,8 @@ export function Tides() {
 
         <SectionTitle n="6.2">Drehimpulsübertragung zwischen Erde und Mond</SectionTitle>
         <p>
-          Die Erde dreht sich in einem Tag, der Mond umläuft sie in 27 Tagen. Durch Reibung in den
-          Ozeanen werden die Flutberge von der Erdrotation etwas mitgenommen und eilen dem Mond
+          Die Erde dreht sich in einem Tag, der Mond umläuft sie in 27&nbsp;Tagen. Durch Reibung in
+          den Ozeanen werden die Flutberge von der Erdrotation etwas mitgenommen und eilen dem Mond
           voraus. Der vorauseilende Flutberg zieht den Mond nach vorne und beschleunigt ihn;
           umgekehrt bremst der Mond die Erdrotation. Dabei geht Drehimpuls von der Erdrotation auf
           die Mondbahn über. Der Gesamtdrehimpuls bleibt erhalten:
@@ -67,7 +67,7 @@ export function Tides() {
         <p>
           Mit mehr Bahndrehimpuls wandert der Mond nach außen. Gemessen wird das mit Laserstrahlen,
           die an den von den Apollo-Astronauten aufgestellten Reflektoren zurückgeworfen werden: Der
-          Mond entfernt sich um <strong>3,8 cm pro Jahr</strong>, und der Tag wird um etwa 2
+          Mond entfernt sich um <strong>3,8&nbsp;cm pro Jahr</strong>, und der Tag wird um etwa 2
           Millisekunden pro Jahrhundert länger.
         </p>
       </div>
@@ -83,13 +83,13 @@ export function Tides() {
         <SectionTitle n="6.3">Langfristige Entwicklung des Systems</SectionTitle>
         <p>
           Rechnet man mit (6.2) rückwärts, war der Mond früher näher und der Tag kürzer.
-          Versteinerte Gezeitenablagerungen aus der Zeit vor etwa 620 Millionen Jahren zeigen rund
-          400 Tage pro Jahr – ein Tag dauerte nur etwa 21,9 Stunden. Nach dem Modell stand der Mond
-          damals bei etwa {fmt(past / KM / 1000, 0)} 000 km.
+          Versteinerte Gezeitenablagerungen aus der Zeit vor etwa 620&nbsp;Millionen Jahren zeigen
+          rund 400&nbsp;Tage pro Jahr – ein Tag dauerte nur etwa 21,9&nbsp;Stunden. Nach dem Modell
+          stand der Mond damals bei etwa {fmt(past / KM / 1000, 0)} 000&nbsp;km.
         </p>
         <p>
           In die Zukunft gerechnet endet die Entwicklung erst, wenn ein Erdtag so lang ist wie ein
-          Monat: bei etwa <strong>{fmt(sync / KM / 1000, 0)} 000 km</strong> und{' '}
+          Monat: bei etwa <strong>{fmt(sync / KM / 1000, 0)} 000&nbsp;km</strong> und{' '}
           <strong>{fmt(monthLength(sync) / DAY, 0)} Tagen</strong>. Dann zeigen sich Erde und Mond
           immer dieselbe Seite. Dieser Zustand wird erst in vielen Milliarden Jahren erreicht –
           lange nachdem sich die Sonne zum Roten Riesen aufgebläht hat.
@@ -104,8 +104,8 @@ export function Tides() {
 
       <Callout kind="merke">
         Gezeitenreibung überträgt Drehimpuls von der Erdrotation auf die Mondbahn: Der Tag wird
-        länger, der Mond entfernt sich um 3,8 cm pro Jahr. Die Entwicklung endet bei etwa 554.000 km
-        – sicher innerhalb der Hill-Sphäre.
+        länger, der Mond entfernt sich um 3,8&nbsp;cm pro Jahr. Die Entwicklung endet bei etwa
+        554.000&nbsp;km – sicher innerhalb der Hill-Sphäre.
       </Callout>
     </>
   );
@@ -137,7 +137,7 @@ function TideExplorer() {
           { id: 'day', label: 'Länge eines Erdtages', x: data.x, y: data.day },
           { id: 'month', label: 'Länge eines Mondmonats', x: data.x, y: data.month },
         ]}
-        xLabel="Mondabstand (1000 km)"
+        xLabel="Mondabstand (1000&nbsp;km)"
         yLabel="Dauer (Tage)"
         xFormat={(v) => fmt(v)}
         yFormat={(v) => fmt(v)}
@@ -151,15 +151,15 @@ function TideExplorer() {
         min={250_000}
         max={Math.round(sync / KM)}
         step={1000}
-        format={(v) => `${fmt(v)} km`}
-        hint="heute: 384.400 km"
+        format={(v) => `${fmt(v)}\u00a0km`}
+        hint="heute: 384.400&nbsp;km"
         onChange={setDistKm}
       />
       <dl class="kv">
         <dt>Länge eines Erdtages</dt>
         <dd>{fmt(dayLength(a) / 3600, 1)} Stunden</dd>
         <dt>Länge eines Mondmonats</dt>
-        <dd>{fmt(monthLength(a) / DAY, 1)} Tage</dd>
+        <dd>{fmt(monthLength(a) / DAY, 1)}&nbsp;Tage</dd>
         <dt>Anteil am Hill-Radius</dt>
         <dd>
           {fmt(a / EARTH_HILL_RADIUS, 3)} r<sub>H</sub>

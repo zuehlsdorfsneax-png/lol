@@ -91,24 +91,25 @@ export function Hollow() {
         <p>
           Für jeden Himmelskörper gibt es eine Grenze, ab der seine eigene Gravitation stärker ist
           als das Material, aus dem er besteht. Nach den Berechnungen von Charles Lineweaver und
-          Marc Norman muss ein Gesteinskörper mindestens einen Radius von etwa 300 km besitzen,
+          Marc Norman muss ein Gesteinskörper mindestens einen Radius von etwa 300&nbsp;km besitzen,
           damit seine Gravitation ihn zu einer Kugel formt. Oberhalb dieser Grenze können große
           Abweichungen von der massiven Kugelform nicht dauerhaft bestehen. Der Mond liegt mit einem
-          Radius von etwa 1.737 km weit darüber. Ein Hohlraum von mehreren hundert oder tausend
+          Radius von etwa 1.737&nbsp;km weit darüber. Ein Hohlraum von mehreren hundert oder tausend
           Kilometern müsste unter dem Gewicht der außenliegenden Gesteinsschicht zusammenstürzen.
           Aus natürlichem Gestein könnte ein solcher Mond also nicht bestehen; es bräuchte ein
           unbekanntes, extrem belastbares Material, für das es keinerlei Belege gibt (siehe auch die
-          Druckspannung in Abb. 7.2).
+          Druckspannung in Abb. 7.3).
         </p>
         <p>
           Die zweite Überlegung betrifft die Masse. Nach dem Newtonschen Kugelschalentheorem wirkt
           die Anziehung einer kugelsymmetrischen Masse auf einen äußeren Körper genauso, als wäre
           die gesamte Masse im Mittelpunkt vereint. Die Masse des Mondes lässt sich deshalb
           unabhängig von seinem inneren Aufbau allein aus seiner Gravitationswirkung bestimmen. Ein
-          Weg führt über das Erde-Mond-Baryzentrum, das etwa 4.700 km vom Erdmittelpunkt entfernt
-          noch im Erdinneren liegt. Ein zweiter Weg führt über die Umlaufzeit von Raumfahrzeugen,
-          die den Mond umkreisen – etwa die Apollo-Kommandokapseln, die ihn in etwa 110 km Höhe in
-          rund zwei Stunden umrundeten. Mit dem dritten Keplerschen Gesetz folgt:
+          Weg führt über das Erde-Mond-Baryzentrum, das etwa 4.700&nbsp;km vom Erdmittelpunkt
+          entfernt noch im Erdinneren liegt. Ein zweiter Weg führt über die Umlaufzeit von
+          Raumfahrzeugen, die den Mond umkreisen – etwa die Apollo-Kommandokapseln, die ihn in etwa
+          110&nbsp;km Höhe in rund zwei Stunden umrundeten. Mit dem dritten Keplerschen Gesetz
+          folgt:
         </p>
         <Equation
           tex={String.raw`M_\text{Mond} = \frac{4\pi^2\,r^3}{G\,T^2},\qquad r = 1\,737\ \text{km} + 110\ \text{km},\quad T \approx 2\ \text{h}.`}
@@ -133,17 +134,17 @@ export function Hollow() {
           Masse von außen die gleiche Gravitation haben. Die Masse allein reicht also nicht als
           Beweis. Die Apollo-Missionen brachten jedoch Gesteinsproben zur Erde, aus denen sich die
           Dichte des Mondgesteins bestimmen lässt: Für die Mondbasalte ergibt sich eine Dichte
-          zwischen 3,27 und 3,46 g/cm³, für das Hochlandgestein 2,2 bis 2,6 g/cm³. Bestünde der Mond
-          aus einer hohlen Schale dieser Dichte, hätte er eine deutlich geringere Masse. Genau
-          diesen Zusammenhang haben wir mit unserem eigenen Programm überprüft.
+          zwischen 3,27 und 3,46&nbsp;g/cm³, für das Hochlandgestein 2,2 bis 2,6&nbsp;g/cm³.
+          Bestünde der Mond aus einer hohlen Schale dieser Dichte, hätte er eine deutlich geringere
+          Masse. Genau diesen Zusammenhang haben wir mit unserem eigenen Programm überprüft.
         </p>
         <p>
           Zunächst haben wir das reale Erde-Mond-System simuliert: Erdmasse{' '}
           <Tex>{String.raw`5{,}97\cdot10^{24}\ \text{kg}`}</Tex>, Mondmasse{' '}
           <Tex>{String.raw`7{,}35\cdot10^{22}\ \text{kg}`}</Tex>, Abstand 384 400 km. Es ergaben
-          sich ein Baryzentrum bei etwa 4.670 km vom Erdmittelpunkt und eine Umlaufzeit von 27,3
-          Tagen – beides stimmt mit den tatsächlichen Werten überein und zeigt, dass unser Programm
-          richtig rechnet.
+          sich ein Baryzentrum bei etwa 4.670&nbsp;km vom Erdmittelpunkt und eine Umlaufzeit von
+          27,3 Tagen – beides stimmt mit den tatsächlichen Werten überein und zeigt, dass unser
+          Programm richtig rechnet.
         </p>
         <p>Anschließend haben wir die Masse eines angeblich hohlen Mondes mit</p>
         <Equation
@@ -152,26 +153,27 @@ export function Hollow() {
         />
         <p>
           berechnet. Um der These entgegenzukommen, sind wir ausschließlich vom dichtesten
-          Mondgestein ausgegangen (3,46 g/cm³). Ist die Schale 10 % des Mondradius dick – 90 % des
-          Radius wären hohl –, hätte der Mond eine Masse von etwa{' '}
+          Mondgestein ausgegangen (3,46&nbsp;g/cm³). Ist die Schale 10&nbsp;% des Mondradius dick –
+          90&nbsp;% des Radius wären hohl –, hätte der Mond eine Masse von etwa{' '}
           <Tex>{String.raw`2{,}06\cdot10^{22}\ \text{kg}`}</Tex>, also nur 28 % der tatsächlichen
-          Masse. Bei 20 % Schalenstärke wären es{' '}
+          Masse. Bei 20&nbsp;% Schalenstärke wären es{' '}
           <Tex>{String.raw`3{,}71\cdot10^{22}\ \text{kg}`}</Tex>, ungefähr die Hälfte.
         </p>
         <p>
           Diese Massen haben wir in unser Programm eingesetzt. Da der Mond nun leichter ist, rückt
-          das Baryzentrum näher an den Erdmittelpunkt: bei 10 % Schalenstärke auf etwa 1.320 km, bei
-          20 % auf etwa 2.370 km. Gemessen sind aber 4.670 km – ein hohler Mond passt also nicht zu
-          den Beobachtungen. Die simulierte Umlaufzeit veränderte sich dagegen kaum: Bei 10 %
-          Schalenstärke verlängerte sie sich nur um etwa 3 Stunden auf rund 27,4 Tage. Das liegt
-          daran, dass die Erde etwa 81-mal so schwer ist wie der Mond und die Umlaufzeit fast nur
-          von ihr abhängt. Deshalb ist das Baryzentrum der deutlich bessere Test.
+          das Baryzentrum näher an den Erdmittelpunkt: bei 10&nbsp;% Schalenstärke auf etwa
+          1.320&nbsp;km, bei 20&nbsp;% auf etwa 2.370&nbsp;km. Gemessen sind aber 4.670&nbsp;km –
+          ein hohler Mond passt also nicht zu den Beobachtungen. Die simulierte Umlaufzeit
+          veränderte sich dagegen kaum: Bei 10&nbsp;% Schalenstärke verlängerte sie sich nur um etwa
+          3&nbsp;Stunden auf rund 27,4&nbsp;Tage. Das liegt daran, dass die Erde etwa 81-mal so
+          schwer ist wie der Mond und die Umlaufzeit fast nur von ihr abhängt. Deshalb ist das
+          Baryzentrum der deutlich bessere Test.
         </p>
       </div>
 
       <Figure
         n="7.2"
-        caption="Unser Experiment zum Nachvollziehen: Masse, Baryzentrum und Umlaufzeit eines hohlen Mondes aus Mondgestein. Nur ein massiver Mond erreicht das gemessene Baryzentrum von 4.670 km."
+        caption="Unser Experiment zum Nachvollziehen: Masse, Baryzentrum und Umlaufzeit eines hohlen Mondes aus Mondgestein. Nur ein fast massiver Mond liegt mit dem Baryzentrum innerhalb von 5&nbsp;% beim gemessenen Wert von 4.670&nbsp;km."
       >
         <HollowBarycenter />
       </Figure>
@@ -185,16 +187,17 @@ export function Hollow() {
 
         <SectionTitle n="7.3">Dichte, Trägheitsmoment und innere Struktur des Mondes</SectionTitle>
         <p>
-          Laut NASA hat der Mond eine durchschnittliche Dichte von 3,344 g/cm³, die Erde dagegen von
-          5,514 g/cm³. Vertreter der Hohle-Mond-These führen das gern als Beweis an, es lässt sich
-          aber durch den Aufbau der Körper leicht erklären: Im Inneren der Erde befindet sich ein
-          Eisenkern mit einem Radius von etwa 3.485 km, während der Mond nur einen sehr kleinen
-          Eisenkern mit etwa 250 km Radius besitzt. Nach der heute anerkannten Kollisionstheorie
-          entstand der Mond vor 4,5 Milliarden Jahren vor allem aus eisenarmem Mantelgestein. Die
-          Dichte des Mondgesteins liegt zwischen 3,27 und 3,46 g/cm³ – sie passt also genau zur
-          mittleren Dichte eines massiven Mondes. Wäre der Mond trotzdem hohl, müsste die Schale aus
-          einem Material bestehen, das dichter ist als Eisen: Bei 50 km Schalendicke bräuchte man
-          fast 40 g/cm³, das Doppelte des dichtesten Elements Osmium (Abb. 7.3).
+          Laut NASA hat der Mond eine durchschnittliche Dichte von 3,344&nbsp;g/cm³, die Erde
+          dagegen von 5,514&nbsp;g/cm³. Vertreter der Hohle-Mond-These führen das gern als Beweis
+          an, es lässt sich aber durch den Aufbau der Körper leicht erklären: Im Inneren der Erde
+          befindet sich ein Eisenkern mit einem Radius von etwa 3.485&nbsp;km, während der Mond nur
+          einen sehr kleinen Eisenkern mit etwa 250&nbsp;km Radius besitzt. Nach der heute
+          anerkannten Kollisionstheorie entstand der Mond vor 4,5&nbsp;Milliarden Jahren vor allem
+          aus eisenarmem Mantelgestein. Die Dichte des Mondgesteins liegt zwischen 3,27 und
+          3,46&nbsp;g/cm³ – sie passt also genau zur mittleren Dichte eines massiven Mondes. Wäre
+          der Mond trotzdem hohl, müsste die Schale aus einem Material bestehen, das dichter ist als
+          Eisen: Bei 50&nbsp;km Schalendicke bräuchte man fast 40&nbsp;g/cm³, das 1,8-Fache des
+          dichtesten Elements Osmium (Abb. 7.3).
         </p>
         <p>
           Das Trägheitsmoment <Tex>{String.raw`I = k\cdot MR^2`}</Tex> beschreibt, wie die Masse um
@@ -302,7 +305,7 @@ function HollowBarycenter() {
             max={1}
             step={0.01}
             format={(v) => `${fmt(v * 100)} %`}
-            hint="100 % = massiver Mond"
+            hint="100&nbsp;% = massiver Mond"
             onChange={setFrac}
           />
           <Slider
@@ -324,12 +327,12 @@ function HollowBarycenter() {
             <dt>Anteil an der echten Masse</dt>
             <dd>{fmt((m / MOON.mass) * 100)} %</dd>
             <dt>Baryzentrum</dt>
-            <dd>{fmt(bary / KM)} km</dd>
+            <dd>{fmt(bary / KM)}&nbsp;km</dd>
             <dt>gemessen</dt>
-            <dd>{fmt(REAL_BARY / KM)} km</dd>
+            <dd>{fmt(REAL_BARY / KM)}&nbsp;km</dd>
             <dt>Umlaufzeit</dt>
             <dd>
-              {fmt(period / DAY, 2)} Tage ({period > realPeriod ? '+' : '−'}
+              {fmt(period / DAY, 2)}&nbsp;Tage ({period > realPeriod ? '+' : '−'}
               {fmt(Math.abs(period - realPeriod) / 3600, 1)} h)
             </dd>
           </dl>
@@ -364,7 +367,7 @@ function HollowBarycenter() {
         yLabel="Abstand Baryzentrum – Erdmitte (km)"
         xFormat={(v) => fmt(v)}
         yFormat={(v) => fmt(v)}
-        refLines={[{ y: REAL_BARY / KM, label: 'gemessen: 4.670 km' }]}
+        refLines={[{ y: REAL_BARY / KM, label: 'gemessen: 4.670\u00a0km' }]}
         yMin={0}
         height={210}
       />

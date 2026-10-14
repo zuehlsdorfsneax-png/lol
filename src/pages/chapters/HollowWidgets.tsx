@@ -37,7 +37,12 @@ export function ShellGravityChart() {
     <LineChart
       series={[
         { id: 'solid', label: 'Vollkugel', x: data.x, y: data.solid },
-        { id: 'hollow', label: 'Hohlkugel (Hohlraum 80 % des Radius)', x: data.x, y: data.hollow },
+        {
+          id: 'hollow',
+          label: 'Hohlkugel (Hohlraum 80\u00a0% des Radius)',
+          x: data.x,
+          y: data.hollow,
+        },
       ]}
       xLabel="Abstand vom Mittelpunkt r / R"
       yLabel="Schwerebeschleunigung g (m/s²)"
@@ -80,8 +85,8 @@ export function ShellCalculator() {
         min={1}
         max={R / 1000}
         log
-        format={(v) => `${fmt(v)} km`}
-        hint="Ganz rechts: Vollkugel (1737 km)"
+        format={(v) => `${fmt(v)}\u00a0km`}
+        hint="Ganz rechts: Vollkugel (1737&nbsp;km)"
         onChange={setThickness}
       />
       <div class="grid-3">
