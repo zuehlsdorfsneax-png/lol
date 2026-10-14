@@ -11,7 +11,7 @@ import { CHALLENGES, type Challenge, type ChallengeResult } from './challenges';
 import { isolate } from './Dialog';
 import { FlightScreen } from './FlightScreen';
 import { PAINTS } from './draw';
-import { MAX_SATELLITES, type GoalId, type Satellite } from './flight';
+import { MAX_SATELLITES, isSatellite, type GoalId, type Satellite } from './flight';
 import { careerPoints } from './goals';
 import { TEMPLATES, isPart, type Design } from './parts';
 import { readSandbox, type SandboxSettings } from './sandbox';
@@ -24,8 +24,7 @@ function loadDesign(): Design {
 
 function loadStars(): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const [id, r] of Object.entries(progressStore.load().rocketChallenges ?? {}))
-    out[id] = r.stars;
+  for (const [id, r] of Object.entries(progressStore.load().rocketChallenges)) out[id] = r.stars;
   return out;
 }
 
@@ -33,17 +32,7 @@ function loadStars(): Record<string, number> {
 function loadSats(): Satellite[] {
   const raw = progressStore.load().rocketSats;
   if (!Array.isArray(raw)) return [];
-  const valid = raw.filter((s): s is Satellite => {
-    const q = s as Partial<Satellite>;
-    return (
-      typeof q?.name === 'string' &&
-      typeof q.body === 'string' &&
-      typeof q.el === 'object' &&
-      q.el !== null &&
-      Number.isFinite(q.el.a) &&
-      Number.isFinite(q.el.n)
-    );
-  });
+  const valid = raw.filter(isSatellite);
   // Ältere Versionen haben Nummern doppelt vergeben: doppelte bekommen eine neue.
   const seen = new Set<number>();
   let next = Math.max(0, ...valid.map((s) => (Number.isFinite(s.id) ? s.id : 0))) + 1;
@@ -100,7 +89,7 @@ export function RocketGame({
         try {
           history.pushState({ ...(history.state as object | null), orbitGame: true }, '');
         } catch {
-          // egal
+          // Nur die Zurück-Taste schließt im Flug dann nicht mehr das Pausenmenü.
         }
         setBackPressed((n) => n + 1);
       } else {
@@ -164,7 +153,7 @@ export function RocketGame({
   };
 
   const finishChallenge = (id: string, r: ChallengeResult): void => {
-    const rec = recordChallenge(id, r, sandbox);
+    const rec = recordChallenge(id, r);
     if (rec) setStars((s) => ({ ...s, [id]: rec.stars }));
   };
 
@@ -194,7 +183,7 @@ export function RocketGame({
           challenge={challenge}
           bestStars={challenge ? (stars[challenge.id] ?? 0) : 0}
           bestMet={
-            challenge ? metConditions(progressStore.load().rocketChallenges?.[challenge.id]) : []
+            challenge ? metConditions(progressStore.load().rocketChallenges[challenge.id]) : []
           }
           onGoal={reachGoal}
           onSatellites={saveFlightSats}

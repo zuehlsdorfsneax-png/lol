@@ -69,9 +69,9 @@ const DOC_TABS: { id: DocTab; label: string }[] = [
 
 function Launcher({ onPlay, playing }: { onPlay: (t: Tab) => void; playing: boolean }) {
   const p = progressStore.load();
-  const stars = Object.values(p.rocketChallenges ?? {}).reduce((s, r) => s + r.stars, 0);
+  const stars = Object.values(p.rocketChallenges).reduce((s, r) => s + r.stars, 0);
   const starMap = Object.fromEntries(
-    Object.entries(p.rocketChallenges ?? {}).map(([k, v]) => [k, v.stars]),
+    Object.entries(p.rocketChallenges).map(([k, v]) => [k, v.stars]),
   );
   const points = careerPoints(p.rocketGoals, starMap);
   const rank = rankFor(points);

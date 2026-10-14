@@ -1,5 +1,6 @@
 import { SaveStore } from '../engine';
-import type { ChallengeResult } from '../rocket/challenges';
+import { CHALLENGES, type ChallengeResult } from '../rocket/challenges';
+import { isSatellite } from '../rocket/flight';
 import { GOALS } from '../rocket/goals';
 
 /** Bestes Ergebnis einer Herausforderung; `met` = je Stern-Bedingung, ob sie je erfüllt wurde. */
@@ -28,8 +29,6 @@ export interface Progress {
   rocketChallenges: Record<string, ChallengeRecord>;
   /** Ausgesetzte Satelliten (bleiben für spätere Flüge auf ihrer Bahn). */
   rocketSats: unknown[];
-  /** Hinweise der Raketenwerft, die schon gezeigt wurden. */
-  rocketSeen: string[];
   /** Einstellungen des Sandkastens (werden in der Raketenwerft geprüft). */
   rocketSandbox: unknown;
 }
@@ -45,7 +44,6 @@ const DEFAULTS: Progress = {
   rocketPaint: 'klassisch',
   rocketChallenges: {},
   rocketSats: [],
-  rocketSeen: [],
   rocketSandbox: null,
 };
 
@@ -64,6 +62,9 @@ const isStars = (x: unknown): x is number =>
   typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 3;
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isString) : []);
 const KNOWN_GOALS = new Set<string>(GOALS.map((g) => g.id));
+const KNOWN_CHALLENGES = new Set<string>(CHALLENGES.map((c) => c.id));
+const isMet = (x: unknown): x is boolean[] =>
+  Array.isArray(x) && x.length === 3 && x.every((b) => typeof b === 'boolean');
 
 /**
  * Gespeicherten Fortschritt Feld für Feld prüfen: Ein kaputtes Feld (von Hand geändert, alte
@@ -71,20 +72,25 @@ const KNOWN_GOALS = new Set<string>(GOALS.map((g) => g.id));
  */
 export function sanitizeProgress(p: Progress): Progress {
   return {
-    stars: entries(p.stars, isNumber),
+    stars: entries(p.stars, isStars),
     best: entries(p.best, isString),
     quizBest: isNumber(p.quizBest) ? p.quizBest : 0,
-    kids: entries(p.kids, isNumber),
+    kids: entries(p.kids, isStars),
     rocketDesign: Array.isArray(p.rocketDesign) ? strings(p.rocketDesign) : null,
     rocketGoals: [...new Set(strings(p.rocketGoals))].filter((id) => KNOWN_GOALS.has(id)),
     rocketHangar: entries(p.rocketHangar, (x): x is string[] => Array.isArray(x)),
     rocketPaint: isString(p.rocketPaint) ? p.rocketPaint : DEFAULTS.rocketPaint,
-    rocketChallenges: entries(
-      p.rocketChallenges,
-      (x): x is ChallengeRecord => isObject(x) && isStars(x.stars) && isString(x.text),
+    rocketChallenges: Object.fromEntries(
+      Object.entries(
+        entries(
+          p.rocketChallenges,
+          (x): x is ChallengeRecord => isObject(x) && isStars(x.stars) && isString(x.text),
+        ),
+      )
+        .filter(([id]) => KNOWN_CHALLENGES.has(id))
+        .map(([id, { met, ...rec }]) => [id, isMet(met) ? { ...rec, met } : rec]),
     ),
-    rocketSats: Array.isArray(p.rocketSats) ? p.rocketSats : [],
-    rocketSeen: strings(p.rocketSeen),
+    rocketSats: Array.isArray(p.rocketSats) ? p.rocketSats.filter(isSatellite) : [],
     rocketSandbox: p.rocketSandbox ?? null,
   };
 }
@@ -113,21 +119,17 @@ export function metConditions(rec: ChallengeRecord | undefined): boolean[] {
 
 /**
  * Ergebnis einer Herausforderung der Raketenwerft eintragen. Jede Stern-Bedingung zählt für sich,
- * auch wenn sie in verschiedenen Flügen erfüllt wurde. Im Sandkasten zählen keine Sterne. Gibt den
- * neuen Eintrag zurück, sonst null.
+ * auch wenn sie in verschiedenen Flügen erfüllt wurde. Bei gleicher Sternzahl bleibt der erste Text
+ * stehen. Gibt den neuen Eintrag zurück, sonst null.
  */
-export function recordChallenge(
-  id: string,
-  r: ChallengeResult,
-  sandbox: boolean,
-): ChallengeRecord | null {
-  if (sandbox || !r.success) return null;
-  const old = progressStore.load().rocketChallenges?.[id];
+export function recordChallenge(id: string, r: ChallengeResult): ChallengeRecord | null {
+  if (!r.success) return null;
+  const old = progressStore.load().rocketChallenges[id];
   const oldMet = metConditions(old);
   const met = [0, 1, 2].map((i) => !!(r.met?.[i] ?? i < r.stars) || !!oldMet[i]);
   const rec: ChallengeRecord = {
     stars: Math.max(old?.stars ?? 0, met.filter(Boolean).length),
-    text: !old || r.stars >= old.stars ? r.text : old.text,
+    text: !old || r.stars > old.stars ? r.text : old.text,
     met,
   };
   progressStore.update((p) => ({ ...p, rocketChallenges: { ...p.rocketChallenges, [id]: rec } }));
@@ -153,7 +155,6 @@ export function resetRocketCareer(): Progress {
     rocketGoals: [],
     rocketChallenges: {},
     rocketSats: [],
-    rocketSeen: [],
     rocketPaint: 'klassisch',
   }));
 }

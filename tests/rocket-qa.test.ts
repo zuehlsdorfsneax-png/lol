@@ -315,7 +315,6 @@ describe('App (QA)', () => {
       rocketPaint: 3,
       rocketChallenges: { hop: { stars: 2, text: 'ok' }, bad: 7 },
       rocketSats: {},
-      rocketSeen: [1, 'x'],
       rocketSandbox: undefined,
     } as unknown as Progress);
     expect(broken.stars).toEqual({ a: 3 });
@@ -323,7 +322,6 @@ describe('App (QA)', () => {
     expect(broken.rocketGoals).toEqual([]);
     expect(broken.rocketDesign).toBe(null);
     expect(broken.rocketChallenges).toEqual({ hop: { stars: 2, text: 'ok' } });
-    expect(broken.rocketSeen).toEqual(['x']);
     expect(broken.rocketPaint).toBe('klassisch');
   });
 

@@ -1594,7 +1594,7 @@ function ChallengeList({
   onStart: (c: Challenge) => void;
 }) {
   const groups: ChallengeGroup[] = ['Flugschule', 'Profi', 'Meister'];
-  const records = progressStore.load().rocketChallenges ?? {};
+  const records = progressStore.load().rocketChallenges;
   return (
     <section class="challenge-list" aria-label="Herausforderungen">
       <p class="small muted">

@@ -145,6 +145,20 @@ export interface Satellite {
   part?: string;
 }
 
+/** Prüft einen gespeicherten Eintrag: bekannter Körper und eine vollständige, endliche Bahn. */
+export function isSatellite(x: unknown): x is Satellite {
+  const q = x as Partial<Satellite> | null;
+  const el = q?.el as Partial<Elements> | null | undefined;
+  return (
+    typeof q?.name === 'string' &&
+    BODIES.some((b) => b.id === q.body) &&
+    typeof el === 'object' &&
+    el !== null &&
+    (el.dir === 1 || el.dir === -1) &&
+    [el.mu, el.a, el.e, el.argp, el.m0, el.t0, el.n, el.p].every(Number.isFinite)
+  );
+}
+
 /** Landeplatz auf einem Körper (Winkel mitdrehend wie die Oberfläche). */
 export interface LandingSite {
   body: BodyId;

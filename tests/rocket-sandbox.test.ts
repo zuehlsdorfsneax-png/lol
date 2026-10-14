@@ -181,12 +181,10 @@ describe('Sandkasten: Startorte auf allen Körpern', () => {
 });
 
 describe('Herausforderungen und Sandkasten', () => {
-  it('im Sandkasten gewertete Herausforderungen bringen keine Sterne ins Fortschrittsbuch', () => {
+  it('Herausforderungen bringen Sterne, auch wenn der Sandkasten-Schalter an ist', () => {
     progressStore.clear();
     const won = { success: true, stars: 3, text: 'Gelandet!', met: [true, true, true] };
-    expect(recordChallenge('hop', won, true)).toBeNull();
-    expect(progressStore.load().rocketChallenges).toEqual({});
-    expect(recordChallenge('hop', won, false)?.stars).toBe(3);
+    expect(recordChallenge('hop', won)?.stars).toBe(3);
     expect(progressStore.load().rocketChallenges.hop?.stars).toBe(3);
   });
 });
