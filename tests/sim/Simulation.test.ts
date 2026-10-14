@@ -116,6 +116,17 @@ describe('assessStability', () => {
   });
 });
 
+describe('assessStability mit Störkörper', () => {
+  it('nennt die Prognose grenzwertig, weil sie den Störkörper nicht kennt', () => {
+    const a = assessStability({
+      ...REAL_PARAMS,
+      intruder: { mass: 317.8, distance: 500_000, speed: 20, leadDays: 20 },
+    });
+    expect(a.checks.find((c) => c.id === 'intruder')?.status).toBe('warn');
+    expect(a.verdict).toBe('marginal');
+  });
+});
+
 describe('Puffer', () => {
   it('TrailBuffer überschreibt die ältesten Einträge', () => {
     const t = new TrailBuffer(3, 1);

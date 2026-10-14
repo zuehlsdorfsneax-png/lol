@@ -11,7 +11,7 @@ const de = (v: number, digits: number): string =>
 export type CheckStatus = 'ok' | 'warn' | 'fail' | 'na';
 
 export interface StabilityCheck {
-  id: 'crash' | 'roche' | 'escape' | 'hill' | 'jacobi';
+  id: 'crash' | 'roche' | 'escape' | 'hill' | 'jacobi' | 'intruder';
   title: string;
   status: CheckStatus;
   detail: string;
@@ -110,6 +110,16 @@ export function assessStability(params: ScenarioParams): Assessment {
       detail: j.trapped
         ? `C = ${de(j.C, 6)} > C(L1) = ${de(j.CL1, 6)}: Der Mond kann die Hill-Sphäre nie verlassen.`
         : `C = ${de(j.C, 6)} ≤ C(L1) = ${de(j.CL1, 6)}: Das Tor bei L1 ist offen – Flucht möglich, aber nicht zwingend.`,
+    });
+  }
+
+  if (params.intruder) {
+    checks.push({
+      id: 'intruder',
+      title: 'Störkörper nicht berücksichtigt',
+      status: 'warn',
+      detail:
+        'Die Prognose rechnet ohne den vorbeifliegenden Planeten. Ob der Mond bleibt, zeigt erst die Simulation.',
     });
   }
 
