@@ -23,6 +23,15 @@ export const FRAMES: readonly { value: FrameId; label: string; description: stri
   },
 ];
 
+/**
+ * Bildradius (m) nach einem Wechsel des Bezugssystems. Im ruhenden System mindestens 1e9 m,
+ * in den Erdsystemen höchstens 4e9 m (Hill-Sphäre samt Rand): Der Radius der Sonnenbahn-Ansicht
+ * (1,6e11 m) ließe dort Erde und Mond zu einem Punkt werden.
+ */
+export function radiusAfterFrameChange(frame: FrameId, radius: number): number {
+  return frame === 'inertial' ? Math.max(radius, 1e9) : Math.min(radius, 4e9);
+}
+
 export interface Camera {
   /** Mittelpunkt in Bezugssystem-Koordinaten (m). */
   cx: number;

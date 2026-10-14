@@ -86,7 +86,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'grenze',
     title: 'Am Rand der Stabilität',
     description:
-      'Kreisbahn bei 0,45 Hill-Radien – knapp innerhalb der Stabilitätsgrenze (≈ 0,49 Hill-Radien). Die Sonne verformt die Bahn stark, aber der Mond bleibt.',
+      'Kreisbahn bei 0,45 Hill-Radien – knapp innerhalb der Stabilitätsgrenze (≈ 0,48 Hill-Radien). Die Sonne verformt die Bahn stark, aber der Mond bleibt.',
     params: { ...BASE, moonDistance: 0.45 * RH },
     view: { frame: 'rotating', radius: 2.2e9, speedIndex: 3 },
     chapter: 5,

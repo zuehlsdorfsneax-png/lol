@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { prepareCanvas, useElementSize, useThemeColors, type ThemeColors } from '../hooks';
-import { logTicks, niceRange, niceTicks } from './ticks';
+import { logTicks, niceRange, niceTicks, tickDigits } from './ticks';
 
 export interface ChartSeries {
   id: string;
@@ -23,7 +23,8 @@ interface Props {
   series: ChartSeries[];
   xLabel: string;
   yLabel: string;
-  xFormat: (v: number) => string;
+  /** `digits` gibt bei Achsenmarken die Stellenzahl vor, die für alle Marken gleich ist. */
+  xFormat: (v: number, digits?: number) => string;
   yFormat: (v: number) => string;
   /** Genauere Formatierung für Tooltip und Tabelle (Standard: yFormat). */
   valueFormat?: (v: number) => string;
@@ -307,13 +308,14 @@ function draw(
     ctx.fillText(p.yFormat(t), x0 - 8, y);
   }
   const xTicks = niceTicks(xMin, xMax, Math.max(2, Math.floor((x1 - x0) / 90)));
+  const xDigits = tickDigits(xTicks);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (const t of xTicks) {
     const x = sx(t);
     if (x < x0 - 1 || x > x1 + 1) continue;
     ctx.fillStyle = c.ink3;
-    ctx.fillText(p.xFormat(t), x, y0 + 8);
+    ctx.fillText(p.xFormat(t, xDigits), x, y0 + 8);
   }
   ctx.strokeStyle = c.axis;
   ctx.beginPath();

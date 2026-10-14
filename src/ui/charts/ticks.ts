@@ -14,6 +14,15 @@ export function niceTicks(min: number, max: number, target = 5): number[] {
   return ticks;
 }
 
+/** Kleinste Anzahl Nachkommastellen, mit der alle Ticks ohne Rundung und gleich lang stehen. */
+export function tickDigits(ticks: number[]): number {
+  for (let d = 0; d < 6; d++) {
+    const scale = 10 ** d;
+    if (ticks.every((t) => Math.abs(t * scale - Math.round(t * scale)) < 1e-6)) return d;
+  }
+  return 6;
+}
+
 /** Zehnerpotenzen im Bereich (für logarithmische Achsen). */
 export function logTicks(min: number, max: number): number[] {
   const ticks: number[] = [];

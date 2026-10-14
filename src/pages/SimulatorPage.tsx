@@ -12,9 +12,16 @@ import {
 } from '../physics';
 import { takePendingScenario } from '../app/store';
 import { PRESETS, SPEEDS, findPreset } from '../sim/presets';
-import { Simulation, DEFAULT_SETTINGS, type SimSettings } from '../sim/Simulation';
+import { Simulation, DEFAULT_SETTINGS, type SimEvent, type SimSettings } from '../sim/Simulation';
 import { SpaceCanvas } from '../sim/SpaceCanvas';
-import { DEFAULT_VIEW, FRAMES, SPACE, type FrameId, type ViewOptions } from '../sim/view';
+import {
+  DEFAULT_VIEW,
+  FRAMES,
+  SPACE,
+  radiusAfterFrameChange,
+  type FrameId,
+  type ViewOptions,
+} from '../sim/view';
 import { LineChart, type RefLine } from '../ui/charts/LineChart';
 import { PageHead, StatusChip } from '../ui/content';
 import { Segmented, Select, Slider, Toggle } from '../ui/controls';
@@ -63,6 +70,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
   const [resetKey, setResetKey] = useState(0);
   const [cameraKey, setCameraKey] = useState(0);
   const [limited, setLimited] = useState(false);
+  const [missingPreset, setMissingPreset] = useState(
+    presetParam && !PRESETS.some((p) => p.id === presetParam) ? presetParam : null,
+  );
 
   const simRef = useRef<Simulation | null>(null);
   const lastUpdate = useRef(0);
@@ -92,7 +102,17 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
     setRadius(p.view.radius);
     setSpeedIndex(p.view.speedIndex);
     setCameraKey((k) => k + 1);
+    setResetKey((k) => k + 1);
     setRunning(true);
+  }
+
+  // Die Adresse folgt der Auswahl, damit Neuladen und Teilen dieselbe Voreinstellung zeigen. Kein
+  // `location.hash`: Der Seitenwechsel würde die ganze Seite neu aufbauen und die Ansicht zurücksetzen.
+  function choosePreset(id: string): void {
+    if (id === 'eigene') return;
+    applyPreset(id);
+    setMissingPreset(null);
+    history.replaceState(null, '', `#sim-${id}`);
   }
 
   const update = (patch: Partial<ScenarioParams>): void => {
@@ -113,6 +133,8 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
       const reached = sim.time - start >= want * 0.95 || sim.pending !== null;
       if (reached === limited) setLimited(!reached);
       if (sim.pending) setRunning(false);
+    } else if (limited) {
+      setLimited(false);
     }
     const now = performance.now();
     if (now - lastUpdate.current > 200) {
@@ -170,9 +192,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
         Bewegungsgleichungen numerisch und meldet, wenn der Mond abstürzt, zerrissen wird oder
         entkommt.
       </PageHead>
-      {presetParam && !PRESETS.some((p) => p.id === presetParam) && (
+      {missingPreset && (
         <p class="notice" role="status">
-          Die Voreinstellung „{presetParam}“ gibt es nicht – gezeigt wird „{PRESETS[0]!.title}“.
+          Die Voreinstellung „{missingPreset}“ gibt es nicht – gezeigt wird „{PRESETS[0]!.title}“.
         </p>
       )}
 
@@ -233,8 +255,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
               options={FRAMES.map((f) => ({ value: f.value, label: f.label }))}
               onChange={(frame: FrameId) => {
                 setView((v) => ({ ...v, frame }));
-                if (frame === 'inertial' && view.frame !== 'inertial')
-                  setRadius(Math.max(radius, 1e9));
+                if (frame !== view.frame) setRadius(radiusAfterFrameChange(frame, radius));
               }}
             />
           </div>
@@ -247,7 +268,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
             onFrame={onFrame}
             ariaLabel="Simulation von Erde, Mond und Sonne"
           >
-            {stats && (
+            {stats && !event && (
               <div class="hud hud-tl">
                 <div class="hud-row">
                   <span>Abstand</span>
@@ -295,29 +316,15 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
               </div>
             )}
             {event && (
-              <div class="event-card" role="alertdialog" aria-labelledby="event-title">
-                <StatusChip status={event.kind === 'roche' ? 'warn' : 'fail'}>
-                  {event.kind === 'roche' ? 'Warnung' : 'Ereignis'} bei t = {duration(event.time)}
-                </StatusChip>
-                <h3 id="event-title">{event.title}</h3>
-                <p>{event.text}</p>
-                <div class="btn-row">
-                  <button
-                    type="button"
-                    class="btn primary"
-                    onClick={() => {
-                      sim?.acknowledge();
-                      setRunning(true);
-                      setVersion((v) => v + 1);
-                    }}
-                  >
-                    Weiterrechnen
-                  </button>
-                  <button type="button" class="btn" onClick={reset}>
-                    Neu starten
-                  </button>
-                </div>
-              </div>
+              <EventCard
+                event={event}
+                onContinue={() => {
+                  sim?.acknowledge();
+                  setRunning(true);
+                  setVersion((v) => v + 1);
+                }}
+                onRestart={reset}
+              />
             )}
           </SpaceCanvas>
 
@@ -433,7 +440,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                     : []),
                   ...PRESETS.map((p) => ({ value: p.id, label: p.title })),
                 ]}
-                onChange={(id) => id !== 'eigene' && applyPreset(id)}
+                onChange={choosePreset}
               />
               {preset && <p class="small muted">{preset.description}</p>}
               {preset?.chapter ? (
@@ -825,6 +832,49 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
   );
 }
 
+function EventCard({
+  event,
+  onContinue,
+  onRestart,
+}: {
+  event: SimEvent;
+  onContinue: () => void;
+  onRestart: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    ref.current?.querySelector<HTMLElement>('.primary')?.focus({ preventScroll: true });
+    return () => opener?.focus({ preventScroll: true });
+  }, []);
+  return (
+    <div
+      ref={ref}
+      class="event-card"
+      role="alertdialog"
+      aria-labelledby="event-title"
+      aria-describedby="event-text"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onContinue();
+      }}
+    >
+      <StatusChip status={event.kind === 'roche' ? 'warn' : 'fail'}>
+        {event.kind === 'roche' ? 'Warnung' : 'Ereignis'} bei t = {duration(event.time)}
+      </StatusChip>
+      <h3 id="event-title">{event.title}</h3>
+      <p id="event-text">{event.text}</p>
+      <div class="btn-row">
+        <button type="button" class="btn primary" onClick={onContinue}>
+          Weiterrechnen
+        </button>
+        <button type="button" class="btn" onClick={onRestart}>
+          Neu starten
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SeriesChart({
   sim,
   chart,
@@ -844,7 +894,8 @@ function SeriesChart({
     return out;
   }, [version, unit]);
   const xLabel = useYears ? 'Zeit (Jahre)' : 'Zeit (Tage)';
-  const xFormat = (v: number): string => fmt(v, useYears && v < 10 ? 1 : 0);
+  const xFormat = (v: number, digits?: number): string =>
+    digits === undefined ? sig(v, 3) : fmt(v, digits);
   const hill = sim.info.hillRadius;
   const crit = criticalMoonDistance(sim.params.moonRetrograde, sim.params.earthEccentricity, 0);
 
@@ -915,12 +966,13 @@ function SeriesChart({
   );
 }
 
-function csvHeader(p: ScenarioParams, s: SimSettings): string {
+export function csvHeader(p: ScenarioParams, s: SimSettings): string {
+  const z = (v: number): string => v.toLocaleString('de-DE', { maximumFractionDigits: 4 });
   return [
     '# Orbitlabor – Messreihe',
-    `# Sonnenmasse ${p.sunMass} M☉; Erdmasse ${p.earthMass} M⊕; Mondmasse ${p.moonMass} M☾`,
-    `# Erdbahn ${p.earthOrbit} AE, e = ${p.earthEccentricity}`,
-    `# Mond: Abstand ${p.moonDistance} km, v = ${p.moonSpeed} × vₖ, ${p.moonRetrograde ? 'retrograd' : 'prograd'}, Startwinkel ${p.moonAngle}°`,
-    `# Verfahren: ${INTEGRATORS[s.integrator].name}, ${s.adaptive ? `adaptiv η = ${s.eta}` : `dt = ${s.fixedDt} s`}`,
+    `# Sonnenmasse ${z(p.sunMass)} M☉; Erdmasse ${z(p.earthMass)} M⊕; Mondmasse ${z(p.moonMass)} M☾`,
+    ...(p.sunMass > 0 ? [`# Erdbahn ${z(p.earthOrbit)} AE, e = ${z(p.earthEccentricity)}`] : []),
+    `# Mond: Abstand ${z(p.moonDistance)} km, v = ${z(p.moonSpeed)} × vₖ, ${p.moonRetrograde ? 'retrograd' : 'prograd'}, Startwinkel ${z(p.moonAngle)}°`,
+    `# Verfahren: ${INTEGRATORS[s.integrator].name}, ${s.adaptive ? `adaptiv η = ${z(s.eta)}` : `dt = ${z(s.fixedDt)} s`}`,
   ].join('\n');
 }
