@@ -1297,7 +1297,7 @@ function drawGroundTag(ctx: CanvasRenderingContext2D, f: Flight, v: View, rocket
   const y = sy + (dy / d) * off;
   const text = `Boden ${altitude < 10_000 ? `${Math.round(altitude).toLocaleString('de-DE')} m` : `${(altitude / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`}`;
   ctx.save();
-  ctx.font = '600 12px Jost, system-ui, sans-serif';
+  ctx.font = '500 12px "IBM Plex Mono", ui-monospace, monospace';
   const w = ctx.measureText(text).width + 26;
   ctx.fillStyle = 'rgba(8,12,24,0.72)';
   ctx.beginPath();
@@ -1315,7 +1315,7 @@ function drawGroundTag(ctx: CanvasRenderingContext2D, f: Flight, v: View, rocket
   ctx.fill();
   ctx.restore();
   ctx.save();
-  ctx.font = '600 12px Jost, system-ui, sans-serif';
+  ctx.font = '500 12px "IBM Plex Mono", ui-monospace, monospace';
   ctx.fillStyle = sink > 40 && altitude < 2_000 ? '#fca5a5' : '#e2e8f0';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x - w / 2 + 20, y + 0.5);

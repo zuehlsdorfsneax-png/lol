@@ -84,15 +84,12 @@ function craters(
     g.beginPath();
     g.arc(x, y, r, 0, Math.PI * 2);
     g.fill();
-    // heller Rand oben links, Schatten unten rechts
+    // Das Bild dreht mit dem Himmelskörper: Der Rand darf keine Lichtrichtung enthalten,
+    // das Licht kommt allein aus dem Sonnenverlauf.
     g.strokeStyle = light;
-    g.lineWidth = Math.max(1, r * 0.18);
+    g.lineWidth = Math.max(1, r * 0.12);
     g.beginPath();
-    g.arc(x, y, r * 0.92, Math.PI * 0.9, Math.PI * 1.8);
-    g.stroke();
-    g.strokeStyle = 'rgba(0,0,0,0.25)';
-    g.beginPath();
-    g.arc(x, y, r * 0.92, -Math.PI * 0.2, Math.PI * 0.7);
+    g.arc(x, y, r * 0.94, 0, Math.PI * 2);
     g.stroke();
   }
 }
