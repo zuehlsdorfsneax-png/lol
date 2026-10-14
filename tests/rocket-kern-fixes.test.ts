@@ -95,6 +95,12 @@ describe('Raketenkern: Befunde', () => {
       'Tank leer! Nächste Stufe zünden.',
     );
     expect(forTouch('Den Rest mit RCS (R) heranfahren.')).toBe('Den Rest mit RCS heranfahren.');
+    expect(forTouch('Am Fallschirm. Mit P wirfst du den Schirm ab.')).toBe(
+      'Am Fallschirm. Der Knopf „Schirm abwerfen“ wirft ihn ab.',
+    );
+    expect(forTouch('Ganz dann unter 5 km. P entschärft ihn wieder.')).toBe(
+      'Ganz dann unter 5 km. „Schirm scharf“ entschärft ihn wieder.',
+    );
   });
 
   it('Zahl und Einheit bleiben in Meldungen zusammen', () => {

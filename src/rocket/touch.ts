@@ -20,6 +20,8 @@ export function forTouch(text: string): string {
       'RCS einschalten: Die Pfeile unten links schieben die Rakete.',
     )
     .replace('Mit N setzt du', 'Mit „Satellit“ setzt du')
+    .replace('Mit P wirfst du den Schirm ab.', 'Der Knopf „Schirm abwerfen“ wirft ihn ab.')
+    .replace(' P entschärft ihn wieder.', ' „Schirm scharf“ entschärft ihn wieder.')
     .replace('Zeitraffer hoch (.)', 'Zeitraffer hoch (oben)')
     .replace(/,?\s*Taste \d/g, '')
     .replace(/\s*\(([^()]*)\)/g, (m, inner: string) =>

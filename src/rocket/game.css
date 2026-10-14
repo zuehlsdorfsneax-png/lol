@@ -422,8 +422,12 @@ html.game-open body {
   }
 }
 
-.part-tile.locked {
+.part-tile.locked .part-icon {
   opacity: 0.5;
+}
+
+.part-tile.locked .part-name {
+  color: var(--g-ink-2);
 }
 
 .part-icon {
@@ -2025,8 +2029,10 @@ html.game-open body {
   font: 700 var(--fs-1) var(--font-ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 88%);
-  text-shadow: 0 1px 2px rgb(0 0 0 / 60%);
+  padding: var(--sp-1) var(--sp-0);
+  border-radius: var(--r-sm);
+  background: var(--g-panel-solid);
+  color: var(--g-ink);
 }
 
 .throttle {
@@ -2200,12 +2206,12 @@ html.game-open body {
   border-color: var(--g-bad);
   background: rgb(80 20 18 / 90%);
   color: var(--g-white);
-  animation: g-pulse 0.8s ease-in-out infinite alternate;
+  animation: g-pulse 0.8s ease-out infinite alternate;
 }
 
 @keyframes g-pulse {
   to {
-    box-shadow: 0 0 0 6px rgb(240 112 104 / 25%);
+    opacity: 0.7;
   }
 }
 
@@ -2217,7 +2223,7 @@ html.game-open body {
   transform: translate(-50%, -50%);
   font: 700 var(--fs-9) var(--font-display);
   color: var(--g-white);
-  text-shadow: 0 0 30px rgb(255 160 60 / 80%);
+  text-shadow: 0 2px 12px rgb(0 0 0 / 50%);
   pointer-events: none;
   animation: g-count 1s ease-out infinite;
 }
@@ -2872,16 +2878,15 @@ html.game-open body {
 
 .game .stars span.on {
   color: var(--g-star);
-  text-shadow: 0 0 14px rgb(245 179 1 / 55%);
 }
 
 .game .stars.animate span.on {
-  animation: g-star-in 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation: g-star-in var(--dur-3) var(--ease-out) both;
 }
 
 @keyframes g-star-in {
   from {
-    transform: scale(0.2) rotate(-40deg);
+    transform: scale(0.95);
     opacity: 0;
   }
 }
@@ -3165,7 +3170,7 @@ html.game-open body {
   }
   .hud-tc {
     top: 8px;
-    left: 100px;
+    left: 110px;
     transform: none;
   }
   .warp button {
@@ -3580,7 +3585,7 @@ html.game-open body {
   .part-tile {
     padding: var(--sp-1) 0 var(--sp-2);
   }
-  .part-spec,
+  .part-tile:not(.locked) .part-spec,
   .parts-hint:not(.msg) {
     display: none;
   }
@@ -3638,6 +3643,10 @@ html.game-open body {
     left: 136px;
     bottom: 8px;
     transform: none;
+  }
+  /* RCS-Kreuz (128 px) schiebt die Drehknöpfe nach rechts: 8 + 128 + 12 + 2 × 56 + 12 + 8 = 284 px. */
+  .hud-bl:has(> .rcs-pad) ~ .hud-bc {
+    left: 284px;
   }
   .hud-br {
     right: 8px;
@@ -3719,6 +3728,11 @@ html.game-open body {
   .throttle-track {
     width: 28px;
     height: 200px;
+  }
+  /* Mit RCS-Kreuz enden die Drehknöpfe bei 316 px. */
+  .hud-bl:has(> .rcs-pad) ~ .hud-bc {
+    left: 328px;
+    transform: none;
   }
 }
 
@@ -3864,6 +3878,29 @@ html.game-open body {
     content: '';
     position: absolute;
     inset: calc(var(--sp-0) * -1.5);
+  }
+  /* Zeitraffer und Bordcomputer: 32 px hohe Knöpfe wachsen nach oben und unten auf 44 px, das
+     Schließen-Kreuz (28 × 24 px) in beide Richtungen; die Zielwahl wird 44 px hoch. */
+  .warp button,
+  .cp-close,
+  .cp-tabs button,
+  .step-btn {
+    position: relative;
+  }
+  .warp button::after,
+  .cp-tabs button::after,
+  .step-btn::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--sp-1) * -1.5) 0;
+  }
+  .hselect-wrap {
+    height: 44px;
+  }
+  .cp-close::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--sp-2) * -1.25) calc(var(--sp-2) * -1);
   }
   .gbtn.small::after {
     inset: calc(var(--sp-2) * -0.75);
