@@ -109,6 +109,18 @@ describe('Input', () => {
       expect(shortcut.defaultPrevented).toBe(false);
     });
 
+    it('lässt das Standardverhalten zu, wenn blocksDefault verneint', () => {
+      const input = new Input(bindings);
+      detach = input.attach((code) => code !== 'KeyD');
+      const free = new KeyboardEvent('keydown', { code: 'KeyD', cancelable: true });
+      window.dispatchEvent(free);
+      expect(free.defaultPrevented).toBe(false);
+      expect(input.isDown('right')).toBe(true);
+      const blocked = new KeyboardEvent('keydown', { code: 'Space', cancelable: true });
+      window.dispatchEvent(blocked);
+      expect(blocked.defaultPrevented).toBe(true);
+    });
+
     it('setzt Tasten zurück, wenn das Fenster den Fokus verliert', () => {
       const input = new Input(bindings);
       detach = input.attach();

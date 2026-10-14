@@ -67,9 +67,10 @@ export class Input<A extends string = string> {
 
   /**
    * Hört die Tastatur global am Fenster ab. Gibt eine Funktion zurück, die alle Listener wieder
-   * entfernt.
+   * entfernt. `blocksDefault` entscheidet je Taste, ob das Standardverhalten (z. B. Scrollen)
+   * unterdrückt wird.
    */
-  attach(): () => void {
+  attach(blocksDefault: (code: string) => boolean = () => true): () => void {
     const onKeyDown = (event: KeyboardEvent): void => {
       // Tippen in Feldern und Enter/Leertaste auf Knöpfen und Links gehören der Seite,
       // nicht dem Spiel – sonst ließen sich Knöpfe nicht mehr per Tastatur auslösen.
@@ -82,7 +83,8 @@ export class Input<A extends string = string> {
         return;
       const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
       // Belegte Tasten sollen nicht scrollen o. Ä. – Browser-Kürzel wie Strg+R bleiben aber erhalten.
-      if (!hasModifier && this.boundCodes.has(event.code)) event.preventDefault();
+      if (!hasModifier && this.boundCodes.has(event.code) && blocksDefault(event.code))
+        event.preventDefault();
       this.handleKeyDown(event.code, event.repeat);
     };
     const onKeyUp = (event: KeyboardEvent): void => this.handleKeyUp(event.code);

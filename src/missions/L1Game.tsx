@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { Input } from '../engine';
-import { AU, DAY, EARTH, SUN, YEAR, lagrangePoints, potentialGradient } from '../physics';
+import { AU, DAY, EARTH, SUN, YEAR, lagrangePoints, rk4Step, type State4 } from '../physics';
 import { CanvasBox } from '../ui/CanvasBox';
 import { Callout, StatusChip } from '../ui/content';
 import { fmt } from '../ui/format';
@@ -25,35 +25,13 @@ const ZONE = 0.0015;
 const GOAL = 2 * Math.PI;
 const VIEW_HALF = 0.0058;
 
-type State = [number, number, number, number];
 type Phase = 'ready' | 'playing' | 'won' | 'lost';
-
-function deriv(s: State, ax: number, ay: number): State {
-  const [gx, gy] = potentialGradient(MU, s[0], s[1]);
-  return [s[2], s[3], 2 * s[3] + gx + ax, -2 * s[2] + gy + ay];
-}
-
-function step(s: State, dt: number, ax: number, ay: number): State {
-  const add = (a: State, k: State, f: number): State => [
-    a[0] + k[0] * f,
-    a[1] + k[1] * f,
-    a[2] + k[2] * f,
-    a[3] + k[3] * f,
-  ];
-  const k1 = deriv(s, ax, ay);
-  const k2 = deriv(add(s, k1, dt / 2), ax, ay);
-  const k3 = deriv(add(s, k2, dt / 2), ax, ay);
-  const k4 = deriv(add(s, k3, dt), ax, ay);
-  return [0, 1, 2, 3].map(
-    (i) => s[i]! + (dt / 6) * (k1[i]! + 2 * k2[i]! + 2 * k3[i]! + k4[i]!),
-  ) as State;
-}
 
 /**
  * Immer derselbe kleine Versatz: So ist jeder Versuch gleich schwer und die Sterne sind
  * vergleichbar.
  */
-function startState(): State {
+function startState(): State4 {
   const a = 0.7;
   return [L1X + 3e-5 * Math.cos(a), 3e-5 * Math.sin(a), 0, 0];
 }
@@ -83,7 +61,13 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
   phaseRef.current = phase;
   const [, setTick] = useState(0);
 
-  useEffect(() => input.current.attach(), []);
+  useEffect(
+    () =>
+      input.current.attach(
+        (code) => phaseRef.current === 'playing' || BINDINGS.start.includes(code),
+      ),
+    [],
+  );
 
   const start = (): void => {
     game.current = { s: startState(), t: 0, fuel: FUEL, trail: [], thrust: [0, 0] };
@@ -130,7 +114,7 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
         const sub = Math.max(1, Math.ceil(total / 0.0005));
         const dt = total / sub;
         for (let i = 0; i < sub; i++) {
-          g.s = step(g.s, dt, ax, ay);
+          g.s = rk4Step(MU, g.s, dt, [ax, ay]);
           if (ax || ay) g.fuel = Math.max(0, g.fuel - THRUST * dt);
         }
         g.t += total;
@@ -198,7 +182,7 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
     ctx.beginPath();
     ctx.moveTo(...toS(s[0], s[1]));
     for (let i = 0; i < 120; i++) {
-      s = step(s, 0.005, 0, 0);
+      s = rk4Step(MU, s, 0.005);
       ctx.lineTo(...toS(s[0], s[1]));
     }
     ctx.stroke();
@@ -247,6 +231,16 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
       onPointerUp={() => (touch.current[dir] = false)}
       onPointerCancel={() => (touch.current[dir] = false)}
       onLostPointerCapture={() => (touch.current[dir] = false)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          touch.current[dir] = true;
+        }
+      }}
+      onKeyUp={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') touch.current[dir] = false;
+      }}
+      onBlur={() => (touch.current[dir] = false)}
     >
       {symbol}
     </button>

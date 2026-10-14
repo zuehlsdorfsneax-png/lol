@@ -146,23 +146,28 @@ export function linearStability(mu: number, p: Point): StabilityAnalysis {
 
 export type State4 = [number, number, number, number];
 
-/** Bewegungsgleichungen im rotierenden System (mit Coriolis-Kraft). */
-export function derivatives(mu: number, s: State4): State4 {
+/** Bewegungsgleichungen im rotierenden System (mit Coriolis-Kraft); `thrust` ist eine Zusatzbeschleunigung. */
+export function derivatives(mu: number, s: State4, thrust: [number, number] = [0, 0]): State4 {
   const [gx, gy] = potentialGradient(mu, s[0], s[1]);
-  return [s[2], s[3], 2 * s[3] + gx, -2 * s[2] + gy];
+  return [s[2], s[3], 2 * s[3] + gx + thrust[0], -2 * s[2] + gy + thrust[1]];
 }
 
-export function rk4Step(mu: number, s: State4, dt: number): State4 {
+export function rk4Step(
+  mu: number,
+  s: State4,
+  dt: number,
+  thrust: [number, number] = [0, 0],
+): State4 {
   const add = (a: State4, k: State4, f: number): State4 => [
     a[0] + k[0] * f,
     a[1] + k[1] * f,
     a[2] + k[2] * f,
     a[3] + k[3] * f,
   ];
-  const k1 = derivatives(mu, s);
-  const k2 = derivatives(mu, add(s, k1, dt / 2));
-  const k3 = derivatives(mu, add(s, k2, dt / 2));
-  const k4 = derivatives(mu, add(s, k3, dt));
+  const k1 = derivatives(mu, s, thrust);
+  const k2 = derivatives(mu, add(s, k1, dt / 2), thrust);
+  const k3 = derivatives(mu, add(s, k2, dt / 2), thrust);
+  const k4 = derivatives(mu, add(s, k3, dt), thrust);
   return [
     s[0] + (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]),
     s[1] + (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]),

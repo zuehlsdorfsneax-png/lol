@@ -73,6 +73,14 @@ describe('Bewegung im rotierenden System', () => {
     expect(Math.abs(jacobiConstant(mu, ...s) - c0)).toBeLessThan(1e-9);
   });
 
+  it('Schub wirkt als Zusatzbeschleunigung auf die Geschwindigkeit', () => {
+    const s: State4 = [0.5, 0.6, 0, 0];
+    const ohne = rk4Step(MU_EM, s, 1e-4);
+    const mit = rk4Step(MU_EM, s, 1e-4, [0.5, -0.25]);
+    expect((mit[2] - ohne[2]) / 1e-4).toBeCloseTo(0.5, 3);
+    expect((mit[3] - ohne[3]) / 1e-4).toBeCloseTo(-0.25, 3);
+  });
+
   it('ein Teilchen nahe L4 bleibt in der Nähe, eines nahe L1 driftet weg', () => {
     const mu = 0.001;
     const [l1, , , l4] = lagrangePoints(mu);
