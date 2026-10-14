@@ -1,12 +1,14 @@
 /**
  * Speichert einen Spielstand als JSON im `localStorage`. Fehler (privater Modus, voller Speicher,
  * kaputte Daten) führen nie zum Absturz – dann gelten einfach die Standardwerte.
+ * Lässt der Browser das Schreiben nicht zu, bleibt der letzte Stand bis zum Neuladen im Speicher.
  * Beim Laden werden gespeicherte Felder flach über die Standardwerte gelegt, damit neue
  * Felder in späteren Versionen automatisch ihren Standardwert erhalten.
  */
 export class SaveStore<T extends object> {
   private readonly storage: Storage | null;
   private ok = true;
+  private unsaved: string | null = null;
 
   constructor(
     private readonly key: string,
@@ -20,28 +22,31 @@ export class SaveStore<T extends object> {
 
   load(): T {
     try {
-      const raw = this.storage?.getItem(this.key);
-      if (!raw) return { ...this.defaults };
+      const raw = this.unsaved ?? this.storage?.getItem(this.key);
+      if (!raw) return structuredClone(this.defaults);
       const parsed: unknown = JSON.parse(raw);
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        return { ...this.defaults };
+        return structuredClone(this.defaults);
       }
-      const merged = { ...this.defaults, ...(parsed as Partial<T>) };
+      const merged = { ...structuredClone(this.defaults), ...(parsed as Partial<T>) };
       return this.sanitize ? this.sanitize(merged) : merged;
     } catch {
-      return { ...this.defaults };
+      return structuredClone(this.defaults);
     }
   }
 
   /** Gibt `false` zurück, wenn nicht gespeichert werden konnte. */
   save(data: T): boolean {
     this.ok = false;
-    if (!this.storage) return false;
+    const json = JSON.stringify(data);
     try {
-      this.storage.setItem(this.key, JSON.stringify(data));
+      if (!this.storage) throw new Error('kein Speicher');
+      this.storage.setItem(this.key, json);
+      this.unsaved = null;
       this.ok = true;
       return true;
     } catch {
+      this.unsaved = json;
       return false;
     }
   }
@@ -59,6 +64,7 @@ export class SaveStore<T extends object> {
   }
 
   clear(): void {
+    this.unsaved = null;
     try {
       this.storage?.removeItem(this.key);
     } catch {

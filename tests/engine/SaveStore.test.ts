@@ -44,8 +44,9 @@ describe('SaveStore', () => {
 
   it('funktioniert ohne verfügbaren Speicher', () => {
     const store = new SaveStore('test', defaults, null);
-    expect(store.save({ highscore: 1, name: 'x' })).toBe(false);
     expect(store.load()).toEqual(defaults);
+    expect(store.save({ highscore: 1, name: 'x' })).toBe(false);
+    expect(store.load()).toEqual({ highscore: 1, name: 'x' });
   });
 
   it('fängt Fehler beim Schreiben ab (z. B. voller Speicher)', () => {
@@ -57,5 +58,26 @@ describe('SaveStore', () => {
       removeItem: () => {},
     } as unknown as Storage;
     expect(new SaveStore('test', defaults, failing).save(defaults)).toBe(false);
+  });
+  it('behält den Stand im Speicher, wenn der Browser nicht lesen oder schreiben lässt', () => {
+    const blocked = {
+      getItem: () => {
+        throw new Error('gesperrt');
+      },
+      setItem: () => {
+        throw new Error('gesperrt');
+      },
+      removeItem: () => {},
+    } as unknown as Storage;
+    const store = new SaveStore('test', defaults, blocked);
+    store.save({ highscore: 3, name: 'Ada' });
+    expect(store.load()).toEqual({ highscore: 3, name: 'Ada' });
+    expect(new SaveStore('test', defaults, null).load()).toEqual(defaults);
+  });
+
+  it('gibt Standardwerte als Kopie heraus, Änderungen verschmutzen sie nicht', () => {
+    const store = new SaveStore('test', { list: [] as string[] });
+    store.load().list.push('x');
+    expect(store.load().list).toEqual([]);
   });
 });
