@@ -24,6 +24,8 @@ import {
 type Phase = 'aim' | 'fly' | 'win' | 'fail';
 
 const PULL = 2.2;
+const calmMotion = (): boolean =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const FAIL_TEXT: Record<Exclude<Crash, null> | 'timeout', string> = {
   earth: 'Plumps! Luna ist auf die Erde gefallen. Gib ihr mehr Schwung zur Seite!',
   rock: 'Autsch, ein Felsbrocken! Versuch eine andere Bahn.',
@@ -198,13 +200,14 @@ export function LunaGame() {
     const g = game.current;
     const lv = levelRef.current;
 
+    const calm = calmMotion();
     const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-    bg.addColorStop(0, '#1b1450');
-    bg.addColorStop(1, '#0a1a3f');
+    bg.addColorStop(0, '#0c1330');
+    bg.addColorStop(1, '#1d2b63');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     for (const b of BG) {
-      ctx.globalAlpha = 0.35 + 0.35 * Math.sin(time * 2 + b.p);
+      ctx.globalAlpha = calm ? 0.5 : 0.35 + 0.35 * Math.sin(time * 2 + b.p);
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.s, 0, Math.PI * 2);
@@ -276,12 +279,13 @@ export function LunaGame() {
     // Sterne.
     g.stars.forEach((st, i) => {
       if (g.got.has(i)) return;
-      ctx.fillStyle = '#ffd54a';
-      ctx.shadowColor = '#ffd54a';
-      ctx.shadowBlur = 12;
-      starShape(ctx, st.x, st.y, STAR_R, time * 1.5 + i);
+      ctx.fillStyle = 'rgba(255, 213, 74, 0.22)';
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, STAR_R * 1.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ffd54a';
+      starShape(ctx, st.x, st.y, STAR_R, calm ? i : time * 1.5 + i);
+      ctx.fill();
     });
 
     // Pip.
@@ -403,10 +407,9 @@ export function LunaGame() {
       return;
     }
     if (k === ' ' || k === 'Enter') {
-      if (g.aim) {
-        e.preventDefault();
-        onUp();
-      }
+      e.preventDefault();
+      if (g.aim) onUp();
+      else g.aim = { x: g.s.x - 60, y: g.s.y };
       return;
     }
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) return;
@@ -438,13 +441,13 @@ export function LunaGame() {
 
   return (
     <div class="stack" style={{ gap: 'var(--sp-4)' }}>
-      <div class="level-row" role="tablist" aria-label="Level">
+      <div class="level-row" role="group" aria-label="Level">
         {LEVELS.map((l, i) => (
           <button
             key={l.id}
             type="button"
-            role="tab"
-            aria-selected={i === levelIndex}
+            aria-label={`Level ${l.id}, ${earned[l.id] ?? 0} von 3 Sternen`}
+            aria-current={i === levelIndex ? 'true' : undefined}
             class={`level-btn ${i === levelIndex ? 'on' : ''}`}
             onClick={() => setLevelIndex(i)}
           >
@@ -474,7 +477,7 @@ export function LunaGame() {
             touchAction: 'none',
             borderRadius: '18px',
           }}
-          role="img"
+          role="application"
           aria-label="Spielfeld: Luna, die Erde und Sterne. Mit der Tastatur: Pfeiltasten zielen, Leertaste startet."
           onPointerDown={onDown}
           onPointerMove={onMove}
