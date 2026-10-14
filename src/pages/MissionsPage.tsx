@@ -40,7 +40,7 @@ export function MissionsPage() {
               <Stars count={progress.stars[m.id] ?? 0} />
               <span>
                 {progress.best[m.id]
-                  ? `bester Wert: ${progress.best[m.id]}`
+                  ? `beim besten Ergebnis: ${progress.best[m.id]}`
                   : 'noch nicht gespielt'}
               </span>
             </div>

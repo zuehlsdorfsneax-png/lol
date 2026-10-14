@@ -166,10 +166,10 @@ export function L1Game({ mission }: { mission: SpecialMission }) {
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
     ctx.fillText('← zur Sonne', 12, h / 2 - 10);
-    ctx.fillText('(148 Mio. km)', 12, h / 2 + 8);
+    ctx.fillText('(148\u00a0Mio.\u00a0km)', 12, h / 2 + 8);
     ctx.textAlign = 'right';
     ctx.fillText('zur Erde →', w - 12, h / 2 - 10);
-    ctx.fillText('(1,5 Mio. km)', w - 12, h / 2 + 8);
+    ctx.fillText('(1,5\u00a0Mio.\u00a0km)', w - 12, h / 2 + 8);
     ctx.textBaseline = 'top';
     ctx.fillText('↑ Bahnrichtung der Erde', w - 12, 12);
     ctx.textBaseline = 'alphabetic';
