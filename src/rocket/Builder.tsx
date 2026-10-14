@@ -78,7 +78,7 @@ function PartIcon({ def }: { def: PartDef }) {
     ctx.save();
     ctx.translate(22, 22 + (h * s) / 2 - below * s);
     ctx.scale(s, -s);
-    drawPart(ctx, def, 0, -below + (def.kind === 'legs' ? 0.2 : 0));
+    drawPart(ctx, def, 0, -below);
     ctx.restore();
   }, [def]);
   return (

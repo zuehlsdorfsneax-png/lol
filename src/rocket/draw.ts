@@ -666,7 +666,7 @@ export function drawPart(
       ctx.strokeStyle = shade('#3b414c');
       ctx.lineWidth = 0.22;
       ctx.lineCap = 'round';
-      const foot = Math.min(footY, y0) - 0.1;
+      const foot = Math.min(footY, y0);
       if (def.id === 'beine-xl') {
         // Öldämpfer: dicke Zylinder an den Beinen
         ctx.strokeStyle = shade('#f59e0b');
@@ -794,17 +794,18 @@ export function drawPart(
       if (bagsOpen > 0) {
         // Aufgeblasen: drei Kissen aus Vectran-Gewebe mit Nähten
         const r = 0.35 + 0.45 * bagsOpen;
+        const cy = y0 + r;
         for (const x of [-w * 0.36, w * 0.36, 0]) {
           ctx.beginPath();
-          ctx.arc(x, y0 + 0.15, r, 0, Math.PI * 2);
+          ctx.arc(x, cy, r, 0, Math.PI * 2);
           ctx.fillStyle = shade('#e9e3d2');
           ctx.fill();
           ctx.strokeStyle = 'rgba(120,105,80,0.6)';
           ctx.lineWidth = 0.04;
           ctx.stroke();
           ctx.beginPath();
-          ctx.moveTo(x - r * 0.7, y0 + 0.15);
-          ctx.quadraticCurveTo(x, y0 + 0.15 - r * 0.25, x + r * 0.7, y0 + 0.15);
+          ctx.moveTo(x - r * 0.7, cy);
+          ctx.quadraticCurveTo(x, cy - r * 0.25, x + r * 0.7, cy);
           ctx.stroke();
         }
         ctx.strokeStyle = 'rgba(20,26,40,0.7)';
