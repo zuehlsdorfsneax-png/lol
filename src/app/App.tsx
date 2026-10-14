@@ -318,7 +318,7 @@ const PAGE_TITLES: Record<Route['page'], string> = {
 /** Unbekannte Adresse: sagen, was los ist, statt still die Startseite zu zeigen. */
 function NotFound({ token }: { token: string }) {
   return (
-    <div class="stack" style={{ gap: '14px', maxWidth: '640px' }}>
+    <div class="stack" style={{ maxWidth: '640px' }}>
       <div class="eyebrow">Fehler 404</div>
       <h1>Diese Seite gibt es nicht</h1>
       <p>

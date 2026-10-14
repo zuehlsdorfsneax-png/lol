@@ -439,9 +439,9 @@ svg {
 .nav-link[aria-current='page']::before {
   content: '';
   position: absolute;
-  left: -10px;
-  top: 7px;
-  bottom: 7px;
+  left: calc(-1 * var(--sp-2));
+  top: var(--sp-2);
+  bottom: var(--sp-2);
   width: 3px;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   background: var(--accent);
@@ -569,7 +569,7 @@ svg {
     position: fixed;
     inset: 0;
     z-index: 55;
-    background: rgb(6 10 24 / 45%);
+    background: color-mix(in srgb, var(--space) 45%, transparent);
   }
 
   .topbar {
@@ -1311,7 +1311,7 @@ hr.rule {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 80;
   background: var(--ink);
@@ -1367,8 +1367,8 @@ hr.rule {
   font-family: var(--font-mono);
   font-size: var(--fs-2);
   color: var(--space-ink);
-  background: rgb(6 10 24 / 60%);
-  border: 1px solid rgb(143 153 184 / 22%);
+  background: color-mix(in srgb, var(--space) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--space-ink-2) 22%, transparent);
   border-radius: var(--r-md);
   padding: var(--sp-2) var(--sp-3);
   display: grid;
@@ -1377,13 +1377,13 @@ hr.rule {
 }
 
 .hud-tl {
-  top: 10px;
-  left: 10px;
+  top: var(--sp-3);
+  left: var(--sp-3);
 }
 
 .hud-tr {
-  top: 10px;
-  right: 10px;
+  top: var(--sp-3);
+  right: var(--sp-3);
   pointer-events: auto;
 }
 
@@ -1399,8 +1399,8 @@ hr.rule {
 
 .zoom-btns {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
+  right: var(--sp-3);
+  bottom: var(--sp-3);
   display: grid;
   gap: var(--sp-1);
 }
@@ -1409,8 +1409,8 @@ hr.rule {
   width: 32px;
   height: 32px;
   border-radius: var(--r-md);
-  border: 1px solid rgb(143 153 184 / 30%);
-  background: rgb(6 10 24 / 60%);
+  border: 1px solid color-mix(in srgb, var(--space-ink-2) 30%, transparent);
+  background: color-mix(in srgb, var(--space) 60%, transparent);
   color: var(--space-ink);
   font-size: var(--fs-4);
   cursor: pointer;
@@ -1418,12 +1418,12 @@ hr.rule {
 
 .vector-legend {
   position: absolute;
-  left: 10px;
-  bottom: 36px;
+  left: var(--sp-3);
+  bottom: var(--sp-7);
   pointer-events: none;
   font-size: var(--fs-2);
   color: var(--space-ink);
-  background: rgb(6 10 24 / 60%);
+  background: color-mix(in srgb, var(--space) 60%, transparent);
   border-radius: var(--r-md);
   padding: var(--sp-2) var(--sp-2);
   display: grid;
@@ -1491,6 +1491,10 @@ details.section > summary {
   justify-content: space-between;
   align-items: center;
   gap: var(--sp-3);
+}
+
+details.section > summary:focus-visible {
+  outline-offset: -2px;
 }
 
 details.section > summary::-webkit-details-marker {
@@ -1847,7 +1851,7 @@ details.section .section-body {
     border-radius: var(--r-lg);
   }
   .kid-result {
-    box-shadow: 0 0 0 100vmax rgb(6 10 30 / 55%);
+    box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--space) 55%, transparent);
   }
 }
 
@@ -2381,7 +2385,7 @@ table.data.compact th.num {
   font-size: var(--fs-8);
   font-weight: 500;
   letter-spacing: -0.025em;
-  line-height: 0.95;
+  line-height: 1.05;
 }
 
 .problem {

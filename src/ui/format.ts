@@ -1,7 +1,12 @@
 import { AU, DAY, KM, YEAR } from '../physics';
 
-const de = (v: number, digits = 0): string =>
-  v.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits });
+const de = (v: number, digits = 0): string => {
+  const text = v.toLocaleString('de-DE', {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  });
+  return /^-0(,0*)?$/.test(text) ? text.slice(1) : text;
+};
 
 export function fmt(v: number, digits = 0): string {
   if (!Number.isFinite(v)) return v === Infinity ? '∞' : '–';
@@ -12,9 +17,11 @@ export function fmt(v: number, digits = 0): string {
 export function sig(v: number, digits = 3): string {
   if (!Number.isFinite(v)) return v === Infinity ? '∞' : '–';
   if (v === 0) return '0';
-  const mag = Math.floor(Math.log10(Math.abs(v)));
+  const rounded = Number(v.toPrecision(digits));
+  const mag = Math.floor(Math.log10(Math.abs(rounded)));
   const decimals = Math.max(0, digits - 1 - mag);
-  return de(Number(v.toPrecision(digits)), Math.min(decimals, 8));
+  if (decimals > 8) return sci(v, digits - 1);
+  return de(rounded, decimals);
 }
 
 /** Wissenschaftliche Schreibweise: 1,23 · 10⁻⁶ */
@@ -79,6 +86,7 @@ export function speed(mps: number): string {
 }
 
 export function percent(v: number, digits = 1): string {
+  if (!Number.isFinite(v)) return '–';
   return `${de(v * 100, digits)}\u00a0%`;
 }
 

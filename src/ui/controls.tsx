@@ -55,11 +55,17 @@ export function Slider({
         step={native ? step : 1}
         value={native ? value : Math.round(pos * resolution)}
         disabled={disabled}
+        aria-valuetext={format ? format(value) : String(value)}
         style={{ '--fill': `${pos * 100}%` }}
         onInput={(e) => {
           const raw = Number((e.target as HTMLInputElement).value);
           let v = native ? raw : fromPos(raw / resolution);
-          if (step) v = Math.round(v / step) * step;
+          if (step) {
+            v = Math.round(v / step) * step;
+            // Auf der Log-Skala ist eine Positionseinheit oft kleiner als ein Schritt.
+            if (log && Math.abs(v - value) < step / 2)
+              v += Math.sign(raw - Math.round(pos * resolution)) * step;
+          }
           onChange(Math.min(max, Math.max(min, v)));
         }}
       />
