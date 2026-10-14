@@ -29,7 +29,13 @@ export interface Route {
  * #kapitel-3, #mission-flucht …
  */
 export function parseHash(hash: string): Route {
-  const token = decodeURIComponent(hash.replace(/^#/, '')).trim();
+  const raw = hash.replace(/^#/, '');
+  let token: string;
+  try {
+    token = decodeURIComponent(raw).trim();
+  } catch {
+    return { page: 'unbekannt', param: raw };
+  }
   if (token === '' || token === 'start') return { page: 'start', param: null };
   if (token === 'simulator') return { page: 'simulator', param: null };
   if (token.startsWith('sim-')) return { page: 'simulator', param: token.slice(4) };
@@ -65,8 +71,4 @@ export function useRoute(): Route {
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
   return route;
-}
-
-export function navigate(token: string): void {
-  location.hash = token;
 }

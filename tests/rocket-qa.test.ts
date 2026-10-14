@@ -345,6 +345,7 @@ describe('App (QA)', () => {
   it('unbekannte Adressen und Kapitel landen auf „Seite nicht gefunden“', () => {
     expect(parseHash('#kapitel-3').page).toBe('kapitel');
     expect(parseHash('#kapitel-0').page).toBe('unbekannt');
+    expect(parseHash('#%E0%A4%A')).toEqual({ page: 'unbekannt', param: '%E0%A4%A' });
     expect(parseHash('#kapitel-abc').page).toBe('unbekannt');
     expect(parseHash('#xyz').page).toBe('unbekannt');
     expect(parseHash('#karte').page).toBe('karte');

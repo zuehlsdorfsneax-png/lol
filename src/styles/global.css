@@ -234,7 +234,6 @@ svg {
   max-width: 100%;
 }
 
-.mono,
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -1756,29 +1755,6 @@ details.section .section-body {
   white-space: nowrap;
 }
 /* ---------------------------- Startseite --------------------------- */
-
-@media (hover: hover) and (pointer: fine) {
-  .tool-card:hover {
-    border-color: var(--accent);
-  }
-}
-
-.tools {
-  display: grid;
-  gap: var(--sp-4);
-}
-
-.tool-card {
-  display: grid;
-  gap: var(--sp-2);
-  align-content: start;
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  text-decoration: none;
-  color: var(--ink);
-}
 
 /* ------------------------- Lunas Sternenreise ---------------------- */
 .level-row {

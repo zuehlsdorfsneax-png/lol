@@ -131,13 +131,26 @@ const THEMES: { id: ThemeChoice; icon: IconName; label: string }[] = [
 
 function ThemeSwitch() {
   const [theme, setTheme] = useTheme();
+  const onKeyDown = (e: KeyboardEvent): void => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const i = THEMES.findIndex((t) => t.id === theme);
+    const next = THEMES[(i + step + THEMES.length) % THEMES.length]!;
+    setTheme(next.id);
+    (e.currentTarget as HTMLElement)
+      .querySelector<HTMLElement>(`[data-theme-id="${next.id}"]`)
+      ?.focus();
+  };
   return (
-    <div class="theme-switch" role="radiogroup" aria-label="Farbschema">
+    <div class="theme-switch" role="radiogroup" aria-label="Farbschema" onKeyDown={onKeyDown}>
       {THEMES.map((t) => (
         <button
           key={t.id}
           type="button"
           role="radio"
+          data-theme-id={t.id}
+          tabIndex={theme === t.id ? 0 : -1}
           aria-checked={theme === t.id}
           title={t.label}
           aria-label={t.label}
@@ -312,8 +325,8 @@ function NotFound({ token }: { token: string }) {
         <a class="btn primary" href="#start">
           Zur Startseite
         </a>
-        <a class="btn" href="#kapitel-2">
-          Zu Kapitel 1
+        <a class="btn" href={`#kapitel-${VISIBLE_CHAPTERS[0]!.n}`}>
+          Zu Kapitel {VISIBLE_CHAPTERS[0]!.n}
         </a>
       </div>
     </div>
@@ -323,7 +336,7 @@ function NotFound({ token }: { token: string }) {
 function titleFor(route: Route): string {
   if (route.page === 'kapitel') {
     const c = CHAPTERS.find((x) => String(x.n) === route.param);
-    if (c) return `Kapitel ${c.n}: ${c.title}`;
+    if (c) return `Kapitel ${c.n} – ${c.title}`;
   }
   if (route.page === 'mission') {
     const m = findMission(route.param ?? '');
@@ -339,23 +352,32 @@ export function App() {
   const nav = useRef<HTMLElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const first = useRef(true);
+  const routeChanged = useRef(false);
   // Offenes Handy-Menü: Esc schließt, der Fokus bleibt im Menü, der Rest ist so lange inaktiv.
   useEffect(() => {
     if (!open) return;
+    routeChanged.current = false;
     const rest = [main.current, document.querySelector<HTMLElement>('.topbar')];
     for (const el of rest) if (el) el.inert = true;
     nav.current?.querySelector<HTMLElement>('a, button')?.focus();
     const key = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') setOpen(false);
     };
+    const wide = window.matchMedia('(min-width: 981px)');
+    const close = (): void => {
+      if (wide.matches) setOpen(false);
+    };
     window.addEventListener('keydown', key);
+    wide.addEventListener('change', close);
     return () => {
       window.removeEventListener('keydown', key);
+      wide.removeEventListener('change', close);
       for (const el of rest) if (el) el.inert = false;
-      menuButton.current?.focus({ preventScroll: true });
+      (routeChanged.current ? main.current : menuButton.current)?.focus({ preventScroll: true });
     };
   }, [open]);
   useEffect(() => {
+    routeChanged.current = true;
     setOpen(false);
     document.title = `${titleFor(route)} · Orbitlabor`;
     // Nach einem Seitenwechsel landet der Fokus am Seitenanfang (wichtig für Screenreader).

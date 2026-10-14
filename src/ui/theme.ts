@@ -27,12 +27,20 @@ function apply(choice: ThemeChoice): void {
   } else {
     root.setAttribute('data-theme', choice);
   }
+  syncThemeColor();
+}
+
+/** Browser- und Statusleiste bekommen die Hintergrundfarbe der gerade geltenden Stufe. */
+function syncThemeColor(): void {
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  if (bg) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
 }
 
 /** Vor dem ersten Zeichnen aufrufen, damit die Seite nicht kurz im falschen Theme aufblitzt. */
 export function initTheme(): void {
   initial = document.documentElement.getAttribute('data-theme');
   apply(read());
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', syncThemeColor);
 }
 
 /** Wahl übernehmen und merken. */
