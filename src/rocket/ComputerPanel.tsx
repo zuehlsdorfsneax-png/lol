@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { Icon } from '../ui/Icon';
 import type { Flight, Prediction, TargetId } from './flight';
 import { clock, clockIn, duration, fmt, withUnits } from './format';
+import { forTouch, isTouch } from './touch';
 import { period } from './kepler';
 import {
   canReturnHome,
@@ -230,7 +231,9 @@ export function ComputerPanel({
               {options.length === 0 ? (
                 <p class="small muted">
                   {f.status === 'flying'
-                    ? 'Gerade gibt es nichts zu planen. Wähle ein Ziel oder tippe auf der Karte (M) auf die Bahn.'
+                    ? (isTouch() ? forTouch : (t: string) => t)(
+                        'Gerade gibt es nichts zu planen. Wähle ein Ziel oder tippe auf der Karte (M) auf die Bahn.',
+                      )
                     : 'Der Bordcomputer plant Manöver im Flug.'}
                 </p>
               ) : (

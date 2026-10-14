@@ -3590,6 +3590,10 @@ html.game-open body {
   .hud-zoom {
     display: none;
   }
+  /* Die Sternliste reicht sonst bis auf Δv-Anzeige und Schubfläche; im Briefing steht sie vollständig. */
+  .challenge-box ol {
+    display: none;
+  }
   .tele-rows dt:nth-of-type(3),
   .tele-rows dd:nth-of-type(3),
   .tele-foot {
@@ -3838,6 +3842,41 @@ html.game-open body {
     content: '';
     position: absolute;
     inset: calc(var(--sp-1) * -1);
+  }
+  /* Reiter, Kategorien, Schalter und kleine Knöpfe sind niedriger als 44 px: die Tippfläche wächst
+     auf 44 px, ohne die Nachbarn zu überdecken. */
+  .game-tabs button,
+  .part-cats button,
+  .gtoggle {
+    position: relative;
+  }
+  .game-tabs button::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--sp-1) * -1) calc(var(--sp-0) * -1);
+  }
+  .part-cats button::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--sp-2) * -0.75) 0;
+  }
+  .gtoggle::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--sp-0) * -1.5);
+  }
+  .gbtn.small::after {
+    inset: calc(var(--sp-2) * -0.75);
+  }
+  .blueprint-zoom {
+    gap: var(--sp-3);
+  }
+}
+
+/* Handy quer: Kategorien sind nur 28 px hoch. */
+@media (pointer: coarse) and (max-height: 480px) and (min-width: 761px) {
+  .part-cats button::after {
+    inset: calc(var(--sp-2) * -1) 0;
   }
 }
 

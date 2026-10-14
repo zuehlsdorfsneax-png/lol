@@ -14,15 +14,15 @@ export const withUnits = (text: string): string =>
 export function km(m: number): string {
   if (!Number.isFinite(m)) return '∞';
   if (Math.abs(m) >= 1e9)
-    return `${(m / 1e9).toLocaleString('de-DE', { maximumFractionDigits: 2 })} Mio. km`;
-  return `${Math.round(m / 1000).toLocaleString('de-DE')} km`;
+    return `${(m / 1e9).toLocaleString('de-DE', { maximumFractionDigits: 2 })}\u00a0Mio.\u00a0km`;
+  return `${Math.round(m / 1000).toLocaleString('de-DE')}\u00a0km`;
 }
 
 export function distance(m: number): string {
   if (!Number.isFinite(m)) return '∞';
-  if (Math.abs(m) < 10_000) return `${fmt(m)} m`;
+  if (Math.abs(m) < 10_000) return `${fmt(m)}\u00a0m`;
   if (Math.abs(m) >= 1e9) return km(m);
-  return `${fmt(m / 1000, Math.abs(m) < 100_000 ? 1 : 0)} km`;
+  return `${fmt(m / 1000, Math.abs(m) < 100_000 ? 1 : 0)}\u00a0km`;
 }
 
 function clockParts(t: number): { d: number; h: number; m: number; sec: number } {

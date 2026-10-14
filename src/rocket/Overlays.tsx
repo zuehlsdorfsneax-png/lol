@@ -6,6 +6,7 @@ import { Dialog } from './Dialog';
 import type { Flight, FlightSnapshot } from './flight';
 import { clock, distance, fmt, withUnits } from './format';
 import { goalById, type GoalId } from './goals';
+import { forTouch, isTouch } from './touch';
 import { bodyById } from './world';
 
 /** Statistik eines Flugs (für Flugbericht und Absturzmeldung). */
@@ -90,6 +91,7 @@ export function ChallengeBrief({
   onStart: () => void;
   onExit: () => void;
 }) {
+  const touch = isTouch();
   return (
     <Dialog class="brief" label={challenge.title}>
       <span class="eyebrow">{challenge.group}</span>
@@ -105,7 +107,7 @@ export function ChallengeBrief({
       </ol>
       <ul class="brief-tips">
         {challenge.tips.map((t) => (
-          <li key={t}>{t}</li>
+          <li key={t}>{withUnits(touch ? forTouch(t) : t)}</li>
         ))}
       </ul>
       {!challenge.computer && (
@@ -309,6 +311,7 @@ export function PauseMenu({
   confirm,
   inChallenge,
   saved,
+  justSaved,
   muted,
   fileExport,
   onResume,
@@ -324,6 +327,7 @@ export function PauseMenu({
   confirm: 'restart' | 'exit' | null;
   inChallenge: boolean;
   saved: FlightSnapshot | null;
+  justSaved: boolean;
   muted: boolean;
   fileExport: boolean;
   onResume: () => void;
@@ -350,7 +354,9 @@ export function PauseMenu({
         {!inChallenge && (
           <>
             <button type="button" class="mbtn" onClick={onSave}>
-              <Icon name="save" /> Spielstand speichern <kbd>F5</kbd>
+              <Icon name="save" /> Spielstand speichern
+              {justSaved && <small class="mbtn-note">Gespeichert</small>}
+              <kbd>F5</kbd>
             </button>
             <button
               type="button"

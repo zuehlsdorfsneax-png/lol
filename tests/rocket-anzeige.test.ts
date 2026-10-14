@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LandingPilot } from '../src/rocket/autopilot';
 import { Flight, groundSpeed } from '../src/rocket/flight';
+import { distance, km } from '../src/rocket/format';
 import { TEMPLATES } from '../src/rocket/parts';
 import { EUROPA } from '../src/rocket/world';
 
@@ -58,5 +59,14 @@ describe('Tempo-Anzeige auf drehenden Monden', () => {
     }
     const above = at(30_000);
     expect(above.ground).toBeCloseTo(above.center, 6);
+  });
+});
+
+describe('Zahl und Einheit', () => {
+  it('Strecken brechen nicht zwischen Zahl und Einheit um', () => {
+    expect(distance(850)).toBe('850 m');
+    expect(distance(149_000)).toBe('149 km');
+    expect(km(384_400_000)).toBe('384.400 km');
+    expect(km(2e9)).toBe('2 Mio. km');
   });
 });

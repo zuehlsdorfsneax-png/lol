@@ -443,6 +443,8 @@ export function FlightScreen({
   const [report, setReport] = useState(false);
   /** Welche Menü-Aktion auf ein zweites Tippen wartet („Wirklich …?“). */
   const [confirm, setConfirm] = useState<'restart' | 'exit' | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const typed = useRef(false);
   const [touch] = useState(isTouch);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [saved, setSaved] = useState<FlightSnapshot | null>(() => loadSnapshot(sandbox));
@@ -550,7 +552,7 @@ export function FlightScreen({
   mapOpen.current = map;
   const pausedRef = useRef(paused);
   // Jeder offene Dialog hält das Spiel an – auch die Hilfe und das Ergebnis.
-  pausedRef.current = paused || briefing || report || help || result !== null;
+  pausedRef.current = paused || briefing || guide !== null || report || help || result !== null;
   const helpRef = useRef(help);
   helpRef.current = help;
   const countdownRef = useRef(countdown);
@@ -632,11 +634,15 @@ export function FlightScreen({
     try {
       localStorage.setItem(saveKey(sandbox), JSON.stringify(snap));
       setSaved(snap);
-      toast(
-        sandbox
-          ? 'Sandkasten-Spielstand gespeichert (F5). Laden mit F9.'
-          : 'Spielstand gespeichert (F5). Laden mit F9.',
-      );
+      if (paused) setJustSaved(true);
+      else
+        toast(
+          touch
+            ? 'Spielstand gespeichert.'
+            : sandbox
+              ? 'Sandkasten-Spielstand gespeichert (F5). Laden mit F9.'
+              : 'Spielstand gespeichert (F5). Laden mit F9.',
+        );
     } catch {
       toast('Speichern nicht möglich – der Browser erlaubt keinen Speicher.', 'warn');
     }
@@ -892,7 +898,10 @@ export function FlightScreen({
 
   // Nachfragen gelten nur, solange das Menü offen ist.
   useEffect(() => {
-    if (!paused) setConfirm(null);
+    if (!paused) {
+      setConfirm(null);
+      setJustSaved(false);
+    }
   }, [paused]);
 
   // Zurück-Taste (Browser, Handy): nicht einfach verlassen, sondern das Menü öffnen.
@@ -900,8 +909,12 @@ export function FlightScreen({
   useEffect(() => {
     if (backPressed === backStart.current) return;
     setHelp(false);
-    setPaused(true);
-    toast('Zum Verlassen im Menü „Zur Werft“ wählen.');
+    if (briefing) onExit();
+    else if (guide !== null) closeGuide();
+    else if (!report && result === null) {
+      setPaused(true);
+      toast('Zum Verlassen im Menü „Zur Werft“ wählen.');
+    }
   }, [backPressed]);
 
   // Neu laden oder Tab schließen während eines Flugs: der Browser fragt nach.
@@ -965,6 +978,7 @@ export function FlightScreen({
         if (k === 'escape') {
           e.preventDefault();
           if (helpRef.current) setHelp(false);
+          else if (guide !== null) closeGuide();
           else if (paused) setPaused(false);
         } else if ((k === 'h' || k === '?') && !briefing && !report && result === null) {
           setHelp((h) => !h);
@@ -1847,10 +1861,19 @@ export function FlightScreen({
       onPointerUp={(e) => {
         // Nach einem Klick behält ein Knopf sonst den Fokus – dann löst die Leertaste
         // (Stufe) ihn ein zweites Mal aus. Wer mit der Tastatur navigiert, behält den Fokus.
-        const t = (e.target as HTMLElement).closest('button');
-        if (t && e.pointerType !== '') t.blur();
+        const t = (e.target as HTMLElement).closest('button, [role="slider"]');
+        if (t && e.pointerType !== '') (t as HTMLElement).blur();
+      }}
+      onChange={(e) => {
+        // Ein Auswahlfeld oder Häkchen, das per Maus gesetzt wurde, behält sonst den Fokus
+        // und schluckt danach alle Flugtasten.
+        if (!typed.current) (e.target as HTMLElement).blur();
+      }}
+      onKeyDown={() => {
+        typed.current = true;
       }}
       onPointerDown={(e) => {
+        typed.current = false;
         // Klick neben das Zeitsprung-Menü schließt es.
         if (warpMenu && !(e.target as HTMLElement).closest('.warp-menu-wrap')) setWarpMenu(false);
       }}
@@ -2066,14 +2089,16 @@ export function FlightScreen({
         </div>
         {f.status !== 'crashed' && !paused && !briefing && (
           <div class="hud-tip">
-            {challenge && !pilotLabel
-              ? // Tipps der Herausforderung, alle paar Sekunden der nächste
-                (touch ? forTouch : (t: string) => t)(
-                  challenge.tips[Math.floor(performance.now() / 7000) % challenge.tips.length]!,
-                )
-              : touch
-                ? forTouch(tipFor(f, pilotLabel))
-                : tipFor(f, pilotLabel)}
+            {withUnits(
+              challenge && !pilotLabel
+                ? // Tipps der Herausforderung, alle paar Sekunden der nächste
+                  (touch ? forTouch : (t: string) => t)(
+                    challenge.tips[Math.floor(performance.now() / 7000) % challenge.tips.length]!,
+                  )
+                : touch
+                  ? forTouch(tipFor(f, pilotLabel))
+                  : tipFor(f, pilotLabel),
+            )}
           </div>
         )}
         {phoneLayout && toastList}
@@ -2144,11 +2169,11 @@ export function FlightScreen({
         {challenge ? (
           <div class="hud-card challenge-box">
             <div class="hud-card-title">{challenge.title}</div>
-            <p>{challenge.progress(f)}</p>
+            <p>{withUnits(challenge.progress(f))}</p>
             <ol>
               {challenge.stars.map((st, i) => (
                 <li key={st}>
-                  <span aria-hidden="true">{'★'.repeat(i + 1)}</span> {st}
+                  <span aria-hidden="true">{'★'.repeat(i + 1)}</span> {withUnits(st)}
                 </li>
               ))}
             </ol>
@@ -2456,11 +2481,12 @@ export function FlightScreen({
         </div>
       </div>
 
-      {paused && !help && f.status !== 'crashed' && !briefing && (
+      {paused && !help && f.status !== 'crashed' && !briefing && guide === null && (
         <PauseMenu
           confirm={confirm}
           inChallenge={!!challenge}
           saved={saved}
+          justSaved={justSaved}
           muted={muted}
           fileExport={FILE_EXPORT}
           onResume={() => setPaused(false)}

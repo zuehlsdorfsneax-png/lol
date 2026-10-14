@@ -216,6 +216,6 @@ describe('Herausforderungen: Reihenfolge und Texte', () => {
     f.stats.lastLanding = { body: 'earth', speed: 2, t: 10 };
     const r = challengeById('hop')!.judge(f, memo)!;
     expect(r.success).toBe(false);
-    expect(r.text).toContain('9.600 m');
+    expect(r.text).toContain('9.600\u00a0m');
   });
 });

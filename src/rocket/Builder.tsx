@@ -18,6 +18,7 @@ import {
 } from './sandbox';
 import { apsides, type Satellite } from './flight';
 import { km } from './format';
+import { isTouch } from './touch';
 import { GOALS, GOAL_GROUPS, RANKS, STAR_POINTS, careerPoints, rankFor } from './goals';
 import {
   PART_CATEGORIES,
@@ -1255,7 +1256,9 @@ function Werft({
             disabled={design.length === 0}
             onClick={() => {
               load([]);
-              setLockHint('Rakete abgebaut – „Zurück“ (Strg+Z) holt sie wieder.');
+              setLockHint(
+                `Rakete abgebaut – „Zurück“${isTouch() ? '' : ' (Strg+Z)'} holt sie wieder.`,
+              );
             }}
             aria-label="Ganze Rakete abbauen"
             title="Alle Teile entfernen (mit „Zurück“ rückgängig)"
