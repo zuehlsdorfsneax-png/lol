@@ -1,7 +1,9 @@
 apply plugin: 'com.android.application'
 
 // Versionsname aus package.json; die Versionsnummer muss bei jedem neuen Build steigen, damit
-// Android ein Update über die alte App installiert (in GitHub Actions: Nummer des Durchlaufs).
+// Android ein Update über die alte App installiert. Code = Anzahl der Commits * 1000 + Nummer des
+// GitHub-Durchlaufs (lokal 0); ein lokaler Build desselben Commits ist daher niedriger als der
+// aus GitHub und lässt sich nicht darüber installieren.
 def pkg = new groovy.json.JsonSlurper().parse(file('../../package.json'))
 def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
 def commitCount = 1

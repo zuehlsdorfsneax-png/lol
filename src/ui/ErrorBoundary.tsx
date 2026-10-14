@@ -24,7 +24,6 @@ export function ErrorBoundary({
     <div class="error-box" role="alert">
       <h2>Da ist etwas schiefgegangen</h2>
       <p>{where} ist auf einen Fehler gestoßen. Deine gespeicherten Fortschritte sind noch da.</p>
-      <p class="small muted">{error instanceof Error ? error.message : 'Unbekannter Fehler'}</p>
       <div class="row">
         <button
           type="button"

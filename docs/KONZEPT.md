@@ -11,7 +11,7 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
 
 1. **Werkzeug** für die Arbeit: Simulator, Stabilitätskarte und Lagrange-Labor liefern Ergebnisse,
    Abbildungen und Rohdaten (CSV).
-2. **Lernumgebung**: Sechs Kapitel folgen genau der Gliederung der Arbeit und verbinden Text,
+2. **Lernumgebung**: Neun Kapitel folgen genau der Gliederung der Arbeit und verbinden Text,
    Formeln und Experimente.
 3. **Spiel**: Missionen und Quiz machen die Grenzen der Stabilität erlebbar – für Präsentation und
    Mitschüler.
@@ -67,7 +67,7 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
 - Echtzeitspiel „L1-Station“: Sonde mit Triebwerk am instabilen Punkt halten, Vorhersagelinie,
   Treibstoffbudget
 - „Trojaner“: Asteroid bei L4 platzieren, 50 Jupiterumläufe überstehen
-- Quiz mit 18 Fragen; Fortschritt wird im Browser gespeichert
+- Quiz mit 27 Fragen; Fortschritt wird im Browser gespeichert
 - **Raketenwerft** (angelehnt an Spaceflight Simulator): Rakete aus Kapsel, Fallschirm, Tanks,
   Triebwerken, Stufentrennern, Seitenboostern und Landebeinen bauen; die Werft zeigt Δv je Stufe
   nach der Raketengleichung und das Schub-Gewichts-Verhältnis. Geflogen wird in einem
@@ -75,7 +75,7 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
   und Jupiter – echte Oberflächenschwerkraft und Massenverhältnisse, Runge-Kutta 4 in der
   Schwerkraft aller Körper, Luftwiderstand, Hitze beim Wiedereintritt, Fallschirm. Dazu die
   Raumstation Kepler mit Andocken, RCS-Düsen und Tanken, Startfenster (Hohmann) für Mond und
-  Planeten, eine verschiebbare Karte mit Mehrkörper-Bahnvorhersage und Begegnungen, 22 Ziele
+  Planeten, eine verschiebbare Karte mit Mehrkörper-Bahnvorhersage und Begegnungen, 40 Ziele
   mit Punkten, Rängen und Lackierungen, Spielstände, Pause, Sandkasten und Hilfe-Pilot.
   Automatische Tests fliegen eine komplette Mond- und eine komplette Marsmission.
 - **Lunas Sternenreise** für Jüngere: Schleuder-Spiel mit sechs Leveln

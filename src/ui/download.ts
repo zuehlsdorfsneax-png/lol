@@ -45,11 +45,17 @@ function trigger(name: string, url: string): void {
 }
 
 /** Kurze Rückmeldung am unteren Bildschirmrand. */
+let toastEl: HTMLElement | null = null;
+let toastTimer = 0;
+
 function showToast(message: string): void {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.setAttribute('role', 'status');
-  el.textContent = message;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2800);
+  if (!toastEl?.isConnected) {
+    toastEl = document.createElement('div');
+    toastEl.className = 'toast';
+    toastEl.setAttribute('role', 'status');
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent = message;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastEl?.remove(), 2800);
 }
