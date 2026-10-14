@@ -47,6 +47,22 @@ Entschieden (Standard, jederzeit änderbar):
 | Teile ohne Übergang                | Adapter zwischen 1,4 und 2,4 m bei Pfeil, Zwerg, Phönix, Sternwarte und Satellitenträger. |
 | Jupiter-Oberflächendruck           | 1 bar (Folge des Venus-Fixes).                                                            |
 
+## Runde vier: Fehlersuche
+
+Acht Suchläufe (Simulator, Physik, Spiele, Inhalte, App und Gestaltung, Raketenkern, Raketendaten,
+Raketenoberfläche) plus Raketen-Grafik und Code/Build ergaben 261 Befunde. Jeder wurde vor dem Beheben
+selbst nachvollzogen: 225 waren echt und sind behoben (meist mit Test, der vorher fehlschlug),
+28 waren kein Fehler, 4 sind bewusste Entscheidungen, 4 bleiben offen. Stand: 401 Tests, Smoke-Test
+22 Seiten × 2 Ansichten, alle 32 Missionen erfüllt.
+
+Offen aus dieser Runde:
+
+- Simulator auf schmalen Bildschirmen: Schublade oder angeheftete Zeichenfläche (Layout-Entscheidung).
+- Zurück/Vor stellt die Scrollposition nicht wieder her (braucht Scrollspeicher je History-Eintrag).
+- Release-Job: Löschen-dann-Anlegen und die Concurrency je Zweig lassen sich nur in der CI prüfen.
+- Android-Vorlagentests ohne Wert (`android/app/src/test`, `androidTest`) samt Test-Abhängigkeiten in
+  `android/app/build.gradle` von Hand entfernen; `git rm` wurde verweigert.
+
 ## Offen
 
 | Befund                                                   | Stand                                                                                                                                                                                                                                         |
