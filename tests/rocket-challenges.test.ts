@@ -200,3 +200,22 @@ describe('Herausforderungen', () => {
     expect(r.stars).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('Herausforderungen: Reihenfolge und Texte', () => {
+  it('das Array folgt der Gruppenreihenfolge', () => {
+    const order = ['Flugschule', 'Profi', 'Meister'];
+    const idx = CHALLENGES.map((c) => order.indexOf(c.group));
+    expect(idx).toEqual([...idx].sort((a, b) => a - b));
+  });
+
+  it('Fehlschlag beim Hüpfer nennt die Höhe genau und mit Einheit', () => {
+    const { f, memo } = start('hop');
+    f.status = 'landed';
+    f.maxAltitude = 9_600;
+    f.stats.liftoff = 1;
+    f.stats.lastLanding = { body: 'earth', speed: 2, t: 10 };
+    const r = challengeById('hop')!.judge(f, memo)!;
+    expect(r.success).toBe(false);
+    expect(r.text).toContain('9.600 m');
+  });
+});

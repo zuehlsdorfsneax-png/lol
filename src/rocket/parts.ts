@@ -1,4 +1,4 @@
-import { GAME_EARTH, G0, GAME_MOON, enginePressure, type Body } from './world';
+import { GAME_EARTH, G0, GAME_MOON, MARS, enginePressure, type Body } from './world';
 
 export type PartKind =
   | 'capsule'
@@ -104,7 +104,7 @@ export const PARTS: readonly PartDef[] = [
     thrust: 0,
     isp: 0,
     unlock: 150,
-    info: 'Enge Ein-Personen-Kapsel, halb so schwer wie die normale: mehr Δv für weite Reisen. Passt zum kleinen Fallschirm.',
+    info: 'Enge Ein-Personen-Kapsel, halb so schwer wie die normale: mehr Δv für weite Flüge. Passt zum kleinen Fallschirm.',
   },
   {
     id: 'sonde',
@@ -561,7 +561,7 @@ export const PARTS: readonly PartDef[] = [
     ispSea: 240,
     unlock: 300,
     flame: 'atom',
-    info: 'Ein Kernreaktor heizt Wasserstoff auf: fast dreimal so sparsam wie chemische Triebwerke, aber schwer und schwach. Für lange Reisen im All.',
+    info: 'Ein Kernreaktor heizt Wasserstoff auf: fast dreimal so sparsam wie chemische Triebwerke, aber schwer und schwach. Für lange Transfers im All.',
   },
   {
     id: 'orion',
@@ -1578,7 +1578,7 @@ export function checkDesign(design: Design, rules?: BuildRules): DesignProblem[]
   // Landestufe (mit Beinen): Schafft ihr Triebwerk die Landung auf Mond oder Mars?
   const lander = stats.find((st) => st.parts.some((id) => part(id).kind === 'legs'));
   if (lander && lander.thrust > 0) {
-    const gMars = 3.72;
+    const gMars = MARS.g;
     const twrMars = lander.thrust / (lander.startMass * gMars);
     if (lander.twrMoon < 1.2)
       problems.push({

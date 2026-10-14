@@ -5,9 +5,10 @@
  */
 import { wrapAngle } from '../physics/analysis';
 import { apsides, bodySpin, satelliteState, type Flight } from './flight';
-import { fmt, km } from './format';
+import { distance, fmt, km } from './format';
 import {
   CERES,
+  GANYMEDE,
   GAME_EARTH,
   JUPITER,
   MARS,
@@ -90,8 +91,6 @@ const PHOBOS_BASE = 1.2;
 const PHOBOS_START = PHOBOS_BASE + 2_000 / PHOBOS.radius;
 /** Der Eisvulkan Ahuna Mons auf Ceres (Winkel auf der Oberfläche; Ceres dreht sich im Spiel nicht). */
 const CERES_BASE = 0.9;
-/** Bahnradius Ganymeds (für die Wertung beim Einfangen am Jupiter). */
-const GANYMEDE_ORBIT = 100_800_000;
 
 /** Abstand entlang der Phobos-Oberfläche vom Startplatz (die Regel misst am Boden, nicht im Raum). */
 function phobosFromStart(f: Flight): number {
@@ -129,7 +128,7 @@ export const CHALLENGES: readonly Challenge[] = [
         return {
           success: false,
           stars: 0,
-          text: `Gelandet – aber nur ${km(f.maxAltitude)} hoch. Das Ziel sind 10 km.`,
+          text: `Gelandet – aber nur ${distance(f.maxAltitude)} hoch. Das Ziel sind 10 km.`,
         };
       return {
         success: true,
@@ -167,7 +166,7 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, dv > 1_000, o.apoapsis - o.periapsis < 15_000),
-        text: `Ap ${km(o.apoapsis)}, Pe ${km(o.periapsis)}, noch ${Math.round(dv)} m/s Δv.`,
+        text: `Ap ${km(o.apoapsis)}, Pe ${km(o.periapsis)}, noch ${fmt(dv)} m/s Δv.`,
       };
     },
     progress: (f) => {
@@ -203,12 +202,12 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, f.t < 3600, f.stats.dvUsed <= 560),
-        text: `Pe ${km(o.periapsis)}, Ap ${km(o.apoapsis)}, ${Math.round(f.stats.dvUsed)} m/s verbraucht.`,
+        text: `Pe ${km(o.periapsis)}, Ap ${km(o.apoapsis)}, ${fmt(f.stats.dvUsed)} m/s verbraucht.`,
       };
     },
     progress: (f) => {
       const o = f.orbit(GAME_EARTH);
-      return `Ap ${o.bound ? km(o.apoapsis) : '–'} · Pe ${km(o.periapsis)} · ${Math.round(f.stats.dvUsed)} m/s`;
+      return `Ap ${o.bound ? km(o.apoapsis) : '–'} · Pe ${km(o.periapsis)} · ${fmt(f.stats.dvUsed)} m/s`;
     },
   },
   {
@@ -237,7 +236,7 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, f.t < 3600, f.stats.dvUsed < 200),
-        text: `Angedockt nach ${Math.round(f.t / 60)} min mit ${Math.round(f.stats.dvUsed)} m/s Δv.`,
+        text: `Angedockt nach ${Math.round(f.t / 60)} min mit ${fmt(f.stats.dvUsed)} m/s Δv.`,
       };
     },
     progress: (f) => {
@@ -320,14 +319,12 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, d <= 20_000, d <= 2_000),
-        text: `Gelandet ${d < 10_000 ? `${Math.round(d)} m` : km(d)} neben der Basis.`,
+        text: `Gelandet ${distance(d)} neben der Basis.`,
       };
     },
     progress: (f) => {
       const s = f.siteInfo();
-      return s
-        ? `Abstand zur Basis: ${s.distance < 10_000 ? `${Math.round(s.distance)} m` : km(s.distance)}`
-        : '';
+      return s ? `Abstand zur Basis: ${distance(s.distance)}` : '';
     },
   },
   {
@@ -360,6 +357,48 @@ export const CHALLENGES: readonly Challenge[] = [
       };
     },
     progress: (f) => `Treibstoff: ${pct(f.active.fuel / Math.max(1, f.fuelCapacity))}`,
+  },
+  {
+    id: 'ceres',
+    group: 'Profi',
+    title: 'Eisvulkan auf Ceres',
+    brief:
+      'Aus einer niedrigen Bahn um den Zwergplaneten Ceres hinunter zum Eisvulkan Ahuna Mons – und dort sanft aufsetzen.',
+    tips: [
+      'Um Ceres geht es nur mit rund 100 m/s – ein kurzer Bremsschub gegen die Flugrichtung genügt.',
+      'Der Eisvulkan ist auf der Karte (M) markiert. Bremse, wenn er etwa eine Viertelrunde vor dir liegt.',
+      'Ceres zieht nur mit 0,28 m/s² – kurz vor dem Boden reicht ganz wenig Schub.',
+    ],
+    stars: ['gelandet', 'höchstens 5 km vom Ahuna Mons', 'höchstens 1 km vom Ahuna Mons'],
+    design: ['sonde', 'tank-s', 'beine', 'kolibri'],
+    computer: true,
+    setup(f) {
+      f.site = { body: 'ceres', angle: CERES_BASE, name: 'Ahuna Mons' };
+      // Die Bahn läuft im Uhrzeigersinn: der Vulkan liegt rund drei Achtel einer Runde voraus.
+      f.placeInOrbit(CERES, 15_000, CERES_BASE + 2.4);
+      f.target = 'ceres';
+    },
+    judge(f) {
+      const c = crashed(f);
+      if (c) return c;
+      if (f.status === 'flying' && f.refBody() !== CERES)
+        return {
+          success: false,
+          stars: 0,
+          text: 'Zu viel Schub – die Sonde ist Ceres davongeflogen.',
+        };
+      if (f.status !== 'landed') return null;
+      const d = f.siteInfo()!.distance;
+      return {
+        success: true,
+        ...stars(true, d <= 5_000, d <= 1_000),
+        text: `Gelandet ${distance(d)} vom Ahuna Mons.`,
+      };
+    },
+    progress: (f) => {
+      const s = f.siteInfo();
+      return s ? `Abstand zum Ahuna Mons: ${distance(s.distance)}` : '';
+    },
   },
   {
     id: 'glider',
@@ -485,7 +524,7 @@ export const CHALLENGES: readonly Challenge[] = [
       return {
         success: true,
         ...stars(true, d <= 250, d <= 50),
-        text: `Gelandet ${Math.round(d)} m neben der Station.`,
+        text: `Gelandet ${distance(d)} neben der Station.`,
       };
     },
     progress: (f) => {
@@ -493,51 +532,7 @@ export const CHALLENGES: readonly Challenge[] = [
       if (!s) return '';
       if (f.status === 'landed' && f.stats.liftoff !== null && phobosFromStart(f) < 500)
         return 'Zu nah am Start – lande mindestens 500 m davon entfernt.';
-      return `Abstand zur Station: ${Math.round(s.distance)} m`;
-    },
-  },
-  {
-    id: 'ceres',
-    group: 'Profi',
-    title: 'Eisvulkan auf Ceres',
-    brief:
-      'Aus einer niedrigen Bahn um den Zwergplaneten Ceres hinunter zum Eisvulkan Ahuna Mons – und dort sanft aufsetzen.',
-    tips: [
-      'Um Ceres geht es nur mit rund 100 m/s – ein kurzer Bremsschub gegen die Flugrichtung genügt.',
-      'Der Eisvulkan ist auf der Karte (M) markiert. Bremse, wenn er etwa eine Viertelrunde vor dir liegt.',
-      'Ceres zieht nur mit 0,28 m/s² – kurz vor dem Boden reicht ganz wenig Schub.',
-    ],
-    stars: ['gelandet', 'höchstens 5 km vom Ahuna Mons', 'höchstens 1 km vom Ahuna Mons'],
-    design: ['sonde', 'tank-s', 'beine', 'kolibri'],
-    computer: true,
-    setup(f) {
-      f.site = { body: 'ceres', angle: CERES_BASE, name: 'Ahuna Mons' };
-      // Die Bahn läuft im Uhrzeigersinn: der Vulkan liegt gut eine halbe Runde voraus.
-      f.placeInOrbit(CERES, 15_000, CERES_BASE + 2.4);
-      f.target = 'ceres';
-    },
-    judge(f) {
-      const c = crashed(f);
-      if (c) return c;
-      if (f.status === 'flying' && f.refBody() !== CERES)
-        return {
-          success: false,
-          stars: 0,
-          text: 'Zu viel Schub – die Sonde ist Ceres davongeflogen.',
-        };
-      if (f.status !== 'landed') return null;
-      const d = f.siteInfo()!.distance;
-      return {
-        success: true,
-        ...stars(true, d <= 5_000, d <= 1_000),
-        text: `Gelandet ${d < 10_000 ? `${Math.round(d)} m` : km(d)} vom Ahuna Mons.`,
-      };
-    },
-    progress: (f) => {
-      const s = f.siteInfo();
-      return s
-        ? `Abstand zum Ahuna Mons: ${s.distance < 10_000 ? `${Math.round(s.distance)} m` : km(s.distance)}`
-        : '';
+      return `Abstand zur Station: ${distance(s.distance)}`;
     },
   },
   {
@@ -601,7 +596,7 @@ export const CHALLENGES: readonly Challenge[] = [
       const used = f.stats.dvUsed - memo.dv0;
       return {
         success: true,
-        ...stars(true, used <= 1_200, o.apoapsis + JUPITER.radius < GANYMEDE_ORBIT),
+        ...stars(true, used <= 1_200, o.apoapsis + JUPITER.radius < GANYMEDE.distance),
         text: `Eingefangen mit ${fmt(used)} m/s: tiefster Punkt ${km(o.periapsis)}, höchster ${km(o.apoapsis)}.`,
       };
     },

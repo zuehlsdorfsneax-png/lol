@@ -4,7 +4,15 @@ import { Flight, WARPS, satelliteState } from '../src/rocket/flight';
 import { elements, stateAt, timeToApoapsis, timeToPeriapsis } from '../src/rocket/kepler';
 import { TEMPLATES } from '../src/rocket/parts';
 import { arrivalPeriapsis, makePlan, planCircularize } from '../src/rocket/planner';
-import { GAME_EARTH, GAME_MOON, bodyById, bodyState, circularSpeed } from '../src/rocket/world';
+import {
+  CERES,
+  GAME_EARTH,
+  GAME_MOON,
+  MARS,
+  bodyById,
+  bodyState,
+  circularSpeed,
+} from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 
@@ -215,6 +223,17 @@ describe('Bordcomputer: Rendezvous mit der Station', () => {
 });
 
 describe('Satelliten und Hitzeschild', () => {
+  it('Planetensonde gibt es nur für echte Planeten, nicht für Zwergplaneten', () => {
+    const ceres = new Flight(template('satnet'));
+    ceres.placeInOrbit(CERES, 20_000, 1);
+    expect(ceres.deploySatellite()).toBe(true);
+    expect(ceres.goals.has('planetsat')).toBe(false);
+    const mars = new Flight(template('satnet'));
+    mars.placeInOrbit(MARS, 300_000, 1);
+    expect(mars.deploySatellite()).toBe(true);
+    expect(mars.goals.has('planetsat')).toBe(true);
+  });
+
   it('ein ausgesetzter Satellit kreist auf seiner Kepler-Bahn weiter', () => {
     const f = new Flight(template('satnet'));
     f.placeInOrbit(GAME_EARTH, 300_000, 1);

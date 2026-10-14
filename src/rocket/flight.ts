@@ -1771,7 +1771,8 @@ export class Flight {
     if (earth.some((s) => apsides(s.el).peri - GAME_EARTH.radius > 2_000_000)) this.goal('highsat');
     if (earth.length >= 3) this.goal('network');
     if (around('moon').length) this.goal('moonsat');
-    if (real.some((s) => !['earth', 'moon', 'sun'].includes(s.body))) this.goal('planetsat');
+    if (real.some((s) => ['mercury', 'venus', 'mars', 'jupiter'].includes(s.body)))
+      this.goal('planetsat');
   }
 
   // ---------------------------------------------------------------- Manöver

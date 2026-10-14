@@ -74,7 +74,7 @@ export const GOALS: readonly GoalDef[] = [
     group: 'Erde',
     points: 5,
     title: '10 km Höhe',
-    text: 'Höher als jedes Verkehrsflugzeug.',
+    text: 'So hoch fliegen Verkehrsflugzeuge.',
   },
   {
     id: 'space',
@@ -95,7 +95,7 @@ export const GOALS: readonly GoalDef[] = [
     group: 'Erde',
     points: 15,
     title: 'Hohe Bahn',
-    text: 'Eine geschlossene Erdbahn, deren höchster Punkt über 1.000 km liegt.',
+    text: 'Eine geschlossene Erdbahn, deren höchster Punkt über 1.000 km und deren tiefster Punkt über der Atmosphäre (40 km) liegt.',
   },
   {
     id: 'dock',
