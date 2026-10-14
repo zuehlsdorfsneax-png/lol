@@ -28,4 +28,18 @@ describe('Vorhersage im Luftraum', () => {
     expect(f.status).toBe('crashed');
     expect(Math.abs(f.t - predictedEnd)).toBeLessThan(10);
   });
+
+  it('trifft mit scharfem Schirm die Landezeit auch bei großen Bahnschritten', () => {
+    const f = new Flight(template('kurier'));
+    f.placeInOrbit(GAME_EARTH, 100_000, 0);
+    f.vx *= 0.75;
+    f.vy *= 0.75;
+    f.deployChute();
+    const pred = f.predict();
+    const predictedEnd = pred.ts[pred.n - 1]!;
+
+    for (let i = 0; i < 200_000 && f.status === 'flying'; i++) f.update(DT);
+    expect(f.status).not.toBe('flying');
+    expect(Math.abs(f.t - predictedEnd) / f.t).toBeLessThan(0.03);
+  });
 });

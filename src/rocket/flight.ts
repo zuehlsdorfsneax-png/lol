@@ -898,7 +898,7 @@ export class Flight {
   /** Bremsfläche der Fallschirme im Vergleich zu einem normalen Schirm. */
   get chuteArea(): number {
     return this.allParts().reduce(
-      (s, id) => s + (part(id).kind === 'chute' ? (part(id).chuteArea ?? 1) : 0),
+      (s, id) => s + (part(id).kind === 'chute' ? (part(id).chuteArea ?? 1) * copies(id) : 0),
       0,
     );
   }
@@ -987,11 +987,6 @@ export class Flight {
     return this.active.parts.some((id) => part(id).kind === 'legs');
   }
 
-  /** Stoßdämpfer-Beine: noch härtere Landungen möglich. */
-  get hasStrongLegs(): boolean {
-    return this.active.parts.includes('beine-xl');
-  }
-
   /** Sitzt ein Hitzeschild ganz unten? */
   get shieldAtBottom(): boolean {
     return this.bottomPart?.kind === 'shield';
@@ -1062,9 +1057,9 @@ export class Flight {
       const seg = this.segs[i]!;
       const dry = seg.parts.reduce((s, id) => s + part(id).dry * copies(id), 0);
       const { thrust, flow } = this.stageEngine(seg.parts);
-      if (thrust > 0 && (seg.fuel > 0 || this.infiniteFuel)) {
+      if (thrust > 0 && seg.fuel > 0) {
         const ve = thrust / flow;
-        const stageDv = this.infiniteFuel ? Infinity : ve * Math.log(mass / (mass - seg.fuel));
+        const stageDv = ve * Math.log(mass / (mass - seg.fuel));
         if (left <= stageDv) {
           time += (mass * (1 - Math.exp(-left / ve))) / flow;
           left = 0;
@@ -1082,10 +1077,6 @@ export class Flight {
   state(b: Body): { x: number; y: number; vx: number; vy: number } {
     const [x, y, vx, vy] = bodyState(b, this.t);
     return { x, y, vx, vy };
-  }
-
-  moon(): { x: number; y: number; vx: number; vy: number } {
-    return this.state(GAME_MOON);
   }
 
   /** Bezugskörper: der kleinste Körper, in dessen Hill-Sphäre die Rakete ist. */
@@ -1338,7 +1329,6 @@ export class Flight {
    * ohne offenen Fallschirm (∞ ohne Luft oder ohne Luftwiderstand).
    */
   terminalSpeed(g: number, rho: number, chute = false): number {
-    if (!this.dragOn) return Infinity;
     const cda = this.hullDrag(0) + (chute ? CHUTE_CDA * this.chuteArea : 0);
     return rho > 0 ? Math.sqrt((2 * this.mass * g) / (rho * cda)) : Infinity;
   }
@@ -1375,7 +1365,7 @@ export class Flight {
         limit = WARPS.indexOf(this.burnWarpLimit() as (typeof WARPS)[number]);
       const { body, altitude } = this.nearest();
       if (altitude < 3_000) limit = Math.min(limit, WARPS.indexOf(10));
-      else if (altitude < 30_000 || altitude < body.atmosphere)
+      else if ((altitude < 30_000 || altitude < body.atmosphere) && !this.railsBody())
         limit = Math.min(limit, WARPS.indexOf(50));
       // Nahe der Station nicht vorbeirasen.
       const ti = this.target === 'station' ? this.targetInfo() : null;
@@ -2804,12 +2794,27 @@ export class Flight {
     }
   }
 
+  /**
+   * Ein Vorhersageschritt: In der Luft in Teilschritten von höchstens 0,25 s, denn der Schirm
+   * bremst in Sekundenschritten sonst zu spät und die Rakete käme zu früh unten an.
+   */
+  private coastAdvance(s: Coast, dt: number): void {
+    const inAir = AIR_BODIES.some((b) => {
+      const [bx, by] = bodyState(b, s.t);
+      return Math.hypot(s.x - bx, s.y - by) - b.radius < b.atmosphere;
+    });
+    const n = inAir ? Math.ceil(dt / 0.25) : 1;
+    for (let i = 0; i < n; i++) {
+      coastStep(s, dt / n);
+      this.coastDrag(s, dt / n);
+    }
+  }
+
   /** Freier Flug bis `until` (ohne Schub). false, wenn die Schrittgrenze oder ein Körper stört. */
   private coastTo(s: Coast, until: number, maxSteps: number): boolean {
     for (let i = 0; i < maxSteps && s.t < until - 1e-9; i++) {
       const dt = Math.min(coastDt(s.x, s.y, s.vx, s.vy, s.t), until - s.t);
-      coastStep(s, dt);
-      this.coastDrag(s, dt);
+      this.coastAdvance(s, dt);
       for (const b of BODIES) {
         const [bx, by] = bodyState(b, s.t);
         if (Math.hypot(s.x - bx, s.y - by) < b.radius) return false;
@@ -2935,8 +2940,7 @@ export class Flight {
         hitNode = true;
       }
       if (dt > 1e-9) {
-        coastStep(s, dt);
-        this.coastDrag(s, dt);
+        this.coastAdvance(s, dt);
       }
       push();
       const i = n - 1;

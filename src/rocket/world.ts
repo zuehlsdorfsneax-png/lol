@@ -510,10 +510,8 @@ export function orbitalPeriod(b: Body): number {
 export const MOON_DISTANCE = GAME_MOON.distance;
 export const MOON_RATE = RATES.get('moon')!;
 export const MOON_PERIOD = (2 * Math.PI) / MOON_RATE;
-export const MOON_SPEED = MOON_RATE * MOON_DISTANCE;
 /** Hill-Radius des Mondes im Schwerefeld der Erde – Grenze seines Einflussbereichs. */
 export const MOON_HILL = GAME_MOON.hill;
-export const MOON_PHASE0 = GAME_MOON.phase0;
 
 export function moonAngle(t: number): number {
   return orbitAngle(GAME_MOON, t);
@@ -544,11 +542,6 @@ export function densityAt(b: Body, altitude: number): number {
  */
 export function enginePressure(rho: number): number {
   return Math.min(1, rho / 1.2);
-}
-
-/** Luftdichte der Erde (Skalenhöhe 7 km). */
-export function airDensity(altitude: number): number {
-  return densityAt(GAME_EARTH, altitude);
 }
 
 // ------------------------------------------------------------------ Schwerkraft
@@ -641,12 +634,6 @@ export function orbitAround(b: Body, rx: number, ry: number, vx: number, vy: num
   };
 }
 
-/** Liegt der Punkt im Einflussbereich (Hill-Sphäre) des Mondes? */
-export function inMoonSphere(x: number, y: number, t: number): boolean {
-  const [mx, my] = moonPosition(t);
-  return Math.hypot(x - mx, y - my) < MOON_HILL;
-}
-
 /** Kreisbahngeschwindigkeit in der Höhe h. */
 export function circularSpeed(b: Body, h: number): number {
   return Math.sqrt(b.mu / (b.radius + h));
@@ -671,12 +658,6 @@ export function requiredExcess(from: Body, to: Body): number {
   const parent = bodyById(from.parent!);
   const v = Math.sqrt(parent.mu / from.distance);
   return v * (Math.sqrt((2 * to.distance) / (from.distance + to.distance)) - 1);
-}
-
-/** Überschussgeschwindigkeit relativ zu einem Körper (0, solange die Bahn gebunden ist). */
-export function excessSpeed(b: Body, rx: number, ry: number, vx: number, vy: number): number {
-  const e = (vx * vx + vy * vy) / 2 - b.mu / Math.hypot(rx, ry);
-  return e > 0 ? Math.sqrt(2 * e) : 0;
 }
 
 /** Aktueller Winkelvorsprung von `to` vor `from` (in Flugrichtung, 0 … 2π). */

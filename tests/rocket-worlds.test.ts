@@ -239,3 +239,11 @@ function execute(f: Flight): string {
   f.throttle = 0;
   return x.phase;
 }
+
+describe('Zeitraffer in niedriger, stabiler Bahn', () => {
+  it('eine Mondbahn in 20 km Höhe läuft auf Schienen und ist nicht auf 50× gedeckelt', () => {
+    const f = new Flight(TEMPLATES.find((t) => t.id === 'faehre')!.parts);
+    f.placeInOrbit(GAME_MOON, 20_000, 0);
+    expect(WARPS[f.maxWarpIndex()]).toBeGreaterThan(50);
+  });
+});

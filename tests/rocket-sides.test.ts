@@ -68,6 +68,19 @@ describe('Seitlich angebaute Teile (Paare)', () => {
     expect(new Flight(['kapsel', 'hitzeschild', 'solar@2']).shieldAtBottom).toBe(true);
   });
 
+  it('ein seitliches Fallschirm-Paar bremst wie zwei Schirme', () => {
+    const pair = new Flight(['kapsel-xl', 'tank-m', 'falke', 'fallschirm-xl@2']);
+    const two = new Flight(['kapsel-xl', 'fallschirm-xl', 'fallschirm-xl', 'tank-m', 'falke']);
+    expect(pair.chuteArea).toBe(two.chuteArea);
+    expect(pair.chuteLandingSpeed(GAME_EARTH)).toBeCloseTo(two.chuteLandingSpeed(GAME_EARTH), 1);
+  });
+
+  it('ohne Luftwiderstand tragen Fallschirme weiter', () => {
+    const f = new Flight(['kapsel', 'fallschirm', 'tank-m', 'falke']);
+    f.dragOn = false;
+    expect(f.chuteLandingSpeed(GAME_EARTH)).toBeLessThan(20);
+  });
+
   it('es gibt keine Obergrenze für die Zahl der Teile', () => {
     const big = ['kapsel', ...Array<string>(60).fill('tank-s'), 'mammut'];
     expect(checkDesign(big).filter((p) => p.level === 'error')).toEqual([]);
