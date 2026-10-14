@@ -370,9 +370,11 @@ function MoonJacobi() {
             <dd>{fmt((check.C - check.CL1) * 1e4, 2)} · 10⁻⁴</dd>
           </dl>
           <StatusChip status={check.trapped ? 'ok' : 'warn'}>
-            {check.trapped
-              ? 'Tor bei L1 geschlossen: beweisbar gebunden'
-              : 'Tor offen: Flucht möglich, aber nicht sicher'}
+            {!check.inLobe
+              ? 'Außerhalb der Hill-Sphäre: Kriterium greift nicht'
+              : check.trapped
+                ? 'Tor bei L1 geschlossen: beweisbar gebunden'
+                : 'Tor offen: Flucht möglich, aber nicht sicher'}
           </StatusChip>
           <p class="small muted">
             Probiere den heutigen Mond retrograd: Er ist trotzdem stabil, obwohl das Kriterium knapp

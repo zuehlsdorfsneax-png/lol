@@ -220,7 +220,9 @@ export interface JacobiCheck {
   C: number;
   CL1: number;
   CL2: number;
-  /** C > C_L1: Die Nullgeschwindigkeitsfläche ist um den Planeten geschlossen – der Mond kann nie entkommen. */
+  /** Der Mond liegt näher am Planeten als L1, also im Planetenlappen (nicht in der Außenregion). */
+  inLobe: boolean;
+  /** C > C_L1 und im Planetenlappen: Die Nullgeschwindigkeitsfläche ist um den Planeten geschlossen – der Mond kann nie entkommen. */
   trapped: boolean;
 }
 
@@ -257,5 +259,6 @@ export function jacobiCheck(
   const [l1, l2] = lagrangePoints(mu);
   const CL1 = jacobiConstant(mu, l1!.x, 0, 0, 0);
   const CL2 = jacobiConstant(mu, l2!.x, 0, 0, 0);
-  return { mu, C, CL1, CL2, trapped: C > CL1 };
+  const inLobe = Math.hypot(X - (1 - mu), Y) < 1 - mu - l1!.x;
+  return { mu, C, CL1, CL2, inLobe, trapped: inLobe && C > CL1 };
 }

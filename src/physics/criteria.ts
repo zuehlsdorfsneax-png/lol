@@ -26,15 +26,17 @@ export function perihelionHillRadius(
  * Kritische große Halbachse eines Mondes in Hill-Radien (r_H = a·∛(m/3M)) nach Domingos, Winter & Yokoyama (2006),
  * MNRAS 373, 1227: numerisch bestimmte Stabilitätsgrenze für prograde und retrograde Monde.
  * `planetEcc` = Exzentrizität der Planetenbahn, `moonEcc` = Exzentrizität der Mondbahn.
+ * Die lineare Anpassung wird bei großen Exzentrizitäten negativ; dann gibt es keinen stabilen Bereich (0).
  */
 export function criticalMoonDistance(
   retrograde: boolean,
   planetEcc: number,
   moonEcc: number,
 ): number {
-  return retrograde
+  const crit = retrograde
     ? 0.9309 * (1 - 1.0764 * planetEcc - 0.9812 * moonEcc)
     : 0.4895 * (1 - 1.0305 * planetEcc - 0.2738 * moonEcc);
+  return Math.max(0, crit);
 }
 
 /**

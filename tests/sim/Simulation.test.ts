@@ -144,6 +144,14 @@ describe('assessStability', () => {
     expect(a.checks.every((c) => c.status === 'ok')).toBe(true);
   });
 
+  it('meldet das Jacobi-Kriterium nicht für Monde außerhalb der Hill-Sphäre', () => {
+    const a = assessStability({ ...REAL_PARAMS, moonDistance: 3e6, moonSpeed: 1 });
+    expect(a.checks.find((c) => c.id === 'hill')?.status).toBe('fail');
+    const jacobi = a.checks.find((c) => c.id === 'jacobi')!;
+    expect(jacobi.status).toBe('warn');
+    expect(jacobi.detail).toContain('außerhalb der Hill-Sphäre');
+  });
+
   it('erkennt Absturz, Flucht und zu große Abstände', () => {
     const base = { ...REAL_PARAMS, moonDistance: 384_400, moonSpeed: 1 };
     const crash = assessStability({ ...base, moonSpeed: 0.1 });

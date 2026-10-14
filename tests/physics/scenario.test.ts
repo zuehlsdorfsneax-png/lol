@@ -96,6 +96,11 @@ describe('Kriterien', () => {
     expect(criticalMoonDistance(false, 0.1, 0)).toBeLessThan(0.4895);
   });
 
+  it('Domingos-Kriterium wird nie negativ', () => {
+    expect(criticalMoonDistance(false, 0.9, 0.5)).toBe(0);
+    expect(criticalMoonDistance(true, 0.9, 0.2)).toBe(0);
+  });
+
   it('Die Sonne zieht den Mond doppelt so stark an wie die Erde – die Störung ist trotzdem klein', () => {
     const pull = pullRatio(SUN.mass, AU, EARTH.mass, MOON.semiMajorAxis);
     expect(pull).toBeCloseTo(2.2, 1);

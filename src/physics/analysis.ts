@@ -26,11 +26,12 @@ export function linearRegression(xs: ArrayLike<number>, ys: ArrayLike<number>): 
     sxy += dx * dy;
     syy += dy * dy;
   }
-  const slope = sxx === 0 ? 0 : sxy / sxx;
+  if (n < 2 || sxx === 0) return { slope: NaN, intercept: NaN, r2: NaN };
+  const slope = sxy / sxx;
   return {
     slope,
     intercept: my - slope * mx,
-    r2: sxx === 0 || syy === 0 ? 1 : (sxy * sxy) / (sxx * syy),
+    r2: syy === 0 ? 1 : (sxy * sxy) / (sxx * syy),
   };
 }
 

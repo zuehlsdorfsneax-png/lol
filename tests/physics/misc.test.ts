@@ -112,6 +112,19 @@ describe('Auswertung', () => {
     expect(r.r2).toBeCloseTo(1, 12);
   });
 
+  it('Regression ohne Aussagekraft liefert NaN statt einer perfekten Anpassung', () => {
+    for (const r of [
+      linearRegression([], []),
+      linearRegression([1], [2]),
+      linearRegression([2, 2], [1, 3]),
+    ]) {
+      expect(r.slope).toBeNaN();
+      expect(r.intercept).toBeNaN();
+      expect(r.r2).toBeNaN();
+    }
+    expect(linearRegression([0, 1, 2], [4, 4, 4])).toEqual({ slope: 0, intercept: 4, r2: 1 });
+  });
+
   it('Winkel entfalten und normieren', () => {
     expect(unwrap([3, -3, -1])).toEqual([3, -3 + 2 * Math.PI, -1 + 2 * Math.PI]);
     expect(wrapAngle(3 * Math.PI)).toBeCloseTo(Math.PI, 12);

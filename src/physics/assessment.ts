@@ -22,7 +22,7 @@ export interface Assessment {
   checks: StabilityCheck[];
 }
 
-const fmtKm = (m: number): string => `${Math.round(m / 1000).toLocaleString('de-DE')} km`;
+const fmtKm = (m: number): string => `${Math.round(m / 1000).toLocaleString('de-DE')}\u00a0km`;
 
 /**
  * Prognose aus den Startwerten – vor jeder Simulation. Verbindet die Kriterien aus Kapitel 5
@@ -107,9 +107,11 @@ export function assessStability(params: ScenarioParams): Assessment {
       id: 'jacobi',
       title: 'Jacobi-Kriterium (Hill-Stabilität)',
       status: j.trapped ? 'ok' : 'warn',
-      detail: j.trapped
-        ? `C = ${de(j.C, 6)} > C(L1) = ${de(j.CL1, 6)}: Der Mond kann die Hill-Sphäre nie verlassen.`
-        : `C = ${de(j.C, 6)} ≤ C(L1) = ${de(j.CL1, 6)}: Das Tor bei L1 ist offen – Flucht möglich, aber nicht zwingend.`,
+      detail: !j.inLobe
+        ? 'Der Mond liegt außerhalb der Hill-Sphäre; das Kriterium gilt nur für Monde um den Planeten.'
+        : j.trapped
+          ? `C = ${de(j.C, 6)} > C(L1) = ${de(j.CL1, 6)}: Der Mond kann die Hill-Sphäre nie verlassen.`
+          : `C = ${de(j.C, 6)} ≤ C(L1) = ${de(j.CL1, 6)}: Das Tor bei L1 ist offen – Flucht möglich, aber nicht zwingend.`,
     });
   }
 
