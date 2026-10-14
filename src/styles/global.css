@@ -19,13 +19,13 @@
   --accent: #b7791f;
   --accent-ink: #7d5210;
   --accent-soft: #f6e9cc;
-  --accent-contrast: #ffffff;
+  --accent-contrast: #1a1305;
   --focus: #2f6feb;
   --ok: #137345;
   --ok-soft: #dcf1e5;
   --warn: #a8570a;
   --warn-soft: #fbead3;
-  --fail: #c0352b;
+  --fail: #b02f25;
   --fail-soft: #f9dedb;
   --series-1: #2a78d6;
   --series-2: #eb6834;
@@ -1045,6 +1045,18 @@ input[type='range']::-moz-range-thumb {
   background: var(--surface);
   color: var(--ink);
   font-weight: 500;
+}
+
+.map-progress {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.map-progress > div {
+  height: 100%;
+  background: var(--accent);
 }
 
 select.select {
@@ -2871,5 +2883,13 @@ table.data.compact th.num {
   .btn.icon {
     width: 44px;
     min-width: 44px;
+  }
+
+  select.select {
+    min-height: 44px;
+  }
+
+  input[type='range'] {
+    height: 44px;
   }
 }

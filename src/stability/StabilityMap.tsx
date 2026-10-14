@@ -15,6 +15,7 @@ import {
   cellParams,
   outcomeClass,
   realMoonMarker,
+  sliderRange,
   theoryOverlays,
   type AxisKey,
   type CellResult,
@@ -50,16 +51,17 @@ function configFromPreset(
   return { ...p.config, nx, ny, years, roche: true, base: DEFAULT_BASE };
 }
 
+const RAMP = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
+
 /** Farbe einer Zelle. */
 function cellColor(r: CellResult, mode: Mode, years: number, c: ThemeColors): string {
   const cls = outcomeClass(r.outcome);
   if (mode === 'outcome')
     return cls === 'stable' ? c.series[2]! : cls === 'crash' ? c.series[1]! : c.series[0]!;
   // Lebensdauer: sequentielle Blau-Skala, dunkel = lange stabil.
-  const ramp = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
-  if (cls === 'stable') return ramp[ramp.length - 1]!;
+  if (cls === 'stable') return RAMP[RAMP.length - 1]!;
   const t = Math.log10(Math.max(r.time / 86_400, 1)) / Math.log10(years * 365.25);
-  return ramp[Math.min(ramp.length - 2, Math.max(0, Math.floor(t * (ramp.length - 1))))]!;
+  return RAMP[Math.min(RAMP.length - 2, Math.max(0, Math.floor(t * (RAMP.length - 1))))]!;
 }
 
 export function StabilityMap({ preset, compact = false }: Props) {
@@ -89,7 +91,16 @@ export function StabilityMap({ preset, compact = false }: Props) {
   const stop = (): void => {
     for (const w of workers.current) w.terminate();
     workers.current = [];
-    setProgress((p) => ({ ...p, running: false }));
+    setProgress((p) =>
+      p.running
+        ? {
+            ...p,
+            running: false,
+            done: results.current.filter(Boolean).length,
+            seconds: (performance.now() - startTime.current) / 1000,
+          }
+        : p,
+    );
   };
 
   const run = (cfg: MapConfig = config): void => {
@@ -403,6 +414,19 @@ export function StabilityMap({ preset, compact = false }: Props) {
     return n;
   }, [progress.done, progress.running]);
 
+  const moveSelection = (e: KeyboardEvent): void => {
+    const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[
+      e.key
+    ];
+    if (!step) return;
+    e.preventDefault();
+    const from = selected ?? { i: Math.floor(shown.nx / 2), j: Math.floor(shown.ny / 2) };
+    setSelected({
+      i: Math.min(shown.nx - 1, Math.max(0, from.i + step[0]!)),
+      j: Math.min(shown.ny - 1, Math.max(0, from.j + step[1]!)),
+    });
+  };
+
   const hoverInfo = hover ? describe(hover.i, hover.j) : null;
   const selInfo = selected ? describe(selected.i, selected.j) : null;
   const presetMeta = MAP_PRESETS.find((m) => m.id === presetId);
@@ -527,8 +551,10 @@ export function StabilityMap({ preset, compact = false }: Props) {
         <canvas
           ref={canvasRef}
           style={{ height: `${height}px`, cursor: 'crosshair' }}
-          role="img"
-          aria-label={`Stabilitätskarte: ${AXES[shown.y].label} über ${AXES[shown.x].label}`}
+          role="group"
+          tabIndex={0}
+          aria-label={`Stabilitätskarte: ${AXES[shown.y].label} über ${AXES[shown.x].label}. Pfeiltasten wählen eine Zelle.`}
+          onKeyDown={moveSelection}
           onPointerMove={(e) => setHover(cellAt(e))}
           onPointerLeave={() => setHover(null)}
           onClick={(e) => {
@@ -597,9 +623,11 @@ export function StabilityMap({ preset, compact = false }: Props) {
           <span class="small muted">
             {progress.running
               ? `${fmt(progress.done)} / ${fmt(progress.total)} Simulationen · ${fmt(progress.seconds, 0)} s`
-              : progress.total > 0
-                ? `${fmt(progress.total)} Simulationen in ${fmt(progress.seconds, 1)} s`
-                : ''}
+              : progress.done < progress.total
+                ? `${fmt(progress.done)} von ${fmt(progress.total)} Simulationen, angehalten nach ${fmt(progress.seconds, 1)} s`
+                : progress.total > 0
+                  ? `${fmt(progress.total)} Simulationen in ${fmt(progress.seconds, 1)} s`
+                  : ''}
           </span>
           <button type="button" class="btn small" onClick={exportCsv} disabled={progress.running}>
             <Icon name="download" /> {FILE_EXPORT ? 'CSV' : 'CSV kopieren'}
@@ -620,28 +648,20 @@ export function StabilityMap({ preset, compact = false }: Props) {
       </div>
       {progress.running && (
         <div
-          style={{
-            height: '4px',
-            background: 'var(--surface-3)',
-            borderRadius: 'var(--sp-1)',
-            overflow: 'hidden',
-          }}
+          class="map-progress"
           role="progressbar"
+          aria-label="Fortschritt der Simulationen"
+          aria-valuemin={0}
           aria-valuenow={progress.done}
           aria-valuemax={progress.total}
+          aria-valuetext={`${fmt(progress.done)} von ${fmt(progress.total)}`}
         >
-          <div
-            style={{
-              height: '100%',
-              width: `${(progress.done / Math.max(1, progress.total)) * 100}%`,
-              background: 'var(--accent)',
-            }}
-          />
+          <div style={{ width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }} />
         </div>
       )}
 
       {selected && selInfo && (
-        <div class="panel panel-pad">
+        <div class="panel panel-pad" aria-live="polite">
           <div class="panel-title">
             <h2>
               {AXES[shown.x].short} = {AXES[shown.x].format(selInfo.x)}, {AXES[shown.y].short} ={' '}
@@ -710,15 +730,14 @@ function RangeInputs({
   onChange: (min: number, max: number) => void;
 }) {
   const def = AXES[axis];
-  const lo = def.log ? def.min / 10 : def.min - (def.max - def.min);
-  const hi = def.log ? def.max * 10 : def.max + (def.max - def.min);
+  const { lo, hi } = sliderRange(axis);
   return (
     <div class="grid-2" style={{ gap: 'var(--sp-2)' }}>
       <Slider
         id={`${axis}-min`}
         label={`${def.short} von`}
         value={min}
-        min={Math.max(lo, def.log ? 1e-3 : -Infinity)}
+        min={lo}
         max={hi}
         log={def.log}
         format={def.format}
@@ -728,7 +747,7 @@ function RangeInputs({
         id={`${axis}-max`}
         label="bis"
         value={max}
-        min={Math.max(lo, def.log ? 1e-3 : -Infinity)}
+        min={lo}
         max={hi}
         log={def.log}
         format={def.format}

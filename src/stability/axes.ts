@@ -1,4 +1,5 @@
 import {
+  AU,
   EARTH,
   KM,
   MOON,
@@ -10,6 +11,7 @@ import {
   type ScenarioParams,
   MOON_DISTANCE_KM,
 } from '../physics';
+import { fmt } from '../ui/format';
 
 export type AxisKey =
   | 'moonDistanceRH'
@@ -30,9 +32,6 @@ export interface AxisDef {
   format: (v: number) => string;
 }
 
-const de = (v: number, d: number): string =>
-  v.toLocaleString('de-DE', { maximumFractionDigits: d, minimumFractionDigits: d });
-
 export const AXES: Record<AxisKey, AxisDef> = {
   moonDistanceRH: {
     key: 'moonDistanceRH',
@@ -41,7 +40,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0.05,
     max: 1,
     log: false,
-    format: (v) => de(v, 2),
+    format: (v) => fmt(v, 2),
   },
   moonSpeed: {
     key: 'moonSpeed',
@@ -50,7 +49,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0.1,
     max: 1.6,
     log: false,
-    format: (v) => de(v, 2),
+    format: (v) => fmt(v, 2),
   },
   moonAngle: {
     key: 'moonAngle',
@@ -59,7 +58,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0,
     max: 360,
     log: false,
-    format: (v) => `${de(v, 0)}°`,
+    format: (v) => `${fmt(v, 0)}°`,
   },
   earthOrbit: {
     key: 'earthOrbit',
@@ -68,7 +67,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0.2,
     max: 2,
     log: true,
-    format: (v) => de(v, 2),
+    format: (v) => fmt(v, 2),
   },
   earthEccentricity: {
     key: 'earthEccentricity',
@@ -77,7 +76,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0,
     max: 0.9,
     log: false,
-    format: (v) => de(v, 2),
+    format: (v) => fmt(v, 2),
   },
   sunMass: {
     key: 'sunMass',
@@ -86,7 +85,7 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0.2,
     max: 20,
     log: true,
-    format: (v) => de(v, 2),
+    format: (v) => fmt(v, 2),
   },
   moonMass: {
     key: 'moonMass',
@@ -95,9 +94,20 @@ export const AXES: Record<AxisKey, AxisDef> = {
     min: 0.01,
     max: 100,
     log: true,
-    format: (v) => de(v, 2),
+    format: (v) => fmt(v, 2),
   },
 };
+
+/** Bereich der Regler: weiter als die Voreinstellung, aber nur mit physikalisch gültigen Werten. */
+export function sliderRange(axis: AxisKey): { lo: number; hi: number } {
+  const def = AXES[axis];
+  if (def.log) return { lo: Math.max(def.min / 10, 1e-3), hi: def.max * 10 };
+  const span = def.max - def.min;
+  if (axis === 'moonAngle') return { lo: def.min - span, hi: def.max + span };
+  // Gebundene Erdbahn (e < 1); Abstand über 0, Geschwindigkeit nicht negativ.
+  const lo = Math.max(def.min - span, axis === 'moonDistanceRH' ? 0.01 : 0);
+  return { lo, hi: axis === 'earthEccentricity' ? 0.95 : def.max + span };
+}
 
 export interface MapConfig {
   x: AxisKey;
@@ -283,7 +293,7 @@ export function theoryOverlays(cfg: MapConfig): Overlay[] {
     });
     const crit = criticalMoonDistance(cfg.retrograde, cfg.base.earthEccentricity, 0);
     out.push({
-      label: `Domingos et al.: ${de(crit, 2)} Hill-Radien`,
+      label: `Domingos et al.: ${fmt(crit, 2)} Hill-Radien`,
       points: [
         [crit, cfg.yMin],
         [crit, cfg.yMax],
@@ -293,12 +303,12 @@ export function theoryOverlays(cfg: MapConfig): Overlay[] {
   if (cfg.x === 'earthOrbit' && cfg.y === 'sunMass') {
     // Mond bei 384.400 km erreicht 0,48 r_H: 384.400 km = 0,48 · a · ∛(m / 3M)
     const d = cfg.base.moonDistance * KM;
-    const m = EARTH.mass + MOON.mass;
+    const m = EARTH.mass * cfg.base.earthMass + MOON.mass * cfg.base.moonMass;
     const crit = criticalMoonDistance(false, cfg.base.earthEccentricity, 0);
     out.push({
-      label: `Mond bei ${de(crit, 2)} Hill-Radien`,
+      label: `Mond bei ${fmt(crit, 2)} Hill-Radien`,
       points: range(cfg.xMin, cfg.xMax).map((a) => {
-        const aM = a * 1.495978707e11;
+        const aM = a * AU;
         const M = m / (3 * (d / (crit * aM)) ** 3);
         return [a, M / SUN.mass];
       }),
