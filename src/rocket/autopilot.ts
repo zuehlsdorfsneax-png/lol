@@ -72,7 +72,7 @@ export class OrbitPilot {
     const safe = b === GAME_EARTH ? b.atmosphere : Math.max(b.atmosphere, this.apoapsis * 0.6);
     // Leere Stufe abwerfen, solange noch eine übrig ist.
     if (f.status === 'flying' && f.active.fuel <= 0 && f.segs.length > 1) f.stage();
-    if (f.status === 'flying' && !f.infiniteFuel && f.deltaV() < 1) {
+    if (!f.infiniteFuel && f.deltaV() < 1) {
       // Kein Treibstoff mehr, die Bahn ist nicht erreicht: aufgeben und den Schirm scharf machen.
       f.throttle = 0;
       f.turn = 0;
@@ -193,7 +193,7 @@ export class HopPilot {
       if (f.status === 'flying' && f.active.fuel <= 0 && f.segs.length > 1) f.stage();
       steerTo(f, up);
       f.throttle = 1;
-      if (f.status === 'flying' && !f.infiniteFuel && f.deltaV() < 1) this.phase = 'coast';
+      if (!f.infiniteFuel && f.deltaV() < 1) this.phase = 'coast';
       // Mit unbegrenztem Treibstoff nicht ewig steigen: über der Luft ist Schluss.
       if (f.infiniteFuel && rel.altitude > Math.max(this.body.atmosphere, 20_000) + 20_000)
         this.phase = 'coast';
@@ -333,7 +333,7 @@ export class DockPilot {
     const ey = (dy / d) * want - wy;
     const err = Math.hypot(ex, ey);
     f.sas = 'off';
-    if (err > 4 && d > 150) {
+    if (err > 4 && d > 150 && f.active.fuel > 0) {
       // Große Abweichung: mit dem Triebwerk nachregeln.
       f.rcs = false;
       f.translate = { x: 0, y: 0 };
@@ -472,7 +472,10 @@ export class LandingPilot {
         (chute ? 250 : 150) * (this.phase === 'aero' || this.phase === 'chute' ? 1 : 0.85);
       const thick = f.terminalSpeed(g, body.density0) < limit;
       const coasting = r.altitude > body.atmosphere && o.periapsis < body.atmosphere;
-      if (coasting || (thick && speed > 150 && r.altitude > 2_000)) {
+      if (
+        coasting ||
+        (thick && speed > 150 && r.altitude > 2_000 && r.altitude < body.atmosphere)
+      ) {
         f.throttle = 0;
         steerTo(f, Math.atan2(-r.vy, -r.vx));
         if (coasting && r.altitude > body.atmosphere * 1.2 && f.warpIndex < f.maxWarpIndex())
@@ -482,9 +485,11 @@ export class LandingPilot {
       if (thick && amax <= g * 1.05) {
         // Kein (starkes) Triebwerk: nur Luft und Fallschirm bremsen.
         f.throttle = 0;
+        if (f.chute === 'none' && f.terminalSpeed(g, body.density0) > f.safeLandingSpeed) {
+          this.message = 'Kein Fallschirm und ein zu schwaches Triebwerk – das wird hart.';
+          return (this.phase = 'failed');
+        }
         steerTo(f, Math.atan2(-r.vy, -r.vx));
-        if (f.chute === 'none' && -radial > 14)
-          this.message = 'Kein Fallschirm mehr – das wird hart.';
         return (this.phase = 'chute');
       }
     }

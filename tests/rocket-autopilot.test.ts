@@ -1,10 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { HopPilot, LandingPilot, NodeExecutor, OrbitPilot } from '../src/rocket/autopilot';
+import {
+  DockPilot,
+  HopPilot,
+  LandingPilot,
+  NodeExecutor,
+  OrbitPilot,
+} from '../src/rocket/autopilot';
 import { Flight } from '../src/rocket/flight';
 import { TEMPLATES } from '../src/rocket/parts';
 import { runPlan } from '../src/rocket/planClient';
 import { arrivalPeriapsis, makePlan, type PlanId } from '../src/rocket/planner';
-import { GAME_EARTH, GAME_MOON, bodyState, bodyStates, BODIES } from '../src/rocket/world';
+import {
+  GAME_EARTH,
+  GAME_MOON,
+  bodyState,
+  bodyStates,
+  BODIES,
+  stationPort,
+  stationState,
+} from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 const DT = 1 / 60;
@@ -154,6 +168,23 @@ describe('Hilfe-Pilot Hüpfer', () => {
 });
 
 describe('Lande-Autopilot', () => {
+  it('meldet den sicheren Absturz ohne Schirm und mit schwachem Triebwerk als Fehler', () => {
+    const f = circularAround(GAME_EARTH, 150_000, 'daemmerung');
+    f.stage();
+    f.stage();
+    const pilot = new LandingPilot();
+    expect(pilot.update(f)).toBe('failed');
+    expect(pilot.message).toContain('Fallschirm');
+  });
+
+  it('senkt eine stabile Bahn knapp über der Luft ab, statt in der Bahn zu warten', () => {
+    const f = circularAround(GAME_EARTH, GAME_EARTH.atmosphere + 20_000, 'faehre');
+    f.stage();
+    const pilot = new LandingPilot();
+    loop(f, () => ['done', 'failed'].includes(pilot.update(f)), 200_000);
+    expect(f.status, pilot.message).toBe('landed');
+  });
+
   it('lässt eine Kapsel mit Fallschirm von der Luft abbremsen, statt oben Treibstoff zu verbrennen', () => {
     const f = circularAround(GAME_EARTH, 150_000, 'faehre');
     // Wie nach einem echten Aufstieg: die Erststufe ist schon weg.
@@ -175,5 +206,35 @@ describe('Planen im Hintergrund', () => {
     const r = await runPlan(f, 'transfer');
     expect(r.ok, r.text).toBe(true);
     expect(f.node).not.toBeNull();
+  });
+
+  it('der Hilfe-Pilot gibt auf der Rampe auf, wenn der Schub nicht zum Abheben reicht', () => {
+    const f = new Flight(['kapsel', 'tank-xl', 'tank-xl', 'spatz']);
+    f.segs[0]!.fuel = 30;
+    const pilot = new OrbitPilot(GAME_EARTH);
+    loop(f, () => pilot.update(f) === 'failed', 20_000);
+    expect(f.status).toBe('landed');
+    expect(pilot.phase).toBe('failed');
+  });
+
+  it('der Andock-Pilot fährt mit leerem Tank per Lagedüsen an', () => {
+    const f = new Flight(template('faehre'));
+    f.placeInOrbit(GAME_EARTH, 400_000, 0);
+    f.target = 'station';
+    const [px, py] = stationPort(f.t);
+    const [, , svx, svy] = stationState(f.t);
+    const v = Math.hypot(svx, svy);
+    f.x = px - (1000 * svx) / v;
+    f.y = py - (1000 * svy) / v;
+    f.vx = svx;
+    f.vy = svy;
+    for (const seg of f.segs) seg.fuel = 0;
+    const pilot = new DockPilot();
+    const start = f.targetInfo()!.distance;
+    for (let i = 0; i < 60 * 120; i++) {
+      pilot.update(f);
+      f.update(DT);
+    }
+    expect(f.targetInfo()!.distance).toBeLessThan(start - 500);
   });
 });
