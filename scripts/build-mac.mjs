@@ -1,4 +1,4 @@
-// Baut release/Orbitlabor-Mac.zip: Web-App bauen, in den Go-Starter einbetten, für macOS
+// Baut release/Orbitlabor-Mac-Apple-Chip.zip und release/Orbitlabor-Mac-Intel.zip: Web-App bauen, in den Go-Starter einbetten, für macOS
 // (Apple-Chip und Intel) übersetzen und als Orbitlabor.app verpacken.
 // Benötigt Node, Go (ab 1.22), Python mit Pillow (für das Symbol) und zip. Aufruf: npm run mac
 import { execFileSync, execSync } from 'node:child_process';

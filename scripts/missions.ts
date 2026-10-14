@@ -88,3 +88,4 @@ fly('Nachtfalke: Mond und zurück', 'nachtfalke', { target: 'moon', land: true, 
 fly('Koloss: Marslandung und zurück', 'koloss', { target: 'mars', land: true, home: true });
 
 console.log(`\n${problems ? `✗ ${problems} Missionen gescheitert` : '✓ alle Missionen erfüllt'}`);
+if (problems) process.exitCode = 1;

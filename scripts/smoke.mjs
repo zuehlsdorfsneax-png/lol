@@ -10,8 +10,18 @@ const PAGES = [
   'simulator',
   'karte',
   'lagrange',
+  'spiel',
+  'kapitel-1',
+  'kapitel-2',
   'kapitel-3',
+  'kapitel-4',
+  'kapitel-5',
+  'kapitel-6',
+  'kapitel-7',
+  'kapitel-8',
+  'kapitel-9',
   'missionen',
+  'mission-erste-bahn',
   'quiz',
   'rakete',
   'download',
@@ -61,17 +71,19 @@ for (const view of VIEWS) {
   const page = await context.newPage();
   const where = `${view.name} Raketenwerft`;
   await page.goto(`${BASE}#rakete`, { waitUntil: 'networkidle' });
-  await page
-    .getByRole('button', { name: /^Spielen/ })
-    .first()
-    .click();
-  await page
-    .getByRole('button', { name: /^Starten/ })
-    .first()
-    .click();
-  await page
-    .waitForSelector('canvas', { timeout: 15_000 })
-    .catch(() => fail(where, 'kein Flugbild'));
+  try {
+    await page
+      .getByRole('button', { name: /^Spielen/ })
+      .first()
+      .click({ timeout: 10_000 });
+    await page
+      .getByRole('button', { name: /^Starten/ })
+      .first()
+      .click({ timeout: 10_000 });
+    await page.waitForSelector('.hud-bc', { timeout: 15_000 });
+  } catch {
+    fail(where, 'kein Flugbild');
+  }
   await page.close();
   await context.close();
 }

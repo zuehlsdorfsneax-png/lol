@@ -383,3 +383,4 @@ scenario('Venus und Jupiter: Transfer planen', () => {
 });
 
 console.log(`\n${problems ? `✗ ${problems} Probleme` : '✓ alles gut'}`);
+if (problems) process.exitCode = 1;

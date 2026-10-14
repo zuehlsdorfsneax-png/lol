@@ -1,4 +1,4 @@
-const PATHS: Record<string, string> = {
+const PATHS = {
   play: 'M7 4.5v15l12-7.5z',
   pause: 'M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z',
   stop: 'M6.5 6.5h11v11h-11z',
@@ -62,7 +62,7 @@ const PATHS: Record<string, string> = {
   wrench:
     'M14.5 4a4.5 4.5 0 0 0-4.2 6.1L4 16.4 7.6 20l6.3-6.3A4.5 4.5 0 0 0 20 9.5l-2.8 2.8-3.5-3.5L16.5 6A4.5 4.5 0 0 0 14.5 4z',
   sliders: 'M5 20v-7M5 9V4M12 20v-9M12 7V4M19 20v-5M19 11V4M3 13h4M10 7h4M17 15h4',
-};
+} as const satisfies Record<string, string>;
 
 export type IconName = keyof typeof PATHS;
 
