@@ -7,7 +7,7 @@ import { Callout, StatusChip } from '../ui/content';
 import { Slider } from '../ui/controls';
 import { duration, fmt } from '../ui/format';
 import { Icon } from '../ui/Icon';
-import type { RunResult, SimMission } from './missions';
+import { nudge, type RunResult, type SimMission } from './missions';
 import { progressStore, recordStars } from './progress';
 import { createMissionSim, evaluateMission, missionResult } from './run';
 import { playFailure, playSuccess } from './sound';
@@ -133,7 +133,7 @@ export function SimMissionPlay({ mission }: { mission: SimMission }) {
               </div>
               <p>
                 {OUTCOME_TEXT[result.r.outcome]}
-                {result.r.outcome !== 'stable' && ` (nach ${duration(result.r.time)})`}{' '}
+                {result.r.outcome !== 'stable' && ` (nach ${duration(result.r.time, true)})`}{' '}
                 {mission.control.label}: <strong>{mission.control.format(value)}</strong>.
                 {result.r.outcome === 'stable' &&
                   result.r.elements &&
@@ -184,7 +184,7 @@ export function SimMissionPlay({ mission }: { mission: SimMission }) {
               class="btn small"
               disabled={phase === 'running'}
               onClick={() => {
-                const v = Math.max(mission.control.min, value - mission.control.step);
+                const v = nudge(mission.control, value, -1);
                 setValue(v);
                 reset(v);
               }}
@@ -196,7 +196,7 @@ export function SimMissionPlay({ mission }: { mission: SimMission }) {
               class="btn small"
               disabled={phase === 'running'}
               onClick={() => {
-                const v = Math.min(mission.control.max, value + mission.control.step);
+                const v = nudge(mission.control, value, 1);
                 setValue(v);
                 reset(v);
               }}

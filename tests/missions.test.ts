@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MISSIONS, type SimMission } from '../src/missions/missions';
+import { MISSIONS, nudge, type SimMission } from '../src/missions/missions';
 import { evaluateMission } from '../src/missions/run';
 
 const sim = (id: string): SimMission => MISSIONS.find((m) => m.id === id) as SimMission;
@@ -25,6 +25,14 @@ describe('Missionen', () => {
     ['schwere-sonne', 8, 0],
   ])('%s mit %f ergibt %i Sterne', (id, value, stars) => {
     expect(evaluateMission(sim(id), value).stars).toBe(stars);
+  });
+
+  it('Feineinstellung landet nach vielen Stufen exakt auf dem Raster', () => {
+    const m = sim('absturz');
+    let v = 0.5;
+    for (let i = 0; i < 120; i++) v = nudge(m.control, v, -1);
+    expect(v).toBe(0.2);
+    expect(evaluateMission(m, v).stars).toBe(3);
   });
 
   it('die Startwerte sind noch nicht gelöst (außer bei "mehr ist besser")', () => {

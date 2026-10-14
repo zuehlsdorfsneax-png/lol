@@ -70,6 +70,12 @@ const BASE: ScenarioParams = {
 };
 const RH_KM = EARTH_HILL_RADIUS / KM;
 
+/** Feineinstellung um eine Stufe, auf das Raster des Reglers gerundet (sonst summieren sich Gleitkommafehler). */
+export function nudge(c: SimMission['control'], value: number, dir: 1 | -1): number {
+  const v = Math.round((value + dir * c.step) / c.step) * c.step;
+  return Math.min(c.max, Math.max(c.min, v));
+}
+
 /** Wendet den Reglerwert auf die Parameter an. */
 export function applyControl(m: SimMission, value: number): ScenarioParams {
   switch (m.control.key) {
@@ -95,7 +101,7 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 2,
     difficulty: 1,
     briefing:
-      'Ein frisch eingefangener Mond steht 384.400 km von der Erde entfernt – die Sonne bleibt vorerst außen vor. Mit welcher Geschwindigkeit muss er starten, damit er die Erde ein Jahr lang umkreist, ohne abzustürzen oder davonzufliegen?',
+      'Ein frisch eingefangener Mond steht 384.400\u00a0km von der Erde entfernt – die Sonne bleibt vorerst außen vor. Mit welcher Geschwindigkeit muss er starten, damit er die Erde ein Jahr lang umkreist, ohne abzustürzen oder davonzufliegen?',
     goal: 'Ein Jahr in der Umlaufbahn bleiben – je kreisförmiger, desto besser.',
     control: {
       key: 'moonSpeed',
@@ -138,9 +144,9 @@ export const MISSIONS: readonly Mission[] = [
     years: 2,
     score: (r, v) => stars(r.outcome === 'crash', [v >= 0.18, v >= 0.2]),
     starRules: ['Absturz', 'Absturz mit v ≥ 0,18 · vₖ', 'Absturz mit v ≥ 0,20 · vₖ'],
-    hint: 'Der erdnächste Punkt liegt bei rₚ = r₀ · f² / (2 − f²). Er muss kleiner als Erd- plus Mondradius (8.108 km) sein.',
+    hint: 'Der erdnächste Punkt liegt bei rₚ = r₀ · f² / (2 − f²). Er muss kleiner als Erd- plus Mondradius (8.108\u00a0km) sein.',
     explanation:
-      'Aus rₚ = r₀ · f²/(2 − f²) < 8.108 km folgt f < 0,203. Der Mond müsste also rund 80 % seiner Geschwindigkeit verlieren. Unterhalb von f ≈ 0,30 würde er schon an der Roche-Grenze zerrissen.',
+      'Aus rₚ = r₀ · f²/(2 − f²) < 8.108\u00a0km folgt f < 0,203. Der Mond müsste also rund 80 % seiner Geschwindigkeit verlieren. Unterhalb von f ≈ 0,30 würde er schon an der Roche-Grenze zerrissen.',
     view: { frame: 'earth', radius: 5e8 },
   },
   {
@@ -165,9 +171,9 @@ export const MISSIONS: readonly Mission[] = [
     years: 5,
     score: (r, v) => stars(r.outcome === 'escape' || r.outcome === 'sun', [v <= 1.3, v <= 1.22]),
     starRules: ['Entkommen', 'Entkommen mit v ≤ 1,30 · vₖ', 'Entkommen mit v ≤ 1,22 · vₖ'],
-    hint: 'Der Mond muss nicht unendlich weit fliegen – es genügt, wenn sein erdfernster Punkt jenseits der Stabilitätsgrenze (≈ 0,48 Hill-Radien) liegt.',
+    hint: 'Der Mond muss nicht unendlich weit fliegen – es genügt, wenn sein erdfernster Punkt jenseits der Stabilitätsgrenze (≈ 0,48\u00a0Hill-Radien) liegt.',
     explanation:
-      'Schon ab etwa 1,19 · vₖ reicht die Ellipse bis 0,62 Hill-Radien. Dort öffnet sich das Tor bei L1 oder L2, und die Gezeitenkraft der Sonne zieht den Mond aus der Erdumgebung – 16 % weniger als die klassische Fluchtgeschwindigkeit.',
+      'Schon ab etwa 1,19 · vₖ reicht die Ellipse bis 0,62\u00a0Hill-Radien. Dort öffnet sich das Tor bei L1 oder L2, und die Gezeitenkraft der Sonne zieht den Mond aus der Erdumgebung – 16 % weniger als die klassische Fluchtgeschwindigkeit.',
     view: { frame: 'rotating', radius: 3.5e9 },
   },
   {
@@ -177,8 +183,8 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 5,
     difficulty: 2,
     briefing:
-      'Wie weit draußen kann ein Mond auf einer Kreisbahn kreisen, bevor die Sonne ihn entreißt? Setze den Mond so weit hinaus wie möglich – er muss 30 Jahre überstehen.',
-    goal: 'Größtmöglicher Abstand (in Hill-Radien), 30 Jahre stabil.',
+      'Wie weit draußen kann ein Mond auf einer Kreisbahn kreisen, bevor die Sonne ihn entreißt? Setze den Mond so weit hinaus wie möglich – er muss 30\u00a0Jahre überstehen.',
+    goal: 'Größtmöglicher Abstand (in Hill-Radien), 30\u00a0Jahre stabil.',
     control: {
       key: 'moonDistanceRH',
       label: 'Abstand (Hill-Radien)',
@@ -191,10 +197,14 @@ export const MISSIONS: readonly Mission[] = [
     base: BASE,
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable', [v >= 0.42, v >= 0.465]),
-    starRules: ['30 Jahre stabil', 'Abstand ≥ 0,42 Hill-Radien', 'Abstand ≥ 0,465 Hill-Radien'],
+    starRules: [
+      '30\u00a0Jahre stabil',
+      'Abstand ≥ 0,42\u00a0Hill-Radien',
+      'Abstand ≥ 0,465\u00a0Hill-Radien',
+    ],
     hint: 'Numerische Studien (Domingos et al. 2006) finden für prograde Monde eine Grenze bei etwa der Hälfte des Hill-Radius.',
     explanation:
-      'Die Simulation findet die Grenze bei 0,478 Hill-Radien, Domingos et al. geben 0,481 Hill-Radien an. Jenseits davon kann der Mond durch das Tor bei L1/L2 entkommen – die Gezeitenkraft der Sonne wächst mit r³.',
+      'Die Simulation findet die Grenze bei 0,478\u00a0Hill-Radien, Domingos et al. geben 0,481\u00a0Hill-Radien an. Jenseits davon kann der Mond durch das Tor bei L1/L2 entkommen – die Gezeitenkraft der Sonne wächst mit r³.',
     view: { frame: 'rotating', radius: 2.4e9 },
   },
   {
@@ -205,7 +215,7 @@ export const MISSIONS: readonly Mission[] = [
     difficulty: 2,
     briefing:
       'Dieser Mond kreist rückläufig (retrograd) um die Erde. Wie weit hinaus kommst du jetzt?',
-    goal: 'Größtmöglicher Abstand für einen retrograden Mond, 30 Jahre stabil.',
+    goal: 'Größtmöglicher Abstand für einen retrograden Mond, 30\u00a0Jahre stabil.',
     control: {
       key: 'moonDistanceRH',
       label: 'Abstand (Hill-Radien)',
@@ -218,10 +228,14 @@ export const MISSIONS: readonly Mission[] = [
     base: { ...BASE, moonRetrograde: true },
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable', [v >= 0.75, v >= 0.9]),
-    starRules: ['30 Jahre stabil', 'Abstand ≥ 0,75 Hill-Radien', 'Abstand ≥ 0,90 Hill-Radien'],
+    starRules: [
+      '30\u00a0Jahre stabil',
+      'Abstand ≥ 0,75\u00a0Hill-Radien',
+      'Abstand ≥ 0,90\u00a0Hill-Radien',
+    ],
     hint: 'Die Coriolis-Kraft im rotierenden System zeigt bei retrograden Monden zur Erde hin.',
     explanation:
-      'Retrograde Monde sind bis etwa 0,92 Hill-Radien stabil – fast doppelt so weit wie prograde. Im mitrotierenden System drückt die Coriolis-Kraft sie zur Erde hin. Im Sonnensystem kreisen tatsächlich viele weit entfernte, eingefangene Monde rückläufig.',
+      'Retrograde Monde sind bis etwa 0,92\u00a0Hill-Radien stabil – fast doppelt so weit wie prograde. Im mitrotierenden System drückt die Coriolis-Kraft sie zur Erde hin. Im Sonnensystem kreisen tatsächlich viele weit entfernte, eingefangene Monde rückläufig.',
     view: { frame: 'rotating', radius: 2.6e9 },
   },
   {
@@ -231,8 +245,8 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 8,
     difficulty: 3,
     briefing:
-      'Stell dir vor, die Erde wäre auf einer Kreisbahn näher an der Sonne entstanden. Wie nah darf sie der Sonne kommen, ohne ihren Mond (384.400 km) zu verlieren?',
-    goal: 'Kleinstmöglicher Abstand Erde–Sonne, Mond 30 Jahre stabil.',
+      'Stell dir vor, die Erde wäre auf einer Kreisbahn näher an der Sonne entstanden. Wie nah darf sie der Sonne kommen, ohne ihren Mond (384.400\u00a0km) zu verlieren?',
+    goal: 'Kleinstmöglicher Abstand Erde–Sonne, Mond 30\u00a0Jahre stabil.',
     control: {
       key: 'earthOrbit',
       label: 'Abstand Erde–Sonne',
@@ -245,10 +259,14 @@ export const MISSIONS: readonly Mission[] = [
     base: { ...BASE, earthEccentricity: 0 },
     years: 30,
     score: (r, v) => stars(r.outcome === 'stable' && v <= 0.8, [v <= 0.62, v <= 0.54]),
-    starRules: ['Stabil bei ≤ 0,80 AE', 'Stabil bei ≤ 0,62 AE', 'Stabil bei ≤ 0,54 AE'],
+    starRules: [
+      'Stabil bei ≤ 0,80\u00a0AE',
+      'Stabil bei ≤ 0,62\u00a0AE',
+      'Stabil bei ≤ 0,54\u00a0AE',
+    ],
     hint: 'Der Hill-Radius wächst linear mit dem Abstand zur Sonne: Hill-Radius = a · ∛(m/3M).',
     explanation:
-      'Die Grenze liegt bei etwa 0,52 AE: Dort ist der Hill-Radius auf 790.000 km geschrumpft, und der Mond steht bei 0,48 Hill-Radien. Auf der Venusbahn (0,72 AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39 AE) nicht mehr.',
+      'Die Grenze liegt bei etwa 0,52\u00a0AE: Dort ist der Hill-Radius auf 790.000\u00a0km geschrumpft, und der Mond steht bei 0,48\u00a0Hill-Radien. Auf der Venusbahn (0,72\u00a0AE) wäre unser Mond noch sicher, auf der Merkurbahn (0,39\u00a0AE) nicht mehr.',
     view: { frame: 'rotating', radius: 1.6e9 },
   },
   {
@@ -258,8 +276,8 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 8,
     difficulty: 3,
     briefing:
-      'Was wäre, wenn die Sonne schwerer wäre? Erhöhe ihre Masse, so weit es geht – der Mond muss trotzdem 30 Jahre bleiben.',
-    goal: 'Größtmögliche Sonnenmasse, Mond 30 Jahre stabil.',
+      'Was wäre, wenn die Sonne schwerer wäre? Erhöhe ihre Masse, so weit es geht – der Mond muss trotzdem 30\u00a0Jahre bleiben.',
+    goal: 'Größtmögliche Sonnenmasse, Mond 30\u00a0Jahre stabil.',
     control: {
       key: 'sunMass',
       label: 'Sonnenmasse',
@@ -276,7 +294,7 @@ export const MISSIONS: readonly Mission[] = [
     starRules: ['Stabil bei ≥ 2 M☉', 'Stabil bei ≥ 4,5 M☉', 'Stabil bei ≥ 6,2 M☉'],
     hint: 'Hill-Radius ∝ M^(−1/3): Achtfache Masse halbiert den Hill-Radius.',
     explanation:
-      'Bei etwa 6,5 Sonnenmassen ist der Hill-Radius auf 0,54 seines heutigen Wertes geschrumpft – der Mond stünde bei 0,48 Hill-Radien. Die dritte Wurzel macht den Mond erstaunlich robust gegen eine schwerere Sonne.',
+      'Bei etwa 6,5 Sonnenmassen ist der Hill-Radius auf 0,54 seines heutigen Wertes geschrumpft – der Mond stünde bei 0,48\u00a0Hill-Radien. Die dritte Wurzel macht den Mond erstaunlich robust gegen eine schwerere Sonne.',
     view: { frame: 'rotating', radius: 1.8e9 },
   },
   {
@@ -303,12 +321,12 @@ export const MISSIONS: readonly Mission[] = [
     chapter: 4,
     difficulty: 2,
     briefing:
-      'Über 10.000 Asteroiden begleiten Jupiter an den Punkten L4 und L5. Setze einen eigenen Trojaner ins System: Klicke nahe L4 und ziehe, um ihm eine Startgeschwindigkeit zu geben. Er muss 50 Jupiterumläufe (593 Jahre) überstehen, ohne Jupiter nahe zu kommen.',
+      'Über 10.000 Asteroiden begleiten Jupiter an den Punkten L4 und L5. Setze einen eigenen Trojaner ins System: Klicke nahe L4 und ziehe, um ihm eine Startgeschwindigkeit zu geben. Er muss 50 Jupiterumläufe (593\u00a0Jahre) überstehen, ohne Jupiter nahe zu kommen.',
     goal: 'Ein Asteroid, der 50 Umläufe lang stabil bleibt – je weiter von L4 gestartet, desto mehr Sterne.',
     starRules: [
       '50 Umläufe stabil',
-      'Start mehr als 0,05 Jupiter-Abstände (0,26 AE) von L4 entfernt',
-      'Start mehr als 0,12 Jupiter-Abstände (0,62 AE) von L4 entfernt',
+      'Start mehr als 0,05\u00a0Jupiter-Abstände (0,26\u00a0AE) von L4 entfernt',
+      'Start mehr als 0,12\u00a0Jupiter-Abstände (0,62\u00a0AE) von L4 entfernt',
     ],
     explanation:
       'L4 ist ein Maximum des effektiven Potentials, doch die Coriolis-Kraft lenkt wegrollende Körper auf „Kaulquappen“-Bahnen um den Punkt. Bei größerer Auslenkung entstehen Hufeisenbahnen, die L4, L3 und L5 umfassen. Stabil ist das nur, weil μ(Jupiter) = 0,00095 unter der Routh-Grenze 0,0385 liegt.',
