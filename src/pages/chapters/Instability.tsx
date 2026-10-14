@@ -32,14 +32,14 @@ const THRESHOLDS = [
   },
   {
     cond: 'Kreisbahn zu weit außen (retrograd)',
-    theory: 'a > 0,91 Hill-Radien',
+    theory: 'a > 0,93 Hill-Radien',
     sim: 'a > 0,923 Hill-Radien',
     result: 'Flucht',
     link: 'sim-retrograd',
   },
   {
     cond: 'Erde näher an der Sonne',
-    theory: 'a_Erde < 0,52\u00a0AE',
+    theory: 'a_Erde < 0,53\u00a0AE',
     sim: 'a_Erde < 0,524\u00a0AE',
     result: 'Flucht',
     link: 'sim-merkurbahn',
@@ -108,7 +108,7 @@ export function Instability() {
           <sub>H</sub> gilt für unseren Mond (384.400&nbsp;km)
         </p>
         <Equation
-          tex={String.raw`a_\text{Erde} > \frac{384\,400\ \text{km}}{0{,}48\cdot 1{,}5\ \text{Mio. km}}\ \text{AE} \approx 0{,}52\ \text{AE},\qquad M_\odot < \left(\frac{0{,}48\cdot r_H}{384\,400\ \text{km}}\right)^3 M_\odot \approx 6{,}6\,M_\odot.`}
+          tex={String.raw`a_\text{Erde} > \frac{384\,400\ \text{km}}{0{,}48\cdot 1{,}5\ \text{Mio. km}}\ \text{AE} \approx 0{,}53\ \text{AE},\qquad M_\odot < \left(\frac{0{,}48\cdot r_H}{384\,400\ \text{km}}\right)^3 M_\odot \approx 6{,}6\,M_\odot.`}
           n="8.2"
         />
         <p>
@@ -123,10 +123,12 @@ export function Instability() {
           <thead>
             <tr>
               <th>Bedingung</th>
-              <th>Theorie</th>
-              <th>Simulation (30&nbsp;Jahre)</th>
+              <th class="num">Theorie</th>
+              <th class="num">Simulation (30&nbsp;Jahre)</th>
               <th>Folge</th>
-              <th />
+              <th>
+                <span class="visually-hidden">Ansicht</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -137,7 +139,9 @@ export function Instability() {
                 <td class="num">{t.sim}</td>
                 <td>{t.result}</td>
                 <td>
-                  <a href={`#${t.link}`}>ansehen</a>
+                  <a href={`#${t.link}`}>
+                    ansehen<span class="visually-hidden">: {t.cond}</span>
+                  </a>
                 </td>
               </tr>
             ))}

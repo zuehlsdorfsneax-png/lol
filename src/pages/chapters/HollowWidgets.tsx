@@ -127,7 +127,7 @@ export function ShellCalculator() {
           { y: 0.4, label: 'Vollkugel 0,400' },
           { y: MOON.momentOfInertia, label: 'Mond gemessen 0,393' },
         ]}
-        yMin={0.38}
+        yMin={0.34}
         yMax={0.68}
         height={200}
       />
