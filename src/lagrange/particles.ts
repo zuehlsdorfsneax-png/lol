@@ -13,6 +13,8 @@ export interface Particle {
 
 const COLORS = ['#8fe3ff', '#ffd27a', '#b7a6ff', '#7ef0b4', '#ff9fc2', '#f5f7ff'];
 const TRAIL_POINTS = 2500;
+/** Mehr Teilchen drücken die Bildrate unter 10 Bilder/s; das älteste fällt heraus. */
+export const MAX_PARTICLES = 40;
 
 /** Masselose Teilchen im mitrotierenden System. */
 export class ParticleSystem {
@@ -20,7 +22,11 @@ export class ParticleSystem {
   time = 0;
   private nextId = 1;
 
-  constructor(public mu: number) {}
+  /** `radii`: Körperradien in Einheiten des Hauptkörperabstands; ohne Angabe ein schematischer Wert. */
+  constructor(
+    public mu: number,
+    private radii: [number, number] = [0.004, 0.004 * Math.cbrt(mu / 0.01)],
+  ) {}
 
   add(x: number, y: number, vx: number, vy: number): Particle {
     const p: Particle = {
@@ -34,6 +40,7 @@ export class ParticleSystem {
     };
     this.nextId++;
     this.particles.push(p);
+    if (this.particles.length > MAX_PARTICLES) this.particles.shift();
     return p;
   }
 
@@ -43,7 +50,7 @@ export class ParticleSystem {
 
   /** Rechnet `duration` Zeiteinheiten weiter (höchstens `maxSteps` Schritte je Teilchen). */
   advance(duration: number, maxSteps = 4000): void {
-    const mu = this.mu;
+    const { mu, radii } = this;
     for (const p of this.particles) {
       if (p.status !== 'active') continue;
       let t = 0;
@@ -58,7 +65,7 @@ export class ParticleSystem {
         const [x, y] = p.state;
         const r1 = Math.hypot(x + mu, y);
         const r2 = Math.hypot(x - 1 + mu, y);
-        if (r1 < 0.004 || (mu > 0 && r2 < 0.004 * Math.cbrt(mu / 0.01))) {
+        if (r1 < radii[0] || r2 < radii[1]) {
           p.status = 'crashed';
           break;
         }

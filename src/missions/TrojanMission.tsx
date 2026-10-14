@@ -22,7 +22,7 @@ const DURATION = ORBITS * 2 * Math.PI;
 const SPEED = 24;
 
 export function TrojanMission({ mission }: { mission: SpecialMission }) {
-  const ps = useRef(new ParticleSystem(MU));
+  const ps = useRef(new ParticleSystem(MU, SYSTEM.radii));
   const drag = useRef<{ from: [number, number]; to: [number, number] } | null>(null);
   const [phase, setPhase] = useState<'place' | 'running' | 'done'>('place');
   const [result, setResult] = useState<{ stars: number; d0: number; reason: string } | null>(null);
@@ -64,13 +64,14 @@ export function TrojanMission({ mission }: { mission: SpecialMission }) {
     setTick((k) => (k + 1) % 1_000_000);
   }, true);
 
-  const onPointer = (kind: 'down' | 'move' | 'up', x: number, y: number): void => {
+  const onPointer = (kind: 'down' | 'move' | 'up' | 'cancel', x: number, y: number): void => {
     if (phase !== 'place') return;
     if (kind === 'down') drag.current = { from: [x, y], to: [x, y] };
+    else if (kind === 'cancel') drag.current = null;
     else if (kind === 'move' && drag.current) drag.current.to = [x, y];
     else if (kind === 'up' && drag.current) {
       const { from } = drag.current;
-      ps.current = new ParticleSystem(MU);
+      ps.current = new ParticleSystem(MU, SYSTEM.radii);
       ps.current.add(from[0], from[1], (x - from[0]) * 0.5, (y - from[1]) * 0.5);
       track.current = {
         d0: Math.hypot(from[0] - L4.x, from[1] - L4.y),
@@ -128,7 +129,7 @@ export function TrojanMission({ mission }: { mission: SpecialMission }) {
                   type="button"
                   class="btn primary"
                   onClick={() => {
-                    ps.current = new ParticleSystem(MU);
+                    ps.current = new ParticleSystem(MU, SYSTEM.radii);
                     setPhase('place');
                     setResult(null);
                   }}
