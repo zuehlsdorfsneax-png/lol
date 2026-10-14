@@ -34,7 +34,7 @@ npm run dev          # http://localhost:5173
 | `npm run build:artifact`             | Variante mit eingebetteten Schriften für eingebettete Seiten; CSV-Export über die Zwischenablage            |
 | `npm run check`                      | Typen, Lint, Formatierung und Tests (wie in der CI)                                                         |
 | `npx tsx scripts/scenarios.ts`       | Prüflauf: ganze Raketenmissionen mit Bordcomputer und Autopiloten (Mond, Station, Mars …)                   |
-| `npx tsx scripts/missions.ts`        | Prüflauf: der Missions-Autopilot fliegt 15 Missionen vom Startplatz aus (Mond, Mars, Phobos, Ceres …)       |
+| `npx tsx scripts/missions.ts`        | Prüflauf: der Missions-Autopilot fliegt 32 Missionen vom Startplatz aus (Mond, Mars, Phobos, Ceres …)       |
 | `npx tsx scripts/bench-autopilot.ts` | Rechenzeiten von Planung, Vorhersage und Autopilot messen                                                   |
 | `npm run exe`                        | Windows-EXE nach `release/Orbitlabor.exe` bauen (braucht zusätzlich Go ≥ 1.22)                              |
 | `npm run mac`                        | Mac-App nach `release/Orbitlabor-Mac-Apple-Chip.zip` und `…-Intel.zip` bauen (Go ≥ 1.22, Python mit Pillow) |
@@ -101,10 +101,10 @@ src/
   ui/           Bedienelemente, Diagramme, Formeln (KaTeX), Formatierung
   engine/       Tastatureingabe, Speicherstand, Ton
   app/          Navigation und Routing
-scripts/        Kalibrierung der Stabilitätsgrenzen, Bau der Windows-EXE
+scripts/        Kalibrierung, Prüfläufe, Smoke-Test, Bau von EXE, Mac-App und APK, Symbole
 desktop/        Windows-Starter (Go) und Programmsymbol
 tests/          Automatische Tests
-docs/           Konzept
+docs/           Konzept, Kritik, Design- und KI-Regeln
 ```
 
 ## Physik und Numerik in Kürze

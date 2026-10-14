@@ -3,7 +3,7 @@
 Aktueller Stand. Die frühere Befundliste mit über 200 Einträgen liegt in
 `docs/archiv/KRITIK-verlauf.md`.
 
-Geprüft mit `npm run check` (Typen, Lint, Format, 264 Tests), `npm run smoke` (12 Seiten auf PC
+Geprüft mit `npm run check` (Typen, Lint, Format, 401 Tests), `npm run smoke` (12 Seiten auf PC
 und Handy, Raketenwerft bis zum Flugbild) und Screenshots von Werft, Start und Flug.
 
 ## Behoben
@@ -54,10 +54,7 @@ Entschieden (Standard, jederzeit änderbar):
 | Rakete wirkt weiter flach (teilweise)                    | Schattierung, Umriss und Glanz sind nachgeschärft; die Metallpalette „Klassisch“ ist kontrastreicher. Das ist keine Materialarbeit. Eine echte Verbesserung braucht Teilebilder mit Metall, Nieten und Lichtführung je Teiltyp. Eigene Runde. |
 | FlightScreen.tsx                                         | Overlays ausgelagert, die Hauptfunktion ist noch groß. Weitere Schritte: Tastatur, Telemetrie, Meldungen.                                                                                                                                     |
 | Zwei redundante Tests                                    | Einer ist entfernt. Den zweiten habe ich nicht gefunden.                                                                                                                                                                                      |
-| Smoke-Test in der CI                                     | Eingerichtet, läuft erst nach dem Push. Ergebnis im Workflow prüfen.                                                                                                                                                                          |
 | Datei /vitest-final.txt im Dateisystem-Wurzelverzeichnis | Von einem Agenten angelegt. Von Hand entfernen.                                                                                                                                                                                               |
 | Physik gegen Quellen                                     | Nicht geprüft.                                                                                                                                                                                                                                |
 | Wolken in Flughöhe                                       | Kamera skaliert auf die Rakete, Wolken sitzen bei 1,5 bis 8 km.                                                                                                                                                                               |
 | Simulator: nur „Szenario“ und „Mond“ offen               | Bewusst so.                                                                                                                                                                                                                                   |
-
-Legende: ✅ behoben · 🔶 bewusst so entschieden · ⛔ ohne Gerät oder Zertifikat nicht lösbar
