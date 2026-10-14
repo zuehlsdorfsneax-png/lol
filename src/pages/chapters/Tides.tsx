@@ -74,6 +74,11 @@ export function Tides() {
 
       <Figure
         n="6.1"
+        steps={[
+          'Der Regler startet beim heutigen Mondabstand: Das Modell gibt einen Erdtag von 23,9\u00a0Stunden und einen Mondmonat von 27,3\u00a0Tagen an. Das Diagramm zeigt beide Kurven für alle Abstände und bleibt stehen, nur die Zahlen darunter folgen dem Regler. Fährst du mit der Maus über das Diagramm, liest du die Werte beider Kurven an jeder Stelle ab.',
+          'Schiebe den Mondabstand nach rechts, etwa auf 450.000\u00a0km: Der Erdtag wächst auf 39,9\u00a0Stunden, der Monat nur auf 34,6\u00a0Tage. Der Tag verlängert sich also deutlich schneller. Nach links, bei 250.000\u00a0km, werden Tag (12,3\u00a0Stunden) und Monat (14,3\u00a0Tage) kürzer.',
+          'Ganz rechts (553.000\u00a0km, 0,370 Hill-Radien) steht der Mondmonat bei 47,1\u00a0Tagen und der Erdtag bei 39,0\u00a0Tagen: Der Tag holt rasch auf. Bei etwa 554.000\u00a0km treffen sich die Kurven, beide sind dann 47,2\u00a0Tage lang, und die Gezeitenreibung schiebt den Mond nicht weiter nach außen.',
+        ]}
         caption="Modell nach Gleichung (6.2): Länge von Erdtag und Mondmonat in Abhängigkeit vom Mondabstand. Wo sich die Kurven treffen, dreht sich die Erde so langsam, wie der Mond sie umläuft – die Entwicklung endet."
       >
         <TideExplorer />
@@ -157,7 +162,10 @@ function TideExplorer() {
       />
       <dl class="kv">
         <dt>Länge eines Erdtages</dt>
-        <dd>{fmt(dayLength(a) / 3600, 1)} Stunden</dd>
+        <dd>
+          {fmt(dayLength(a) / 3600, 1)} Stunden
+          {dayLength(a) > 2 * DAY && <> ({fmt(dayLength(a) / DAY, 1)}&nbsp;Tage)</>}
+        </dd>
         <dt>Länge eines Mondmonats</dt>
         <dd>{fmt(monthLength(a) / DAY, 1)}&nbsp;Tage</dd>
         <dt>Anteil am Hill-Radius</dt>

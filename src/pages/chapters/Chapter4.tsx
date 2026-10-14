@@ -120,6 +120,11 @@ export function Chapter4() {
 
       <Figure
         n="4.1"
+        steps={[
+          'Zu Beginn steht μ beim Wert von Erde–Mond (0,0121): L1, L2 und L3 sind instabil, L4 und L5 stabil. Bei den stabilen Punkten sind die Eigenwerte rein imaginär („±…i“), die Störung schwingt nur. Bei den instabilen steht ein reeller Wert („(reell)“), die Störung wächst exponentiell.',
+          'Ziehe μ über die Routh-Grenze 0,0385 (steht unter dem Regler): L4 und L5 wechseln von „stabil“ auf „instabil“, die Eigenwerte bekommen einen positiven Realteil. L1 bis L3 bleiben bei jedem μ instabil.',
+          'Die Knöpfe setzen μ auf bekannte Systeme: Sonne–Jupiter liegt weit unter der Grenze (stabile Trojaner), Pluto–Charon mit μ ≈ 0,108 weit darüber.',
+        ]}
         caption="Stabilitätsanalyse der fünf Lagrange-Punkte. Mit dem Regler lässt sich das Massenverhältnis verändern: Oberhalb von μ = 0,0385 werden auch L4 und L5 instabil."
       >
         <StabilityExplorer />
@@ -148,6 +153,11 @@ export function Chapter4() {
 
       <Figure
         n="4.2"
+        steps={[
+          'Bei „Erde–Mond“ steht C auf 3,19229, knapp über C(L1) = 3,18828 (die Werte stehen unter dem Regler). Der dunkle Ring um die Erde ist geschlossen, die rötliche Linie ist sein Rand, und die Meldung lautet „Alle Tore geschlossen“.',
+          'Ziehe C nach links, also zu kleineren Werten: Unter C(L1) öffnet sich der Ring bei L1 (Übergang zwischen Erde und Mond), unter C(L2) = 3,17211 auch bei L2 (Weg nach außen), unter C(L3) = 3,01214 bei L3. Die Meldung unter dem Regler zählt die offenen Tore auf.',
+          'Wechsle zu „Sonne–Erde“: Der Bildausschnitt zoomt auf die Erde, und C(L1) und C(L2) liegen so dicht beieinander, dass sie auf fünf Stellen gleich sind (3,00089). Je kleiner die zweite Masse, desto näher liegen die Schwellen.',
+        ]}
         caption="Nullgeschwindigkeitskurven: Dunkel ist der Bereich, den ein Körper mit der gewählten Jacobi-Konstante nie erreichen kann. Die gelben Linien markieren C(L1), C(L2) und C(L3)."
       >
         <ZeroVelocityExplorer />

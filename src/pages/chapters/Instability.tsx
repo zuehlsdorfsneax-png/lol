@@ -156,6 +156,11 @@ export function Instability() {
 
       <Figure
         n="8.1"
+        steps={[
+          'Suche den Punkt „heutiger Mond“ (0,26 Hill-Radien, Startgeschwindigkeit 1,00 vₖ): Er liegt im grünen Gebiet, links der senkrechten Linie bei 0,48 Hill-Radien. Fährst du mit der Maus über eine Zelle, erscheint ihr Ergebnis. Ein Klick wählt sie aus, und „Im Simulator ansehen“ spielt genau diese Bahn ab.',
+          'Wähle bei „Karte“ die retrograde Variante: Die senkrechte Linie wandert von 0,48 auf 0,91 Hill-Radien, die stabile Zone reicht fast doppelt so weit hinaus.',
+          'Schalte rechts neben „Neu berechnen“ von „Ergebnis“ auf „Lebensdauer“: Je dunkler eine Zelle, desto länger hielt der Mond durch, ganz dunkel heißt zehn Jahre stabil. Helle Zellen sind Bahnen, die schon nach kurzer Zeit abstürzen oder entkommen.',
+        ]}
         caption="Stabilitätskarte: Jede Zelle ist eine eigene Simulation über 10&nbsp;Jahre. Die Linien zeigen die Vorhersagen aus (8.1) und die Stabilitätsgrenze nach Domingos et al. Größere Karten und weitere Parameter im Werkzeug „Stabilitätskarte“."
       >
         <StabilityMap compact />

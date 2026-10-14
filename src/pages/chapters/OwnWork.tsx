@@ -96,6 +96,11 @@ export function OwnWork() {
       </div>
       <Figure
         n="8.2"
+        steps={[
+          'Warte kurz, bis die Tabelle erscheint: Die Simulation rechnet 30 Jahre des realen Systems. Die Spalte „Abweichung“ zeigt, wie weit Simulation und Messwert auseinanderliegen.',
+          'Siderischer und synodischer Monat sowie das siderische Jahr weichen um weniger als 0,01 % ab, der Abstand Erde–L1 um etwa 0,1 %. Am größten ist die Abweichung beim Umlauf der Apsidenlinie mit rund −1,3 %. Ein Teil davon geht darauf zurück, dass das Modell andere Planeten und die Bahnneigung nicht enthält.',
+          'Unter der Tabelle steht der Energiefehler nach 30 Jahren. Er liegt bei etwa 4 · 10⁻¹¹ und zeigt, wie genau das Rechenverfahren die Energie erhält.',
+        ]}
         caption="Vergleich der Simulation (Velocity-Verlet, adaptive Schrittweite, 30&nbsp;Jahre) mit Messwerten."
       >
         <ValidationTable />

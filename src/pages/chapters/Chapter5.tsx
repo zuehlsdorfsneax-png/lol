@@ -79,6 +79,11 @@ export function Chapter5() {
 
       <Figure
         n="5.1"
+        steps={[
+          'Die Regler starten bei Sonne, Erde und 1\u00a0AE: Der Hill-Radius beträgt 1.496.546\u00a0km, die Zeile „Erde“ der Tabelle zeigt dasselbe gerundet (1,50 Mio. km). Der Mond läge bei 0,26 Hill-Radien, die Anzeige lautet „Ein Mond wie unserer wäre hier stabil“.',
+          'Verdopple den Abstand zum Stern (etwa 2\u00a0AE): Der Hill-Radius verdoppelt sich ebenfalls. Dieselbe Verdopplung verlangt eine Planetenmasse von etwa 8\u00a0M⊕, denn sie geht nur mit der dritten Wurzel ein.',
+          'Verkleinere den Abstand auf etwa 0,4\u00a0AE (ähnlich der Merkurbahn): Der Mond läge bei 0,64 Hill-Radien, die Anzeige wechselt auf „Nur retrograd stabil“. Unter etwa 0,28\u00a0AE steht dort „Ein Mond wie unserer ginge verloren“, über etwa 0,52\u00a0AE ist er wieder stabil.',
+        ]}
         caption="Hill-Radien der Planeten nach (5.1) und ein eigener Rechner. Der Hill-Radius wächst linear mit dem Abstand zur Sonne und mit der dritten Wurzel aus der Planetenmasse."
       >
         <HillCalculator />
@@ -107,6 +112,11 @@ export function Chapter5() {
 
       <Figure
         n="5.2"
+        steps={[
+          'Zu Beginn (384.400\u00a0km, Faktor 1,00, prograd) liegt C = 3,001313 um 4,22 · 10⁻⁴ über C(L1) = 3,000891. Die rötliche Linie schließt das Gebiet um die Erde, die Meldung lautet „Tor bei L1 geschlossen: beweisbar gebunden“.',
+          'Schalte auf „retrograd“: Bei gleichem Tempo sinkt C auf 3,000959, die Differenz schrumpft auf 0,68 · 10⁻⁴. Ab einer Geschwindigkeit von etwa 1,03 öffnet sich das Tor: „Tor offen: Flucht möglich, aber nicht sicher“. Prograd geschieht das erst bei etwa 1,18.',
+          'Vergrößere den Mondabstand: Prograd öffnet sich das Tor bei etwa 640.000\u00a0km (0,43 Hill-Radien), retrograd schon bei etwa 407.000\u00a0km. Ganz rechts, bei 1,5\u00a0Mio.\u00a0km, liegt der Mond außerhalb der Hill-Sphäre, und das Kriterium greift nicht mehr.',
+        ]}
         caption="Nullgeschwindigkeitskurven um die Erde (Sonne links, weit außerhalb des Bildes). Dunkel: für den Mond verbotenes Gebiet. Bleibt das Gebiet um die Erde geschlossen, ist der Mond für immer gebunden."
       >
         <MoonJacobi />
@@ -377,6 +387,10 @@ function MoonJacobi() {
                 ? 'Tor bei L1 geschlossen: beweisbar gebunden'
                 : 'Tor offen: Flucht möglich, aber nicht sicher'}
           </StatusChip>
+          <p class="small muted">
+            Rötliche Linie: Rand des für den Mond verbotenen Gebiets bei seiner Jacobi-Konstante.
+            Gelb gestrichelt: C(L1) bis C(L3).
+          </p>
           <p class="small muted">
             Probiere den heutigen Mond retrograd: Er ist trotzdem stabil, obwohl das Kriterium knapp
             wird – das Jacobi-Kriterium ist streng, aber vorsichtig.
