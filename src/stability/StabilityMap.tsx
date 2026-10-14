@@ -580,7 +580,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
                   <strong>{OUTCOME_LABELS[hoverInfo.r.outcome]}</strong>
                 </div>
                 {hoverInfo.r.outcome !== 'stable' && (
-                  <div class="tooltip-row">nach {duration(hoverInfo.r.time)}</div>
+                  <div class="tooltip-row">nach {duration(hoverInfo.r.time, true)}</div>
                 )}
                 <div class="tooltip-row muted">Klicken für Details</div>
               </>
@@ -688,7 +688,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
               <dd>
                 {selInfo.r.outcome === 'stable'
                   ? `${shown.years} Jahre überstanden`
-                  : `nach ${duration(selInfo.r.time)}`}
+                  : `nach ${duration(selInfo.r.time, true)}`}
               </dd>
               <dt>Kleinster / größter Abstand</dt>
               <dd>

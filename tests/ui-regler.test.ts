@@ -3,7 +3,7 @@ import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
 import { Slider } from '../src/ui/controls';
 import { LineChart } from '../src/ui/charts/LineChart';
-import { sci } from '../src/ui/format';
+import { duration, sci } from '../src/ui/format';
 
 let root: HTMLDivElement;
 
@@ -87,5 +87,13 @@ describe('sci', () => {
     expect(sci(9.996e-7)).toBe('1,00 · 10⁻⁶');
     expect(sci(0.0099996)).toBe('1,00 · 10⁻²');
     expect(sci(1.234e-6)).toBe('1,23 · 10⁻⁶');
+  });
+});
+
+describe('duration', () => {
+  it('steht nach "nach" im Dativ', () => {
+    expect(duration(5 * 86400, true)).toBe('5,0 Tagen');
+    expect(duration(3 * 3.15576e7, true)).toBe('3,00 Jahren');
+    expect(duration(5 * 86400)).toBe('5,0 Tage');
   });
 });

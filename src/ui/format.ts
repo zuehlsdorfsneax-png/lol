@@ -64,13 +64,14 @@ export function distance(m: number): string {
   return km(m);
 }
 
-/** Zeitdauer im Nominativ: "12,3 Tage", "4,5 Jahre". */
-export function duration(s: number): string {
+/** Zeitdauer im Nominativ ("12,3 Tage", "4,5 Jahre"), mit dativ nach "nach" ("12,3 Tagen"). */
+export function duration(s: number, dativ = false): string {
   if (!Number.isFinite(s)) return '–';
   const a = Math.abs(s);
+  const n = dativ ? 'n' : '';
   if (a < 2 * DAY) return `${de(s / 3600, 1)}\u00a0h`;
-  if (a < YEAR) return `${de(s / DAY, 1)}\u00a0Tage`;
-  return `${de(s / YEAR, a < 100 * YEAR ? 2 : 1)}\u00a0Jahre`;
+  if (a < YEAR) return `${de(s / DAY, 1)}\u00a0Tage${n}`;
+  return `${de(s / YEAR, a < 100 * YEAR ? 2 : 1)}\u00a0Jahre${n}`;
 }
 
 export function speed(mps: number): string {
