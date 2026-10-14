@@ -187,6 +187,7 @@ export function LagrangePage({ preset }: { preset: string | null }) {
                 onChange={(id) => {
                   setSystemId(id);
                   setZoom(1);
+                  if (id !== 'eigenes') history.replaceState(null, '', `#lagrange-${id}`);
                 }}
               />
               {system ? (

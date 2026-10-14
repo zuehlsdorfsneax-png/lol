@@ -72,6 +72,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
   const [config, setConfig] = useState<MapConfig>(() =>
     configFromPreset(presetId, resolution.nx, resolution.ny, Number(years)),
   );
+  const [shown, setShown] = useState<MapConfig>(config);
   const [mode, setMode] = useState<Mode>('outcome');
   const [progress, setProgress] = useState({ done: 0, total: 0, running: false, seconds: 0 });
   const [hover, setHover] = useState<{ i: number; j: number; px: number; py: number } | null>(null);
@@ -95,6 +96,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
     stop();
     const id = ++job.current;
     const total = cfg.nx * cfg.ny;
+    setShown(cfg);
     results.current = Array.from({ length: total }, () => null);
     setSelected(null);
     dirty.current = true;
@@ -157,6 +159,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
 
   const applyPreset = (id: string): void => {
     setPresetId(id);
+    if (!compact) history.replaceState(null, '', `#karte-${id}`);
     const cfg = configFromPreset(id, resolution.nx, resolution.ny, Number(years));
     setConfig(cfg);
     run(cfg);
@@ -179,7 +182,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
   });
   useEffect(() => {
     dirty.current = true;
-  }, [size.width, colors, mode, hover, selected, config]);
+  }, [size.width, colors, mode, hover, selected, shown]);
 
   const height = compact
     ? Math.max(260, size.width * 0.55)
@@ -206,7 +209,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
     const ctx = prepareCanvas(canvas, size.width, height);
     if (!ctx) return;
     const c = colors;
-    const cfg = config;
+    const cfg = shown;
     ctx.clearRect(0, 0, size.width, height);
     const { x0, x1, y0, y1 } = scales();
     const cw = (x1 - x0) / cfg.nx;
@@ -293,26 +296,30 @@ export function StabilityMap({ preset, compact = false }: Props) {
       }
       // Senkrechte Linien oben beschriften, alle anderen am ersten sichtbaren Punkt.
       const vertical = pts.length > 1 && pts.every(([x]) => Math.abs(x - pts[0]![0]) < 0.5);
+      ctx.font = `11px ${c.fontUi}`;
+      const w = ctx.measureText(o.label).width;
       const vis = vertical
-        ? pts[0]![0] >= x0 && pts[0]![0] <= x1 - 150
+        ? pts[0]![0] >= x0 && pts[0]![0] <= x1
           ? ([pts[0]![0], y1 + 40] as const)
           : undefined
-        : dense.find(([x, y]) => x >= x0 + 4 && x <= x1 - 150 && y >= y1 + 22 && y <= y0 - 4);
+        : dense.find(([x, y]) => x >= x0 + 4 && x <= x1 - w - 12 && y >= y1 + 22 && y <= y0 - 4);
       if (vis) {
-        ctx.font = `11px ${c.fontUi}`;
-        const w = ctx.measureText(o.label).width;
-        // Deckendes Schild: Die eigene Linie läuft nicht durch die Schrift.
+        // Deckendes Schild: Die eigene Linie läuft nicht durch die Schrift. Fehlt rechts der
+        // Platz, steht es links der Linie.
+        const left = vis[0] + 4 + w + 8 > x1 ? vis[0] - 4 - w - 8 : vis[0] + 4;
         ctx.fillStyle = c.surface;
-        ctx.fillRect(vis[0] + 4, vis[1] - 16, w + 8, 15);
+        ctx.fillRect(left, vis[1] - 16, w + 8, 15);
         ctx.strokeStyle = c.ink;
         ctx.lineWidth = 1;
-        ctx.strokeRect(vis[0] + 4.5, vis[1] - 15.5, w + 7, 14);
+        ctx.strokeRect(left + 0.5, vis[1] - 15.5, w + 7, 14);
         ctx.fillStyle = c.ink;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(o.label, vis[0] + 8, vis[1] - 3);
+        ctx.fillText(o.label, left + 4, vis[1] - 3);
       }
     }
+    ctx.restore();
+
     const marker = realMoonMarker(cfg);
     if (marker) {
       const mx = toPx(cfg.x, cfg.xMin, cfg.xMax, marker[0], x0, x1);
@@ -327,12 +334,13 @@ export function StabilityMap({ preset, compact = false }: Props) {
       ctx.font = `600 11px ${c.fontUi}`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
+      const lw = ctx.measureText('heutiger Mond').width;
+      const lx = mx + 9 + lw + 8 > size.width ? mx - 9 - lw - 8 : mx + 9;
       ctx.fillStyle = c.surface;
-      ctx.fillRect(mx + 9, my - 8, ctx.measureText('heutiger Mond').width + 8, 16);
+      ctx.fillRect(lx, my - 8, lw + 8, 16);
       ctx.fillStyle = c.ink;
-      ctx.fillText('heutiger Mond', mx + 13, my);
+      ctx.fillText('heutiger Mond', lx + 4, my);
     }
-    ctx.restore();
 
     const mark = (cell: { i: number; j: number } | null, color: string): void => {
       if (!cell) return;
@@ -350,31 +358,31 @@ export function StabilityMap({ preset, compact = false }: Props) {
     const py = e.clientY - rect.top;
     const { x0, x1, y0, y1 } = scales();
     if (px < x0 || px > x1 || py < y1 || py > y0) return null;
-    const i = Math.min(config.nx - 1, Math.floor(((px - x0) / (x1 - x0)) * config.nx));
-    const j = Math.min(config.ny - 1, Math.floor(((y0 - py) / (y0 - y1)) * config.ny));
+    const i = Math.min(shown.nx - 1, Math.floor(((px - x0) / (x1 - x0)) * shown.nx));
+    const j = Math.min(shown.ny - 1, Math.floor(((y0 - py) / (y0 - y1)) * shown.ny));
     return { i, j, px, py };
   };
 
   const describe = (i: number, j: number): { x: number; y: number; r: CellResult | null } => ({
-    x: axisValue(AXES[config.x], config.xMin, config.xMax, (i + 0.5) / config.nx),
-    y: axisValue(AXES[config.y], config.yMin, config.yMax, (j + 0.5) / config.ny),
-    r: results.current[j * config.nx + i] ?? null,
+    x: axisValue(AXES[shown.x], shown.xMin, shown.xMax, (i + 0.5) / shown.nx),
+    y: axisValue(AXES[shown.y], shown.yMin, shown.yMax, (j + 0.5) / shown.ny),
+    r: results.current[j * shown.nx + i] ?? null,
   });
 
   const exportCsv = (): void => {
     const lines = [
-      `# Stabilitätskarte Orbitlabor; ${config.years} Jahre; ${config.retrograde ? 'retrograd' : 'prograd'}`,
+      `# Stabilitätskarte Orbitlabor; ${shown.years} Jahre; ${shown.retrograde ? 'retrograd' : 'prograd'}`,
       [
-        AXES[config.x].label,
-        AXES[config.y].label,
+        AXES[shown.x].label,
+        AXES[shown.y].label,
         'Ergebnis',
         'Zeit bis Ereignis (Jahre)',
         'min. Abstand (km)',
         'max. Abstand (km)',
       ].join(';'),
     ];
-    for (let j = 0; j < config.ny; j++) {
-      for (let i = 0; i < config.nx; i++) {
+    for (let j = 0; j < shown.ny; j++) {
+      for (let i = 0; i < shown.nx; i++) {
         const { x, y, r } = describe(i, j);
         if (!r) continue;
         lines.push(
@@ -404,7 +412,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
   }));
 
   return (
-    <div class="stack" style={{ gap: '14px' }}>
+    <div class="stack" style={{ gap: 'var(--sp-3)' }}>
       <div class="toolbar">
         <div style={{ minWidth: 'min(100%, 300px)', flex: '1' }}>
           <Select
@@ -520,7 +528,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
           ref={canvasRef}
           style={{ height: `${height}px`, cursor: 'crosshair' }}
           role="img"
-          aria-label={`Stabilitätskarte: ${AXES[config.y].label} über ${AXES[config.x].label}`}
+          aria-label={`Stabilitätskarte: ${AXES[shown.y].label} über ${AXES[shown.x].label}`}
           onPointerMove={(e) => setHover(cellAt(e))}
           onPointerLeave={() => setHover(null)}
           onClick={(e) => {
@@ -537,8 +545,8 @@ export function StabilityMap({ preset, compact = false }: Props) {
             }}
           >
             <div class="tooltip-head">
-              {AXES[config.x].short} = {AXES[config.x].format(hoverInfo.x)} · {AXES[config.y].short}{' '}
-              = {AXES[config.y].format(hoverInfo.y)}
+              {AXES[shown.x].short} = {AXES[shown.x].format(hoverInfo.x)} · {AXES[shown.y].short} ={' '}
+              {AXES[shown.y].format(hoverInfo.y)}
             </div>
             {hoverInfo.r ? (
               <>
@@ -576,7 +584,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
             </>
           ) : (
             <span class="legend-item">
-              Zeit bis zum Ereignis: hell = sofort, dunkel = lange; ganz dunkel = {config.years}{' '}
+              Zeit bis zum Ereignis: hell = sofort, dunkel = lange; ganz dunkel = {shown.years}{' '}
               Jahre stabil
             </span>
           )}
@@ -615,7 +623,7 @@ export function StabilityMap({ preset, compact = false }: Props) {
           style={{
             height: '4px',
             background: 'var(--surface-3)',
-            borderRadius: '4px',
+            borderRadius: 'var(--sp-1)',
             overflow: 'hidden',
           }}
           role="progressbar"
@@ -636,15 +644,15 @@ export function StabilityMap({ preset, compact = false }: Props) {
         <div class="panel panel-pad">
           <div class="panel-title">
             <h2>
-              {AXES[config.x].short} = {AXES[config.x].format(selInfo.x)}, {AXES[config.y].short} ={' '}
-              {AXES[config.y].format(selInfo.y)}
+              {AXES[shown.x].short} = {AXES[shown.x].format(selInfo.x)}, {AXES[shown.y].short} ={' '}
+              {AXES[shown.y].format(selInfo.y)}
             </h2>
             <button
               type="button"
               class="btn small primary"
               onClick={() =>
                 openInSimulator(
-                  cellParams(config, selected.i, selected.j),
+                  cellParams(shown, selected.i, selected.j),
                   'Aus der Stabilitätskarte',
                 )
               }
@@ -659,12 +667,13 @@ export function StabilityMap({ preset, compact = false }: Props) {
               <dt>Zeit</dt>
               <dd>
                 {selInfo.r.outcome === 'stable'
-                  ? `${config.years} Jahre überstanden`
+                  ? `${shown.years} Jahre überstanden`
                   : `nach ${duration(selInfo.r.time)}`}
               </dd>
               <dt>Kleinster / größter Abstand</dt>
               <dd>
-                {fmt(selInfo.r.minDistance / KM)} / {fmt(selInfo.r.maxDistance / KM)} km
+                {fmt(selInfo.r.minDistance / KM)} / {fmt(selInfo.r.maxDistance / KM)}
+                {'\u00a0km'}
               </dd>
             </dl>
           ) : (
@@ -704,7 +713,7 @@ function RangeInputs({
   const lo = def.log ? def.min / 10 : def.min - (def.max - def.min);
   const hi = def.log ? def.max * 10 : def.max + (def.max - def.min);
   return (
-    <div class="grid-2" style={{ gap: '10px' }}>
+    <div class="grid-2" style={{ gap: 'var(--sp-2)' }}>
       <Slider
         id={`${axis}-min`}
         label={`${def.short} von`}

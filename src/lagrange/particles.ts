@@ -11,7 +11,7 @@ export interface Particle {
   color: string;
 }
 
-const COLORS = ['#8fe3ff', '#ffd27a', '#b7a6ff', '#7ef0b4', '#ff9fc2', '#f5f7ff'];
+const COLORS = ['#8fe3ff', '#ffd27a', '#e2a846', '#7ef0b4', '#ff9fc2', '#f5f7ff'];
 const TRAIL_POINTS = 2500;
 /** Mehr Teilchen drücken die Bildrate unter 10 Bilder/s; das älteste fällt heraus. */
 export const MAX_PARTICLES = 40;
