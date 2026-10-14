@@ -79,7 +79,7 @@ export function Navball({ flight, size, onSas }: Props) {
     const frame = (): void => {
       const f = flight.current;
       const rel = f.relative();
-      const sig = `${q(f.angle)}|${q(Math.atan2(rel.ry, rel.rx))}|${q(Math.atan2(rel.vy, rel.vx))}|${f.sas}|${f.status}|${f.target ?? ''}|${f.node ? 1 : 0}|${Math.floor(f.t)}`;
+      const sig = `${q(f.angle)}|${q(Math.atan2(rel.ry, rel.rx))}|${q(Math.atan2(rel.vy, rel.vx))}|${f.sas}|${f.status}|${f.target ?? ''}|${f.node ? q(Math.atan2(f.node.dy, f.node.dx)) : ''}|${Math.floor(f.t)}`;
       const c = canvas.current;
       if (c && sig !== lastSig) {
         const ctx = prepareCanvas(c, size, size);

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { drawPart, drawRocket, visualWidth, type RocketLook } from '../src/rocket/draw';
+import {
+  drawPart,
+  drawRocket,
+  setLighting,
+  visualWidth,
+  type RocketLook,
+} from '../src/rocket/draw';
 import { Flight } from '../src/rocket/flight';
 import { arrowIndices } from '../src/rocket/mapdraw';
 import { chuteExtent, part, TEMPLATES } from '../src/rocket/parts';
@@ -132,6 +138,36 @@ describe('Rakete zeichnen', () => {
       const peak = 0.75 * cap.args[1]! + 0.25 * cap.args[5]!;
       expect(chuteExtent(1, area)).toBeCloseTo(peak, 1);
     }
+  });
+});
+
+describe('Zylinderverläufe', () => {
+  it('stehen im nächsten Bild bereit, bis sich das Licht ändert', () => {
+    let stops = 0;
+    const ctx = new Proxy<Record<string, unknown>>(
+      {},
+      {
+        get: (t, k: string) => {
+          if (k in t) return t[k];
+          if (k === 'createLinearGradient' || k === 'createRadialGradient')
+            return () => ({ addColorStop: () => stops++ });
+          return () => undefined;
+        },
+        set: (t, k: string, v) => ((t[k] = v), true),
+      },
+    ) as unknown as CanvasRenderingContext2D;
+    const draw = (): number => {
+      stops = 0;
+      drawRocket(ctx, TEMPLATES[0]!.parts, look());
+      return stops;
+    };
+    setLighting(1, 1);
+    const first = draw();
+    const second = draw();
+    expect(second).toBeLessThan(first / 2);
+    setLighting(-1, 1);
+    expect(draw()).toBeGreaterThan(second * 2);
+    setLighting(1, 1);
   });
 });
 

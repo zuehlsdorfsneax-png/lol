@@ -37,7 +37,7 @@ export const PAINTS: readonly Paint[] = [
     points: 50,
     metal: ['#1f2a44', '#3b4d78', '#18203a'],
     stripe: '#38bdf8',
-    band: '#a78bfa',
+    band: '#c9a24b',
   },
   {
     id: 'feuer',
@@ -67,8 +67,8 @@ export const PAINTS: readonly Paint[] = [
     id: 'galaxie',
     name: 'Galaxie',
     points: 900,
-    metal: ['#312e81', '#7c3aed', '#1e1b4b'],
-    stripe: '#f472b6',
+    metal: ['#2a2d3a', '#5a6072', '#1a1c26'],
+    stripe: '#c9a24b',
     band: '#22d3ee',
   },
   {
@@ -86,6 +86,8 @@ let METAL: string[] = paint.metal;
 /** Seitlicher Anteil der Sonne (1 = von links, −1 = von rechts, dazwischen stetig) und wie hell. */
 let lightSide = 1;
 let lightLevel = 1;
+/** Zylinderverläufe des jetzigen Lichts: Farben, Breite und Mitte bestimmen den Verlauf. */
+const gradients = new Map<string, CanvasGradient>();
 /** Glühen durch Hitze (0…1). */
 let glow = 0;
 /** Wie weit die Luftbremsen ausgefahren sind (0…1). */
@@ -110,8 +112,11 @@ export function setPaint(id: string): void {
  * oder hinten), Helligkeit (0 = Nacht) und Hitze.
  */
 export function setLighting(side: number, level: number, heat = 0): void {
-  lightSide = Math.max(-1, Math.min(1, side));
-  lightLevel = Math.max(0.25, Math.min(1, level));
+  const nextSide = Math.max(-1, Math.min(1, side));
+  const nextLevel = Math.max(0.25, Math.min(1, level));
+  if (nextSide !== lightSide || nextLevel !== lightLevel) gradients.clear();
+  lightSide = nextSide;
+  lightLevel = nextLevel;
   glow = Math.max(0, Math.min(1, heat));
 }
 
@@ -192,6 +197,9 @@ function hGrad(
   cx = 0,
   rim = false,
 ): CanvasGradient {
+  const key = `${stops.join()}|${w}|${cx}|${rim}`;
+  const cached = gradients.get(key);
+  if (cached) return cached;
   // Sonne von links und von rechts sind Spiegelbilder. Dazwischen mischen beide Verläufe stetig,
   // damit die Glanzseite wandert statt bei Sonne von vorn auf die andere Flanke zu springen.
   const table = cylinderStops(stops);
@@ -209,6 +217,8 @@ function hGrad(
     }
     g.addColorStop(q, rgbCss(c));
   }
+  if (gradients.size >= 200) gradients.clear();
+  gradients.set(key, g);
   return g;
 }
 
