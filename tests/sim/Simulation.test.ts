@@ -10,7 +10,7 @@ import {
   unwrap,
 } from '../../src/physics';
 import { SeriesBuffer, TrailBuffer } from '../../src/sim/buffers';
-import { Simulation } from '../../src/sim/Simulation';
+import { Simulation, formatDuration } from '../../src/sim/Simulation';
 
 describe('Simulation', () => {
   it('reproduziert den siderischen Monat', () => {
@@ -78,6 +78,52 @@ describe('Simulation', () => {
     expect(particles.alive).toBeLessThan(30);
   });
 
+  it('hält die Spur über zehn Jahre', () => {
+    const sim = new Simulation(REAL_PARAMS);
+    sim.advance(10 * YEAR);
+    expect(sim.time - sim.trail.time(0)).toBeGreaterThan(9.9 * YEAR);
+  });
+
+  it('meldet ohne Sonne keinen Hill-Anteil', () => {
+    const sim = new Simulation({ ...REAL_PARAMS, sunMass: 0 });
+    sim.advance(30 * DAY);
+    expect(sim.stats().hillFraction).toBeNaN();
+    expect(sim.series.data.hillFraction[sim.series.length - 1]).toBeNaN();
+  });
+
+  it('warnt vor der Roche-Grenze nur einmal je Annäherung', () => {
+    const sim = new Simulation({ ...REAL_PARAMS, moonDistance: 384_400, moonSpeed: 0.27 });
+    let warnings = 0;
+    while (sim.time < 60 * DAY) {
+      sim.step();
+      if (sim.pending?.kind === 'roche') {
+        warnings++;
+        sim.acknowledge();
+      }
+    }
+    expect(warnings).toBeLessThanOrEqual(1);
+  });
+
+  it('zählt ein entkommenes Teilchen beim späteren Absturz nicht doppelt', () => {
+    const sim = new Simulation({
+      ...REAL_PARAMS,
+      particles: { count: 1, innerKm: 100_000, outerKm: 100_000, retrograde: false },
+    });
+    const { earth, firstParticle: p } = sim.indices;
+    const { sys } = sim;
+    sys.x[p] = sys.x[earth]! + 1e10;
+    sys.y[p] = sys.y[earth]!;
+    sim.step();
+    expect(sim.stats().particles.escaped).toBe(1);
+    sys.x[p] = sys.x[earth]! + 0.5 * sys.radius[earth]!;
+    sys.y[p] = sys.y[earth]!;
+    sys.vx[p] = sys.vx[earth]!;
+    sys.vy[p] = sys.vy[earth]!;
+    sim.step();
+    const { crashed, escaped } = sim.stats().particles;
+    expect(crashed + escaped).toBe(1);
+  });
+
   it('liefert Live-Werte', () => {
     const sim = new Simulation(REAL_PARAMS);
     sim.advance(10 * DAY);
@@ -128,13 +174,14 @@ describe('assessStability mit Störkörper', () => {
 });
 
 describe('Puffer', () => {
-  it('TrailBuffer überschreibt die ältesten Einträge', () => {
-    const t = new TrailBuffer(3, 1);
-    for (let i = 0; i < 5; i++) t.push(i, [i, -i]);
-    expect(t.length).toBe(3);
-    expect(t.time(0)).toBe(2);
-    expect(t.x(2, 0)).toBe(4);
-    expect(t.y(2, 0)).toBe(-4);
+  it('TrailBuffer dünnt aus, statt die ältesten Einträge zu verlieren', () => {
+    const t = new TrailBuffer(4, 1);
+    for (let i = 0; i < 6; i++) t.push(i, [i, -i]);
+    expect(t.stride).toBe(2);
+    expect(t.time(0)).toBe(0);
+    expect(t.time(t.length - 1)).toBe(5);
+    expect(t.x(1, 0)).toBe(2);
+    expect(t.y(1, 0)).toBe(-2);
   });
 
   it('SeriesBuffer halbiert die Auflösung, wenn er voll ist', () => {
@@ -143,5 +190,16 @@ describe('Puffer', () => {
     expect(s.interval).toBe(2);
     expect(Array.from(s.time.subarray(0, s.length))).toEqual([0, 2, 4]);
     expect(s.toCsv({ time: 'Zeit', v: 'Wert' })).toBe('Zeit;Wert\n0;0\n2;20\n4;40');
+  });
+});
+
+describe('formatDuration', () => {
+  it('beugt die Einheit nach der Zahl und bleibt unter einer Stunde genau', () => {
+    expect(formatDuration(DAY)).toBe('1 Tag');
+    expect(formatDuration(3600)).toBe('1 Stunde');
+    expect(formatDuration(3 * 3600)).toBe('3 Stunden');
+    expect(formatDuration(3.6)).toBe('3,6 Sekunden');
+    expect(formatDuration(600)).toBe('10 Minuten');
+    expect(formatDuration(5 * DAY)).toBe('5 Tagen');
   });
 });

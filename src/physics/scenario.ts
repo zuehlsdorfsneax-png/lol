@@ -83,8 +83,6 @@ export interface ScenarioInfo {
   sunRadius: number;
   /** Hill-Radius der Erde r_H = a·∛(m/3M). */
   hillRadius: number;
-  /** Hill-Radius im Perihel der Erdbahn (kleinster Wert). */
-  hillRadiusPerihelion: number;
   rocheFluid: number;
   rocheRigid: number;
   /** Kreisbahngeschwindigkeit des Mondes im Startabstand. */
@@ -115,8 +113,6 @@ export function scenarioInfo(p: ScenarioParams): ScenarioInfo {
     moonRadius,
     sunRadius: radiusFromMass(Math.max(sunMass, 1), SUN.density),
     hillRadius: hillRadius(p.earthOrbit * AU, earthMass + moonMass, sunMass),
-    hillRadiusPerihelion:
-      hillRadius(p.earthOrbit * AU, earthMass + moonMass, sunMass) * (1 - p.earthEccentricity),
     rocheFluid: rocheLimit(earthRadius, EARTH.density, MOON.density),
     rocheRigid: rocheLimit(earthRadius, EARTH.density, MOON.density, true),
     moonCircularSpeed: Math.sqrt((G * (earthMass + moonMass)) / moonDistance),

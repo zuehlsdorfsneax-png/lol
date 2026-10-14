@@ -1,4 +1,4 @@
-import { AU, lagrangePoints, criticalMoonDistance } from '../physics';
+import { AU, G, lagrangePoints, criticalMoonDistance } from '../physics';
 import type { Simulation, TrackedBody } from './Simulation';
 import { TRACKED } from './Simulation';
 
@@ -72,13 +72,11 @@ export const SPACE = {
   moon: '#d8dce6',
   intruder: '#ff6f9f',
   particle: '#8fe3ff',
-  particleLost: '#56607e',
   hill: '#8f84ff',
   stability: '#8f84ff',
   roche: '#ff8a4c',
   lagrange: '#f2c46e',
   label: '#c5cce2',
-  labelDim: '#7d88aa',
   velocity: '#f5f7ff',
   pullEarth: '#4c9aff',
   pullSun: '#ffc14d',
@@ -259,11 +257,6 @@ function circle(
     ctx.textBaseline = 'bottom';
     haloText(ctx, label, x, y - r - 6, color);
   }
-}
-
-export interface RenderResult {
-  /** Mittelpunkt der Kamera nach Verfolgen eines Körpers. */
-  center: [number, number];
 }
 
 /**
@@ -517,7 +510,6 @@ export function renderSpace(
     const [mx, my] = T(sys.x[m]!, sys.y[m]!);
     const px = sx(mx);
     const py = sy(my);
-    const G = 6.6743e-11;
     const acc = (src: number): [number, number] => {
       const dx = sys.x[src]! - sys.x[m]!;
       const dy = sys.y[src]! - sys.y[m]!;

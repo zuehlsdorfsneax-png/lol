@@ -145,6 +145,9 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
 
   const sim = simRef.current;
   const stats = useMemo(() => sim?.stats(), [version, sim]);
+  const hasSun = params.sunMass > 0;
+  const chartOptions = hasSun ? CHARTS : CHARTS.filter((c) => c.value !== 'hill');
+  const shownChart = hasSun || chart !== 'hill' ? chart : 'distance';
   const assessment = useMemo(() => assessStability(params), [params]);
   const info = useMemo(() => scenarioInfo(params), [params]);
   const preset = PRESETS.find((p) => p.id === presetId);
@@ -408,7 +411,12 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
 
           <section class="sim-sheet" aria-label="Diagramme">
             <div class="panel-title">
-              <Segmented label="Diagramm" value={chart} options={CHARTS} onChange={setChart} />
+              <Segmented
+                label="Diagramm"
+                value={chart}
+                options={chartOptions}
+                onChange={setChart}
+              />
               <div class="btn-row">
                 <button type="button" class="btn small" onClick={exportCsv}>
                   <Icon name="download" />
@@ -422,7 +430,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
                 )}
               </div>
             </div>
-            {sim && <SeriesChart sim={sim} chart={chart} version={version} />}
+            {sim && <SeriesChart sim={sim} chart={shownChart} version={version} />}
           </section>
         </div>
 

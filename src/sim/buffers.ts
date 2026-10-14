@@ -1,6 +1,7 @@
 /**
- * Ringpuffer für Bahnspuren: speichert in festen Zeitabständen die Positionen einiger Körper.
- * Ältere Einträge werden überschrieben.
+ * Puffer für Bahnspuren: speichert die Positionen einiger Körper. Ist er voll, wird jeder zweite
+ * Eintrag verworfen und `stride` verdoppelt – so reicht die Spur auch über Jahrzehnte zurück
+ * (mit gröberen Abständen), statt nur die letzten Einträge zu halten.
  */
 export class TrailBuffer {
   readonly capacity: number;
@@ -9,7 +10,8 @@ export class TrailBuffer {
   readonly times: Float64Array;
   /** Positionen: [x0, y0, x1, y1, …] je Eintrag. */
   readonly positions: Float64Array;
-  private start = 0;
+  /** Wie oft der Puffer ausgedünnt wurde, als Faktor für den Aufzeichnungsabstand. */
+  stride = 1;
   private count = 0;
 
   constructor(capacity: number, bodies: number) {
@@ -23,35 +25,35 @@ export class TrailBuffer {
     return this.count;
   }
 
-  clear(): void {
-    this.start = 0;
-    this.count = 0;
-  }
-
   push(time: number, coords: ArrayLike<number>): void {
-    const slot = (this.start + this.count) % this.capacity;
-    if (this.count < this.capacity) this.count++;
-    else this.start = (this.start + 1) % this.capacity;
+    if (this.count === this.capacity) this.decimate();
+    const slot = this.count++;
     this.times[slot] = time;
     const base = slot * this.bodies * 2;
     for (let k = 0; k < this.bodies * 2; k++) this.positions[base + k] = coords[k]!;
   }
 
-  /** Physischer Index des i-ten Eintrags (0 = ältester). */
-  slot(i: number): number {
-    return (this.start + i) % this.capacity;
+  private decimate(): void {
+    const width = this.bodies * 2;
+    const half = Math.ceil(this.count / 2);
+    for (let i = 1; i < half; i++) {
+      this.times[i] = this.times[2 * i]!;
+      this.positions.copyWithin(i * width, 2 * i * width, (2 * i + 1) * width);
+    }
+    this.count = half;
+    this.stride *= 2;
   }
 
   x(i: number, body: number): number {
-    return this.positions[this.slot(i) * this.bodies * 2 + body * 2]!;
+    return this.positions[i * this.bodies * 2 + body * 2]!;
   }
 
   y(i: number, body: number): number {
-    return this.positions[this.slot(i) * this.bodies * 2 + body * 2 + 1]!;
+    return this.positions[i * this.bodies * 2 + body * 2 + 1]!;
   }
 
   time(i: number): number {
-    return this.times[this.slot(i)]!;
+    return this.times[i]!;
   }
 }
 
@@ -99,11 +101,6 @@ export class SeriesBuffer<K extends string> {
     }
     this.length = half;
     this.interval *= 2;
-  }
-
-  clear(): void {
-    this.length = 0;
-    this.nextTime = 0;
   }
 
   /** Als CSV-Text (Semikolon-getrennt, Dezimalkomma – öffnet sich direkt in deutschem Excel). */

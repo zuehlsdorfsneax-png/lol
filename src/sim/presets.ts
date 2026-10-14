@@ -95,7 +95,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'jenseits',
     title: 'Jenseits der Grenze',
     description:
-      'Kreisbahn bei 0,55 Hill-Radien. Nach wenigen Umläufen schlüpft der Mond durch das "Tor" bei L1 oder L2 und umkreist danach die Sonne.',
+      'Kreisbahn bei 0,55 Hill-Radien. Nach wenigen Umläufen schlüpft der Mond durch das „Tor“ bei L1 oder L2 und umkreist danach die Sonne.',
     params: { ...BASE, moonDistance: 0.55 * RH },
     view: { frame: 'rotating', radius: 3e9, speedIndex: 3 },
     chapter: 8,
@@ -104,7 +104,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'retrograd',
     title: 'Retrograder Mond bei 0,7 Hill-Radien',
     description:
-      'Ein rückwärts kreisender Mond ist auch bei 0,7 Hill-Radien noch stabil – ein prograder würde dort sofort entkommen. Vergleiche mit "Jenseits der Grenze".',
+      'Ein rückwärts kreisender Mond ist auch bei 0,7 Hill-Radien noch stabil – ein prograder würde dort sofort entkommen. Vergleiche mit „Jenseits der Grenze“.',
     params: { ...BASE, moonDistance: 0.7 * RH, moonRetrograde: true },
     view: { frame: 'rotating', radius: 2.5e9, speedIndex: 3 },
     chapter: 5,
@@ -140,7 +140,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'teilchen',
     title: 'Teilchenwolke: Wo endet die Stabilität?',
     description:
-      '300 masselose Testteilchen auf Kreisbahnen von 60.000 bis 1,4 Mio. km. Nach wenigen Jahren bleiben nur die inneren – die Grenze liegt bei etwa der Hälfte des Hill-Radius.',
+      '300 masselose Testteilchen auf Kreisbahnen von 60.000 bis 1,4 Mio. km. Nach wenigen Jahren bleiben nur die inneren – der Mond räumt alles jenseits von etwa 0,2 Hill-Radien aus.',
     params: {
       ...REAL_PARAMS,
       particles: { count: 300, innerKm: 60_000, outerKm: 1_400_000, retrograde: false },

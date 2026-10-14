@@ -1,7 +1,6 @@
 import {
   DAY,
   G,
-  INTEGRATORS,
   NBody,
   YEAR,
   buildScenario,
@@ -57,6 +56,14 @@ export const DEFAULT_SETTINGS: SimSettings = {
 
 /** Testteilchen werden mit bis zu dreifach größeren Schritten gerechnet als der Mond. */
 const PARTICLE_STEP_FACTOR = 3;
+
+const ARTICLES: Record<string, string> = { Erde: 'die', Mond: 'der', Störkörper: 'der' };
+
+function withArticle(name: string, sentenceStart = false): string {
+  const article = ARTICLES[name];
+  if (!article) return name;
+  return `${sentenceStart ? article[0]!.toUpperCase() + article.slice(1) : article} ${name}`;
+}
 
 export type SimEventKind = 'crash' | 'roche' | 'escape' | 'sun' | 'collision';
 
@@ -118,14 +125,11 @@ export class Simulation {
   initialEnergy: number;
   readonly trail: TrailBuffer;
   readonly series: SeriesBuffer<SeriesKey>;
-  readonly events: SimEvent[] = [];
   /** Ereignis, das bestätigt werden muss, bevor weitergerechnet wird. */
   pending: SimEvent | null = null;
   /** Kleinster und größter Abstand Erde–Mond seit dem Start. */
   minDistance = Infinity;
   maxDistance = 0;
-  /** Kleinster Abstand Störkörper–Erde. */
-  intruderClosest = Infinity;
 
   private nextTrail = 0;
   private trailAngleRef = NaN;
@@ -274,7 +278,7 @@ export class Simulation {
       relativeSpeed: el?.v ?? NaN,
       elements: el,
       hillRadius: hill,
-      hillFraction: d / hill,
+      hillFraction: Number.isFinite(hill) ? d / hill : NaN,
       escapeSpeed: Math.sqrt((2 * mu) / d),
       pullRatio: sun >= 0 && el ? pullRatio(sys.mass[sun]!, sys.distance(sun, moon), mEarth, d) : 0,
       tidalRatio: sun >= 0 && el ? tidalRatio(sys.mass[sun]!, sunDistance, mEarth, d) : 0,
@@ -292,13 +296,12 @@ export class Simulation {
 
   private raise(kind: SimEventKind, title: string, text: string): void {
     const event: SimEvent = { kind, time: this.time, title, text };
-    this.events.push(event);
     this.pending = event;
   }
 
   private checkEvents(): void {
     const { sys, indices, info } = this;
-    const { sun, earth, moon, intruder } = indices;
+    const { sun, earth, moon } = indices;
     const sources = sys.sources;
 
     // Zusammenstöße massereicher Körper.
@@ -321,8 +324,8 @@ export class Simulation {
         } else if (pair.has(sun)) {
           this.raise(
             'sun',
-            `${sys.meta[light]!.name} ist in die Sonne gestürzt`,
-            `Nach ${formatDuration(this.time)} hat ${sys.meta[light]!.name} die Sonnenoberfläche erreicht.`,
+            `${withArticle(sys.meta[light]!.name, true)} ist in die Sonne gestürzt`,
+            `Nach ${formatDuration(this.time)} hat ${withArticle(sys.meta[light]!.name)} die Sonnenoberfläche erreicht.`,
           );
         } else {
           this.raise(
@@ -333,10 +336,6 @@ export class Simulation {
         }
         return;
       }
-    }
-
-    if (intruder >= 0 && sys.alive[intruder] && sys.alive[earth]) {
-      this.intruderClosest = Math.min(this.intruderClosest, sys.distance(intruder, earth));
     }
 
     if (this.moonAlive) {
@@ -350,8 +349,6 @@ export class Simulation {
           'Roche-Grenze unterschritten',
           `Der Mond ist der Erde bis auf ${Math.round(d / 1000).toLocaleString('de-DE')} km nahegekommen. Innerhalb von ${Math.round(info.rocheFluid / 1000).toLocaleString('de-DE')} km übersteigen die Gezeitenkräfte der Erde die Eigengravitation des Mondes – er würde zu einem Ring zerrissen, wie ihn Saturn hat. Die Simulation behandelt ihn weiter als Punktmasse.`,
         );
-      } else if (d > 1.3 * info.rocheFluid) {
-        this.rocheArmed = true;
       }
       if (!this.escapeReported && this.moonEscaped(d)) {
         this.escapeReported = true;
@@ -376,6 +373,7 @@ export class Simulation {
       for (let p = first; p < sys.n; p++) {
         if (!sys.alive[p]) continue;
         for (const s of sources) {
+          if (this.particleEscaped[p]) break;
           if (sys.distance(p, s) < sys.radius[s]!) {
             sys.alive[p] = 0;
             this.particleCrashed++;
@@ -399,7 +397,7 @@ export class Simulation {
   }
 
   private moonTurned(): boolean {
-    const limit = this.settings.trailAngle;
+    const limit = this.settings.trailAngle * this.trail.stride;
     if (!(limit > 0) || !Number.isFinite(this.trailAngleRef)) return false;
     let d = Math.abs(this.moonAngle() - this.trailAngleRef);
     if (d > Math.PI) d = 2 * Math.PI - d;
@@ -423,7 +421,7 @@ export class Simulation {
         this.trailCoords[2 * k + 1] = alive ? sys.y[i]! : NaN;
       });
       this.trail.push(this.time, this.trailCoords);
-      this.nextTrail = this.time + this.settings.trailInterval;
+      this.nextTrail = this.time + this.settings.trailInterval * this.trail.stride;
       this.trailAngleRef = this.moonAngle();
     }
     if (this.series.due(this.time)) {
@@ -434,7 +432,7 @@ export class Simulation {
         eccentricity: el?.e ?? NaN,
         semiMajorAxis: el?.bound ? el.a : NaN,
         periapsis: el?.periapsis ?? NaN,
-        hillFraction: el ? el.r / hill : NaN,
+        hillFraction: el && Number.isFinite(hill) ? el.r / hill : NaN,
         energyError: this.energyError(),
         omega: el?.omega ?? NaN,
       });
@@ -442,16 +440,19 @@ export class Simulation {
   }
 }
 
-export function integratorName(id: IntegratorId): string {
-  return INTEGRATORS[id].name;
-}
-
-/** Menschenlesbare Dauer: Stunden, Tage oder Jahre. */
+/** Menschenlesbare Dauer im Dativ („nach 1 Tag“, „nach 3 Stunden“). */
 export function formatDuration(seconds: number): string {
   const abs = Math.abs(seconds);
-  if (abs < DAY)
-    return `${(seconds / 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Stunden`;
-  if (abs < 2 * YEAR)
-    return `${(seconds / DAY).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Tagen`;
-  return `${(seconds / YEAR).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Jahren`;
+  const [value, one, many] =
+    abs < 60
+      ? [seconds, 'Sekunde', 'Sekunden']
+      : abs < 3600
+        ? [seconds / 60, 'Minute', 'Minuten']
+        : abs < DAY
+          ? [seconds / 3600, 'Stunde', 'Stunden']
+          : abs < 2 * YEAR
+            ? [seconds / DAY, 'Tag', 'Tagen']
+            : [seconds / YEAR, 'Jahr', 'Jahren'];
+  const rounded = Math.round(Number(value) * 10) / 10;
+  return `${rounded.toLocaleString('de-DE', { maximumFractionDigits: 1 })} ${rounded === 1 ? one : many}`;
 }

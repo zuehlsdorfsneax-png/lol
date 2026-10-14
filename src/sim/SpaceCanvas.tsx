@@ -153,7 +153,12 @@ export function SpaceCanvas(props: Props) {
   const onWheel = (e: WheelEvent): void => {
     e.preventDefault();
     const r = canvasRef.current!.getBoundingClientRect();
-    zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
+    const pixels = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
+    zoomAt(
+      Math.exp(-Math.max(-300, Math.min(300, pixels)) * 0.0015),
+      e.clientX - r.left,
+      e.clientY - r.top,
+    );
   };
 
   useEffect(() => {
@@ -199,5 +204,4 @@ export function SpaceCanvas(props: Props) {
   );
 }
 
-/** Zoomstufe per Knopf (für Tastatur und Touch ohne Mehrfinger-Gesten). */
 export type { Camera };
