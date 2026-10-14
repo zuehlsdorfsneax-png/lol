@@ -79,7 +79,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     items: [
       "Laskar, J., Joutel, F. & Robutel, P. (1993): Stabilization of the Earth's obliquity by the Moon. In: Nature, Bd. 361, S. 615–617. https://www.nature.com/articles/361615a0(Zugriff: 27.08.2026)",
       'wissenschaft.de: Der überschätzte Mond. https://www.wissenschaft.de/erde-umwelt/der-ueberschaetzte-mond/(Zugriff: 27.08.2026)',
-      'Welt der Physik (Deutsche Physikalische Gesellschaft): Leben auf der Erde auch ohne Mond möglich. http://www.weltderphysik.de/gebiet/astro/news/2011/leben-auf-der-erde-auch-ohne-mond-moeglich/(Zugriff: 27.08.2026)',
+      'Welt der Physik (Deutsche Physikalische Gesellschaft): Leben auf der Erde auch ohne Mond möglich. https://web.archive.org/web/20170724135821/http://www.weltderphysik.de/gebiet/astro/news/2011/leben-auf-der-erde-auch-ohne-mond-moeglich/(Zugriff: 27.08.2026)',
       'Welt der Physik (Deutsche Physikalische Gesellschaft): Der Mond – Trabant unserer Erde. https://www.weltderphysik.de/gebiet/universum/der-mond/(Zugriff: 27.08.2026)',
       'planet schule (SWR/WDR): Welche Wirkung hat das Sonnenlicht auf der Erde? https://www.planet-schule.de/mm/die-erde/Barrierefrei/pages/Die_Wirkung_von_Sonnenlicht.html(Zugriff: 27.08.2026)',
       'planet schule (SWR/WDR): Wattenmeer – Lebensräume im Meer. https://www.planet-schule.de/schwerpunkt/lebensraeume-im-meer/hintergrund-wattenmeer-100.html(Zugriff: 27.08.2026)',
@@ -115,7 +115,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
       'Wikipedia (englisch): Hollow Moon. https://en.wikipedia.org/wiki/Hollow_Moon(Zugriff: 27.08.2026)',
       "Physics World: GRAIL mission peers beneath the Moon's fractured surface. https://physicsworld.com/a/grail-mission-peers-beneath-the-moons-fractured-surface/(Zugriff: 27.08.2026)",
       'MIT News: GRAIL reveals a battered lunar history. https://news.mit.edu/2012/grail-reveals-a-battered-lunar-history-1205(Zugriff: 27.08.2026)',
-      'Uni Heidelberg: Astro 23/08 – Baryzentrum-Berechnung Erde-Mond (PDF). https://www.mathi.uni-heidelberg.de/~flemmermeyer/HA/astro-23-08.pdf(Zugriff: 27.08.2026)',
+      'Uni Heidelberg: Astro 23/08 – Baryzentrum-Berechnung Erde-Mond (PDF, Adresse nicht mehr erreichbar; zuletzt abgerufen am 27.08.2026).',
     ],
   },
   {

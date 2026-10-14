@@ -14,24 +14,24 @@ const TERMS: readonly Term[] = [
     link: ['rakete', 'Raketenwerft'],
   },
   {
-    term: 'Baryzentrum',
-    text: 'Gemeinsamer Schwerpunkt zweier Körper, um den beide kreisen. Beim System Erde–Mond liegt er etwa 4.700 km vom Erdmittelpunkt entfernt, also noch in der Erde.',
-    link: ['kapitel-2', 'Kapitel 2'],
-  },
-  {
     term: 'Bahnstabilität',
     text: 'Eine Bahn ist stabil, wenn kleine Störungen sie nur wenig verändern und der Körper über lange Zeit weder abstürzt noch entkommt.',
     link: ['kapitel-1', 'Kapitel 1'],
   },
   {
-    term: 'Drei-Körper-Problem',
-    text: 'Die Bewegung dreier sich gegenseitig anziehender Körper. Es gibt dafür keine allgemeine Formel, deshalb rechnet man numerisch – wie im Simulator.',
-    link: ['kapitel-8', 'Kapitel 8'],
+    term: 'Baryzentrum',
+    text: 'Gemeinsamer Schwerpunkt zweier Körper, um den beide kreisen. Beim System Erde–Mond liegt er etwa 4.700 km vom Erdmittelpunkt entfernt, also noch in der Erde.',
+    link: ['kapitel-2', 'Kapitel 2'],
   },
   {
     term: 'Δv (Delta-v)',
     text: 'Die Geschwindigkeitsänderung, die eine Rakete mit ihrem Treibstoff insgesamt erreichen kann. Das „Budget“ jeder Raumfahrtmission.',
     link: ['rakete', 'Raketenwerft'],
+  },
+  {
+    term: 'Drei-Körper-Problem',
+    text: 'Die Bewegung dreier sich gegenseitig anziehender Körper. Es gibt dafür keine allgemeine Formel, deshalb rechnet man numerisch – wie im Simulator.',
+    link: ['kapitel-8', 'Kapitel 8'],
   },
   {
     term: 'Exzentrizität',

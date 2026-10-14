@@ -24,7 +24,7 @@ export function MethodsPage() {
         <SectionTitle n="A.1">Modell</SectionTitle>
         <ul>
           <li>
-            Körper als Punktmassen (nach dem Schalentheorem für Kugeln exakt, siehe Kapitel 1).
+            Körper als Punktmassen (nach dem Schalentheorem für Kugeln exakt, siehe Kapitel 7.2).
           </li>
           <li>Newtonsche Gravitation zwischen allen Körpern mit Masse, Gleichung (2.4).</li>
           <li>
@@ -176,8 +176,8 @@ export function MethodsPage() {
           </li>
         </ol>
         <p style={{ marginTop: 'var(--sp-2)' }}>
-          Alle Diagramme lassen sich als Bild und als CSV-Datei exportieren. Die Grenzwerte in
-          Kapitel 8 reproduziert das Skript <code>npm run calibrate</code>.
+          Simulator und Stabilitätskarte lassen sich als Bild und als CSV-Datei exportieren. Die
+          Grenzwerte in Kapitel 8 reproduziert das Skript <code>npm run calibrate</code>.
         </p>
       </Callout>
     </article>

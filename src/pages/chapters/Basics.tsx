@@ -20,9 +20,9 @@ export function Basics() {
         </p>
         <p>
           Als Isaac Newton 1687 sein Hauptwerk „Philosophiae Naturalis Principia Mathematica“
-          veröffentlichte, revolutionierte es unter anderem auch die Himmelsmechanik. Astronomen
-          waren nicht mehr an beschreibende Modelle wie die Keplerschen Gesetze gebunden,
-          stattdessen hatten sie von da an ein kausales physikalisches Fundament.
+          veröffentlichte, veränderte es die Himmelsmechanik. Astronomen waren nicht mehr an
+          beschreibende Modelle wie die Keplerschen Gesetze gebunden, stattdessen hatten sie von da
+          an ein kausales physikalisches Fundament.
         </p>
         <p>
           Mit der Veröffentlichung seiner Arbeit brachte Newton auch drei für die Himmelsmechanik
@@ -79,8 +79,8 @@ export function Basics() {
           berücksichtigt. Es ist auch als <strong>Kepler-Problem</strong> bekannt, da Johannes
           Kepler diese Bahnbewegungen als Erster beobachtete, beschrieb und die Keplerschen Gesetze
           formulierte. 1687 lieferte Isaac Newton mit den Gravitations- und Bewegungsgesetzen die
-          physikalische Erklärung. Damit erklärte er nicht nur, wie sich Planeten bewegen, sondern
-          auch, warum sie es auf diese Weise tun.
+          physikalische Erklärung. Damit erklärte er, wie sich Planeten bewegen und warum sie es auf
+          diese Weise tun.
         </p>
         <p>
           Newton vereinfachte das Zweikörperproblem, indem er die Bewegung des gemeinsamen
@@ -112,10 +112,10 @@ export function Basics() {
         <p>
           Das Erde-Mond-System ist ein konkretes Beispiel für ein Zweikörpersystem mit negativer
           Gesamtenergie. Nach dem dritten Newtonschen Axiom ziehen sich beide Körper mit gleich
-          großer Kraft an. Deshalb bewegt sich nicht nur der Mond um die Erde, sondern beide Körper
-          bewegen sich um einen gemeinsamen Mittelpunkt, das <strong>Baryzentrum</strong>. Da die
-          Erde etwa 81-mal so schwer ist wie der Mond, liegt das Baryzentrum noch innerhalb der Erde
-          – aber nicht in ihrer Mitte. Deshalb bewegt sich auch die Erde um diesen Punkt.
+          großer Kraft an. Deshalb bewegen sich Mond und Erde um einen gemeinsamen Mittelpunkt, das{' '}
+          <strong>Baryzentrum</strong>. Da die Erde etwa 81-mal so schwer ist wie der Mond, liegt
+          das Baryzentrum noch innerhalb der Erde – aber nicht in ihrer Mitte. Deshalb bewegt sich
+          auch die Erde um diesen Punkt.
         </p>
         <p>
           Das Zweikörperproblem ist für die Himmelsmechanik von großer Bedeutung, da sich allein aus
@@ -142,7 +142,7 @@ export function Basics() {
           und die Finsternisse betrachtet.
         </p>
         <p>
-          Die Sonne dient als fast alleinige Energiequelle des Systems und entscheidet damit direkt
+          Die Sonne ist die fast alleinige Energiequelle des Systems und entscheidet damit direkt
           und indirekt über Klima, Wetter und das Leben auf der Erde. Ihre Strahlung erwärmt
           Lufthülle, Landmassen und Ozeane. Am Äquator ist die Erwärmung am stärksten und nimmt zu
           den Polen hin ab – so entstehen die Klimazonen. Ohne diese Energie wäre die Erde ein
@@ -238,8 +238,9 @@ function BarycenterDemo() {
     const cx = w / 2;
     const cy = h / 2;
     const ang = (t / 6) * Math.PI * 2;
-    const ex = cx - Math.cos(ang) * d * scale * 12;
-    const ey = cy - Math.sin(ang) * d * scale * 12;
+    const zoom = Math.min(12, (w * 0.3) / (d * scale));
+    const ex = cx - Math.cos(ang) * d * scale * zoom;
+    const ey = cy - Math.sin(ang) * d * scale * zoom;
     const mx = cx + Math.cos(ang) * (r - d) * scale;
     const my = cy + Math.sin(ang) * (r - d) * scale;
     ctx.strokeStyle = c.ink3;
@@ -263,7 +264,7 @@ function BarycenterDemo() {
     ctx.fillStyle = c.ink2;
     ctx.font = `12px ${c.fontUi}`;
     ctx.fillText('Baryzentrum', cx + 8, cy - 8);
-    ctx.fillText('Erde (Bewegung 12-fach vergrößert)', 8, h - 8);
+    ctx.fillText(`Erde (Bewegung ${sig(zoom, 2)}-fach vergrößert)`, 8, h - 8);
   };
   return (
     <div class="grid-2">

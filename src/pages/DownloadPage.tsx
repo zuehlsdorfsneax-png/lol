@@ -7,8 +7,8 @@ export const MAC_URL = `${REPO_URL}/releases/latest/download/Orbitlabor-Mac-Appl
 export const APK_URL = `${REPO_URL}/releases/latest/download/Orbitlabor.apk`;
 const RELEASES_URL = `${REPO_URL}/releases/latest`;
 
-/** Läuft die App gerade in der Windows-EXE? (Der Starter nutzt diesen festen Anschluss.) */
-function insideExe(): boolean {
+/** Läuft die App gerade im installierten Starter? (Er nutzt diesen festen Anschluss.) */
+function insideLauncher(): boolean {
   return location.hostname === '127.0.0.1' && location.port === '47173';
 }
 
@@ -44,9 +44,9 @@ export function DownloadPage() {
         Fortschritt und Raketen bleiben gespeichert.
       </PageHead>
 
-      {insideExe() && (
+      {insideLauncher() && (
         <Callout kind="fakt" title="Schon installiert">
-          Du benutzt gerade die Windows-Version. Neuere Versionen gibt es immer unter demselben
+          Du benutzt gerade die installierte App. Neuere Versionen gibt es immer unter demselben
           Link.
         </Callout>
       )}

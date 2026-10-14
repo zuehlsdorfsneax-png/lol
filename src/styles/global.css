@@ -652,6 +652,10 @@ svg {
   gap: var(--sp-2);
 }
 
+.prose li {
+  overflow-wrap: anywhere;
+}
+
 .prose strong {
   font-weight: 600;
 }

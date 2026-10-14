@@ -32,7 +32,7 @@ export function Chapter4() {
           Das <strong>effektive Potential</strong> <Tex>{'-\\Omega'}</Tex> enthält die Gravitation
           beider Körper und die Zentrifugalkraft. Die Terme{' '}
           <Tex>{'\\mp 2\\dot y, \\pm 2\\dot x'}</Tex> sind die Coriolis-Kraft; sie hängt von der
-          Geschwindigkeit ab und spielt für die Stabilität eine überraschende Rolle.
+          Geschwindigkeit ab und beeinflusst die Stabilität stärker, als man erwartet.
         </p>
 
         <SectionTitle n="4.2">Die Punkte L1 bis L5</SectionTitle>
@@ -111,7 +111,7 @@ export function Chapter4() {
           n="4.7"
         />
         <p>
-          Das ist das <strong>Routh-Kriterium</strong> (1875). Bemerkenswert: L4 und L5 sind
+          Das ist das <strong>Routh-Kriterium</strong> (1875). Auffällig: L4 und L5 sind
           <em> Maxima</em> des effektiven Potentials – ein Ball würde vom Gipfel rollen. Stabil
           werden sie erst durch die Coriolis-Kraft, die ein wegrollendes Teilchen auf eine Bahn um
           den Punkt umlenkt.
