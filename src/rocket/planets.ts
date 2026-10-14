@@ -652,7 +652,14 @@ export function drawPlanetDisk(
   if (typeof document !== 'undefined' && 2 * (rpx + pad) * dpr <= 1100 && rpx > 2) {
     const qr = Math.exp(Math.round(Math.log(rpx) * 60) / 60);
     const key = `${b.id}|${Math.round(qr * dpr * 10)}|${Math.round(rot * 115)}|${Math.round(sunAngle * 115)}|${Math.round(pad)}`;
+    // Ändert sich der Schlüssel von Bild zu Bild (Zeitraffer, Zoomen), lohnt das Merken nicht.
+    const steady = lastDiskKey.get(b.id) === key;
+    lastDiskKey.set(b.id, key);
     let hit = DISKS.get(key);
+    if (!hit && !steady) {
+      paintDisk(ctx, b, tex, sx, sy, rpx, rot, sunAngle, glowPx);
+      return true;
+    }
     if (hit) DISKS.delete(key);
     else {
       const half = qr + pad;
@@ -677,6 +684,7 @@ export function drawPlanetDisk(
 
 /** Gemerkte, fertig beleuchtete kleine Scheiben (höchstens sechs, zuletzt benutzte bleiben). */
 const DISKS = new Map<string, { canvas: HTMLCanvasElement; half: number }>();
+const lastDiskKey = new Map<string, string>();
 
 function paintDisk(
   ctx: CanvasRenderingContext2D,

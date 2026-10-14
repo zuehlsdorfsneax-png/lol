@@ -4,14 +4,13 @@
  */
 import { drawContactShadow, drawRocket, drawSatellite, entryWidth, setLighting } from './draw';
 import { drawPlanetDisk, haloCircles } from './planets';
-import { part } from './parts';
+import { designHeight, part } from './parts';
 import { drawLaunchComplex, drawRidges, drawSkySun } from './landscape';
 import { bodySpin, satelliteState, type Flight, type LandingSite } from './flight';
 import {
   BODIES,
   GAME_EARTH,
   EUROPA,
-  JUPITER,
   MARS,
   MERCURY,
   GAME_MOON,
@@ -65,13 +64,13 @@ function smooth(a: number, b: number, x: number): number {
 }
 
 /** Sonnenstand an einem Punkt über einem Körper. */
-/** Maße der Rakete für Startturm und Flammenschacht (gemerkt, solange sich der Bau nicht ändert). */
-let padCache: { segs: unknown; n: number; size: { length: number; width: number } } | null = null;
-function padRocket(f: Flight): { length: number; width: number } {
-  if (padCache?.segs !== f.segs || padCache.n !== f.segs.length) {
+/** Maße der Rakete beim Start für Startturm und Flammenschacht: bleiben nach Stufentrennung gleich. */
+let padCache: { design: unknown; size: { length: number; width: number } } | null = null;
+export function padRocket(f: Flight): { length: number; width: number } {
+  if (padCache?.design !== f.design) {
     let width = 1;
-    for (const seg of f.segs) for (const id of seg.parts) width = Math.max(width, entryWidth(id));
-    padCache = { segs: f.segs, n: f.segs.length, size: { length: f.length, width } };
+    for (const id of f.design) width = Math.max(width, entryWidth(id));
+    padCache = { design: f.design, size: { length: designHeight(f.design), width } };
   }
   return padCache.size;
 }
@@ -455,72 +454,6 @@ export function drawBody(
   const rot = bodySpin(b, t) || orbitAngle(b, t);
   if (b === GAME_MOON || b === PHOBOS) drawCraters(ctx, v, b, bx, by, rot, look.detail);
   if (b === MERCURY) drawCraters(ctx, v, b, bx, by, rot, look.detail, 20);
-  if (!close && rpx > 3) {
-    if (b === MARS) {
-      ctx.fillStyle = look.detail;
-      for (const [ang, dist, rad, seed] of CONTINENTS.slice(0, 4)) {
-        const a = (ang * Math.PI) / 180 - (v.up - Math.PI / 2);
-        blob(
-          ctx,
-          sx + dist * rpx * Math.cos(a),
-          sy - dist * rpx * Math.sin(a),
-          rad * rpx * 0.7,
-          seed,
-        );
-        ctx.fill();
-      }
-      // Polkappen an den Polen des Planeten (nicht am Bildschirmrand)
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      const rot = v.up - Math.PI / 2;
-      for (const [k, w, hh] of [
-        [0.93, 0.35, 0.12],
-        [-0.95, 0.25, 0.08],
-      ] as const) {
-        const [px, py] = toScreen(v, bx, by + b.radius * k);
-        ctx.beginPath();
-        ctx.ellipse(px, py, rpx * w, rpx * hh, -rot, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else if (b === EUROPA) {
-      // Risse im Eispanzer
-      ctx.strokeStyle = 'rgba(150,85,45,0.6)';
-      ctx.lineWidth = Math.max(0.6, rpx * 0.02);
-      for (let k = 0; k < 7; k++) {
-        const a0 = hash(k, 31) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.moveTo(sx + rpx * Math.cos(a0), sy + rpx * Math.sin(a0));
-        ctx.quadraticCurveTo(
-          sx + rpx * (hash(k, 32) - 0.5),
-          sy + rpx * (hash(k, 33) - 0.5),
-          sx + rpx * Math.cos(a0 + 2 + hash(k, 34)),
-          sy + rpx * Math.sin(a0 + 2 + hash(k, 34)),
-        );
-        ctx.stroke();
-      }
-    } else if (b === JUPITER || b === VENUS) {
-      const bands = b === JUPITER ? 9 : 5;
-      for (let i = 0; i < bands; i++) {
-        ctx.fillStyle = i % 2 ? look.detail : look.base;
-        ctx.globalAlpha = b === JUPITER ? 0.8 : 0.35;
-        const y0 = sy - rpx + (2 * rpx * i) / bands;
-        ctx.fillRect(sx - rpx, y0 + Math.sin(i * 1.7) * rpx * 0.03, 2 * rpx, (2 * rpx) / bands);
-      }
-      ctx.globalAlpha = 1;
-      if (b === JUPITER) {
-        ctx.fillStyle = '#c0563a';
-        ctx.beginPath();
-        ctx.ellipse(sx + rpx * 0.35, sy + rpx * 0.3, rpx * 0.16, rpx * 0.09, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else if (b === GAME_SUN) {
-      const g = ctx.createRadialGradient(sx - rpx * 0.2, sy - rpx * 0.2, 0, sx, sy, rpx);
-      g.addColorStop(0, '#fff7d6');
-      g.addColorStop(1, '#ffb52e');
-      ctx.fillStyle = g;
-      ctx.fillRect(sx - rpx, sy - rpx, 2 * rpx, 2 * rpx);
-    }
-    if (b !== GAME_SUN) nightSide(ctx, v, sx, sy, rpx, t, 0.55);
-  }
   ctx.restore();
 }
 
@@ -1098,20 +1031,22 @@ export function drawFlight(
   if (near.body === GAME_EARTH && near.altitude < 25_000) drawClouds(ctx, v, light);
   drawStation(ctx, v, f.t, 6);
 
-  // Satelliten in der Nähe
+  // Satelliten und Trümmer im Licht der Umgebung
+  setLighting(1, light.shadow ? 0.35 : 0.5 + 0.5 * light.day);
   for (const s of f.satellites) {
     const [x, y] = satelliteState(s, f.t);
     const [sx, sy] = toScreen(v, x, y);
-    if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
+    const scale = Math.max(v.scale, 3.4);
+    const margin = Math.max(40, 6 * scale);
+    if (sx < -margin || sx > W + margin || sy < -margin || sy > H + margin) continue;
     ctx.save();
-    local(ctx, v, x, y, f.t * 0.02 + s.id, Math.max(v.scale, 3.4));
+    local(ctx, v, x, y, f.t * 0.02 + s.id, scale);
     drawSatellite(ctx, s.part);
     ctx.restore();
     label(ctx, s.name, sx + 18, sy - 12, '#a5f3fc', 11);
   }
 
   // Trümmer
-  setLighting(1, light.shadow ? 0.35 : 0.5 + 0.5 * light.day);
   for (const d of f.debris) {
     ctx.save();
     local(ctx, v, d.x, d.y, d.angle, Math.max(v.scale, 0.02));
@@ -1123,6 +1058,7 @@ export function drawFlight(
     drawRocket(ctx, d.parts);
     ctx.restore();
   }
+  setLighting(1, 1);
 
   // Rauch, Staub und Feuer: weiche Bausche (gemerkte Bildchen, nur skaliert eingeblendet)
   const dustRgb = rgbOf(DUST[near.body.id] ?? '#b4b8bf');

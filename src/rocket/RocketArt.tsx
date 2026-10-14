@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
 import { drawRocket } from './draw';
-import { TEMPLATES } from './parts';
+import { designHeight, TEMPLATES } from './parts';
+
+const FERRY = TEMPLATES.find((t) => t.id === 'faehre')!;
 
 /**
  * Bild für den Hinweis auf die Raketenwerft: Rakete über dem Erdrand, Mond im Hintergrund.
@@ -51,9 +53,10 @@ export function RocketArt({ paused = false }: { paused?: boolean }) {
       ctx.save();
       ctx.translate(W * 0.52, H * 0.78);
       ctx.rotate(0.5 + (still ? 0 : 0.03 * Math.sin(now / 900)));
-      const scale = (H * 0.62) / 36;
+      const parts = FERRY.parts;
+      const scale = (H * 0.62) / designHeight(parts);
       ctx.scale(scale, -scale);
-      drawRocket(ctx, TEMPLATES[2]!.parts, {
+      drawRocket(ctx, parts, {
         throttle: 1,
         air: 0.1,
         chuteOpen: 0,

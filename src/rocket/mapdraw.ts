@@ -510,6 +510,36 @@ export function predictionReach(pred: Prediction, t: number, cx: number, cy: num
 }
 
 /**
+ * Punkte der Bahn, an denen ein Richtungspfeil sitzt: alle 140 Pixel Bahnlänge ab dem Anfang des
+ * Abschnitts, nicht ab dem sichtbaren Teil – sonst gleiten die Pfeile beim Verschieben der Karte.
+ */
+export function arrowIndices(
+  xs: ArrayLike<number>,
+  ys: ArrayLike<number>,
+  a: number,
+  b: number,
+  width: number,
+  height: number,
+): number[] {
+  const out: number[] = [];
+  let run = 0;
+  for (let i = a + 1; i <= b; i++) {
+    const len = Math.hypot(xs[i]! - xs[i - 1]!, ys[i]! - ys[i - 1]!);
+    if (!Number.isFinite(len)) {
+      run = 0;
+      continue;
+    }
+    run += len;
+    if (run < 140) continue;
+    run = 0;
+    const px = xs[i]!;
+    const py = ys[i]!;
+    if (px >= 0 && px <= width && py >= 0 && py <= height) out.push(i);
+  }
+  return out;
+}
+
+/**
  * Streckenzug in sichtbare Stücke zerlegen (Bildschirm plus etwas Rand). Strecken, die den
  * Bereich schneiden, werden an seinem Rand abgeschnitten (Liang-Barsky).
  */
@@ -634,27 +664,20 @@ function drawPrediction(
     ctx.setLineDash([]);
     // Richtungspfeile etwa alle 140 Pixel
     ctx.fillStyle = color;
-    for (const r of runs) {
-      let run = 0;
-      for (let i = 1; i < r.x.length; i++) {
-        const dx = r.x[i]! - r.x[i - 1]!;
-        const dy = r.y[i]! - r.y[i - 1]!;
-        run += Math.hypot(dx, dy);
-        if (run < 140) continue;
-        run = 0;
-        const px = r.x[i]!;
-        const py = r.y[i]!;
-        if (px < 0 || px > v.width || py < 0 || py > v.height) continue;
-        const a2 = Math.atan2(dy, dx);
-        const c = Math.cos(a2);
-        const sn = Math.sin(a2);
-        ctx.beginPath();
-        ctx.moveTo(px + 6 * c, py + 6 * sn);
-        ctx.lineTo(px - 4 * c + 5 * sn, py - 4 * sn - 5 * c);
-        ctx.lineTo(px - 4 * c - 5 * sn, py - 4 * sn + 5 * c);
-        ctx.closePath();
-        ctx.fill();
-      }
+    for (const i of arrowIndices(xs, ys, a, b, v.width, v.height)) {
+      const dx = xs[i]! - xs[i - 1]!;
+      const dy = ys[i]! - ys[i - 1]!;
+      const px = xs[i]!;
+      const py = ys[i]!;
+      const a2 = Math.atan2(dy, dx);
+      const c = Math.cos(a2);
+      const sn = Math.sin(a2);
+      ctx.beginPath();
+      ctx.moveTo(px + 6 * c, py + 6 * sn);
+      ctx.lineTo(px - 4 * c + 5 * sn, py - 4 * sn - 5 * c);
+      ctx.lineTo(px - 4 * c - 5 * sn, py - 4 * sn + 5 * c);
+      ctx.closePath();
+      ctx.fill();
     }
   };
   /** Ein Abschnitt, in dem die Begegnung orange hervorgehoben wird. */
