@@ -1000,7 +1000,8 @@ export class Flight {
   /** Nutzlasten an Bord (Satelliten und Teleskope). */
   get satellitesOnBoard(): number {
     return this.segs.reduce(
-      (s, seg) => s + seg.parts.filter((id) => part(id).kind === 'payload').length,
+      (s, seg) =>
+        s + seg.parts.reduce((n, id) => n + (part(id).kind === 'payload' ? copies(id) : 0), 0),
       0,
     );
   }
@@ -1683,9 +1684,11 @@ export class Flight {
     const ay = Math.sin(this.angle);
     const top = this.length;
     const at = seg.parts.findIndex((id) => part(id).kind === 'payload');
-    const payload = seg.parts[at]!;
+    const payload = part(seg.parts[at]!).id;
     const title = payload === 'teleskop' ? 'Teleskop' : 'Satellit';
-    seg.parts.splice(at, 1);
+    // Ein seitliches Paar gibt erst einen Satelliten frei, der andere bleibt an Bord.
+    if (copies(seg.parts[at]!) === 2) seg.parts[at] = payload;
+    else seg.parts.splice(at, 1);
     // Mit Federn sanft nach vorn abgestoßen.
     const sx = this.x + ax * (top + 0.5);
     const sy = this.y + ay * (top + 0.5);
@@ -1698,10 +1701,11 @@ export class Flight {
     const [bx, by, bvx, bvy] = bodyState(ref, this.t);
     const el = elements(ref.mu, sx - bx, sy - by, svx - bvx, svy - bvy, this.t);
     const { peri, apo } = apsides(el);
+    const er = title === 'Teleskop' ? 'Es' : 'Er';
     if (el.e >= 1) {
       this.emit(
         'warn',
-        `${title} ausgesetzt – aber auf einer Fluchtbahn. ${title === 'Teleskop' ? 'Es' : 'Er'} verlässt ${forms(ref).acc} für immer.`,
+        `${title} ausgesetzt – aber auf einer Fluchtbahn. ${er} verlässt ${forms(ref).acc} für immer.`,
       );
       return true;
     }
@@ -1718,7 +1722,7 @@ export class Flight {
       });
       this.emit(
         'warn',
-        `${title} ausgesetzt – doch seine Bahn führt in ${ref.atmosphere > 0 ? 'die Atmosphäre' : 'den Boden'}: Er stürzt ab. Erst eine stabile Umlaufbahn fliegen!`,
+        `${title} ausgesetzt – doch seine Bahn führt in ${ref.atmosphere > 0 ? 'die Atmosphäre' : 'den Boden'}: ${er} stürzt ab. Erst eine stabile Umlaufbahn fliegen!`,
       );
       return true;
     }
@@ -2035,7 +2039,8 @@ export class Flight {
     const target = rotates ? cmd * TURN_RATE * (1 + 0.45 * wheels) : 0;
     const dv = target - this.angVel;
     const maxStep = TURN_ACCEL * (1 + 0.75 * wheels) * realDt;
-    this.angVel += clamp(dv, -maxStep, maxStep);
+    // Nur die Hälfte des Abstands pro Bild: Ein ganzer Sprung überschwingt und lässt die Drehrate pendeln.
+    this.angVel += clamp(dv * 0.5, -maxStep, maxStep);
     if (rotates) this.angle = wrap(this.angle - this.angVel * realDt * this.warp);
   }
 
@@ -2296,6 +2301,7 @@ export class Flight {
     const tilt = Math.abs(wrap(this.angle - up));
     const legs = this.hasLegs;
     const speedLimit = this.safeLandingSpeed;
+    const legSpeed = part('beine').landSpeed ?? 0;
     const tiltLimit = this.active.parts.reduce(
       (m, id) => Math.max(m, part(id).landTilt ?? 0),
       legs ? LAND_TILT_LEGS : LAND_TILT,
@@ -2380,7 +2386,7 @@ export class Flight {
     else
       reason =
         speed > speedLimit
-          ? `Aufprall mit ${Math.round(speed)} m/s – sicher sind höchstens ${speedLimit} m/s${legs ? '' : ' (mit Landebeinen 14 m/s)'}.`
+          ? `Aufprall mit ${Math.round(speed)} m/s – sicher sind höchstens ${speedLimit} m/s${speedLimit < legSpeed ? ` (mit Landebeinen ${legSpeed} m/s)` : ''}.`
           : `Zu schräg aufgesetzt (${Math.round((tilt * 180) / Math.PI)}°). Die Rakete ist umgekippt.`;
     this.fail(reason, c);
   }

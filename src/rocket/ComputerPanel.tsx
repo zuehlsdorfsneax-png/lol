@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { Icon } from '../ui/Icon';
 import type { Flight, Prediction, TargetId } from './flight';
-import { clock, clockIn, duration, fmt } from './format';
+import { clock, clockIn, duration, fmt, withUnits } from './format';
 import { period } from './kepler';
 import {
   canReturnHome,
@@ -236,7 +236,7 @@ export function ComputerPanel({
               )}
               {result && (
                 <p class={`cp-result ${result.ok ? 'ok' : 'bad'}`}>
-                  <strong>{result.title}:</strong> {result.text}
+                  <strong>{result.title}:</strong> {withUnits(result.text)}
                 </p>
               )}
               {!result?.ok && result?.wait && (
@@ -449,7 +449,7 @@ export function ComputerPanel({
                   Löschen
                 </button>
               </div>
-              {result && <p class="cp-result ok small">{result.text}</p>}
+              {result && <p class="cp-result ok small">{withUnits(result.text)}</p>}
             </div>
           )}
 
@@ -517,7 +517,7 @@ function MissionTab({
             </li>
           ))}
         </ol>
-        {mission.detail && <p class="cp-result ok small">{mission.detail}</p>}
+        {mission.detail && <p class="cp-result ok small">{withUnits(mission.detail)}</p>}
         <button type="button" class="cp-action on" onClick={() => onMission(null)}>
           <Icon name="stop" /> Mission abbrechen
         </button>

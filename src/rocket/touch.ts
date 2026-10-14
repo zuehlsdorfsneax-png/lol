@@ -23,6 +23,8 @@ export function forTouch(text: string): string {
     .replace('Zeitraffer hoch (.)', 'Zeitraffer hoch (oben)')
     .replace(/,?\s*Taste \d/g, '')
     .replace(/\s*\(([^()]*)\)/g, (m, inner: string) =>
-      inner.replace(/Taste|oder|Vollgas|Umschalt|[A-Z0-9↑↓←→.,/=+<>–-]|\s/g, '') === '' ? '' : m,
+      inner.replace(/Leertaste|Taste|oder|Vollgas|Umschalt|[A-Z0-9↑↓←→.,/=+<>–-]|\s/g, '') === ''
+        ? ''
+        : m,
     );
 }

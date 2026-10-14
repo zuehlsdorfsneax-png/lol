@@ -149,18 +149,31 @@ export function missionSteps(spec: MissionSpec, f: Flight): Step[] {
   }
   if (goal !== here) {
     steps.push({ kind: 'ascent' }, { kind: 'circularize' });
+    // Von einem Mond (Europa) erst zurück zum Planeten: Von dort aus geht es weiter.
+    const planet = here.parent && here.parent !== 'sun' ? bodyById(here.parent) : null;
+    const viaPlanet = planet !== null && planet !== GAME_EARTH;
+    if (viaPlanet)
+      steps.push(
+        { kind: 'return', to: planet },
+        { kind: 'cruise', to: planet },
+        { kind: 'capture', at: planet },
+      );
+    const base = viaPlanet ? planet : here;
     // Monde anderer Planeten (Phobos, Europa): erst zum Planeten, dann zum Mond.
     const hops: Body[] =
-      goal.parent && goal.parent !== 'sun' && goal.parent !== here.id && goal.parent !== 'earth'
-        ? [bodyById(goal.parent), goal]
-        : [goal];
+      goal === base
+        ? []
+        : goal.parent && goal.parent !== 'sun' && goal.parent !== base.id && goal.parent !== 'earth'
+          ? [bodyById(goal.parent), goal]
+          : [goal];
     for (const b of hops) {
       // Winzige Monde (Phobos) haben keinen Einflussbereich, in den man einschwenken könnte: Man
       // trifft sie wie die Station und nähert sich dann langsam.
       if (tinyBody(b)) steps.push({ kind: 'rendezvous', to: b.id }, { kind: 'approach', to: b });
       else {
         steps.push({ kind: 'transfer', to: b }, { kind: 'cruise', to: b });
-        steps.push({ kind: 'capture', at: b });
+        // Die Erde fängt man nicht ein (Kreisbahn läge in der Luft): Von dort geht es in den Wiedereintritt.
+        if (b !== GAME_EARTH) steps.push({ kind: 'capture', at: b });
       }
     }
   }

@@ -7,6 +7,10 @@ export const fmt = (x: number, d = 0): string =>
     maximumFractionDigits: d,
   });
 
+/** Geschütztes Leerzeichen zwischen Zahl und Einheit, damit schmale Meldungen dort nicht umbrechen. */
+export const withUnits = (text: string): string =>
+  text.replace(/(\d) (m\/s|km|kg|kPa|°C|min|m|t)(?![\p{L}\d])/gu, '$1\u00a0$2');
+
 export function km(m: number): string {
   if (!Number.isFinite(m)) return '∞';
   if (Math.abs(m) >= 1e9)

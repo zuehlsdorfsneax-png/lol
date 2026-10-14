@@ -25,7 +25,7 @@ import {
   type SasMode,
   type TargetId,
 } from './flight';
-import { clock, clockIn, distance, fmt, km, missionClock, shortTime } from './format';
+import { clock, clockIn, distance, fmt, km, missionClock, shortTime, withUnits } from './format';
 import { CIRCULAR_E } from './kepler';
 import {
   drawMap,
@@ -1483,7 +1483,8 @@ export function FlightScreen({
                     }
                   : e,
               );
-        if (shown.length) setToasts((t) => [...t, ...shown].slice(-MAX_TOASTS));
+        const text = touch ? shown.map((e) => ({ ...e, text: forTouch(e.text) })) : shown;
+        if (text.length) setToasts((t) => [...t, ...text].slice(-MAX_TOASTS));
       }
 
       // Bahnvorhersage: nach Änderungen sofort, unter Schub oder in der Luft regelmäßig. Im freien
@@ -1775,7 +1776,7 @@ export function FlightScreen({
             title="Antippen blendet die Meldungen aus"
           >
             {t.title && <strong>{t.title}</strong>}
-            <span>{t.text}</span>
+            <span>{withUnits(t.text)}</span>
           </div>
         ))}
       </div>

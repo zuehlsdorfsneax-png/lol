@@ -3,7 +3,7 @@ import { Icon } from '../ui/Icon';
 import type { Challenge, ChallengeResult } from './challenges';
 import { Dialog } from './Dialog';
 import type { Flight, FlightSnapshot } from './flight';
-import { clock, distance, fmt } from './format';
+import { clock, distance, fmt, withUnits } from './format';
 import { goalById, type GoalId } from './goals';
 import { bodyById } from './world';
 
@@ -507,7 +507,7 @@ export function CrashDialog({
             ? 'Verschluckt!'
             : 'Bumm! Die Rakete ist zerschellt.'}
       </h3>
-      <p>{f.crashReason}</p>
+      <p>{withUnits(f.crashReason)}</p>
       <details class="report-more">
         <summary>Flugdaten</summary>
         <FlightStatsTable f={f} />
