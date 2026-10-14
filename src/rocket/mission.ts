@@ -7,8 +7,9 @@
  */
 import { DockPilot, LandingPilot, NodeExecutor, OrbitPilot } from './autopilot';
 import type { Flight, TargetId } from './flight';
+import { distance, fmt } from './format';
 import { part } from './parts';
-import { planOptions, type Plan, type PlanId } from './planner';
+import { planError, planOptions, type Plan, type PlanId } from './planner';
 import { GAME_EARTH, GAME_SUN, bodyById, forms, tinyBody, type Body } from './world';
 
 export type PlanFn = (f: Flight, id: PlanId) => Plan | Promise<Plan>;
@@ -272,6 +273,8 @@ export class MissionPilot {
     this.stepStart = f.t;
     f.throttle = 0;
     f.turn = 0;
+    f.rcs = false;
+    f.translate = { x: 0, y: 0 };
     if (this.index >= this.steps.length) this.status = 'done';
   }
 
@@ -282,10 +285,12 @@ export class MissionPilot {
     const r = this.planFn(f, id);
     if (r instanceof Promise) {
       this.waiting = true;
-      void r.then((p) => {
-        this.planned = p;
-        this.waiting = false;
-      });
+      void r
+        .catch(() => planError)
+        .then((p) => {
+          this.planned = p;
+          this.waiting = false;
+        });
     } else this.planned = r;
   }
 
@@ -479,8 +484,7 @@ export class MissionPilot {
    * Einflussbereich des Ziels vorspulen.
    */
   private cruise(f: Flight, to: Body): MissionStatus {
-    if (to !== GAME_EARTH) f.target = to.id;
-    else f.target = 'earth';
+    f.target = to.id;
     if (f.refBody() === to) {
       this.next(f);
       return this.status;
@@ -541,6 +545,7 @@ export class MissionPilot {
       const enc = p.encounter?.body === to ? p.encounter : null;
       if (!enc) {
         if (this.counter < 3) {
+          this.counter++;
           this.phase = 'start';
           return this.status;
         }
@@ -817,7 +822,7 @@ export class MissionPilot {
     if (f.warpIndex) f.setWarp(0);
     const ti = f.targetInfo();
     this.detail = ti
-      ? `Anflug ${forms(to).to}: noch ${ti.distance < 1_000 ? `${Math.round(ti.distance)} m` : `${(ti.distance / 1000).toFixed(1)} km`}, ${ti.speed.toFixed(1)} m/s.`
+      ? `Anflug ${forms(to).to}: noch ${distance(ti.distance)}, ${fmt(ti.speed, 1)} m/s.`
       : `Anflug ${forms(to).to}.`;
     this.sub.update(f);
     if (f.t - this.stepStart > 3 * 3_600)
@@ -830,7 +835,7 @@ export class MissionPilot {
     if (!(this.sub instanceof DockPilot)) this.sub = new DockPilot();
     const ti = f.targetInfo();
     this.detail = ti
-      ? `Anflug an die Station: ${ti.distance < 1_000 ? `${Math.round(ti.distance)} m` : `${(ti.distance / 1000).toFixed(1)} km`}, ${ti.speed.toFixed(1)} m/s.`
+      ? `Anflug an die Station: ${distance(ti.distance)}, ${fmt(ti.speed, 1)} m/s.`
       : 'Anflug an die Station.';
     if (f.warpIndex) f.setWarp(0);
     if (this.sub.update(f) === 'done') this.next(f);

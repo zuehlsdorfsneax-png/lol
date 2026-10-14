@@ -140,6 +140,51 @@ describe('Missions-Autopilot: Flüge', () => {
     expect(f.landedOn).toBe(PHOBOS);
   });
 
+  it('zeigt den Anflug auf Phobos mit Dezimalkomma und nimmt keinen Düsenschub in die Landung mit', () => {
+    const f = new Flight(template('spatzsonde'));
+    f.placeInOrbit(MARS, 150_000, 1);
+    f.target = 'phobos';
+    const m = new MissionPilot({ target: 'phobos', land: true, home: false }, f, (fl, id) =>
+      makePlan(fl, id),
+    );
+    const texts = new Set<string>();
+    for (let i = 0; i < 400_000 && m.update(f) === 'running'; i++) {
+      f.update(1 / 60);
+      if (m.stepLabel === 'Landung auf Phobos') break;
+      if (m.stepLabel === 'Anflug zu Phobos' && m.detail.startsWith('Anflug')) texts.add(m.detail);
+    }
+    expect(texts.size).toBeGreaterThan(0);
+    for (const t of texts) expect(t).not.toMatch(/\d\.\d (km|m\/s)/);
+    expect(m.stepLabel).toBe('Landung auf Phobos');
+    expect(f.rcs).toBe(false);
+    expect(f.translate).toEqual({ x: 0, y: 0 });
+  }, 30_000);
+
+  it('gibt den Flug auf, wenn die Bahn das Ziel nicht trifft und keine Korrektur möglich ist', () => {
+    const f = new Flight(template('orbiter'));
+    f.placeInOrbit(GAME_EARTH, 100_000, 1);
+    const spec: MissionSpec = { target: 'moon', land: false, home: false };
+    const m = new MissionPilot(spec, f, (fl, id) => makePlan(fl, id));
+    m.index = m.steps.findIndex((s) => s.kind === 'cruise');
+    for (let i = 0; i < 3_000 && m.update(f) === 'running'; i++) f.update(1 / 60);
+    expect(m.status).toBe('failed');
+    expect(m.message).toContain('trifft');
+  });
+
+  it('meldet einen Fehler im Planer, statt ewig auf ihn zu warten', async () => {
+    const f = new Flight(template('orbiter'));
+    f.placeInOrbit(GAME_EARTH, 100_000, 1);
+    const m = new MissionPilot({ target: 'moon', land: false, home: false }, f, () =>
+      Promise.reject(new Error('Planer kaputt')),
+    );
+    m.index = m.steps.findIndex((s) => s.kind === 'transfer');
+    for (let i = 0; i < 100 && m.update(f) === 'running'; i++) {
+      f.update(1 / 60);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    expect(m.status).toBe('failed');
+  });
+
   it('Bordcomputer von Hand: Rendezvous, Angleichen, dann landet der Lande-Autopilot auf Phobos', () => {
     const f = new Flight(template('spatzsonde'));
     f.placeInOrbit(MARS, 60_000, 1);
@@ -199,6 +244,17 @@ describe('Missions-Autopilot: Flüge', () => {
     }
     expect(m.status, m.message).toBe('done');
     expect(calls).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('Bordcomputer: nichts zu tun', () => {
+  it('meldet „passt“ als gelungenen Plan ohne Manöver', () => {
+    const f = new Flight(template('orbiter'));
+    f.placeInOrbit(GAME_EARTH, 25_000, 1);
+    const p = makePlan(f, 'deorbit');
+    expect(p.text).toContain('passt');
+    expect(p.ok).toBe(true);
+    expect(f.node).toBeNull();
   });
 });
 

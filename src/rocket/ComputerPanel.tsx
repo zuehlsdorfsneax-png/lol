@@ -15,7 +15,7 @@ import {
   type MissionTarget,
 } from './mission';
 import { runPlan, warmPlanner } from './planClient';
-import { planOptions, recommendedPlan, type Plan, type PlanId } from './planner';
+import { planError, planOptions, recommendedPlan, type Plan, type PlanId } from './planner';
 import { GAME_EARTH, bodyById, forms, tinyBody } from './world';
 
 /** Knopf, der beim Festhalten immer schneller wiederholt. */
@@ -103,12 +103,14 @@ export function ComputerPanel({
   const plan = (id: PlanId): void => {
     setBusy(id);
     // Die Suche läuft im Hintergrund – das Spiel läuft währenddessen flüssig weiter.
-    void runPlan(flight.current, id).then((r) => {
-      onChanged();
-      if (!alive.current) return;
-      setResult(r);
-      setBusy(null);
-    });
+    void runPlan(flight.current, id)
+      .catch(() => planError)
+      .then((r) => {
+        onChanged();
+        if (!alive.current) return;
+        setResult(r);
+        setBusy(null);
+      });
   };
 
   const edit = (change: { t?: number; prograde?: number; radial?: number }): void => {

@@ -59,6 +59,12 @@ function fail(title: string, text: string, wait?: number): Plan {
   return { ok: false, title, text, wait };
 }
 
+/** Ergebnis, wenn die Berechnung selbst eine Ausnahme warf. */
+export const planError: Plan = fail(
+  'Bordcomputer',
+  'Die Berechnung ist fehlgeschlagen. Bitte noch einmal planen.',
+);
+
 /** Tiefster Punkt für den Wiedereintritt: gut in der Atmosphäre, aber nicht zu steil. */
 export function reentryAltitude(b: Body): number {
   return b === GAME_EARTH ? 25_000 : b.atmosphere * 0.5;
@@ -431,7 +437,6 @@ export function makePlan(f: Flight, id: PlanId): Plan {
   }
 }
 
-/** Am höchsten bzw. tiefsten Punkt auf Kreisbahngeschwindigkeit bringen. */
 /**
  * Manöver zur Kreisbahn an einem Bahnpunkt (Weltkoordinaten): waagerecht auf Kreisbahntempo,
  * die senkrechte Geschwindigkeit weg. Gibt den Anteil in Flugrichtung zurück.
@@ -748,10 +753,11 @@ export function planCorrection(f: Flight): Plan {
       Math.abs(base) < target.hill;
     const fits = (): Plan => {
       f.clearNode();
-      return fail(
+      return {
+        ok: true,
         title,
-        `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${forms(target).dat}.`,
-      );
+        text: `Passt schon: Ankunft etwa ${km(Math.abs(base) - target.radius)} über ${forms(target).dat}.`,
+      };
     };
     if (fine && prefer === natural) return fits();
     // Wirksamste Richtung aus kleinen Probeschüben (in Flugrichtung und radial).
@@ -1208,7 +1214,7 @@ export function planDeorbit(f: Flight): Plan {
   const base = pe(0);
   if (Math.abs(base - want) < 1_000) {
     f.clearNode();
-    return fail(title, `Der tiefste Punkt liegt schon bei ${km(base)} – passt!`);
+    return { ok: true, title, text: `Der tiefste Punkt liegt schon bei ${km(base)} – passt!` };
   }
   // Einschachteln: in die richtige Richtung schrittweise weiter, dann halbieren.
   const sign = base > want ? -1 : 1;
