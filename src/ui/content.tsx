@@ -28,10 +28,13 @@ export function Equation({ tex, n }: { tex: string; n?: string }) {
 export function Figure({
   n,
   caption,
+  steps,
   children,
 }: {
   n: string;
   caption: ComponentChildren;
+  /** Was man am Versuch ausprobieren kann, jeweils mit dem, was dabei zu sehen sein soll. */
+  steps?: readonly ComponentChildren[];
   children: ComponentChildren;
 }) {
   return (
@@ -41,6 +44,16 @@ export function Figure({
         <b>Abb. {n}</b>
         {caption}
       </figcaption>
+      {steps && steps.length > 0 && (
+        <div class="figure-try">
+          <p class="figure-try-title">Ausprobieren</p>
+          <ul>
+            {steps.map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </figure>
   );
 }

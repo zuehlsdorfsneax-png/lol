@@ -12,7 +12,11 @@ export const CHAPTERS: readonly ChapterMeta[] = [
     title: 'Physikalische Grundlagen',
     question: 'Newton, Zweikörperproblem und Baryzentrum',
   },
-  { n: 3, title: 'Einfluss der Sonne', question: 'Wie stört die Sonne das Erde-Mond-System?' },
+  {
+    n: 3,
+    title: 'Der Einfluss der Sonne auf das Erde-Mond-System',
+    question: 'Wie stört die Sonne das Erde-Mond-System?',
+  },
   { n: 4, title: 'Lagrange-Punkte', question: 'Wo heben sich die Kräfte auf?' },
   { n: 5, title: 'Die Hill-Sphäre der Erde', question: 'Wie weit reicht die Macht der Erde?' },
   { n: 6, title: 'Gezeitenreibung', question: 'Warum entfernt sich der Mond?' },
@@ -25,7 +29,7 @@ export const CHAPTERS: readonly ChapterMeta[] = [
  * Kapitel, die in Menü, Startseite und Vor/Zurück gezeigt werden. Die übrigen bleiben erhalten
  * und sind über ihre Adresse (#kapitel-3 …) weiter erreichbar – sie werden nur nicht angezeigt.
  */
-export const SHOWN_CHAPTERS = new Set([2, 7]);
+export const SHOWN_CHAPTERS = new Set([2, 3, 7]);
 /**
  * Werkzeuge (Simulator, Stabilitätskarte, Lagrange-Labor) in Menü und Startseite zeigen? Aus:
  * Sie bleiben erhalten und über ihre Adresse erreichbar, werden nur nicht angezeigt.

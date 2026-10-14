@@ -65,6 +65,10 @@ export function Basics() {
 
       <Figure
         n="2.1"
+        steps={[
+          'Lass n = 2 stehen: Die aus der Fallbeschleunigung vorhergesagte Beschleunigung (etwa 2,7 mm/s²) stimmt mit der aus der Mondbahn gemessenen überein, das Verhältnis liegt bei 1.',
+          'Schiebe n auf 1 oder auf 3: Die beiden Balken laufen weit auseinander. Nur mit n = 2 passen Erdanziehung und Mondbahn zusammen.',
+        ]}
         caption="Newtons Mondrechnung: Nur mit dem Exponenten n = 2 passt die aus der Fallbeschleunigung g vorhergesagte Beschleunigung zur gemessenen Bahnbeschleunigung des Mondes."
       >
         <MoonTest />
@@ -103,6 +107,10 @@ export function Basics() {
 
       <Figure
         n="2.2"
+        steps={[
+          'Erhöhe die Exzentrizität: Die Ellipse wird länger, die zwölf Sektoren behalten aber alle dieselbe Fläche. Sie werden zur Sonne hin kurz und breit, weit weg lang und schmal – der Körper ist in Sonnennähe am schnellsten.',
+          'In den Tabellen ist T²/a³ für alle Planeten gleich (3. Keplersches Gesetz). Daraus folgt die Masse des Zentralkörpers: M = 4π²a³/(G T²).',
+        ]}
         caption="Kepler-Labor: Zwölf Abschnitte gleicher Dauer haben gleiche Fläche (2. Keplersches Gesetz). Die Tabellen bestätigen T²/a³ = konstant und liefern die Masse von Sonne und Jupiter."
       >
         <KeplerLab />
@@ -127,6 +135,11 @@ export function Basics() {
 
       <Figure
         n="2.3"
+        steps={[
+          'Wähle n = 2 (Newton): Die Bahn schließt sich, der Winkel von Periapsis zu Periapsis beträgt 360°.',
+          'Wähle n = 1,5 oder n = 2,5: Die Ellipse dreht sich bei jedem Umlauf weiter, es entsteht eine Rosette. Der Winkel weicht von 360° ab, wie es die Theorie in der letzten Zeile vorhersagt.',
+          'Wähle n = 3,2: Es gibt keine stabile Kreisbahn mehr. Bei der voreingestellten Startgeschwindigkeit stürzt der Körper ins Zentrum, bei 1,3 fliegt er davon.',
+        ]}
         caption="Warum gerade 1/r²? Nur beim Newtonschen Gesetz schließen sich die Bahnen; ab 1/r³ gibt es keine stabilen Bahnen mehr (Satz von Bertrand)."
       >
         <ForceLawLab />
@@ -207,6 +220,10 @@ export function Basics() {
 
       <Figure
         n="2.4"
+        steps={[
+          'Schiebe die Mondmasse nach rechts: Das Baryzentrum wandert aus der Erde heraus. Bei etwa dem 1,4-Fachen der Mondmasse liegt es genau auf der Erdoberfläche.',
+          'Mit dem Knopf „Mit dieser Mondmasse simulieren“ siehst du das Paar im Simulator.',
+        ]}
         caption="Das Baryzentrum von Erde und Mond. Mit dem Regler lässt sich die Mondmasse verändern: Ab etwa 1,4-facher Masse läge der Schwerpunkt außerhalb der Erde – dann spräche man von einem Doppelplaneten."
       >
         <BarycenterDemo />

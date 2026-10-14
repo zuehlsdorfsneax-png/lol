@@ -49,6 +49,7 @@ interface NavGroup {
 /** Kurze Titel für die Seitenleiste, damit nichts umbricht. */
 const SHORT: Record<number, string> = {
   2: 'Grundlagen',
+  3: 'Einfluss der Sonne',
   7: 'Hohle-Mond-Theorie',
   8: 'Eigene Simulation',
 };

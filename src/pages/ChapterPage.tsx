@@ -13,7 +13,7 @@ import { Tides } from './chapters/Tides';
 const LEADS: Record<number, string> = {
   1: 'Worum es geht: Was Bahnstabilität bedeutet, wie die Problemfrage lautet und welchen Weg die Arbeit nimmt.',
   2: 'Newtons Axiome und das Gravitationsgesetz, das Zweikörperproblem, die Bedeutung des Erde-Mond-Sonne-Systems und das Baryzentrum.',
-  3: 'Die Sonne zieht den Mond mehr als doppelt so stark an wie die Erde. Warum reißt sie ihn trotzdem nicht fort – und was bewirkt sie stattdessen?',
+  3: 'Die Sonne zieht den Mond mehr als doppelt so stark an wie die Erde. Warum reißt sie ihn trotzdem nicht fort – und wie verändert sie seine Bahn?',
   4: 'Fünf Punkte, an denen sich Gravitation und Fliehkraft genau aufheben. Wir berechnen sie, beweisen ihre Lage und untersuchen, welche davon stabil sind.',
   5: 'Die Hill-Sphäre ist die wichtigste Grenze dafür, ob der Mond an die Erde gebunden bleibt.',
   6: 'Die Gezeiten bremsen die Erde und schieben den Mond nach außen. Wohin führt das?',

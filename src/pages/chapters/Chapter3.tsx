@@ -26,41 +26,78 @@ export function Chapter3() {
   return (
     <>
       <div class="prose">
+        <p>
+          Wie in Kapitel 2.2 betrachtet, ist das Erde-Mond-System ein Zweikörpersystem, in dem der
+          Mond auf einer festen Ellipse um die Erde läuft. In Wirklichkeit gehört noch ein weiterer
+          Körper dazu: die viel massereichere Sonne. Zuerst klären wir, warum die Sonne ein
+          Störkörper für die Mondbahn ist, obwohl sie den Mond stärker anzieht als die Erde. Danach
+          zeigen wir, was diese Störung für die Mondbahn und für die Stabilität des Systems
+          bedeutet.
+        </p>
+
         <SectionTitle n="3.1">Die Sonne als Störkörper</SectionTitle>
-        <p>Vergleicht man die Kräfte, mit denen Sonne und Erde am Mond ziehen, ergibt sich</p>
+        <p>
+          Laut NASA hat die Sonne ungefähr die 333.000-fache Masse der Erde. Ihr Abstand zum Mond
+          ist zwar etwa 389-mal so groß wie der zwischen Erde und Mond, doch nach dem
+          Gravitationsgesetz aus Kapitel 2.1 nimmt die Anziehung nur mit dem Quadrat des Abstands
+          ab:
+        </p>
         <Equation
-          tex={String.raw`\frac{F_\odot}{F_\oplus} = \frac{M_\odot}{M_\oplus}\cdot\left(\frac{r_{\oplus\text{Mond}}}{r_{\odot\text{Mond}}}\right)^2 \approx 333\,000\cdot\left(\frac{384\,400\ \text{km}}{149{,}6\ \text{Mio. km}}\right)^2 \approx ${fmt(pull, 1)}.`}
+          tex={String.raw`\frac{F_\odot}{F_\oplus} = \frac{M_\odot}{M_\oplus}\cdot\left(\frac{r_{\oplus\text{Mond}}}{r_{\odot\text{Mond}}}\right)^2 \approx \frac{333\,000}{389^2} \approx ${fmt(pull, 1)}.`}
           n="3.1"
         />
         <p>
-          Die Sonne zieht den Mond also mehr als <strong>doppelt so stark</strong> an wie die Erde.
-          Warum bleibt er trotzdem bei uns? Weil die Sonne die Erde fast genauso stark anzieht. Erde
-          und Mond „fallen“ gemeinsam um die Sonne. Für die Bewegung des Mondes <em>relativ</em> zur
-          Erde zählt nur der <strong>Unterschied</strong> der Sonnenanziehung an beiden Orten – die
-          Gezeitenbeschleunigung:
+          Die Sonne zieht den Mond also etwa <strong>2,2-mal so stark</strong> an wie die Erde. Sie
+          beschleunigt ihn mit etwa 5,9&nbsp;mm/s², die Erde nur mit etwa 2,7&nbsp;mm/s². Die NASA
+          fasst das so zusammen: „The mutual gravitational force between the Sun and Moon is over
+          twice as large as between the Moon and Earth. For this reason, the Sun plays a dominant
+          role in perturbing the Moon&rsquo;s motion.“ (NASA, Moon&rsquo;s Orbit)
+        </p>
+        <p>
+          Trotz dieser stärkeren Kraft umkreist der Mond die Erde und nur indirekt die Sonne. Das
+          liegt daran, dass die Sonne die Erde fast genauso stark anzieht wie den Mond. Beide Körper
+          bewegen sich deshalb gemeinsam um die Sonne, während der Mond die Erde so umkreist, als
+          gäbe es keinen weiteren Einfluss. Für die Bewegung des Mondes um die Erde zählt nur der{' '}
+          <strong>Unterschied</strong> zwischen der Sonnenanziehung am Ort des Mondes und am Ort der
+          Erde. Er heißt Störwirkung oder Störbeschleunigung der Sonne:
         </p>
         <Equation
-          tex={String.raw`\vec a_\text{Gez} = \vec a_\odot(\text{Mond}) - \vec a_\odot(\text{Erde}) \approx \frac{G M_\odot\, r}{d^3}\,\bigl(2\cos\varphi\;\hat e_\parallel - \sin\varphi\;\hat e_\perp\bigr).`}
+          tex={String.raw`\vec a_\text{Stör} = \vec a_\odot(\text{Mond}) - \vec a_\odot(\text{Erde}) \approx \frac{G M_\odot\, r}{d^3}\,\bigl(2\cos\varphi\;\hat e_\parallel - \sin\varphi\;\hat e_\perp\bigr).`}
           n="3.2"
         />
         <p>
           Hier ist <Tex>r</Tex> der Abstand Erde–Mond, <Tex>d</Tex> der Abstand zur Sonne und{' '}
-          <Tex>\varphi</Tex> der Winkel zwischen Mond und Sonnenrichtung. Die Gezeitenbeschleunigung
-          zieht den Mond entlang der Linie Sonne–Erde von der Erde weg und drückt ihn senkrecht dazu
-          zur Erde hin. Im Verhältnis zur Anziehung der Erde ist sie klein:
+          <Tex>\varphi</Tex> der Winkel zwischen Mond und Sonnenrichtung. Richtung und Stärke der
+          Störwirkung hängen davon ab, wo der Mond steht. Bei <strong>Neumond</strong> liegt der
+          Mond zwischen Erde und Sonne, ist näher an der Sonne und wird stärker zu ihr hingezogen
+          als die Erde. Bei <strong>Vollmond</strong> ist es umgekehrt: Die Erde ist näher an der
+          Sonne und wird stärker angezogen. In beiden Fällen wird der Abstand zwischen Erde und Mond
+          minimal größer. Bei <strong>Halbmond</strong> sind Erde und Mond fast gleich weit von der
+          Sonne entfernt. Die Sonne zieht beide gleich stark, aber in leicht verschiedene
+          Richtungen, sodass der Mond etwas zur Erde hin gedrückt wird.
+        </p>
+        <p>
+          Die Störbeschleunigung beträgt höchstens etwa 0,03&nbsp;mm/s². Im Verhältnis zur Anziehung
+          der Erde auf den Mond ist das nur
         </p>
         <Equation
-          tex={String.raw`\frac{a_\text{Gez,max}}{a_\oplus} = 2\,\frac{M_\odot}{M_\oplus}\left(\frac{r}{d}\right)^3 \approx ${fmt(tide * 100, 1)}\ \%.`}
+          tex={String.raw`\frac{a_\text{Stör,max}}{a_\oplus} = 2\,\frac{M_\odot}{M_\oplus}\left(\frac{r}{d}\right)^3 \approx ${fmt(tide * 100, 1)}\ \%.`}
           n="3.3"
         />
         <p>
-          Eine Störung von etwa einem Prozent – klein genug, dass die Erde den Mond festhält, aber
-          groß genug, um seine Bahn messbar zu verformen.
+          Die Störwirkung der Sonne ist also sehr schwach und reicht nicht aus, um den Mond von der
+          Erde wegzureißen. Sie genügt aber, um die Mondbahn im Lauf der Zeit messbar zu verändern.
+          Wie, zeigt der nächste Abschnitt.
         </p>
       </div>
 
       <Figure
         n="3.1"
+        steps={[
+          'Stelle den Mond auf 0° (Vollmond) und auf 180° (Neumond): Die Gezeitenkraft zeigt beide Male von der Erde weg und ist gleich lang. Der Mond wird minimal nach außen gezogen.',
+          'Stelle 90° oder 270° ein (Halbmond): Die Gezeitenkraft zeigt zur Erde hin und ist nur halb so lang.',
+          'Vergleiche die beiden Anziehungspfeile der Sonne: Sie sind fast gleich lang. Erst ihr kleiner Unterschied, hier hundertfach vergrößert, verformt die Mondbahn. In der Tabelle sind es etwa 1 % der Erdanziehung.',
+        ]}
         caption="Das Gezeitenfeld der Sonne um die Erde (Sonne links). Die kleinen Pfeile zeigen die Gezeitenbeschleunigung auf der Mondbahn. Am Mond sind die Anziehung der Sonne auf Mond und Erde eingezeichnet; ihr Unterschied ist die Gezeitenkraft (100-fach vergrößert)."
       >
         <TidalField />
@@ -69,8 +106,44 @@ export function Chapter3() {
       <div class="prose">
         <SectionTitle n="3.2">Veränderung der Mondbahn durch gravitative Störungen</SectionTitle>
         <p>
-          Die Gezeitenwirkung der Sonne verändert die Mondbahn periodisch und langfristig. Die
-          wichtigsten Effekte kannte man zum Teil schon in der Antike:
+          Ohne den Einfluss der Sonne würde der Mond, wie in Kapitel 2.2 beschrieben, auf einer
+          unveränderlichen Ellipse um die Erde laufen. Durch die Störwirkung der Sonne ändert sich
+          diese Bahn jedoch ständig. Der Physiker Martin Gutzwiller schreibt dazu: „Whereas
+          Kepler&rsquo;s laws are sufficient for describing the motion of the planets around the
+          Sun, even the most obvious facts about the lunar motion cannot be understood without the
+          gravitational attraction of both the Earth and the Sun.“ Die Bewegung des Mondes lässt
+          sich also nur verstehen, wenn man die Anziehung von Erde und Sonne gleichzeitig
+          betrachtet. Verändert werden Form, Lage und Orientierung der Mondbahn.
+        </p>
+        <p>
+          Die <strong>Form</strong> der Bahn beschreibt die Exzentrizität. Sie gibt an, wie stark
+          die Ellipse von einem Kreis abweicht, und liegt im Mittel bei 0,0549. Die NASA hat
+          berechnet, dass sie in einem Zeitraum von 5.000 Jahren zwischen 0,0255 und 0,0775
+          schwankt. Am größten ist sie, wenn die lange Achse der Ellipse von der Erde aus zur Sonne
+          oder in die Gegenrichtung zeigt.
+        </p>
+        <p>
+          Auch die <strong>Lage</strong> der Ellipse bleibt nicht fest. Den erdnächsten und den
+          erdfernsten Punkt nennt man Perigäum und Apogäum, ihre Verbindungslinie ist die
+          Apsidenlinie. Sie dreht sich in dieselbe Richtung wie der Mond, nur langsamer: Für eine
+          Umdrehung braucht sie 8,85&nbsp;Jahre.
+        </p>
+        <p>
+          Die dritte Veränderung betrifft die <strong>Bahnebene</strong>. Die Mondbahn ist im Mittel
+          um 5,145° gegen die Erdbahnebene geneigt. Die beiden Punkte, an denen der Mond diese Ebene
+          durchquert, heißen Knoten. Unter dem Einfluss der Sonne wandern sie entgegen der
+          Umlaufrichtung des Mondes und brauchen für einen Umlauf 18,6&nbsp;Jahre. Das ist wichtig
+          für die Finsternisse aus Kapitel 2.3, die nur möglich sind, wenn der Mond bei Neu- oder
+          Vollmond nahe an einem Knoten steht. Weil die Knoten der Sonne entgegenwandern, braucht
+          diese laut NASA im Mittel nur 173,3&nbsp;Tage von einem Knoten zum nächsten, also etwas
+          weniger als ein halbes Jahr. In diesem Abstand wiederholen sich die Finsterniszeiten.
+        </p>
+        <p>
+          Zusätzlich wird der Mond auf seiner Bahn abwechselnd beschleunigt und abgebremst. Eine
+          dieser Schwankungen ist die <strong>Evektion</strong> mit einer Periode von
+          31,8&nbsp;Tagen, die schon in der Antike entdeckt wurde. Eine weitere ist die{' '}
+          <strong>Variation</strong>, die Tycho Brahe um 1590 bemerkte: Zwischen Halbmond und Voll-
+          oder Neumond wird der Mond schneller, danach wieder langsamer.
         </p>
         <div class="table-wrap">
           <table class="data">
@@ -128,6 +201,13 @@ export function Chapter3() {
 
         <SectionTitle n="3.3">Langfristige Auswirkungen auf die Stabilität</SectionTitle>
         <p>
+          Für die Stabilität des Systems ist entscheidend, dass sich die Störungen nicht mit der
+          Zeit aufaddieren. Exzentrizität, Apsidenlinie und Knoten verändern sich zwar dauerhaft,
+          aber in regelmäßiger Wiederholung. In den Berechnungen der NASA für 5.000&nbsp;Jahre
+          schwankt der Abstand im Perigäum nur um etwa 14.000&nbsp;km und der im Apogäum um rund
+          2.700&nbsp;km. Die Sonne lässt die Mondbahn schwanken, hält sie aber in engen Grenzen.
+        </p>
+        <p>
           Eine numerische Simulation braucht keine Störungsreihen: Sie enthält alle Effekte
           automatisch. Abb. 3.2 vergleicht zwei Rechnungen über 20&nbsp;Jahre – einmal mit, einmal
           ohne Sonne. Ohne Sonne bleibt die Ellipse ortsfest und ihre Exzentrizität konstant. Mit
@@ -135,15 +215,32 @@ export function Chapter3() {
           dreht sich gleichmäßig weiter.
         </p>
         <p>
-          Diese Störungen sind periodisch: Sie verformen die Bahn, verändern aber ihre mittlere
-          Größe nicht dauerhaft – die Simulation zeigt über Jahrhunderte keinen Drift. Langfristig
-          wirksam ist vor allem die Gezeitenreibung: Messungen zeigen eine langsame Zunahme des
-          Erde-Mond-Abstands um etwa 3,8&nbsp;cm pro Jahr (Kapitel 6).
+          Eine dauerhafte Veränderung entsteht dagegen durch die Gezeiten aus Kapitel 2.3. Sie
+          bremsen die Rotation der Erde, wodurch sich der Mond laut NASA um 3,8&nbsp;cm pro Jahr von
+          der Erde entfernt. Die Geowissenschaftler Stephen Meyers und Alberto Malinverno
+          berechneten 2018 aus 1,4&nbsp;Milliarden Jahre alten Gesteinsschichten, dass der Mond
+          damals etwa 340.900&nbsp;km entfernt war und ein Tag nur etwa 18,7&nbsp;Stunden dauerte.
+          Seitdem hat er sich im Durchschnitt um 3,1&nbsp;cm pro Jahr entfernt – langsamer als
+          heute. Die Rate ist also nicht konstant.
+        </p>
+        <p>
+          Die Zukunft von Erde und Mond bestimmen die Gezeiten. Die NASA beschreibt den Endzustand
+          so: „About 50 billion years from now – if the Moon and Earth could somehow avoid the
+          eventual death of the Sun – the Moon would be so far away, and its orbit so large, that
+          Earth would also tidally lock to the Moon.“ Die Erde würde dem Mond dann immer dieselbe
+          Seite zuwenden. Dazu kommt es nie, da die Sonne laut NASA nur noch etwa 5&nbsp;Milliarden
+          Jahre vor sich hat. Bis dahin entfernt sich der Mond weiter und die Störwirkung der Sonne
+          wächst, die Stabilitätsgrenze erreicht er aber nicht (Kapitel 5). Die Sonne stört die
+          Mondbahn also ständig, gefährdet ihre Bindung an die Erde jedoch nicht.
         </p>
       </div>
 
       <Figure
         n="3.2"
+        steps={[
+          'Oberes Diagramm: Ohne Sonne bleibt die Richtung des Perigäums stehen, mit Sonne dreht sie sich gleichmäßig. Aus der Steigung der Geraden folgt die Umlaufzeit der Apsidenlinie, sie steht oben in der Tabelle.',
+          'Unteres Diagramm: Mit Sonne schwankt die Exzentrizität etwa alle 32 Tage (Evektion), ohne Sonne bleibt sie fast konstant.',
+        ]}
         caption="Simulation des realen Systems über 20&nbsp;Jahre (Velocity-Verlet, adaptive Schrittweite). Aus der Steigung der Ausgleichsgeraden ergibt sich die Umlaufzeit der Apsidenlinie."
       >
         <PrecessionExperiment />
@@ -325,8 +422,9 @@ function TidalField() {
           <dd>{fmt((tidalMag / aEarth) * 100, 2)} %</dd>
         </dl>
         <p class="small muted">
-          Die gelben Pfeile sind fast gleich lang – die Sonne zieht Erde und Mond ähnlich stark. Nur
-          ihr kleiner Unterschied (orange) verformt die Mondbahn.
+          Die beiden Pfeile „Anziehung der Sonne“ sind fast gleich lang – die Sonne zieht Erde und
+          Mond ähnlich stark. Nur ihr kleiner Unterschied, die Gezeitenkraft (rot), verformt die
+          Mondbahn.
         </p>
       </div>
     </div>

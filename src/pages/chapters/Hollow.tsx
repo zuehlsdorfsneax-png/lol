@@ -105,7 +105,7 @@ export function Hollow() {
           die Anziehung einer kugelsymmetrischen Masse auf einen äußeren Körper genauso, als wäre
           die gesamte Masse im Mittelpunkt vereint. Die Masse des Mondes lässt sich deshalb
           unabhängig von seinem inneren Aufbau allein aus seiner Gravitationswirkung bestimmen. Ein
-          Weg führt über das Erde-Mond-Baryzentrum, das etwa 4.700&nbsp;km vom Erdmittelpunkt
+          Weg führt über das Erde-Mond-Baryzentrum, das etwa 4.670&nbsp;km vom Erdmittelpunkt
           entfernt noch im Erdinneren liegt. Ein zweiter Weg führt über die Umlaufzeit von
           Raumfahrzeugen, die den Mond umkreisen – etwa die Apollo-Kommandokapseln, die ihn in etwa
           110&nbsp;km Höhe in rund zwei Stunden umrundeten. Mit dem dritten Keplerschen Gesetz
@@ -123,6 +123,10 @@ export function Hollow() {
 
       <Figure
         n="7.1"
+        steps={[
+          'Lies die beiden Linien rechts von r / R = 1 ab, also außerhalb des Mondes: Sie liegen genau übereinander. Von außen sind Voll- und Hohlkugel gleicher Masse nicht zu unterscheiden.',
+          'Links davon, im Inneren, trennen sie sich: Im Hohlraum der Hohlkugel ist die Schwerkraft null.',
+        ]}
         caption="Kugelschalentheorem: Außerhalb der Oberfläche (r > R) wirken Voll- und Hohlkugel gleicher Masse identisch. Die Masse allein beweist also noch nicht, dass der Mond voll ist."
       >
         <ShellGravityChart />
@@ -173,6 +177,11 @@ export function Hollow() {
 
       <Figure
         n="7.2"
+        steps={[
+          'Ziehe die Schalendicke von 100 % (massiver Mond) nach unten: Masse und Baryzentrum sinken. Bei 10 % liegt das Baryzentrum nur noch bei etwa 1.320 km, weit unter den gemessenen 4.670 km, und die Anzeige springt auf „passt nicht zu den Messungen“.',
+          'Stelle 20 % ein: etwa 2.370 km, immer noch viel zu wenig. Die Umlaufzeit ändert sich dabei nur um wenige Stunden, deshalb ist das Baryzentrum der bessere Test.',
+          'Mit „Im Simulator ansehen“ läuft dieselbe Rechnung als Simulation.',
+        ]}
         caption="Unser Experiment zum Nachvollziehen: Masse, Baryzentrum und Umlaufzeit eines hohlen Mondes aus Mondgestein. Nur ein fast massiver Mond liegt mit dem Baryzentrum innerhalb von 5&nbsp;% beim gemessenen Wert von 4.670&nbsp;km."
       >
         <HollowBarycenter />
@@ -196,21 +205,31 @@ export function Hollow() {
           aus eisenarmem Mantelgestein. Die Dichte des Mondgesteins liegt zwischen 3,27 und
           3,46&nbsp;g/cm³ – sie passt also genau zur mittleren Dichte eines massiven Mondes. Wäre
           der Mond trotzdem hohl, müsste die Schale aus einem Material bestehen, das dichter ist als
-          Eisen: Bei 50&nbsp;km Schalendicke bräuchte man fast 40&nbsp;g/cm³, das 1,8-Fache des
-          dichtesten Elements Osmium (Abb. 7.3).
+          Eisen (7,9&nbsp;g/cm³): Schon bei einer Schalendicke von 10&nbsp;% des Radius wären es{' '}
+          <Tex>{String.raw`\rho = 3{,}344/(1-0{,}9^3) \approx 12{,}3`}</Tex>&nbsp;g/cm³, bei
+          50&nbsp;km Schalendicke fast 40&nbsp;g/cm³, das 1,8-Fache des dichtesten Elements Osmium
+          (Abb. 7.3).
         </p>
         <p>
           Das Trägheitsmoment <Tex>{String.raw`I = k\cdot MR^2`}</Tex> beschreibt, wie die Masse um
           die Drehachse verteilt ist. Eine Vollkugel hat <Tex>{'k = 0{,}4'}</Tex>, jede Hohlkugel
           mehr (bis 2/3). Für den Mond wurde über die Laserreflektoren von Apollo 11, 14 und 15
           sowie mit den Sonden Lunar Prospector und GRAIL <Tex>{String.raw`k = 0{,}393`}</Tex>{' '}
-          gemessen – kleiner als 0,4. Die Masse ist also sogar leicht zur Mitte hin konzentriert,
-          das genaue Gegenteil eines Hohlkörpers.
+          gemessen – kleiner als 0,4. Die Erde mit ihrem massiven Kern kommt auf 0,3307. Bei einem
+          Hohlraum mit halbem Mondradius ergäbe die Formel
+          <Tex>{String.raw`k = 0{,}4\cdot\frac{R^5-r^5}{R^3-r^3} \approx 0{,}44`}</Tex>, bei
+          dünnerer Schale noch mehr. Gemessen ist <Tex>{String.raw`k = 0{,}3931\pm0{,}0002`}</Tex>:
+          Die Masse ist leicht zur Mitte hin konzentriert, das genaue Gegenteil eines Hohlkörpers.
         </p>
       </div>
 
       <Figure
         n="7.3"
+        steps={[
+          'Ziehe die Dicke von rechts (Vollkugel, 1.737 km) nach links: Die nötige Dichte steigt. Ab etwa 5 g/cm³ liegt sie über jedem Gestein, bei sehr dünner Schale sogar über der von Osmium, dem dichtesten Element.',
+          'Achte auf das Trägheitsmoment: Jede Hohlkugel liegt über 0,4, der gemessene Wert des Mondes liegt mit 0,3931 darunter.',
+          'Die Druckspannung in der Schale wird mit der Druckfestigkeit von Granit verglichen: Eine dünne, große Schale würde unter ihrem Gewicht zerdrückt.',
+        ]}
         caption="Hohlmond-Rechner: Dichte, Trägheitsmoment und Druckspannung einer Mondschale der gewählten Dicke bei der gemessenen Mondmasse."
       >
         <ShellCalculator />
@@ -218,6 +237,10 @@ export function Hollow() {
 
       <Figure
         n="7.4"
+        steps={[
+          'Starte das Rennen: Drei Kugeln rollen dieselbe schiefe Ebene hinab. Die Kugel mit dem Trägheitsmoment des Mondes kommt fast zeitgleich mit der Vollkugel an, die Hohlkugel bleibt deutlich zurück.',
+          'Je mehr Masse in der Mitte sitzt, desto schneller rollt eine Kugel. So lässt sich die Massenverteilung auch ohne Mondflug unterscheiden.',
+        ]}
         caption="Rollversuch: Eine Kugel mit dem Trägheitsmoment des Mondes rollt wie eine Vollkugel – nicht wie eine Hohlkugel."
       >
         <RollingRace />
@@ -226,13 +249,26 @@ export function Hollow() {
       <div class="prose">
         <SectionTitle n="7.4">Warum die Theorie mit den Beobachtungen unvereinbar ist</SectionTitle>
         <p>
-          Auch das angebliche „Läuten“ des Mondes ist erklärt. Zwischen 1969 und 1977 zeichneten die
-          Apollo-Seismometer rund 12.000 Mondbeben und Einschläge auf. Die obersten Kilometer der
-          Mondkruste sind durch Milliarden Jahre voller Einschläge zerrüttet und vollkommen trocken.
-          Die Wellen werden an unzähligen Rissen gestreut, aber kaum gedämpft – auf der Erde
-          schluckt das Wasser in den Gesteinsporen diese Energie. Eine Neuauswertung der Daten
-          (Weber et al., 2011) fand einen festen inneren Kern und einen flüssigen äußeren Kern; 2023
-          bestätigten Briaud et al. den festen inneren Kern.
+          Auch das angebliche „Läuten“ des Mondes ist erklärt. Beim Absturz der
+          Apollo-12-Aufstiegsstufe registrierte ein Seismometer laut NASA etwa 55&nbsp;Minuten lang
+          Beben. Auf der Erde dämpft Wasser im Gestein solche Erschütterungen. Der Mond ist dagegen
+          trocken und starr, was ein langes Nachschwingen erklärt; außerdem werden die Wellen in der
+          porösen Mondkruste immer weiter gestreut.
+        </p>
+        <p>
+          Auch die Mondbeben selbst sprechen gegen einen Hohlraum. Bis 1977 zeichneten die
+          Apollo-Seismometer rund 12.000 Mondbeben auf, die meisten in 700 bis 1.200&nbsp;km Tiefe.
+          Ihre Wellen laufen also durch festes Gestein vom Inneren zur Oberfläche. Die
+          zurückgelassenen Laserreflektoren zeigen außerdem, dass die Drehung des Mondes zusätzlich
+          gebremst wird. Das lässt sich mit einem flüssigen Kern erklären, der am Mantel reibt – nur
+          in einem gefüllten Mond möglich.
+        </p>
+        <p>
+          Das heutige Modell passt dazu: Laut der GRAIL-Mission hat der Mond eine 34 bis 43&nbsp;km
+          dicke Kruste. Eine Neuauswertung der Apollo-Daten (Weber et al., 2011) fand einen festen
+          inneren Kern mit etwa 240&nbsp;km Radius, umgeben von einem flüssigen äußeren Kern mit
+          rund 330&nbsp;km Radius. 2023 bestätigten Briaud et al. den festen inneren Kern, dessen
+          Dichte der von Eisen ähnelt.
         </p>
         <p>Alle unabhängigen Messungen führen zum selben Ergebnis:</p>
         <ul>

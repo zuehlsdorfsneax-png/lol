@@ -743,11 +743,35 @@ svg {
   margin-right: var(--sp-2);
 }
 
+.figure-try {
+  order: -1;
+  border-bottom: 1px solid var(--line);
+  padding: var(--sp-3) var(--sp-5);
+  font-size: var(--fs-3);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.figure-try-title {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--accent-ink);
+}
+
+.figure-try ul {
+  margin: 0;
+  padding-left: var(--sp-4);
+  display: grid;
+  gap: var(--sp-1);
+}
+
 @media (max-width: 640px) {
   .figure-body {
     padding: var(--sp-4);
   }
-  .figure-caption {
+  .figure-caption,
+  .figure-try {
     padding: var(--sp-3) var(--sp-4);
   }
 }

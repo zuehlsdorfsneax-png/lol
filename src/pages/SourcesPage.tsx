@@ -92,6 +92,14 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     ],
   },
   {
+    group: 'Kapitel 3: Einfluss der Sonne',
+    items: [
+      'NASA Eclipse Web Site: Moon’s Orbit. https://eclipse.gsfc.nasa.gov/SEhelp/moonorbit.html(Zugriff: 06.10.2026)',
+      'Gutzwiller, M. C. (1998): Moon–Earth–Sun: The oldest three-body problem. In: Reviews of Modern Physics, Bd. 70, S. 589–639. https://doi.org/10.1103/RevModPhys.70.589(Zugriff: 06.10.2026)',
+      'NASA Science: Tidal Locking. https://science.nasa.gov/moon/tidal-locking/(Zugriff: 06.10.2026)',
+    ],
+  },
+  {
     group: 'Kapitel 7.1: Ursprung der Hohle-Mond-These',
     items: [
       'Wikipedia (englisch): Hollow Moon. https://en.wikipedia.org/wiki/Hollow_Moon(Zugriff: 20.09.2026)',
