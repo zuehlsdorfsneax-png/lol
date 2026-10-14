@@ -1650,7 +1650,7 @@ details.section .section-body {
   z-index: 3;
 }
 
-.rule-list {
+.star-rules {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1659,7 +1659,11 @@ details.section .section-body {
   font-size: var(--fs-3);
 }
 
-.rule-list li {
+.star-rules .star:not(.on) {
+  color: var(--ink-3);
+}
+
+.star-rules li {
   display: flex;
   gap: var(--sp-2);
   align-items: center;
