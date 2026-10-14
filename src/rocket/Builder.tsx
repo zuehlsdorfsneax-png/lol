@@ -177,10 +177,13 @@ function Preview({
     const at = places(design);
     const total = Math.max(designHeight(design), 8);
     const widest = Math.max(4, ...design.map(entryWidth));
-    // Mit gewähltem Teil steht unten die Werkzeugleiste: dann die Rakete darüber zeichnen.
-    const baseFit = height - (selected >= 0 ? 92 : 44);
-    // Oben bleibt Platz für die Werkzeugleiste (auf dem Handy auch für die Datenzeile).
-    const topPad = width < 520 ? 124 : 70;
+    // Unten die Leiste des gewählten Teils, oben die Werkzeugzeile: beide Höhen sind je nach
+    // Breite verschieden (Umbruch), also messen statt schätzen.
+    const area = c.closest('.blueprint');
+    const bar = selected >= 0 ? area?.querySelector<HTMLElement>('.part-toolbar') : null;
+    const tools = area?.querySelector<HTMLElement>('.blueprint-tools');
+    const baseFit = bar ? bar.offsetTop - 8 : height - 44;
+    const topPad = tools ? tools.offsetTop + tools.offsetHeight + 8 : 70;
     const fit = Math.min((baseFit - topPad) / (total + 1), (width - 80) / (widest + 2), 30);
     const scale = fit * view.zoom;
     const cx = width / 2 + view.x;
@@ -521,8 +524,15 @@ function Preview({
         onPointerMove={moveView}
         onPointerUp={up}
         onPointerCancel={up}
-        role="img"
-        aria-label="Bauplan der Rakete; Klick wählt ein Teil, Ziehen auf freier Fläche verschiebt, Mausrad zoomt"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+          e.preventDefault();
+          const next = selected + (e.key === 'ArrowUp' ? -1 : 1);
+          onSelect(Math.min(Math.max(next, 0), design.length - 1));
+        }}
+        role="group"
+        aria-label="Bauplan der Rakete; Pfeil hoch und runter wählt ein Teil, Klick auch, Ziehen auf freier Fläche verschiebt, Mausrad zoomt"
       />
       <div class="blueprint-zoom" role="group" aria-label="Bauplan zoomen">
         <button
@@ -562,21 +572,33 @@ function Preview({
 function Menu({
   icon,
   label,
+  onClosed,
   children,
 }: {
   icon: IconName;
   label: string;
+  onClosed?: () => void;
   children: (close: () => void) => ComponentChildren;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) onClosed?.();
+  }, [open]);
+  // Geschlossen per Tastatur oder Eintrag: der Fokus kehrt zum Auslöser zurück.
+  const close = (): void => {
+    const inside = ref.current?.contains(document.activeElement) ?? false;
+    setOpen(false);
+    if (inside) trigger.current?.focus();
+  };
   useEffect(() => {
     if (!open) return;
     const away = (e: PointerEvent): void => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
     const key = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') close();
     };
     window.addEventListener('pointerdown', away);
     window.addEventListener('keydown', key);
@@ -588,10 +610,10 @@ function Menu({
   return (
     <div class="gmenu" ref={ref}>
       <button
+        ref={trigger}
         type="button"
         class={`gbtn ${open ? 'on' : ''}`}
         aria-expanded={open}
-        aria-haspopup="true"
         aria-label={label}
         title={label}
         onClick={() => setOpen(!open)}
@@ -599,7 +621,7 @@ function Menu({
         <Icon name={icon} />
         <span class="gbtn-label">{label}</span>
       </button>
-      {open && <div class="gmenu-list">{children(() => setOpen(false))}</div>}
+      {open && <div class="gmenu-list">{children(close)}</div>}
     </div>
   );
 }
@@ -732,7 +754,7 @@ export function Builder({
               class="gbtn launch"
               disabled={!canLaunch}
               onClick={onLaunch}
-              title={canLaunch ? 'Zur Startrampe' : 'Erst die Hinweise rechts beheben'}
+              title={canLaunch ? 'Zur Startrampe' : 'Erst die Hinweise zur Rakete beheben'}
             >
               <Icon name="rocket" />
               <span>Starten</span>
@@ -838,6 +860,7 @@ function Werft({
   const first = design.length ? stats[0] : undefined;
 
   const [lockHint, setLockHint] = useState('');
+  const blocking = problems.find((p) => p.level === 'error')?.text;
   const add = (entry: string, pos?: number): void => {
     const id = part(entry).id;
     if (!unlocked(id, points, sandbox)) {
@@ -1072,8 +1095,9 @@ function Werft({
               ),
           )}
         </div>
-        <p class={`parts-hint ${lockHint ? 'msg' : ''}`} aria-live="polite">
+        <p class={`parts-hint ${lockHint || blocking ? 'msg' : ''}`} aria-live="polite">
           {lockHint ||
+            blocking ||
             (sandbox
               ? 'Sandkasten: alle Teile, Vorlagen und Lackierungen frei – dafür keine Punkte.'
               : selected >= 0
@@ -1120,7 +1144,14 @@ function Werft({
               })
             }
           </Menu>
-          <Menu icon="box" label="Hangar">
+          <Menu
+            icon="box"
+            label="Hangar"
+            onClosed={() => {
+              setConfirmDelete('');
+              setConfirmSave('');
+            }}
+          >
             {(close) => (
               <>
                 {Object.keys(hangar).length === 0 && (
