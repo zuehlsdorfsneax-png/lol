@@ -115,7 +115,10 @@ function readColors(): ThemeColors {
 export function useThemeColors(): ThemeColors {
   const [colors, setColors] = useState(readColors);
   useEffect(() => {
-    const update = (): void => setColors(readColors());
+    let alive = true;
+    const update = (): void => {
+      if (alive) setColors(readColors());
+    };
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     mq.addEventListener('change', update);
     const mo = new MutationObserver(update);
@@ -126,6 +129,7 @@ export function useThemeColors(): ThemeColors {
     // Webfonts können nach dem ersten Zeichnen eintreffen.
     void document.fonts?.ready.then(update);
     return () => {
+      alive = false;
       mq.removeEventListener('change', update);
       mo.disconnect();
     };

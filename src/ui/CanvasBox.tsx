@@ -1,5 +1,11 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { prepareCanvas, useElementSize, useThemeColors, type ThemeColors } from './hooks';
+import {
+  prepareCanvas,
+  useAnimationFrame,
+  useElementSize,
+  useThemeColors,
+  type ThemeColors,
+} from './hooks';
 
 export type DrawFn = (
   ctx: CanvasRenderingContext2D,
@@ -20,9 +26,6 @@ interface Props {
   animate?: boolean;
   label: string;
   className?: string;
-  onPointerDown?: (x: number, y: number, e: PointerEvent) => void;
-  onPointerMove?: (x: number, y: number, e: PointerEvent) => void;
-  onPointerUp?: (x: number, y: number, e: PointerEvent) => void;
 }
 
 /** Canvas, der sich an seine Breite anpasst und scharf auf HiDPI-Bildschirmen zeichnet. */
@@ -50,19 +53,7 @@ export function CanvasBox(props: Props) {
 
   useEffect(paint, [size.width, size.height, colors, ...props.deps]);
 
-  useEffect(() => {
-    if (!props.animate) return;
-    let id = requestAnimationFrame(function frame() {
-      paint();
-      id = requestAnimationFrame(frame);
-    });
-    return () => cancelAnimationFrame(id);
-  });
-
-  const pos = (e: PointerEvent): [number, number] => {
-    const r = canvasRef.current!.getBoundingClientRect();
-    return [e.clientX - r.left, e.clientY - r.top];
-  };
+  useAnimationFrame(paint, !!props.animate);
 
   return (
     <div
@@ -84,17 +75,7 @@ export function CanvasBox(props: Props) {
           inset: 0,
           width: '100%',
           height: '100%',
-          touchAction: props.onPointerDown ? 'none' : undefined,
         }}
-        onPointerDown={
-          props.onPointerDown &&
-          ((e) => {
-            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-            props.onPointerDown!(...pos(e), e);
-          })
-        }
-        onPointerMove={props.onPointerMove && ((e) => props.onPointerMove!(...pos(e), e))}
-        onPointerUp={props.onPointerUp && ((e) => props.onPointerUp!(...pos(e), e))}
       />
     </div>
   );

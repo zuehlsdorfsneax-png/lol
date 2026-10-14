@@ -45,7 +45,7 @@ function trigger(name: string, url: string): void {
 }
 
 /** Kurze Rückmeldung am unteren Bildschirmrand. */
-export function showToast(message: string): void {
+function showToast(message: string): void {
   const el = document.createElement('div');
   el.className = 'toast';
   el.setAttribute('role', 'status');

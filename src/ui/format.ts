@@ -1,10 +1,17 @@
 import { AU, DAY, KM, YEAR } from '../physics';
 
+const formatters = new Map<number, Intl.NumberFormat>();
+
 const de = (v: number, digits = 0): string => {
-  const text = v.toLocaleString('de-DE', {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits,
-  });
+  let nf = formatters.get(digits);
+  if (!nf) {
+    nf = new Intl.NumberFormat('de-DE', {
+      maximumFractionDigits: digits,
+      minimumFractionDigits: digits,
+    });
+    formatters.set(digits, nf);
+  }
+  const text = nf.format(v);
   return /^-0(,0*)?$/.test(text) ? text.slice(1) : text;
 };
 
@@ -53,7 +60,7 @@ const SUP: Record<string, string> = {
   '9': '⁹',
 };
 
-export function superscript(n: number): string {
+function superscript(n: number): string {
   return String(n)
     .split('')
     .map((c) => SUP[c] ?? c)
