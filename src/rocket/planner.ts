@@ -22,6 +22,7 @@ import {
   angularRate,
   bodyById,
   bodyState,
+  densityAt,
   forms,
   orbitAround,
   phaseLead,
@@ -1207,9 +1208,19 @@ export function planDeorbit(f: Flight): Plan {
     where = 'Bremsen';
   }
   const t = f.t + dt;
+  // Springt die Dichte am Rand der Lufthülle (Venus), ist die vorhergesagte Tiefe dort nicht
+  // stetig: dann zählt die Bahn gleich nach dem Brennen, noch ohne Luft.
+  const sharpEdge = densityAt(ref, ref.atmosphere - 1) > 0.01;
   const pe = (dv: number): number => {
     f.setNode(t, dv, 0);
-    return arrivalPeriapsis(f.predict(1400, true), ref, 0) ?? Infinity;
+    const p = f.predict(1400, true);
+    const k = p.nodeIndex + 1;
+    if (sharpEdge && k > 0 && k < p.n) {
+      const [bx, by, bvx, bvy] = bodyState(ref, p.ts[k]!);
+      return orbitAround(ref, p.xs[k]! - bx, p.ys[k]! - by, p.vxs[k]! - bvx, p.vys[k]! - bvy)
+        .periapsis;
+    }
+    return arrivalPeriapsis(p, ref, 0) ?? Infinity;
   };
   const base = pe(0);
   if (Math.abs(base - want) < 1_000) {

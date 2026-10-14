@@ -19,7 +19,15 @@ import {
   planOptions,
   recommendedPlan,
 } from '../src/rocket/planner';
-import { GAME_EARTH, MARS, PHOBOS, GAME_SUN, bodyById } from '../src/rocket/world';
+import {
+  GAME_EARTH,
+  MARS,
+  PHOBOS,
+  GAME_SUN,
+  bodyById,
+  bodyState,
+  orbitAround,
+} from '../src/rocket/world';
 
 const template = (id: string): string[] => [...TEMPLATES.find((t) => t.id === id)!.parts];
 
@@ -256,6 +264,23 @@ describe('Bordcomputer: nichts zu tun', () => {
     expect(p.ok).toBe(true);
     expect(f.node).toBeNull();
   });
+});
+
+describe('Bordcomputer: Abstieg in dichter Lufthülle', () => {
+  it.each([80_000, 120_000, 300_000])(
+    'senkt die Bahn über der Venus (%d m) wirklich unter den Atmosphärenrand',
+    (alt) => {
+      const venus = bodyById('venus');
+      const f = new Flight(template('aurora'));
+      f.placeInOrbit(venus, alt, 1);
+      expect(makePlan(f, 'deorbit').ok).toBe(true);
+      const p = f.predict(1400, true);
+      const k = p.nodeIndex + 1;
+      const [bx, by, bvx, bvy] = bodyState(venus, p.ts[k]!);
+      const o = orbitAround(venus, p.xs[k]! - bx, p.ys[k]! - by, p.vxs[k]! - bvx, p.vys[k]! - bvy);
+      expect(o.periapsis).toBeLessThan(venus.atmosphere - 20_000);
+    },
+  );
 });
 
 describe('Station: Abdocken', () => {
