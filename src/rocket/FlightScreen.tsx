@@ -168,7 +168,7 @@ function transferInfo(f: Flight): Window | null {
   };
 }
 
-function tipFor(f: Flight, pilot: string | null): string {
+export function tipFor(f: Flight, pilot: string | null): string {
   if (f.status === 'crashed') return '';
   if (pilot) return pilot;
   if (f.status === 'docked')
@@ -194,7 +194,7 @@ function tipFor(f: Flight, pilot: string | null): string {
       return 'Auf Ceres im Asteroidengürtel! Die Schwerkraft ist so schwach, dass schon wenig Schub zum Abheben reicht.';
     if (!f.goals.has('lift'))
       return !f.infiniteFuel && f.deltaV() < 3_700
-        ? `Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C). Mit ${fmt(f.deltaV())} m/s Δv reicht es ins All, für eine Umlaufbahn braucht es rund 3.900 m/s.`
+        ? `Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C). Mit ${fmt(f.deltaV())} m/s Δv ${f.deltaV() < 2_500 ? 'reicht es nur für einen Hüpfer' : 'reicht es ins All'}, für eine Umlaufbahn braucht es rund 3.900 m/s.`
         : 'Schub hochziehen (W / ↑, Z = Vollgas) – oder „Countdown“ (C) drücken. Der Hilfe-Pilot (T) fliegt bis in die Umlaufbahn.';
     return 'Sicher gelandet! In der Werft kannst du eine größere Rakete bauen.';
   }
