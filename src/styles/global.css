@@ -13,6 +13,7 @@
   --surface-3: #e2e7f0;
   --line: #e1e5ee;
   --line-strong: #c4ccdb;
+  --control-line: #7d88a3;
   --ink: #111a33;
   --ink-2: #46516d;
   --ink-3: #5c6783;
@@ -102,6 +103,7 @@
     --surface-3: #1f2a50;
     --line: #212a4a;
     --line-strong: #37446f;
+    --control-line: #62729f;
     --ink: #e7ebf6;
     --ink-2: #a9b2cc;
     --ink-3: #8894b5;
@@ -136,6 +138,7 @@
   --surface-3: #1f2a50;
   --line: #212a4a;
   --line-strong: #37446f;
+  --control-line: #62729f;
   --ink: #e7ebf6;
   --ink-2: #a9b2cc;
   --ink-3: #8894b5;
@@ -208,6 +211,15 @@ h3 {
 
 p {
   margin: 0;
+  text-wrap: pretty;
+}
+
+button,
+a,
+summary,
+input,
+select {
+  touch-action: manipulation;
 }
 
 a {
@@ -261,15 +273,6 @@ svg {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
 }
 
 /* ----------------------------- Layout ------------------------------ */
@@ -401,7 +404,6 @@ svg {
   text-decoration: none;
   font-size: var(--fs-3);
   line-height: 1.25;
-  transition: background-color var(--dur-2) var(--ease-out);
 }
 
 /* In der Schublade (Handy, Tablet) Ziele mit mindestens 44 px Höhe */
@@ -549,12 +551,17 @@ svg {
     height: auto;
     padding-top: env(safe-area-inset-top, 0);
     transform: translateX(-102%);
-    transition: transform var(--dur-2) var(--ease-out);
-    box-shadow: var(--shadow);
+    visibility: hidden;
+    transition:
+      transform var(--dur-2) var(--ease-out),
+      visibility 0s var(--dur-2);
   }
 
   .sidebar.open {
     transform: none;
+    visibility: visible;
+    box-shadow: var(--shadow);
+    transition: transform var(--dur-2) var(--ease-out);
   }
 
   .scrim.open {
@@ -816,7 +823,7 @@ svg {
   min-height: 38px;
   padding: 0 var(--sp-4);
   border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--control-line);
   background: var(--surface);
   color: var(--ink);
   font-weight: 500;
@@ -944,14 +951,14 @@ input[type='range']::-webkit-slider-runnable-track {
   background: linear-gradient(
     to right,
     var(--accent) 0 var(--fill, 50%),
-    var(--surface-3) var(--fill, 50%) 100%
+    var(--control-line) var(--fill, 50%) 100%
   );
 }
 
 input[type='range']::-moz-range-track {
   height: 4px;
   border-radius: var(--r-sm);
-  background: var(--surface-3);
+  background: var(--control-line);
 }
 
 input[type='range']::-moz-range-progress {
@@ -996,12 +1003,11 @@ input[type='range']::-moz-range-thumb {
   width: 34px;
   height: 20px;
   border-radius: var(--r-lg);
-  background: var(--surface-3);
+  background: var(--control-line);
   position: relative;
   flex: none;
   margin: 0;
   cursor: pointer;
-  transition: background var(--dur-2);
 }
 
 .switch input::after {
@@ -1065,7 +1071,7 @@ input[type='range']::-moz-range-thumb {
 select.select {
   min-height: 36px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--control-line);
   background: var(--surface);
   padding: 0 var(--sp-3);
   width: 100%;
@@ -2553,7 +2559,6 @@ table.data.compact th.num {
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   text-decoration: none;
-  transition: background-color var(--dur-2) var(--ease-out);
 }
 
 .toc-mark {
@@ -2634,12 +2639,6 @@ table.data.compact th.num {
   color: var(--space-ink);
   text-decoration: none;
   overflow: hidden;
-}
-
-.rocket-banner-text {
-  display: grid;
-  gap: var(--sp-3);
-  justify-items: start;
 }
 
 .rocket-banner .eyebrow {
@@ -2795,7 +2794,6 @@ table.data.compact th.num {
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   text-decoration: none;
-  transition: background-color var(--dur-2) var(--ease-out);
 }
 
 .mission-card h3 {
@@ -2852,6 +2850,19 @@ table.data.compact th.num {
   .segmented button,
   .brand {
     min-height: 44px;
+  }
+
+  .nav-group-title.toggle {
+    min-height: 44px;
+  }
+
+  .theme-switch {
+    gap: var(--sp-2);
+  }
+
+  .theme-switch button {
+    width: 44px;
+    height: 44px;
   }
 
   .segmented {
