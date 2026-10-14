@@ -334,7 +334,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
           <div class="info-grid">
             <section class="sim-sheet" aria-labelledby="prognose">
               <div class="panel-title">
-                <h3 id="prognose">Prognose aus den Startwerten</h3>
+                <h2 id="prognose">Prognose aus den Startwerten</h2>
                 <StatusChip
                   status={
                     assessment.verdict === 'stable'
@@ -356,7 +356,7 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
 
             <section class="sim-sheet" aria-labelledby="messwerte">
               <div class="panel-title">
-                <h3 id="messwerte">Messwerte</h3>
+                <h2 id="messwerte">Messwerte</h2>
                 {sim && <span class="small muted">{fmt(sim.steps)} Schritte</span>}
               </div>
               {stats && (

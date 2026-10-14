@@ -1562,8 +1562,9 @@ details.section .section-body {
   flex-wrap: wrap;
 }
 
-.panel-title h3 {
+.panel-title h2 {
   font-size: var(--fs-4);
+  font-weight: 600;
 }
 
 .info-grid {
@@ -2299,6 +2300,10 @@ table.data.compact th,
 table.data.compact td {
   padding: var(--sp-2) var(--sp-2);
   font-size: var(--fs-2);
+}
+
+table.data.compact th.num {
+  white-space: normal;
 }
 
 /* ------------------------------------------------------------------

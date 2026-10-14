@@ -1,15 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { linearStability, lagrangePoints } from '../physics';
 import { prepareCanvas, useElementSize } from '../ui/hooks';
-import {
-  contour,
-  lagrangeLevels,
-  rampColor,
-  sampleGrid,
-  viewScale,
-  type Grid,
-  type LView,
-} from './field';
+import { contour, lagrangeLevels, rampColor, sampleGrid, viewScale, type LView } from './field';
 
 export interface Overlay {
   (
@@ -37,18 +29,17 @@ interface Props {
   animate?: boolean;
   shape?: 'wide' | 'square' | 'tall';
   label: string;
-  onPointer?: (kind: 'down' | 'move' | 'up', x: number, y: number) => void;
+  onPointer?: (kind: 'down' | 'move' | 'up' | 'cancel', x: number, y: number) => void;
   onWheel?: (factor: number, x: number, y: number) => void;
 }
 
 const LEVEL_COLOR = '#f2c46e';
-const FORBIDDEN = 'rgba(8, 11, 24, 0.78)';
 
 /** Darstellung des mitrotierenden Systems im eingeschränkten Drei-Körper-Problem. */
 export function LagrangeCanvas(props: Props) {
   const [wrapRef, size] = useElementSize<HTMLDivElement>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const background = useRef<{ key: string; canvas: HTMLCanvasElement; grid: Grid } | null>(null);
+  const background = useRef<{ key: string; canvas: HTMLCanvasElement } | null>(null);
   const propsRef = useRef(props);
   propsRef.current = props;
   const sizeRef = useRef(size);
@@ -81,9 +72,19 @@ export function LagrangeCanvas(props: Props) {
       p.forbiddenC,
     ].join('|');
     if (!background.current || background.current.key !== key) {
-      background.current = { key, ...renderBackground(p, width, height) };
+      background.current = { key, canvas: renderBackground(p, width, height) };
     }
     ctx.drawImage(background.current.canvas, 0, 0, width, height);
+
+    // Heller Text auf der hellen Potentialfarbe braucht einen dunklen Rand.
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    const label = (text: string, x: number, y: number, color: string): void => {
+      ctx.strokeStyle = '#060a18';
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+    };
 
     // Hauptkörper.
     const [r1, r2] = p.bodyRadius ?? [9, 6];
@@ -99,10 +100,9 @@ export function LagrangeCanvas(props: Props) {
       ctx.beginPath();
       ctx.arc(sx, sy, r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#dfe5f5';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(name, sx, sy + r + 4);
+      label(name, sx, sy + r + 4, '#dfe5f5');
     }
 
     // Lagrange-Punkte mit Stabilität.
@@ -123,18 +123,19 @@ export function LagrangeCanvas(props: Props) {
           ctx.lineTo(sx - 5, sy + 5);
         }
         ctx.stroke();
-        ctx.fillStyle = '#f5f7ff';
         // L1 liegt zwischen den Körpern: Beschriftung links davon, sonst trifft sie den Namen.
         ctx.textAlign = lp.name === 'L1' ? 'right' : 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(lp.name, lp.name === 'L1' ? sx - 8 : sx + 8, sy - 10);
+        label(lp.name, lp.name === 'L1' ? sx - 8 : sx + 8, sy - 10, '#f5f7ff');
       }
     }
 
     p.overlay?.(ctx, toScreen, scale, width, height);
   };
 
-  useEffect(paint);
+  useEffect(() => {
+    if (!props.animate) paint();
+  });
 
   useEffect(() => {
     if (!props.animate) return;
@@ -179,22 +180,19 @@ export function LagrangeCanvas(props: Props) {
           cursor: props.onPointer ? 'crosshair' : 'default',
         }}
         onPointerDown={(e) => {
-          if (!props.onPointer) return;
+          if (!props.onPointer || e.button !== 0) return;
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           props.onPointer('down', ...toWorld(e));
         }}
         onPointerMove={(e) => props.onPointer?.('move', ...toWorld(e))}
         onPointerUp={(e) => props.onPointer?.('up', ...toWorld(e))}
+        onPointerCancel={(e) => props.onPointer?.('cancel', ...toWorld(e))}
       />
     </div>
   );
 }
 
-function renderBackground(
-  p: Props,
-  width: number,
-  height: number,
-): { canvas: HTMLCanvasElement; grid: Grid } {
+function renderBackground(p: Props, width: number, height: number): HTMLCanvasElement {
   const cell = 3;
   const grid = sampleGrid(p.mu, p.view, width, height, cell);
   const off = document.createElement('canvas');
@@ -252,9 +250,6 @@ function renderBackground(
   if (p.contours !== false) {
     for (const l of levels.slice(0, 3)) drawLevel(l.C, LEVEL_COLOR, 1, [4, 3]);
   }
-  if (p.forbiddenC != null) {
-    ctx.fillStyle = FORBIDDEN;
-    drawLevel(p.forbiddenC, '#ff8a7a', 1.5);
-  }
-  return { canvas, grid };
+  if (p.forbiddenC != null) drawLevel(p.forbiddenC, '#ff8a7a', 1.5);
+  return canvas;
 }

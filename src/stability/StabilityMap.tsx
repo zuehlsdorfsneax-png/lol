@@ -635,10 +635,10 @@ export function StabilityMap({ preset, compact = false }: Props) {
       {selected && selInfo && (
         <div class="panel panel-pad">
           <div class="panel-title">
-            <h3>
+            <h2>
               {AXES[config.x].short} = {AXES[config.x].format(selInfo.x)}, {AXES[config.y].short} ={' '}
               {AXES[config.y].format(selInfo.y)}
-            </h3>
+            </h2>
             <button
               type="button"
               class="btn small primary"

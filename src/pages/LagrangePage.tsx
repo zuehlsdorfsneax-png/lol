@@ -15,6 +15,9 @@ import { useAnimationFrame } from '../ui/hooks';
 
 type Focus = 'ganz' | 'klein' | 'l4';
 
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 200;
+
 function viewFor(focus: Focus, mu: number): LView {
   if (focus === 'klein') {
     const rh = Math.cbrt(mu / 3);
@@ -37,11 +40,11 @@ export function LagrangePage({ preset }: { preset: string | null }) {
   const [speed, setSpeed] = useState(1);
   const [running, setRunning] = useState(true);
   const [, setTick] = useState(0);
-  const psRef = useRef(new ParticleSystem(mu));
+  const psRef = useRef(new ParticleSystem(mu, system?.radii));
   const drag = useRef<{ from: [number, number]; to: [number, number] } | null>(null);
 
   if (psRef.current.mu !== mu) {
-    psRef.current = new ParticleSystem(mu);
+    psRef.current = new ParticleSystem(mu, system?.radii);
   }
   const ps = psRef.current;
 
@@ -61,13 +64,17 @@ export function LagrangePage({ preset }: { preset: string | null }) {
     }
   }, true);
 
+  const zoomBy = (factor: number): void =>
+    setZoom((z) => Math.min(Math.max(z * factor, ZOOM_MIN), ZOOM_MAX));
+
   const addAtPoints = (): void => {
     const d = 0.004 + 0.02 * Math.cbrt(mu);
     for (const p of lagrangePoints(mu)) ps.add(p.x + d * 0.3, p.y + d * 0.3, 0, 0);
   };
 
-  const onPointer = (kind: 'down' | 'move' | 'up', x: number, y: number): void => {
+  const onPointer = (kind: 'down' | 'move' | 'up' | 'cancel', x: number, y: number): void => {
     if (kind === 'down') drag.current = { from: [x, y], to: [x, y] };
+    else if (kind === 'cancel') drag.current = null;
     else if (kind === 'move' && drag.current) drag.current.to = [x, y];
     else if (kind === 'up' && drag.current) {
       const { from } = drag.current;
@@ -124,7 +131,7 @@ export function LagrangePage({ preset }: { preset: string | null }) {
             animate
             label="Mitrotierendes System mit effektivem Potential und Teilchen"
             onPointer={onPointer}
-            onWheel={(factor) => setZoom((z) => Math.min(Math.max(z / factor, 0.3), 200))}
+            onWheel={(factor) => zoomBy(1 / factor)}
             overlay={(ctx, toScreen) => {
               drawParticles(ctx, ps.particles, toScreen);
               if (drag.current)
@@ -152,7 +159,7 @@ export function LagrangePage({ preset }: { preset: string | null }) {
 
           <section class="panel panel-pad">
             <div class="panel-title">
-              <h3>Lagrange-Punkte und ihre Stabilität</h3>
+              <h2>Lagrange-Punkte und ihre Stabilität</h2>
               <StatusChip status={mu < ROUTH_MU ? 'ok' : 'fail'}>
                 μ = {sig(mu, 3)} {mu < ROUTH_MU ? '<' : '>'} 0,0385 (Routh-Grenze)
               </StatusChip>
@@ -225,17 +232,29 @@ export function LagrangePage({ preset }: { preset: string | null }) {
                 onChange={setSpeed}
               />
               <div class="btn-row">
-                <button type="button" class="btn small" onClick={() => setZoom((z) => z * 1.5)}>
+                <button
+                  type="button"
+                  class="btn small"
+                  disabled={zoom >= ZOOM_MAX}
+                  onClick={() => zoomBy(1.5)}
+                >
                   Hineinzoomen
                 </button>
-                <button type="button" class="btn small" onClick={() => setZoom((z) => z / 1.5)}>
+                <button
+                  type="button"
+                  class="btn small"
+                  disabled={zoom <= ZOOM_MIN}
+                  onClick={() => zoomBy(1 / 1.5)}
+                >
                   Herauszoomen
                 </button>
               </div>
             </div>
           </details>
           <section class="panel panel-pad">
-            <h3>Letztes Teilchen</h3>
+            <div class="panel-title">
+              <h2>Letztes Teilchen</h2>
+            </div>
             {last ? (
               <dl class="kv">
                 <dt>Jacobi-Konstante C</dt>

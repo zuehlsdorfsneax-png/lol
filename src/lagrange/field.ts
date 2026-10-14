@@ -4,7 +4,6 @@ import { jacobiConstant, lagrangePoints } from '../physics';
 export interface LView {
   cx: number;
   cy: number;
-  /** Halbe sichtbare Breite. */
   /** Halbe Breite des sichtbaren Ausschnitts – bzw. halbe Höhe, falls die Fläche flacher ist. */
   half: number;
 }
