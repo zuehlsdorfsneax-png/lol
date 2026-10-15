@@ -39,7 +39,7 @@ export function Hollow() {
           unseres Programmes anhand von mathematischen Berechnungen widerlegen.
         </p>
 
-        <SectionTitle n="7.1">Ursprung und Grundidee der Theorie</SectionTitle>
+        <SectionTitle n="6.1">Ursprung und Grundidee der Theorie</SectionTitle>
         <p>
           Die Hohle-Mond-These geht allerdings noch weiter. Nach dieser Vorstellung soll der Mond
           nicht natürlich entstanden sein, sondern von einer unbekannten, technisch sehr
@@ -84,7 +84,7 @@ export function Hollow() {
           einzelnen Messergebnisses sowie auf Ideen aus Science-Fiction-Literatur.
         </p>
 
-        <SectionTitle n="7.2">Physikalische Argumente gegen einen hohlen Mond</SectionTitle>
+        <SectionTitle n="6.2">Physikalische Argumente gegen einen hohlen Mond</SectionTitle>
         <p>
           Gegen den hohlen Mond sprechen zwei unabhängige Überlegungen. Einmal die mechanische,
           welche die Stabilität einer solch großen „hohlen“ Struktur betrifft, und einmal die der
@@ -113,7 +113,7 @@ export function Hollow() {
           der Masse geht über das Erde-Mond-Baryzentrum, also den gemeinsamen Massenschwerpunkt der
           beiden Körper. Dieses Zentrum lässt sich mit
         </p>
-        <Equation tex={String.raw`R_S = \frac{m_1\cdot r_1 + m_2\cdot r_2}{m_1 + m_2}`} n="7.1" />
+        <Equation tex={String.raw`R_S = \frac{m_1\cdot r_1 + m_2\cdot r_2}{m_1 + m_2}`} n="6.1" />
         <p>
           berechnen und liegt etwa 4670&nbsp;km vom Erdmassenmittelpunkt entfernt, was immer noch im
           Erdinneren liegt. Kennt man die Lage des Baryzentrums und die Erdmasse, lässt sich die
@@ -126,7 +126,7 @@ export function Hollow() {
       </div>
 
       <Figure
-        n="7.1"
+        n="6.1"
         steps={[
           'Lies die beiden Linien rechts von r / R = 1 ab, also außerhalb des Mondes: Sie liegen genau übereinander. Von außen sind Voll- und Hohlkugel gleicher Masse nicht zu unterscheiden.',
           'Links davon, im Inneren, trennen sie sich: Im Hohlraum der Hohlkugel ist die Schwerkraft null.',
@@ -160,7 +160,7 @@ export function Hollow() {
         <p>Für die Widerlegung eines hohlen Mondes haben wir anschließend die Masse eines</p>
         <Equation
           tex={String.raw`m = \rho\cdot\tfrac43\cdot\pi\cdot\left(R^3 - r^3\right)`}
-          n="7.2"
+          n="6.2"
         />
         <p>
           angeblichen hohlen Mondes berechnet. Um der Hohlen-Mond-These noch entgegenzukommen, sind
@@ -184,7 +184,7 @@ export function Hollow() {
       </div>
 
       <Figure
-        n="7.2"
+        n="6.2"
         steps={[
           'Ziehe die Schalendicke von 100 % (massiver Mond) nach unten: Masse und Baryzentrum sinken. Bei 10 % liegt das Baryzentrum nur noch bei etwa 1.320 km, weit unter den gemessenen 4.670 km, und die Anzeige springt auf „passt nicht zu den Messungen“.',
           'Stelle 20 % ein: etwa 2.370 km, immer noch viel zu wenig. Die Umlaufzeit ändert sich dabei nur um wenige Stunden, deshalb ist das Baryzentrum der bessere Test.',
@@ -211,7 +211,7 @@ export function Hollow() {
           unser Sonnensystem so, wie wir es kennen, weiterhin funktionieren kann.
         </p>
 
-        <SectionTitle n="7.3">Dichte, Trägheitsmoment und innere Struktur des Mondes</SectionTitle>
+        <SectionTitle n="6.3">Dichte, Trägheitsmoment und innere Struktur des Mondes</SectionTitle>
         <p>
           Laut der NASA hat der Mond eine durchschnittliche Dichte von 3,344&nbsp;g/cm³, während die
           Erde hingegen eine durchschnittliche Dichte von 5,514&nbsp;g/cm³ besitzt. Vertreter der
@@ -224,7 +224,7 @@ export function Hollow() {
         </p>
         <Equation
           tex={String.raw`\rho = \frac{3{,}344\ \text{g/cm}^3}{1-0{,}9^3} \approx 12{,}3\ \text{g/cm}^3`}
-          n="7.3"
+          n="6.3"
         />
         <p>
           Das bedeutet, die Schale des hohlen Mondes müsste aus einem Material sein, das dichter ist
@@ -233,7 +233,7 @@ export function Hollow() {
       </div>
 
       <Figure
-        n="7.3"
+        n="6.3"
         steps={[
           'Ziehe die Dicke von rechts (Vollkugel, 1.737 km) nach links: Die nötige Dichte steigt. Ab etwa 5 g/cm³ liegt sie über jedem Gestein, bei sehr dünner Schale sogar über der von Osmium, dem dichtesten Element.',
           'Auf der Dichteskala zeigt der orange Punkt („benötigt“), wo das Schalenmaterial liegen müsste, im Vergleich zu Wasser, Gestein, Eisen und Osmium.',
@@ -256,7 +256,7 @@ export function Hollow() {
         </p>
         <Equation
           tex={String.raw`\frac{C}{M\cdot R^2} = 0{,}4\cdot\frac{R^5-r^5}{R^3-r^3}`}
-          n="7.4"
+          n="6.4"
         />
         <p>
           ergäbe sich ein Wert von 0,44 bei einem Hohlraum mit halbem Mondradius. Laut
@@ -267,7 +267,7 @@ export function Hollow() {
       </div>
 
       <Figure
-        n="7.4"
+        n="6.4"
         steps={[
           'Starte das Rennen: Drei Kugeln rollen dieselbe schiefe Ebene hinab, die weißen Striche zeigen ihre Drehung. Die Kugel mit dem Trägheitsmoment des Mondes kommt fast zeitgleich mit der Vollkugel an, die Hohlkugel bleibt deutlich zurück.',
           'Je mehr Masse in der Mitte sitzt, desto schneller rollt eine Kugel. So lässt sich die Massenverteilung auch ohne Mondflug unterscheiden.',
@@ -287,13 +287,13 @@ export function Hollow() {
           habe eine ähnliche Dichte wie Eisen.
         </p>
 
-        <SectionTitle n="7.4">Warum die Theorie mit den Beobachtungen unvereinbar ist</SectionTitle>
+        <SectionTitle n="6.4">Warum die Theorie mit den Beobachtungen unvereinbar ist</SectionTitle>
         <p>
           Neben Berechnungen widersprechen auch mehrere direkte Beobachtungen der
           Hohlen-Mond-Theorie.
         </p>
         <p>
-          Zuerst lassen sich die ursprünglichen Beweise aus Kapitel 7.1 widerlegen. Bei dem Absturz
+          Zuerst lassen sich die ursprünglichen Beweise aus Kapitel 6.1 widerlegen. Bei dem Absturz
           der Apollo-12-Aufstiegsstufe registrierte ein Seismometer laut NASA etwa 55&nbsp;Minuten
           lang Beben. Dies lässt sich aber erklären: Im Mond fehlt Wasser, welches solche
           Erschütterungen bei uns auf der Erde dämpft. Der Mond ist aber trocken und starr, was für

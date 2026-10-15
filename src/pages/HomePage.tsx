@@ -138,10 +138,10 @@ export function HomePage() {
             <p>
               Erst wenn er über <strong>70 % seiner Geschwindigkeit</strong> verlöre, käme er der
               Erde näher als die Roche-Grenze und würde zerrissen; bei 80 % schlüge er ein.
-              {SHOWN_CHAPTERS.has(8) && (
+              {SHOWN_CHAPTERS.has(7) && (
                 <>
                   {' '}
-                  <a href="#kapitel-8">Kapitel 8</a>
+                  <a href="#kapitel-7">Kapitel 7</a>
                 </>
               )}
             </p>

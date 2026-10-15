@@ -5,7 +5,7 @@ export function Conclusion() {
   return (
     <>
       <div class="prose">
-        <SectionTitle n="9.1">Beantwortung der Problemfrage</SectionTitle>
+        <SectionTitle n="8.1">Beantwortung der Problemfrage</SectionTitle>
         <blockquote class="problem">
           <p>„{PROBLEM_QUESTION}“</p>
         </blockquote>
@@ -26,7 +26,7 @@ export function Conclusion() {
           die Gezeitenreibung treibt den Mond nur bis etwa 554.000&nbsp;km (0,37 r<sub>H</sub>).
         </p>
 
-        <SectionTitle n="9.2">Zusammenfassung der wichtigsten Erkenntnisse</SectionTitle>
+        <SectionTitle n="8.2">Zusammenfassung der wichtigsten Erkenntnisse</SectionTitle>
         <ul>
           <li>
             Newtons Gravitationsgesetz beschreibt Zweikörpersysteme exakt; ab drei Körpern braucht
@@ -50,7 +50,7 @@ export function Conclusion() {
           </li>
         </ul>
 
-        <SectionTitle n="9.3">Grenzen der Untersuchung</SectionTitle>
+        <SectionTitle n="8.3">Grenzen der Untersuchung</SectionTitle>
         <ul>
           <li>Die Simulation rechnet in einer Ebene (2D); die Neigung der Mondbahn fehlt.</li>
           <li>
@@ -63,7 +63,7 @@ export function Conclusion() {
           </li>
         </ul>
 
-        <SectionTitle n="9.4">Ausblick auf weiterführende Untersuchungen</SectionTitle>
+        <SectionTitle n="8.4">Ausblick auf weiterführende Untersuchungen</SectionTitle>
         <ul>
           <li>Dreidimensionale Simulation mit Knotendrehung und Finsternisvorhersage.</li>
           <li>Gezeitenreibung direkt in der Bahnsimulation.</li>

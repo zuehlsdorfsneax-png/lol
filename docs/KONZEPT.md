@@ -25,10 +25,9 @@ stabil, und wann stürzt er ab oder verlässt das System?_ – soll nicht nur be
 | 3 Einfluss der Sonne            | Kapitel 3: Gezeitenfeld, Präzessionsmessung, Voreinstellungen                   |
 | 4 Lagrange-Punkte               | Kapitel 4 + Lagrange-Labor: Beweis, Eigenwerte, Nullgeschwindigkeitskurven      |
 | 5 Die Hill-Sphäre der Erde      | Kapitel 5: Hill-Radius, Jacobi-Beweis, Stabilitätsgrenze                        |
-| 6 Gezeitenreibung               | Kapitel 6: Tag- und Monatslänge aus der Drehimpulserhaltung                     |
-| 7 Hohle-Mond-Theorie widerlegen | Kapitel 7: Texte der Arbeit, Schalentheorem, Schwerpunkt- und Umlaufzeitrechner |
-| 8 Eigenanteil: Simulation       | Kapitel 8, Simulator, Stabilitätskarte, Methodik & Validierung                  |
-| 9 Fazit                         | Kapitel 9: Antwort auf die Problemfrage                                         |
+| 6 Hohle-Mond-Theorie widerlegen | Kapitel 6: Texte der Arbeit, Schalentheorem, Schwerpunkt- und Umlaufzeitrechner |
+| 7 Eigenanteil: Simulation       | Kapitel 7, Simulator, Stabilitätskarte, Methodik & Validierung                  |
+| 8 Fazit                         | Kapitel 8: Antwort auf die Problemfrage                                         |
 
 ## 3. Module
 

@@ -7,7 +7,7 @@ export function OwnWork() {
   return (
     <>
       <div class="prose">
-        <SectionTitle n="8.1">Aufbau der Simulation</SectionTitle>
+        <SectionTitle n="7.1">Aufbau der Simulation</SectionTitle>
         <p>
           Unser Eigenanteil ist das <strong>Orbitlabor</strong>: eine Drei-Körper-Simulation, die
           komplett im Browser läuft (und als Windows-Programm). Sie besteht aus vier Teilen:
@@ -39,7 +39,7 @@ export function OwnWork() {
           Messwerte und Diagramme.
         </p>
 
-        <SectionTitle n="8.2">Benutzte Formeln</SectionTitle>
+        <SectionTitle n="7.2">Benutzte Formeln</SectionTitle>
         <p>Grundlage ist die Bewegungsgleichung für jeden Körper:</p>
         <Equation
           tex={String.raw`\ddot{\vec r}_i = \sum_{j\neq i} G\,m_j\,\frac{\vec r_j-\vec r_i}{\lvert\vec r_j-\vec r_i\rvert^3}`}
@@ -62,16 +62,16 @@ export function OwnWork() {
           Auswahl (Euler, Euler-Cromer, Velocity-Verlet, Runge-Kutta 4, Yoshida).
         </p>
 
-        <SectionTitle n="8.3">Untersuchung verschiedener Stabilitätsfälle</SectionTitle>
+        <SectionTitle n="7.3">Untersuchung verschiedener Stabilitätsfälle</SectionTitle>
       </div>
 
       <Instability />
 
       <div class="prose">
-        <SectionTitle n="8.4">Simulation von Instabilität und des hohlen Mondes</SectionTitle>
+        <SectionTitle n="7.4">Simulation von Instabilität und des hohlen Mondes</SectionTitle>
         <p>
           Die folgenden Voreinstellungen zeigen die untersuchten Fälle direkt im Simulator. Den
-          hohlen Mond aus Kapitel 7 kann man dort ebenfalls simulieren: Bei 10&nbsp;% Schalenstärke
+          hohlen Mond aus Kapitel 6 kann man dort ebenfalls simulieren: Bei 10&nbsp;% Schalenstärke
           rückt das Baryzentrum von 4.670&nbsp;km auf etwa 1.320&nbsp;km, die Umlaufzeit ändert sich
           kaum.
         </p>
@@ -82,11 +82,11 @@ export function OwnWork() {
         <LinkButton to="sim-flucht">Flucht</LinkButton>
         <LinkButton to="sim-jenseits">Jenseits der Hill-Grenze</LinkButton>
         <LinkButton to="sim-merkurbahn">Erde auf Merkurbahn</LinkButton>
-        <LinkButton to="kapitel-7">Hohler Mond (Abb. 7.2)</LinkButton>
+        <LinkButton to="kapitel-6">Hohler Mond (Abb. 6.2)</LinkButton>
       </div>
 
       <div class="prose">
-        <SectionTitle n="8.5">Auswertung der Simulationsergebnisse</SectionTitle>
+        <SectionTitle n="7.5">Auswertung der Simulationsergebnisse</SectionTitle>
         <p>
           Um der Simulation vertrauen zu können, haben wir sie mit echten Messungen verglichen. Die
           Tabelle zeigt Werte aus einer 30-jährigen Simulation des realen Systems. Alle Grenzwerte
@@ -95,7 +95,7 @@ export function OwnWork() {
         </p>
       </div>
       <Figure
-        n="8.2"
+        n="7.2"
         steps={[
           'Warte kurz, bis die Tabelle erscheint: Die Simulation rechnet 30 Jahre des realen Systems. Die Spalte „Abweichung“ zeigt, wie weit Simulation und Messwert auseinanderliegen.',
           'Siderischer und synodischer Monat sowie das siderische Jahr weichen um weniger als 0,01 % ab, der Abstand Erde–L1 um etwa 0,1 %. Am größten ist die Abweichung beim Umlauf der Apsidenlinie mit rund −1,3 %. Ein Teil davon geht darauf zurück, dass das Modell andere Planeten und die Bahnneigung nicht enthält.',

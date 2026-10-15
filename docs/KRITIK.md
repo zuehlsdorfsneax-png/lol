@@ -63,6 +63,13 @@ Offen aus dieser Runde:
 - Android-Vorlagentests ohne Wert (`android/app/src/test`, `androidTest`) samt Test-Abhängigkeiten in
   `android/app/build.gradle` von Hand entfernen; `git rm` wurde verweigert.
 
+## Vorstellung
+
+Sichtbar: Kapitel 2, 3 und 6 (Hohle-Mond-Theorie). Später kommen 4, 5, 7 und 8 dazu. Das frühere
+Kapitel 6 (Gezeitenreibung) ist entfallen und `Tides.tsx` gelöscht, die Kapitel dahinter sind
+umnummeriert (7 → 6, 8 → 7, 9 → 8). Im ausgeblendeten Fazit steht noch die Zahl „0,37 r_H,
+554.000 km“ aus dem entfallenen Gezeiten-Versuch; beim Einblenden prüfen.
+
 ## Offen
 
 | Befund                                                   | Stand                                                                                                                                                                                                                                         |

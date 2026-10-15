@@ -320,7 +320,7 @@ function Physics() {
             Die Bahnvorhersage auf der Karte rechnet die Anziehung aller Körper gleichzeitig: Sonne,
             Planeten und Monde ziehen an der Rakete, während sie selbst auf festen Bahnen laufen.
             Das ist ein eingeschränktes Mehrkörperproblem – die Verallgemeinerung des
-            Drei-Körper-Problems aus Kapitel 4 und 8. Deshalb biegt der Mond die vorhergesagte Bahn,
+            Drei-Körper-Problems aus Kapitel 4 und 7. Deshalb biegt der Mond die vorhergesagte Bahn,
             sobald sie in seine Nähe kommt.
           </p>
         </div>
@@ -341,7 +341,7 @@ function Physics() {
           <h3>Warum der Mond immer dieselbe Seite zeigt</h3>
           <p>
             Im Spiel dreht sich der Mond einmal pro Umlauf um sich selbst – wie in Wirklichkeit. Das
-            ist die gebundene Rotation durch Gezeitenreibung aus Kapitel 6. Ein Landeplatz auf der
+            ist die gebundene Rotation durch Gezeitenreibung (Kapitel 3). Ein Landeplatz auf der
             erdzugewandten Seite bleibt deshalb immer der Erde zugewandt.
           </p>
         </div>

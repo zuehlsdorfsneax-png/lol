@@ -24,7 +24,7 @@ export function MethodsPage() {
         <SectionTitle n="A.1">Modell</SectionTitle>
         <ul>
           <li>
-            Körper als Punktmassen (nach dem Schalentheorem für Kugeln exakt, siehe Kapitel 7.2).
+            Körper als Punktmassen (nach dem Schalentheorem für Kugeln exakt, siehe Kapitel 6.2).
           </li>
           <li>Newtonsche Gravitation zwischen allen Körpern mit Masse.</li>
           <li>
@@ -169,7 +169,7 @@ export function MethodsPage() {
             Validierung (A.3): Tabelle A.2 zeigt, dass die Simulation reale Effekte reproduziert.
           </li>
           <li>
-            Ergebnisse: Stabilitätskarten und Grenzwerte (Kapitel 8), jeweils mit Simulationsdauer.
+            Ergebnisse: Stabilitätskarten und Grenzwerte (Kapitel 7), jeweils mit Simulationsdauer.
           </li>
           <li>
             Diskussion: Vergleich mit Theorie (Hill, Jacobi, Domingos et al.) und Grenzen (A.4).
@@ -177,7 +177,7 @@ export function MethodsPage() {
         </ol>
         <p style={{ marginTop: 'var(--sp-2)' }}>
           Simulator und Stabilitätskarte lassen sich als Bild und als CSV-Datei exportieren. Die
-          Grenzwerte in Kapitel 8 reproduziert das Skript <code>npm run calibrate</code>.
+          Grenzwerte in Kapitel 7 reproduziert das Skript <code>npm run calibrate</code>.
         </p>
       </Callout>
     </article>

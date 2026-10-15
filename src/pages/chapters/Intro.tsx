@@ -39,11 +39,11 @@ export function Intro() {
         <SectionTitle n="1.3">Zielsetzung</SectionTitle>
         <p>
           Die Arbeit führt von den physikalischen Grundlagen (Kapitel 2) über die Störung durch die
-          Sonne (Kapitel 3), die Lagrange-Punkte (Kapitel 4) und die Hill-Sphäre (Kapitel 5) bis zur
-          langfristigen Entwicklung durch Gezeitenreibung (Kapitel 6). Kapitel 7 prüft mit denselben
-          Werkzeugen die Hohle-Mond-Theorie. Den Kern bildet der Eigenanteil (Kapitel 8): eine
-          digitale Drei-Körper-Simulation, mit der die Stabilitätsgrenzen numerisch bestimmt und mit
-          der Theorie verglichen werden. Kapitel 9 beantwortet die Problemfrage.
+          Sonne (Kapitel 3), die Lagrange-Punkte (Kapitel 4) und die Hill-Sphäre (Kapitel 5) zur
+          Hohle-Mond-Theorie (Kapitel 6), die mit denselben Werkzeugen geprüft wird. Den Kern bildet
+          der Eigenanteil (Kapitel 7): eine digitale Drei-Körper-Simulation, mit der die
+          Stabilitätsgrenzen numerisch bestimmt und mit der Theorie verglichen werden. Kapitel 8
+          beantwortet die Problemfrage.
         </p>
       </div>
       <Callout kind="fakt">

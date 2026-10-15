@@ -13,3 +13,9 @@
   und befolgen (kein KI-Einheitslook; Abnahme-Checkliste am Ende).
 - Für jede Arbeit (Code, Texte, Antworten) `docs/KI-REGELN.md` befolgen: Arbeitsweise mit
   eigener Prüfschleife, sparsamer Verbrauch, kein KI-typischer Code- oder Schreibstil.
+- Kapitelstand: Sichtbar sind Kapitel 2, 3 und 6 (Hohle-Mond-Theorie), gesteuert über
+  `SHOWN_CHAPTERS` in `src/app/content.ts`. Kapitel 4, 5, 7 (Eigenanteil) und 8 (Fazit) kommen
+  später dazu; das frühere Kapitel 6 (Gezeitenreibung) ist entfallen, die Kapitel danach sind
+  neu nummeriert. Die Texte der sichtbaren Kapitel stammen von der Autorin bzw. dem Autor: nicht
+  umformulieren, keine eigenen Zusätze, nur Rechtschreibung. Versuche brauchen eine Liste
+  „Ausprobieren“ (`steps` an `Figure`).

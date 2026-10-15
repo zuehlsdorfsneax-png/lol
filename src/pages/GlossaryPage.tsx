@@ -1,3 +1,4 @@
+import { SHOWN_CHAPTERS } from '../app/content';
 import { PageHead } from '../ui/content';
 
 interface Term {
@@ -5,6 +6,12 @@ interface Term {
   text: string;
   /** Wo es in der App vorkommt. */
   link?: [string, string];
+}
+
+/** Verweise auf ausgeblendete Kapitel werden nicht angezeigt. */
+function linkVisible(target: string): boolean {
+  const m = /^kapitel-(\d+)$/.exec(target);
+  return !m || SHOWN_CHAPTERS.has(Number(m[1]));
 }
 
 const TERMS: readonly Term[] = [
@@ -31,7 +38,7 @@ const TERMS: readonly Term[] = [
   {
     term: 'Drei-Körper-Problem',
     text: 'Die Bewegung dreier sich gegenseitig anziehender Körper. Es gibt dafür keine allgemeine Formel, deshalb rechnet man numerisch – wie im Simulator.',
-    link: ['kapitel-8', 'Kapitel 8'],
+    link: ['kapitel-7', 'Kapitel 7'],
   },
   {
     term: 'Exzentrizität',
@@ -41,17 +48,17 @@ const TERMS: readonly Term[] = [
   {
     term: 'Fluchtgeschwindigkeit',
     text: 'Die Geschwindigkeit, ab der ein Körper nicht mehr zurückfällt: √2-mal die Kreisbahngeschwindigkeit.',
-    link: ['kapitel-8', 'Kapitel 8'],
+    link: ['kapitel-7', 'Kapitel 7'],
   },
   {
     term: 'Gebundene Rotation',
     text: 'Ein Körper dreht sich in derselben Zeit um sich selbst, in der er seinen Partner umkreist. Darum zeigt uns der Mond immer dieselbe Seite.',
-    link: ['kapitel-6', 'Kapitel 6'],
+    link: ['kapitel-3', 'Kapitel 3'],
   },
   {
     term: 'Gezeitenreibung',
     text: 'Die Gezeitenberge bremsen die Erddrehung; der Drehimpuls wandert zum Mond, der sich dadurch um etwa 3,8 cm pro Jahr entfernt.',
-    link: ['kapitel-6', 'Kapitel 6'],
+    link: ['kapitel-3', 'Kapitel 3'],
   },
   {
     term: 'Gravitationsgesetz',
@@ -101,12 +108,12 @@ const TERMS: readonly Term[] = [
   {
     term: 'Roche-Grenze',
     text: 'Unterhalb dieses Abstands zerreißen die Gezeitenkräfte einen Mond, der nur durch seine eigene Schwerkraft zusammenhält. Für den Mond etwa 18.000 km.',
-    link: ['kapitel-8', 'Kapitel 8'],
+    link: ['kapitel-7', 'Kapitel 7'],
   },
   {
     term: 'Schalentheorem',
     text: 'Außerhalb einer kugelsymmetrischen Masse wirkt sie wie ein Punkt im Mittelpunkt. Voll oder hohl macht für die Bahn deshalb keinen Unterschied.',
-    link: ['kapitel-7', 'Kapitel 7'],
+    link: ['kapitel-6', 'Kapitel 6'],
   },
   {
     term: 'Schwerkraftwende',
@@ -137,7 +144,7 @@ export function GlossaryPage() {
             <dt>{t.term}</dt>
             <dd>
               {t.text}
-              {t.link && (
+              {t.link && linkVisible(t.link[0]) && (
                 <>
                   {' '}
                   <a href={`#${t.link[0]}`}>{t.link[1]}</a>

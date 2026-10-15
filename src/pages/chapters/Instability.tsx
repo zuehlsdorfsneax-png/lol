@@ -64,7 +64,7 @@ export function Instability() {
   return (
     <>
       <div class="prose">
-        <SectionTitle n="8.3.1">Zwei Arten zu scheitern</SectionTitle>
+        <SectionTitle n="7.3.1">Zwei Arten zu scheitern</SectionTitle>
         <p>
           Ein Mond kann seinen Planeten auf zwei Wegen verlieren: Er <strong>stürzt ab</strong>{' '}
           (oder wird vorher von Gezeitenkräften zerrissen), oder er <strong>entkommt</strong> und
@@ -72,13 +72,13 @@ export function Instability() {
           abschätzen und dann mit dem Simulator genau bestimmen.
         </p>
 
-        <SectionTitle n="8.3.2">Zu langsam: Absturz und Roche-Grenze</SectionTitle>
+        <SectionTitle n="7.3.2">Zu langsam: Absturz und Roche-Grenze</SectionTitle>
         <p>
           Startet der Mond im Abstand <Tex>{'r_0'}</Tex> tangential mit dem Bruchteil <Tex>f</Tex>{' '}
           der Kreisbahngeschwindigkeit, ist der Start der erdfernste Punkt einer Ellipse. Aus
           Energie- und Drehimpulserhaltung folgt der erdnächste Punkt
         </p>
-        <Equation tex={String.raw`r_P = r_0\,\frac{f^2}{2-f^2}.`} n="8.1" />
+        <Equation tex={String.raw`r_P = r_0\,\frac{f^2}{2-f^2}.`} n="7.1" />
         <p>
           Ein Aufprall erfolgt, wenn{' '}
           <Tex>{String.raw`r_P < R_\oplus + R_\text{Mond} = 8\,108\ \text{km}`}</Tex>, also für{' '}
@@ -89,7 +89,7 @@ export function Instability() {
           Geschwindigkeit verlieren – ein Vorgang, für den es keinen natürlichen Mechanismus gibt.
         </p>
 
-        <SectionTitle n="8.3.3">
+        <SectionTitle n="7.3.3">
           Zu schnell: Flucht – schon unterhalb der Fluchtgeschwindigkeit
         </SectionTitle>
         <p>
@@ -101,7 +101,7 @@ export function Instability() {
           16&nbsp;%.
         </p>
 
-        <SectionTitle n="8.3.4">Die Hill-Sphäre schrumpft</SectionTitle>
+        <SectionTitle n="7.3.4">Die Hill-Sphäre schrumpft</SectionTitle>
         <p>
           Aus <Tex>{String.raw`r_H = a\,\sqrt[3]{m/3M}`}</Tex> folgt: Der Mond wird instabil, wenn
           die Erde der Sonne näher kommt oder die Sonne schwerer wird. Mit der Grenze 0,48 r
@@ -109,7 +109,7 @@ export function Instability() {
         </p>
         <Equation
           tex={String.raw`a_\text{Erde} > \frac{384\,400\ \text{km}}{0{,}48\cdot 1{,}5\ \text{Mio. km}}\ \text{AE} \approx 0{,}53\ \text{AE},\qquad M_\odot < \left(\frac{0{,}48\cdot r_H}{384\,400\ \text{km}}\right)^3 M_\odot \approx 6{,}6\,M_\odot.`}
-          n="8.2"
+          n="7.2"
         />
         <p>
           Auf der Venusbahn (0,72&nbsp;AE) wäre der Mond noch stabil, auf der Merkurbahn
@@ -151,23 +151,23 @@ export function Instability() {
       <p class="small muted">
         vₖ = Kreisbahngeschwindigkeit im Startabstand 384.400&nbsp;km. Simulationswerte ermittelt
         mit <code>npm run calibrate</code> (Velocity-Verlet, adaptive Schrittweite, Schrittweite
-        0,25&nbsp;% der Umlaufzeit). Theorie: Formeln (8.1), (8.2) und Domingos et al. (2006).
+        0,25&nbsp;% der Umlaufzeit). Theorie: Formeln (7.1), (7.2) und Domingos et al. (2006).
       </p>
 
       <Figure
-        n="8.1"
+        n="7.1"
         steps={[
           'Suche den Punkt „heutiger Mond“ (0,26 Hill-Radien, Startgeschwindigkeit 1,00 vₖ): Er liegt im grünen Gebiet, links der senkrechten Linie bei 0,48 Hill-Radien. Fährst du mit der Maus über eine Zelle, erscheint ihr Ergebnis. Ein Klick wählt sie aus, und „Im Simulator ansehen“ spielt genau diese Bahn ab.',
           'Wähle bei „Karte“ die retrograde Variante: Die senkrechte Linie wandert von 0,48 auf 0,91 Hill-Radien, die stabile Zone reicht fast doppelt so weit hinaus.',
           'Schalte rechts neben „Neu berechnen“ von „Ergebnis“ auf „Lebensdauer“: Je dunkler eine Zelle, desto länger hielt der Mond durch, ganz dunkel heißt zehn Jahre stabil. Helle Zellen sind Bahnen, die schon nach kurzer Zeit abstürzen oder entkommen.',
         ]}
-        caption="Stabilitätskarte: Jede Zelle ist eine eigene Simulation über 10&nbsp;Jahre. Die Linien zeigen die Vorhersagen aus (8.1) und die Stabilitätsgrenze nach Domingos et al. Größere Karten und weitere Parameter im Werkzeug „Stabilitätskarte“."
+        caption="Stabilitätskarte: Jede Zelle ist eine eigene Simulation über 10&nbsp;Jahre. Die Linien zeigen die Vorhersagen aus (7.1) und die Stabilitätsgrenze nach Domingos et al. Größere Karten und weitere Parameter im Werkzeug „Stabilitätskarte“."
       >
         <StabilityMap compact />
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="8.3.5">Was die Karte zusätzlich verrät</SectionTitle>
+        <SectionTitle n="7.3.5">Was die Karte zusätzlich verrät</SectionTitle>
         <ul>
           <li>
             Die Grenze zum Entkommen ist <strong>ausgefranst</strong>: Nahe der Grenze entscheiden
@@ -175,7 +175,7 @@ export function Instability() {
             Kennzeichen von Chaos im Drei-Körper-Problem.
           </li>
           <li>
-            Weit außen und langsam stürzt der Mond öfter ab, als die Zwei-Körper-Formel (8.1)
+            Weit außen und langsam stürzt der Mond öfter ab, als die Zwei-Körper-Formel (7.1)
             vorhersagt: Während des langen Falls verändert die Gezeitenkraft der Sonne seinen
             Drehimpuls, sodass er die Erde trifft.
           </li>
@@ -185,7 +185,7 @@ export function Instability() {
           </li>
         </ul>
 
-        <SectionTitle n="8.3.6">Weitere Wege zur Instabilität</SectionTitle>
+        <SectionTitle n="7.3.6">Weitere Wege zur Instabilität</SectionTitle>
         <ul>
           <li>
             <strong>Nahe Vorbeiflüge</strong>: Ein Stern oder Schurkenplanet, der nahe genug

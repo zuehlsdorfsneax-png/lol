@@ -146,7 +146,7 @@ export function Chapter4() {
           erreichen. Die Grenzen heißen <strong>Nullgeschwindigkeitskurven</strong>. Für großes{' '}
           <Tex>C</Tex> sind die erlaubten Gebiete um die beiden Körper getrennt. Sinkt <Tex>C</Tex>{' '}
           unter <Tex>{'C(L_1)'}</Tex>, öffnet sich zwischen ihnen ein Tor bei L1, unter{' '}
-          <Tex>{'C(L_2)'}</Tex> eines nach außen. Genau diese Tore entscheiden in Kapitel 5 und 8,
+          <Tex>{'C(L_2)'}</Tex> eines nach außen. Genau diese Tore entscheiden in Kapitel 5 und 7,
           ob ein Mond seinem Planeten entkommen kann.
         </p>
       </div>

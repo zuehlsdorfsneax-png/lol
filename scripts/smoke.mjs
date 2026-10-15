@@ -19,7 +19,6 @@ const PAGES = [
   'kapitel-6',
   'kapitel-7',
   'kapitel-8',
-  'kapitel-9',
   'missionen',
   'mission-erste-bahn',
   'quiz',

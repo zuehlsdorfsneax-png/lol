@@ -19,17 +19,16 @@ export const CHAPTERS: readonly ChapterMeta[] = [
   },
   { n: 4, title: 'Lagrange-Punkte', question: 'Wo heben sich die Kräfte auf?' },
   { n: 5, title: 'Die Hill-Sphäre der Erde', question: 'Wie weit reicht die Macht der Erde?' },
-  { n: 6, title: 'Gezeitenreibung', question: 'Warum entfernt sich der Mond?' },
-  { n: 7, title: 'Widerlegung der Hohle-Mond-Theorie', question: 'Ist der Mond innen hohl?' },
-  { n: 8, title: 'Eigenanteil: Simulation', question: 'Was zeigt unsere Drei-Körper-Simulation?' },
-  { n: 9, title: 'Fazit', question: 'Die Antwort auf die Problemfrage' },
+  { n: 6, title: 'Widerlegung der Hohle-Mond-Theorie', question: 'Ist der Mond innen hohl?' },
+  { n: 7, title: 'Eigenanteil: Simulation', question: 'Was zeigt unsere Drei-Körper-Simulation?' },
+  { n: 8, title: 'Fazit', question: 'Die Antwort auf die Problemfrage' },
 ];
 
 /**
  * Kapitel, die in Menü, Startseite und Vor/Zurück gezeigt werden. Die übrigen bleiben erhalten
  * und sind über ihre Adresse (#kapitel-3 …) weiter erreichbar – sie werden nur nicht angezeigt.
  */
-export const SHOWN_CHAPTERS = new Set([2, 3, 7]);
+export const SHOWN_CHAPTERS = new Set([2, 3, 6]);
 /**
  * Werkzeuge (Simulator, Stabilitätskarte, Lagrange-Labor) in Menü und Startseite zeigen? Aus:
  * Sie bleiben erhalten und über ihre Adresse erreichbar, werden nur nicht angezeigt.

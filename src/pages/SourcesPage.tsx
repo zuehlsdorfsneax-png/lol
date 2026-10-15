@@ -24,7 +24,7 @@ const FORMULAS: { title: string; tex: string; note: string }[] = [
   {
     title: 'Periapsis bei tangentialem Start',
     tex: String.raw`r_P = r_0\,\frac{f^2}{2-f^2}\quad (f<1)`,
-    note: 'Absturzgrenze in Kapitel 8',
+    note: 'Absturzgrenze in Kapitel 7',
   },
   {
     title: 'Gezeitenbeschleunigung',
@@ -100,7 +100,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     ],
   },
   {
-    group: 'Kapitel 7.1: Ursprung der Hohle-Mond-These',
+    group: 'Kapitel 6.1: Ursprung der Hohle-Mond-These',
     items: [
       'Wikipedia (englisch): Hollow Moon. https://en.wikipedia.org/wiki/Hollow_Moon(Zugriff: 20.09.2026)',
       'Armagh Planetarium – Astronotes: Is the Moon Hollow? https://armaghplanet.com/is-the-moon-hollow.html(Zugriff: 20.09.2026)',
@@ -110,7 +110,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     ],
   },
   {
-    group: 'Kapitel 7.2: Physikalische Argumente',
+    group: 'Kapitel 6.2: Physikalische Argumente',
     items: [
       'Weber, R. C.: Interior of the Moon (NASA-Bericht). https://ntrs.nasa.gov/api/citations/20130013896/downloads/20130013896.pdf(Zugriff: 27.08.2026)',
       'HandWiki: Moment of inertia factor. https://handwiki.org/wiki/Astronomy:Moment_of_inertia_factor(Zugriff: 27.08.2026)',
@@ -127,7 +127,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     ],
   },
   {
-    group: 'Kapitel 7.3: Dichte und innerer Aufbau',
+    group: 'Kapitel 6.3: Dichte und innerer Aufbau',
     items: [
       'NASA: Moon Fact Sheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html',
       'NASA: Earth Fact Sheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html',
@@ -141,7 +141,7 @@ const OWN_SOURCES: { group: string; items: string[] }[] = [
     ],
   },
   {
-    group: 'Kapitel 7.4: Beobachtungen',
+    group: 'Kapitel 6.4: Beobachtungen',
     items: [
       'NASA Apollo Flight Journal: Apollo 12, Day 7. https://www.nasa.gov/history/afj/ap12fj/19day7_rev44_tei.html',
       'Latham, G. et al.: Seismology of the Moon and Implications on Internal Structure (Cambridge University Press). https://doi.org/10.1017/S1539299600000101',

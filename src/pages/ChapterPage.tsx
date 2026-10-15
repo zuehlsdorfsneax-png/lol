@@ -8,7 +8,6 @@ import { Conclusion } from './chapters/Conclusion';
 import { Hollow } from './chapters/Hollow';
 import { Intro } from './chapters/Intro';
 import { OwnWork } from './chapters/OwnWork';
-import { Tides } from './chapters/Tides';
 
 const LEADS: Record<number, string> = {
   1: 'Worum es geht: Was Bahnstabilität bedeutet, wie die Problemfrage lautet und welchen Weg die Arbeit nimmt.',
@@ -16,15 +15,14 @@ const LEADS: Record<number, string> = {
   3: 'Die Sonne zieht den Mond mehr als doppelt so stark an wie die Erde. Warum reißt sie ihn trotzdem nicht fort – und wie verändert sie seine Bahn?',
   4: 'Fünf Punkte, an denen sich Gravitation und Fliehkraft genau aufheben. Wir berechnen sie, beweisen ihre Lage und untersuchen, welche davon stabil sind.',
   5: 'Die Hill-Sphäre ist die wichtigste Grenze dafür, ob der Mond an die Erde gebunden bleibt.',
-  6: 'Die Gezeiten bremsen die Erde und schieben den Mond nach außen. Wohin führt das?',
-  7: 'Ist der Mond hohl oder gar eine Attrappe? Wir prüfen die These mit Physik und mit unserem eigenen Programm.',
-  8: 'Unsere digitale Drei-Körper-Simulation: Aufbau, Formeln, untersuchte Fälle und Auswertung.',
-  9: 'Die Antwort auf die Problemfrage, die wichtigsten Erkenntnisse, Grenzen und Ausblick.',
+  6: 'Ist der Mond hohl oder gar eine Attrappe? Wir prüfen die These mit Physik und mit unserem eigenen Programm.',
+  7: 'Unsere digitale Drei-Körper-Simulation: Aufbau, Formeln, untersuchte Fälle und Auswertung.',
+  8: 'Die Antwort auf die Problemfrage, die wichtigsten Erkenntnisse, Grenzen und Ausblick.',
 };
 
 export function ChapterPage({ n }: { n: number }) {
   const meta = CHAPTERS.find((c) => c.n === n) ?? CHAPTERS[0]!;
-  const Body = [Intro, Basics, Chapter3, Chapter4, Chapter5, Tides, Hollow, OwnWork, Conclusion][
+  const Body = [Intro, Basics, Chapter3, Chapter4, Chapter5, Hollow, OwnWork, Conclusion][
     meta.n - 1
   ]!;
   const prev = [...VISIBLE_CHAPTERS].reverse().find((c) => c.n < meta.n);
