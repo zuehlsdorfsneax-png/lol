@@ -4,7 +4,7 @@ import { SHOW_SIMULATOR } from '../../app/content';
 import { openInSimulator } from '../../app/store';
 import { REAL_PARAMS } from '../../physics';
 import { CanvasBox } from '../../ui/CanvasBox';
-import { Callout, Equation, Figure, SectionTitle, StatusChip, Tex } from '../../ui/content';
+import { Equation, Figure, SectionTitle, StatusChip, Tex } from '../../ui/content';
 import { Slider } from '../../ui/controls';
 import { fmt, sig } from '../../ui/format';
 import { ForceLawLab, KeplerLab, MoonTest } from './GravityWidgets';
@@ -20,46 +20,57 @@ export function Basics() {
         </p>
         <p>
           Als Isaac Newton 1687 sein Hauptwerk „Philosophiae Naturalis Principia Mathematica“
-          veröffentlichte, veränderte es die Himmelsmechanik. Astronomen waren nicht mehr an
-          beschreibende Modelle wie die Keplerschen Gesetze gebunden, stattdessen hatten sie von da
-          an ein kausales physikalisches Fundament.
+          veröffentlichte, revolutionierte es unter anderem auch die Himmelsmechanik. Nicht mehr
+          waren Astronomen an beschreibende Modelle, wie die Keplerschen Gesetze, gebunden,
+          stattdessen hatten sie von dort an ein kausales physikalisches Fundament.
         </p>
         <p>
-          Mit der Veröffentlichung seiner Arbeit brachte Newton auch drei für die Himmelsmechanik
-          relevante Axiome.
+          Mit der Veröffentlichung seiner Arbeit brachte Newton auch drei relevante Axiome zur
+          Himmelsmechanik.
         </p>
         <p>
-          Das <strong>erste Axiom</strong> besagt, dass ein Körper seinen Bewegungszustand
-          beibehält, solange keine äußere Kraft auf ihn einwirkt. Im Sinne der Himmelsmechanik
-          bedeutet dies, dass Objekte wie Planeten und Monde ihre Bewegung verlustlos beibehalten,
-          solange kein anderes Objekt eine Kraft auf sie ausübt.
+          Das erste Axiom besagt, dass ein Körper seinen Bewegungszustand beibehält, solange keine
+          weitere äußere Kraft auf den Körper einwirkt. Im Sinne der Himmelsmechanik bedeutete dies,
+          dass stellare Objekte wie Planeten und Monde ihre Bewegungsenergie verlustlos beibehalten,
+          solange kein anderes Objekt Kraft auf sie ausübt.
         </p>
         <p>
-          Laut dem <strong>zweiten Axiom</strong> ist die Beschleunigung proportional zur
-          einwirkenden Kraft und zeigt in deren Richtung. Für die Flugbahnen von Himmelskörpern
-          bedeutet das vor allem eine Richtungsänderung – die Ablenkung auf eine Umlaufbahn.
-        </p>
-        <Equation tex={String.raw`\vec F = m\cdot\vec a`} n="2.1" />
-        <p>
-          Das <strong>dritte Axiom</strong> beschreibt das Reaktionsprinzip: Übt ein Körper A eine
-          Kraft auf einen Körper B aus, so wirkt eine gleich große, entgegengesetzte Kraft von B auf
-          A. Für die Bahnstabilität heißt das: Ein Himmelskörper, der ein zentrales Objekt umkreist,
-          zieht dieses ebenfalls an – beide bewegen sich um einen gemeinsamen Schwerpunkt.
+          Laut dem zweiten Axiom ist Bewegung, beziehungsweise Beschleunigung, proportional zur
+          bewegenden, einwirkenden Kraft und agiert gradlinig zum krafterzeugenden Körper. Für die
+          Flugbahnen von Himmelskörpern bedeutet das primär eine Richtungsänderung als Ablenkung auf
+          Umlaufbahnen.
         </p>
         <p>
-          Durch diese Erkenntnisse konnte Newton mathematisch beweisen, dass und wie zwei isolierte
-          Massen sich auf stabilen, periodischen Kreis- und Ellipsenbahnen bewegen. Grundlage dafür
-          ist das <strong>Newtonsche Gravitationsgesetz</strong>:
+          Das dritte und wichtigste Axiom beschreibt das Reaktionsprinzip. Wenn ein Körper A eine
+          Kraft auf einen Körper B ausübt, so wirkt eine gleichgroße, jedoch entgegengesetzte Kraft
+          ebenfalls auf Körper A von Körper B. Dieses Prinzip der Wechselwirkung verdeutlicht für
+          die Bahnstabilität, dass ein Himmelskörper, welcher ein zentrales Objekt umkreist,
+          ebenfalls dieses zentrale Objekt anzieht, was zu einer Verschiebung des gemeinsamen
+          Systems führen kann.
         </p>
-        <Equation
-          tex={String.raw`F_G = G\cdot\frac{m_1\, m_2}{r^2},\qquad G = 6{,}674\cdot10^{-11}\ \tfrac{\text{m}^3}{\text{kg}\,\text{s}^2}`}
-          n="2.2"
-        />
         <p>
-          Dabei stehen <Tex>{'m_1'}</Tex> und <Tex>{'m_2'}</Tex> für die Massen der beiden Körper in
-          Kilogramm, <Tex>r</Tex> ist der Abstand der beiden Massenmittelpunkte und <Tex>G</Tex> die
-          Gravitationskonstante, die in vielen Formeln der Himmelsmechanik vorkommt. Nach dem
-          dritten Axiom ist die Gravitationskraft für beide Körper gleich groß.
+          Durch diese Erkenntnisse war es Newton möglich, mathematisch zu beweisen, dass und wie es
+          möglich ist, zwei isolierte Massen auf stabilen periodischen Kreis- und Ellipsenbahnen zu
+          beschreiben.
+        </p>
+        <p>
+          Dafür stellte er unter anderem seine bekannteste Formel auf, zur Beschreibung der Kraft,
+          welche auf eine verlustlos beschleunigte Masse wirkt.
+        </p>
+        <Equation tex={String.raw`F = m\times a`} n="2.1" />
+        <p>
+          bildet den Grundstein der Newtonschen Gravitationsgesetze und unseres Verständnisses der
+          Bahnstabilität von Himmelskörpern.
+        </p>
+        <p>Eines dieser Gesetze ist das Newtonsche Gravitationsgesetz.</p>
+        <Equation tex={String.raw`F_G = G\cdot\frac{m_1\, m_2}{r^2}`} n="2.2" />
+        <p>
+          beschreibt die von Newton definierte Gravitationskraft zwischen zwei isolierten Körpern.{' '}
+          <Tex>{'m_1'}</Tex> und <Tex>{'m_2'}</Tex> stehen dabei für die Masse der beiden Körper,
+          deren Werte in Kilogramm angegeben werden. <Tex>r</Tex> ist hierbei der Abstand der beiden
+          Massezentren und <Tex>G</Tex> ist die sogenannte Gravitationskonstante, welche in vielen
+          Formeln der Himmelsmechanik vorkommt. Durch die Aussage des dritten Axioms ist die
+          Gravitationskraft für beide Körper gleich groß.
         </p>
       </div>
 
@@ -75,40 +86,42 @@ export function Basics() {
       </Figure>
 
       <div class="prose">
-        <SectionTitle n="2.2">Das Zweikörperproblem</SectionTitle>
+        <SectionTitle n="2.2">Das Zweikörper-Problem</SectionTitle>
         <p>
-          In der Himmelsmechanik gibt es das Zweikörpermodell, das die Bahnbewegung zweier Körper
-          untersucht, die nur von ihrer gegenseitigen Gravitation beeinflusst werden. Beide Körper
-          werden als punktförmige Massen betrachtet, äußere Kräfte durch weitere Körper werden nicht
-          berücksichtigt. Es ist auch als <strong>Kepler-Problem</strong> bekannt, da Johannes
-          Kepler diese Bahnbewegungen als Erster beobachtete, beschrieb und die Keplerschen Gesetze
-          formulierte. 1687 lieferte Isaac Newton mit den Gravitations- und Bewegungsgesetzen die
-          physikalische Erklärung. Damit erklärte er, wie sich Planeten bewegen und warum sie es auf
-          diese Weise tun.
+          In der Himmelsmechanik gibt es das Zweikörpermodell, welches die Bahnbewegungen zweier
+          Körper untersucht, welche nur von ihren eigenen Gravitationskräften beeinflusst werden,
+          ohne weitere Einflüsse von außen. Die Voraussetzungen sind, dass beide Körper mit einer
+          punktförmigen Masse betrachtet werden, außerdem werden keine äußeren Kräfte wie von
+          anderen Körpern mit beachtet. Es ist auch als Kepler-Problem bekannt, weil Johannes Kepler
+          diese Bahnbewegungen anhand der Beobachtungen von Tycho Brahe beschrieb und die
+          Keplerschen Gesetze formulierte. 1687 lieferte Isaac Newton die physikalische Erklärung
+          dieser Beobachtung, der Planetenbewegungen, mit der Ableitung der Gravitations- und
+          Bewegungsgesetze. Damit erklärte er nicht nur, wie sich Planeten bewegen, sondern auch
+          warum sie es auf diese Weise tun.
         </p>
         <p>
-          Newton vereinfachte das Zweikörperproblem, indem er die Bewegung des gemeinsamen
-          Schwerpunkts und die Bewegung der Körper relativ zueinander getrennt betrachtete. Die
-          Relativbewegung lässt sich so beschreiben, als würde sich nur einer der beiden Körper
-          unter dem Einfluss des anderen bewegen. Dadurch lässt sich das Zweikörperproblem
-          vollständig mathematisch lösen.
+          Isaac Newton vereinfachte das Zweikörperproblem, indem er, anstatt beide Körper
+          gleichzeitig zu betrachten, sie beide einzeln betrachtete. Außerdem betrachtete er den
+          gemeinsamen Schwerpunkt der Körper und dessen Bewegung und wie die beiden Körper sich
+          relativ zueinander bewegen und stehen. Diese relative Bewegung ließ sich so beschreiben,
+          als würde sich nur einer der beiden Körper bewegen, unter dem Einfluss des anderen. Diese
+          Vereinfachung ermöglicht es, das Zweikörperproblem leichter und komplett mathematisch zu
+          lösen.
         </p>
         <p>
-          Die Lösung zeigt, dass es verschiedene Bahnformen gibt: Kreise, Ellipsen, Parabeln und
-          Hyperbeln. Welche Form entsteht, hängt von der Gesamtenergie des Systems ab. Bei negativer
-          Gesamtenergie entsteht eine geschlossene Kreis- oder Ellipsenbahn – das stimmt mit dem
+          Die Lösung des Zweikörperproblems zeigt, dass es verschiedene Bahnformen gibt, zum
+          Beispiel Kreise, Ellipsen, Parabeln und Hyperbeln. Welche Form die Bahnen annehmen, hängt
+          von der Gesamtenergie des Systems ab. Bei einer negativen Gesamtenergie entsteht eine
+          geschlossene Bahn in Form einer Kreisbahn oder einer Ellipsenbahn. Dies stimmt mit dem
           ersten Keplerschen Gesetz überein.
         </p>
-        <Equation
-          tex={String.raw`E = \frac{v^2}{2} - \frac{GM}{r}\;\begin{cases}<0 & \text{Ellipse oder Kreis (gebunden)}\\=0 & \text{Parabel}\\>0 & \text{Hyperbel (ungebunden)}\end{cases}`}
-          n="2.3"
-        />
       </div>
 
       <Figure
         n="2.2"
         steps={[
           'Erhöhe die Exzentrizität: Die Ellipse wird länger, die zwölf Sektoren behalten aber alle dieselbe Fläche. Sie werden zur Sonne hin kurz und breit, weit weg lang und schmal – der Körper ist in Sonnennähe am schnellsten.',
+          'Der blaue Punkt läuft die Bahn ab und braucht für jeden Sektor gleich lang. Achte darauf, wie er sich in Sonnennähe beschleunigt und weit draußen langsamer wird.',
           'In den Tabellen ist T²/a³ für alle Planeten gleich (3. Keplersches Gesetz). Daraus folgt die Masse des Zentralkörpers: M = 4π²a³/(G T²).',
         ]}
         caption="Kepler-Labor: Zwölf Abschnitte gleicher Dauer haben gleiche Fläche (2. Keplersches Gesetz). Die Tabellen bestätigen T²/a³ = konstant und liefern die Masse von Sonne und Jupiter."
@@ -119,22 +132,38 @@ export function Basics() {
       <div class="prose">
         <p>
           Das Erde-Mond-System ist ein konkretes Beispiel für ein Zweikörpersystem mit negativer
-          Gesamtenergie. Nach dem dritten Newtonschen Axiom ziehen sich beide Körper mit gleich
-          großer Kraft an. Deshalb bewegen sich Mond und Erde um einen gemeinsamen Mittelpunkt, das{' '}
-          <strong>Baryzentrum</strong>. Da die Erde etwa 81-mal so schwer ist wie der Mond, liegt
-          das Baryzentrum noch innerhalb der Erde – aber nicht in ihrer Mitte. Deshalb bewegt sich
-          auch die Erde um diesen Punkt.
-        </p>
-        <p>
-          Das Zweikörperproblem ist für die Himmelsmechanik von großer Bedeutung, da sich allein aus
-          Massen und Anfangsbedingungen Umlaufbahnen, Geschwindigkeiten und Umlaufzeiten genau
-          berechnen lassen. Kommt jedoch ein weiterer Körper hinzu, wird daraus ein
-          Dreikörperproblem.
+          Gesamtenergie. Laut dem dritten Newtonschen Gesetz ziehen sich beide Körper mit gleich
+          großer Gravitationskraft an. Aufgrund dessen bewegt sich nicht nur der Mond um die Erde,
+          sondern beide Körper bewegen sich um einen gemeinsamen Mittelpunkt, das Baryzentrum. Das
+          Baryzentrum ist der gemeinsame Schwerpunkt des Systems. Da die Masse der Erde ungefähr
+          81-mal so groß ist wie die des Mondes, liegt das Baryzentrum noch innerhalb des
+          Erdkörpers. Da dies aber nicht in der Mitte der Erde liegt, bewegt sich die Erde genau wie
+          der Mond um dieses Zentrum.
         </p>
       </div>
 
       <Figure
         n="2.3"
+        steps={[
+          'Schiebe die Mondmasse nach rechts: Das Baryzentrum wandert aus der Erde heraus. Bei etwa dem 1,4-Fachen der Mondmasse liegt es genau auf der Erdoberfläche.',
+          'Mit dem Knopf „Mit dieser Mondmasse simulieren“ siehst du das Paar im Simulator.',
+        ]}
+        caption="Das Baryzentrum von Erde und Mond. Mit dem Regler lässt sich die Mondmasse verändern: Ab etwa 1,4-facher Masse läge der Schwerpunkt außerhalb der Erde – dann spräche man von einem Doppelplaneten."
+      >
+        <BarycenterDemo />
+      </Figure>
+
+      <div class="prose">
+        <p>
+          Das Zweikörperproblem ist von großer Bedeutung für die Himmelsmechanik, da sich nur mit
+          Hilfe von Massen und Anfangsgegebenheiten sehr genau berechnen lässt, wie unter anderem
+          die Umlaufbahnen, Geschwindigkeiten und Umlaufzeiten. Wird jedoch ein weiterer Körper
+          hinzugezogen, wird dies zu einem Dreikörperproblem.
+        </p>
+      </div>
+
+      <Figure
+        n="2.4"
         steps={[
           'Wähle n = 2 (Newton): Die Bahn schließt sich, der Winkel von Periapsis zu Periapsis beträgt 360°.',
           'Wähle n = 1,5 oder n = 2,5: Die Ellipse dreht sich bei jedem Umlauf weiter, es entsteht eine Rosette. Der Winkel weicht von 360° ab, wie es die Theorie in der letzten Zeile vorhersagt.',
@@ -149,91 +178,72 @@ export function Basics() {
         <SectionTitle n="2.3">Relevanz des Erde-Mond-Sonne-Systems</SectionTitle>
         <p>
           Das Erde-Mond-Sonne-System ist ein Dreikörpersystem aus unserem direkten kosmischen
-          Umfeld, das auch Einfluss auf die Erde und ihre Bewohner hat. Anders als bei abstrakten
-          Zweikörpersystemen lassen sich hier die Auswirkungen direkt nachvollziehen. Im Folgenden
-          werden die Sonne als Energiequelle, die Wirkung des Mondes auf die Erdachse, die Gezeiten
-          und die Finsternisse betrachtet.
+          Umfeld, welches auch Einfluss auf die Erde und deren Population hat. Anders als bei den
+          abstrakten Zweikörpersystemen lassen sich in diesem Fall die direkten Auswirkungen
+          nachvollziehen. In diesem Abschnitt werden die Sonne als Energiequelle, die Wirkung des
+          Mondes auf die Erdachse, die verursachten Gezeiten und die Finsternisse betrachtet.
         </p>
         <p>
-          Die Sonne ist die fast alleinige Energiequelle des Systems und entscheidet damit direkt
-          und indirekt über Klima, Wetter und das Leben auf der Erde. Ihre Strahlung erwärmt
-          Lufthülle, Landmassen und Ozeane. Am Äquator ist die Erwärmung am stärksten und nimmt zu
-          den Polen hin ab – so entstehen die Klimazonen. Ohne diese Energie wäre die Erde ein
-          kalter, unbewohnbarer Himmelskörper. Gleichzeitig ist die Sonne der Mittelpunkt der
-          Erdbahn: Ihr starkes Gravitationsfeld hält die Erde auf einer nahezu stabilen Umlaufbahn.
-          Diese liegt in der habitablen Zone, in der Wasser weder gefriert noch verdampft – die
-          Grundlage für Leben.
+          Die Sonne dient als fast alleinige Energiequelle des Systems, somit entscheidet sie
+          indirekt und direkt über Klima, Wetter und all das Leben auf der Erde und im Rest des
+          Systems. Die Strahlungsenergie, welche die Sonne abgibt, erwärmt die Lufthülle, die
+          Landmassen und die Ozeane der Erde. Die Erwärmung am Äquator ist am stärksten und wird in
+          Richtung der Pole immer schwächer, dadurch entstehen die unterschiedlichen Klimazonen der
+          Erde. Würde diese Energie nicht bestehen, wäre die Erde ein kalter unbelebbarer
+          Himmelskörper. Die Sonne ist gleichzeitig auch der Mittelpunkt der Umlaufbahn der Erde.
+          Durch die Masse der Sonne entsteht ein so starkes Gravitationsfeld, welches die Erde auf
+          eine nahezu stabile Umlaufbahn hält. Diese Bahn liegt in der habitablen Zone, die Zone
+          eines Sterns, in welcher Leben möglich ist. In dieser Zone hat es die Temperatur, bei
+          welcher Wasser weder gefriert noch verdampft, was die Grundlage für die Entstehung von
+          Leben ist.
         </p>
         <p>
-          Der Mond hat trotz seiner im Vergleich zur Erde geringen Masse einen deutlichen Einfluss.
-          Die Rotationsachse der Erde ist gegenüber ihrer Bahnebene um etwa 23,4° geneigt; diese
-          Neigung erzeugt die Jahreszeiten. Der französische Astronom Jacques Laskar zeigte 1993
-          gemeinsam mit Frédéric Joutel und Philippe Robutel mit numerischen Berechnungen, dass der
-          Mond diese Neigung stabilisiert, sodass sie nur um etwa 1,3° schwankt. Ohne Mond wären
-          nach ihren Rechnungen Neigungen zwischen 0° und 85° möglich, was zu dramatischen
-          Klimaschwankungen führen würde. Spätere Untersuchungen von Jason Barnes und seinem Team
-          zeigten allerdings, dass sich die Erdachse auch ohne Mond über eine halbe Milliarde Jahre
-          nur zwischen etwa 10° und 20° bewegen würde – vor allem wegen der Gravitation Jupiters.
+          Der Mond hat trotz seiner geringeren Masse, im Vergleich zur Erde, einen signifikanten
+          Einfluss auf die Erde. Die Erde hat, ausgehend von der Bahnebene, eine geneigte
+          Rotationsachse, welche etwa 23,4 Grad geneigt ist. Diese Neigung erzeugt den Wechsel der
+          Jahreszeiten. Dass der Mond diese Neigung stabilisiert, zeigten 1993 der französische
+          Astronom Jacques Laskar gemeinsam mit Frédéric Joutel und Philippe Robutel. Mithilfe
+          numerischer Berechnungen kamen sie zu dem Schluss, dass die Erde nur mithilfe des Mondes
+          diese stabile Neigung hält, mit einer Abweichung von nur etwa 1,3 Grad. Außerdem kamen sie
+          zu dem Schluss, dass ohne den Mond eine Neigung von etwa 0 bis 85 Grad möglich wäre, was
+          laut den Autoren zu dramatischen Klimaschwankungen führen würde.
         </p>
         <p>
-          Eine weitere spürbare Folge sind die <strong>Gezeiten</strong>. Durch das Zusammenspiel
-          von Zentrifugalkraft und Gravitation entstehen Ebbe und Flut. Der Einfluss des leichteren
-          Mondes ist dabei größer als der der massereicheren Sonne, da er der Erde viel näher ist.
-          Die Gezeiten wirken auch auf Erde und Mond zurück: Der Erde wird ständig Drehimpuls
-          entzogen, ihre Rotation verlangsamt sich, und der Mond entfernt sich um etwa 4&nbsp;cm pro
-          Jahr (Kapitel 6).
+          Spätere Untersuchungen von Jack Lissauer, Jason Barnes und John Chambers zeigten, dass
+          sich die Erdachse auch ohne Mond über hunderte Millionen Jahre typischerweise nur in einem
+          Bereich von 20 bis 25 Grad Ausdehnung bewegen würde und nicht zwischen 0 und 85 Grad.
         </p>
         <p>
-          Besonders deutlich wird das Zusammenspiel bei{' '}
-          <strong>Sonnen- und Mondfinsternissen</strong>. Sie können nur auftreten, wenn Sonne, Mond
-          und Erde auf einer nahezu perfekten Linie stehen. Das ist nur bei Neu- oder Vollmond
-          möglich, wenn sich der Mond zugleich nahe einem Schnittpunkt seiner Bahnebene mit der
-          Erdbahn befindet. Dass der viel kleinere Mond die Sonne verdecken kann, liegt an der
-          Perspektive: Die Sonne ist etwa 400-mal größer, aber auch etwa 400-mal weiter entfernt.
-          Weil sich die Bewegungen der drei Körper mit den Gesetzen der Himmelsmechanik genau
-          berechnen lassen, kann man Finsternisse für Jahrzehnte im Voraus vorhersagen. Schon der
-          antike Antikythera-Mechanismus ermöglichte mit Zahnrädern ungefähre Vorhersagen.
+          Eine andere spürbare Folge des Erde-Mond-Sonne-Systems sind die Gezeiten. Durch das
+          Zusammenspiel von Zentrifugalkraft und Gravitation entstehen Ebbe und Flut. Der Einfluss
+          des leichteren Mondes ist größer als der Einfluss der massereicheren Sonne, da dieser
+          wesentlich dichter an der Erde ist. Die Gezeiten haben aber auch Auswirkungen auf die Erde
+          und den Mond. Durch die Gezeiten wird der Erde andauernd der Drehimpuls entzogen, was über
+          einen langen Zeitraum die Erdrotation verlangsamt, und der Mond sich im Durchschnitt um
+          4&nbsp;cm pro Jahr von der Erde entfernt.
         </p>
         <p>
-          Das Erde-Mond-Sonne-System ist also weit mehr als ein Rechenbeispiel: Es wirkt direkt auf
-          Klima, Jahreszeiten und Gezeiten und damit auf das Leben auf der Erde.
+          Das Zusammenspiel von Erde, Mond und Sonne wird besonders bei Sonnen- und
+          Mondfinsternissen deutlich. Die Finsternisse können nur auftreten, wenn sich Sonne, Mond
+          und Erde auf einer nahezu perfekten Linie befinden. Dies ist nur möglich, wenn der Mond
+          Neu- oder Vollmond zeigt, während er sich im Schnittpunkt seiner Bahnebene mit der der
+          Erdbahn befindet. Dass der Mond die Sonne, obwohl sie um ein Vielfaches größer ist,
+          verdecken kann, liegt an der Perspektive und daran, dass er nur einen kleinen Teil der
+          Erde abdunkelt.
         </p>
-
-        <SectionTitle n="2.4">Erweiterung auf N Körper und das Baryzentrum</SectionTitle>
         <p>
-          Für jeden von <Tex>N</Tex> Körpern gilt nach (2.1) und (2.2) die Bewegungsgleichung
+          Da sich die Bewegungen der drei Himmelskörper mit den bekannten Gesetzen der
+          Himmelsmechanik genauestens berechnen lassen, kann man die nächsten Finsternisse für die
+          kommenden Jahrzehnte genauestens berechnen. Der Antikythera-Mechanismus, bestehend aus
+          Zahnrädern, ermöglichte bereits in der Antike ungefähre Vorhersagen, lange bevor die
+          heutigen mathematischen Himmelsmechaniken existierten.
         </p>
-        <Equation
-          tex={String.raw`\ddot{\vec r}_i = \sum_{j\neq i} G\,m_j\,\frac{\vec r_j-\vec r_i}{\lvert\vec r_j-\vec r_i\rvert^3}.`}
-          n="2.4"
-        />
         <p>
-          Für drei oder mehr Körper gibt es keine allgemeine Lösungsformel mehr (Poincaré, 1890) –
-          die Gleichung muss numerisch gelöst werden. Genau das macht unsere Simulation (Kapitel 8).
-          Das Baryzentrum zweier Körper liegt auf ihrer Verbindungslinie im Abstand
-        </p>
-        <Equation tex={String.raw`d_B = r\cdot\frac{m_2}{m_1+m_2}`} n="2.5" />
-        <p>
-          vom Mittelpunkt des schwereren Körpers. Für Erde und Mond sind das etwa 4.670&nbsp;km.
+          Es wird deutlich, dass das Erde-Mond-Sonne-System weit mehr als ein Rechenbeispiel in der
+          Himmelsmechanik ist, es hat direkte Auswirkungen auf Klima, Jahreszeiten, Gezeiten und
+          somit auf das Leben auf der Erde.
         </p>
       </div>
-
-      <Figure
-        n="2.4"
-        steps={[
-          'Schiebe die Mondmasse nach rechts: Das Baryzentrum wandert aus der Erde heraus. Bei etwa dem 1,4-Fachen der Mondmasse liegt es genau auf der Erdoberfläche.',
-          'Mit dem Knopf „Mit dieser Mondmasse simulieren“ siehst du das Paar im Simulator.',
-        ]}
-        caption="Das Baryzentrum von Erde und Mond. Mit dem Regler lässt sich die Mondmasse verändern: Ab etwa 1,4-facher Masse läge der Schwerpunkt außerhalb der Erde – dann spräche man von einem Doppelplaneten."
-      >
-        <BarycenterDemo />
-      </Figure>
-
-      <Callout kind="merke">
-        Zwei Körper bewegen sich immer um ihren gemeinsamen Schwerpunkt. Ihre Bahnen sind exakt
-        berechenbar. Ab drei Körpern gibt es keine allgemeine Formel mehr – dann braucht man
-        Näherungen oder eine Simulation.
-      </Callout>
     </>
   );
 }
@@ -253,7 +263,7 @@ function BarycenterDemo() {
     t: number,
   ) => {
     ctx.clearRect(0, 0, w, h);
-    const scale = (w * 0.42) / r;
+    const scale = (Math.min(w, h) * 0.42) / r;
     const cx = w / 2;
     const cy = h / 2;
     const ang = (t / 6) * Math.PI * 2;
@@ -283,6 +293,7 @@ function BarycenterDemo() {
     ctx.fillStyle = c.ink2;
     ctx.font = `12px ${c.fontUi}`;
     ctx.fillText('Baryzentrum', cx + 8, cy - 8);
+    ctx.fillText('Mond', mx + 10, my - 8);
     ctx.fillText(`Erde (Bewegung ${sig(zoom, 2)}-fach vergrößert)`, 8, h - 8);
   };
   return (

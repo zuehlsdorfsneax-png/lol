@@ -195,6 +195,36 @@ export function SimulatorPage({ preset: presetParam }: { preset: string | null }
         Bewegungsgleichungen numerisch und meldet, wenn der Mond abstürzt, zerrissen wird oder
         entkommt.
       </PageHead>
+      <details class="guide">
+        <summary>So bedienst du den Simulator</summary>
+        <ul>
+          <li>
+            Mit „Pause“, dem Einzelschritt und dem Neustart steuerst du den Ablauf. Die Zeitwahl („1
+            Tag/s“ bis „25 Jahre/s“) legt fest, wie schnell die simulierte Zeit läuft.
+          </li>
+          <li>
+            Das Bezugssystem ändert nur die Ansicht: „Erde fest“ zeigt die Mondbahn wie von der Erde
+            aus, „Mitrotierend“ hält die Linie Sonne–Erde fest (Sonne links), sodass die
+            Lagrange-Punkte stillstehen, „Ruhend (Sonne)“ ist das Schwerpunktsystem, in dem die
+            Sonne fast ruht.
+          </li>
+          <li>
+            Rechts wählst du eine Voreinstellung oder änderst Mond, Sonne und Verfahren selbst. Die
+            Startgeschwindigkeit steht in Vielfachen der Kreisbahngeschwindigkeit: 1 ergibt eine
+            Kreisbahn, kleinere Werte führen zum Absturz, 1,414 ist ohne Sonne die
+            Fluchtgeschwindigkeit.
+          </li>
+          <li>
+            Links oben im Bild: Abstand Erde–Mond, die Exzentrizität der augenblicklichen Bahn (0 =
+            Kreis) und d / r<sub>H</sub>, der Abstand in Hill-Radien. Ab etwa 0,5 ist eine Bahn
+            nicht mehr dauerhaft stabil.
+          </li>
+          <li>
+            Die „Prognose“ unter dem Bild schätzt aus den Startwerten, ob der Mond abstürzt,
+            zerrissen wird oder entkommt. Die laufende Simulation zeigt, ob sie stimmt.
+          </li>
+        </ul>
+      </details>
       {missingPreset && (
         <p class="notice" role="status">
           Die Voreinstellung „{missingPreset}“ gibt es nicht – gezeigt wird „{PRESETS[0]!.title}“.

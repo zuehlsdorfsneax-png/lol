@@ -759,14 +759,64 @@ svg {
   color: var(--accent-ink);
 }
 
-.figure-try ul {
+.figure-try ul,
+.guide ul {
   margin: 0;
   padding-left: var(--sp-4);
   display: grid;
   gap: var(--sp-1);
 }
 
+.guide > summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.guide > summary::-webkit-details-marker {
+  display: none;
+}
+
+.guide > summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--ink-3);
+  border-bottom: 1.5px solid var(--ink-3);
+  transform: rotate(45deg);
+  transition: transform var(--dur-2);
+  flex: none;
+}
+
+.guide[open] > summary::after {
+  transform: rotate(225deg);
+}
+
+.guide[open] > summary {
+  margin-bottom: var(--sp-2);
+}
+
+.guide {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 0 var(--sp-5) var(--sp-3);
+  font-size: var(--fs-3);
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 78ch;
+}
+
 @media (max-width: 640px) {
+  .guide {
+    padding: 0 var(--sp-4) var(--sp-3);
+  }
   .figure-body {
     padding: var(--sp-4);
   }

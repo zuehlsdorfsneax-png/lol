@@ -40,7 +40,7 @@ export function OwnWork() {
         </p>
 
         <SectionTitle n="8.2">Benutzte Formeln</SectionTitle>
-        <p>Grundlage ist die Bewegungsgleichung für jeden Körper (2.4):</p>
+        <p>Grundlage ist die Bewegungsgleichung für jeden Körper:</p>
         <Equation
           tex={String.raw`\ddot{\vec r}_i = \sum_{j\neq i} G\,m_j\,\frac{\vec r_j-\vec r_i}{\lvert\vec r_j-\vec r_i\rvert^3}`}
         />

@@ -47,8 +47,8 @@ export const MOON = {
   /** Umlaufzeit der Knotenlinie (rückläufig). */
   nodalPeriod: 18.61 * YEAR,
   /** Normiertes Trägheitsmoment C/(M·R²), Lunar Prospector (Konopliv et al. 1998). */
-  momentOfInertia: 0.3929,
-  momentOfInertiaError: 0.0009,
+  momentOfInertia: 0.3931,
+  momentOfInertiaError: 0.0002,
   /** Heutige Entfernungszunahme durch Gezeitenreibung (Lunar Laser Ranging) in m/Jahr. */
   recessionPerYear: 0.0382,
   surfaceGravity: 1.62,

@@ -26,7 +26,7 @@ export function MethodsPage() {
           <li>
             Körper als Punktmassen (nach dem Schalentheorem für Kugeln exakt, siehe Kapitel 7.2).
           </li>
-          <li>Newtonsche Gravitation zwischen allen Körpern mit Masse, Gleichung (2.4).</li>
+          <li>Newtonsche Gravitation zwischen allen Körpern mit Masse.</li>
           <li>
             Bewegung in einer Ebene (2D): Die Neigung der Mondbahn (5,1°) wird vernachlässigt.
           </li>
@@ -49,9 +49,9 @@ export function MethodsPage() {
 
         <SectionTitle n="A.2">Numerische Integration</SectionTitle>
         <p>
-          Gleichung (2.4) wird in kleinen Zeitschritten <Tex>{'\\Delta t'}</Tex> gelöst. Das
-          einfachste Verfahren (Euler) schreibt Ort und Geschwindigkeit mit den Werten vom
-          Schrittanfang fort. Der Standard in der Himmelsmechanik ist das{' '}
+          Die Bewegungsgleichung der Körper wird in kleinen Zeitschritten <Tex>{'\\Delta t'}</Tex>{' '}
+          gelöst. Das einfachste Verfahren (Euler) schreibt Ort und Geschwindigkeit mit den Werten
+          vom Schrittanfang fort. Der Standard in der Himmelsmechanik ist das{' '}
           <strong>Velocity-Verlet-Verfahren</strong>:
         </p>
         <Equation
